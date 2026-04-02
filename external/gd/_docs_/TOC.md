@@ -79,3 +79,9 @@ Add logging and log operations for applications.
 Miscellaneous UTF8 operations. Work with any UTF8 encoded string.
 
 - [UTF8 Support](GD_UTF8.MD) - *High-performance UTF-8 string utilities for modern C++*
+
+## Expression Documentation
+
+Lightweight, high-performance expression parser and evaluator for scripting in C++.
+
+- [Expression Engine](GD_EXPRESSION__EXPRESION.MD) - *Fast, lightweight expression parser with thread-safe evaluation and custom method injection*
