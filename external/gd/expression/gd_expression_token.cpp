@@ -3,6 +3,8 @@
  * @brief Token implementations for expression parsing and evaluation
  */
 
+#include <array>
+#include <memory_resource>
 #include <stack>
 
 #include "gd_expression_operator.h"
@@ -957,8 +959,20 @@ std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* p
 */
 std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn, std::vector<token>& vectorOut, tag_postfix)
 {
-   std::stack<token> stackOperator;
-   std::stack<unsigned> stackArgCount;  ///< actual arg count per nested function call frame, used for varargs dispatch
+   constexpr std::size_t uBufferSize = 256;
+
+   alignas(std::max_align_t) 
+   std::array<std::byte, uBufferSize> buffer_{};
+
+   std::pmr::monotonic_buffer_resource pool_{ buffer_.data(), buffer_.size() };
+
+   // Vector-based stacks - better performance!
+   std::stack<token, std::pmr::vector<token>> stackOperator(&pool_);
+   std::stack<unsigned, std::pmr::vector<unsigned>> stackArgCount(&pool_); ///< actual arg count per nested function call frame, used for varargs dispatch
+/*
+   std::stack<token> stackOperator(&pool_);
+   std::stack<unsigned> stackArgCount(&pool_);  ///< actual arg count per nested function call frame, used for varargs dispatch
+   */
 
    for( auto itToken = vectorIn.begin(); itToken != vectorIn.end(); ++itToken )
    {
