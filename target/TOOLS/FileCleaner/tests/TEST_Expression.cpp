@@ -35,6 +35,11 @@ auto valueResult = gd::expression::token::calculate_s( "10 >= x", {{"x", 10}} );
 TEST_CASE("[expression] vararg", "[expression]") {
    {
       {
+         auto valueResult = gd::expression::token::calculate_s( "any_true( str::has( 'path', 'exe' ) , 1,2,3,4)" );
+         std::cout << "Result: " << valueResult.as_string() << std::endl;
+      }
+
+      {
          auto valueResult = gd::expression::token::calculate_s( "MAXIMUM = 100; MAXIMUM" );
          std::cout << "Result: " << valueResult.as_string() << std::endl;
       }

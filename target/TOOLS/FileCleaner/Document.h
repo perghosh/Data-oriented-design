@@ -172,6 +172,7 @@ public:
    /// Filter cached table based on where expression
    std::pair<bool, std::string> CACHE_Where(std::string_view stringId, std::string_view stringWhere, gd::table::dto::table* ptable_ = nullptr);
    std::pair<bool, std::string> CACHE_Where(std::string_view stringId, std::string_view stringWhere, const std::vector<std::string>& vectorColumn, gd::table::arguments::table* ptable_ = nullptr );
+   std::pair<bool, std::string> CACHE_WhereExpression(std::string_view stringId, std::string_view stringWhere, gd::table::dto::table* ptable_ = nullptr);
 
    /// Read context information for specified table;
    std::pair<bool, std::string> CACHE_Context( std::string_view stringId, const gd::argument::arguments& argumentsContext );
@@ -280,10 +281,18 @@ public:
 // ## free functions ------------------------------------------------------------
 public:
 
+   // @API [tag: expression, postix] [description: Methods to prepare expression for use in where operations on tables, arguments tables and single arguments]
+
 	/// Prepare expression to be used performing where operations on table
 	static std::pair<bool, std::string> EXPRESSION_PrepareForTable_s(const std::string_view& stringExpression, const std::vector< std::pair<size_t, size_t> >& vectorPosition, std::string& stringPreparedExpression);
    static std::pair<bool, std::string> EXPRESSION_PrepareForArgumentsTable_s(const std::string_view& stringExpression, const std::vector< std::pair<size_t, size_t> >& vectorPosition, std::string& stringPreparedExpression);
    static std::pair<bool, std::string> EXPRESSION_PrepareForArgument_s(const std::string_view& stringExpression, const std::vector< std::pair<size_t, size_t> >& vectorPosition, std::string& stringPreparedExpression);
+
+   // @API [tag: expression, infix] [description: Methods to prepare expression for use in where operations on tables, arguments tables and single arguments]
+
+   /// replacing coolumn names with expression method to get value from column.
+   static std::pair<bool, std::string> EXPRESSION_InfixPrepareForTable_s(const std::string_view& stringExpression, const std::vector< std::pair<size_t, size_t> >& vectorPosition, std::string& stringPreparedExpression);
+   
 
    /// Generate result from table where rows in table just are listed top to bottom
    static std::string RESULT_VisualStudio_s( const gd::table::dto::table& table_ );

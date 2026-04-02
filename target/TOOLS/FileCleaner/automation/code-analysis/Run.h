@@ -28,3 +28,9 @@ inline std::pair<bool, std::string> RunExpression_Where_g(const std::string_view
 }
 /// @brief Executes a "where" expression on a table, filtering rows based on the expression.
 std::pair<bool, std::string> RunExpression_Where_g(const std::string_view& stringExpression, gd::table::dto::table* ptable_);
+
+
+/// @brief Executes a "where" expression with no modification on a table with a callback to handle the filtered results.
+std::pair<bool, std::string> RunExpression_WhereExpression_g(const std::string_view& stringExpression, gd::table::dto::table* ptable_);
+/// @brief Executes a "where" expression with no modification on a table with a callback to handle the filtered results.
+std::pair<bool, std::string> RunExpression_WhereExpression_g(const std::string_view& stringExpression, gd::table::arguments::table* ptableKeyValue, std::function<void(const std::vector<uint64_t>&, const gd::table::arguments::table*)> callback_);

@@ -1785,6 +1785,7 @@ value token::calculate_s( const std::string_view& stringExpression, const std::v
 
    // ## compile tokens and that menas to convert tokens to postfix, place them in correct order to be processed
    std::vector<token> vectorPostfix;
+   vectorPostfix.reserve( vectorToken.size() );
    result = compile_s(vectorToken, vectorPostfix, tag_postfix{});
    if( result.first == false ) { throw std::invalid_argument(result.second); }
 

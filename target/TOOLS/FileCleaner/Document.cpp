@@ -2593,6 +2593,8 @@ std::pair<bool, std::string> CDocument::CACHE_Where(std::string_view stringId, s
    std::sort(vectorName.begin(), vectorName.end(), [](const std::string_view& a, const std::string_view& b) { return a.size() > b.size(); });
 
 
+   // ## To speed up finding words there is and array with character types, this is used to 
+   //    quickly skip characters that can not be part of a word, this is much faster than checking with find for each character.
    std::array<uint8_t, 256> arrayQuote{}; // array to store character types for each ASCII character
    arrayQuote['\''] = 1; // quote
    arrayQuote['\"'] = 1; // double quote
@@ -2610,6 +2612,35 @@ std::pair<bool, std::string> CDocument::CACHE_Where(std::string_view stringId, s
 
    return { true, "" };
 }
+
+std::pair<bool, std::string> CDocument::CACHE_WhereExpression(std::string_view stringId, std::string_view stringWhere, gd::table::dto::table* ptable_ )
+{
+   if(ptable_ == nullptr) { ptable_ = CACHE_Get(stringId, false); }                                assert(ptable_ != nullptr);
+
+   // ## Read all column names from table
+   std::vector<std::string_view> vectorName = ptable_->column_get_name();
+   // sort vector with names so that the largest name in character length is first
+   std::sort(vectorName.begin(), vectorName.end(), [](const std::string_view& a, const std::string_view& b) { return a.size() > b.size(); });
+
+
+   // ## To speed up finding words there is and array with character types, this is used to 
+   //    quickly skip characters that can not be part of a word, this is much faster than checking with find for each character.
+   std::array<uint8_t, 256> arrayQuote{}; // array to store character types for each ASCII character
+   arrayQuote['\''] = 1; // quote
+   arrayQuote['\"'] = 1; // double quote
+   auto vectorFound = gd::math::string::find_all_word( stringWhere, vectorName, arrayQuote ); // find all column names in expression, skips sections marked with arrayQuote
+
+   std::string stringExpression;
+   auto result_ = EXPRESSION_InfixPrepareForTable_s(stringWhere, vectorFound, stringExpression);
+   if(result_.first == false) return result_;
+
+
+   result_ = RunExpression_WhereExpression_g(stringExpression, ptable_);     
+   if( result_.first == false ) return result_;
+
+   return { true, "" };
+}
+
 
 std::pair<bool, std::string> CDocument::CACHE_Context( std::string_view stringId, const gd::argument::arguments& argumentsContext )
 {
@@ -3275,6 +3306,7 @@ std::string insert_method_(const std::string_view& stringExpression, const std::
 } // namespace
 
 /// Prepare expression for table
+/// This will insert method to get value from table for each column in expression, when expression is in postfix format
 std::pair<bool, std::string> CDocument::EXPRESSION_PrepareForTable_s(const std::string_view& stringExpression, const std::vector< std::pair<size_t, size_t> >& vectorPosition, std::string& stringPreparedExpression)
 {                                                                                                  assert( stringExpression.empty() == false );
    stringPreparedExpression += insert_method_( stringExpression, vectorPosition, "dtotable row '{}' source::get_cell_value(" );
@@ -3298,6 +3330,15 @@ std::pair<bool, std::string> CDocument::EXPRESSION_PrepareForArgument_s(const st
 
    return { true, "" };
 }
+
+/// Prepare expression for table, when expression is in infix format, this is used forumulas that use the native format
+std::pair<bool, std::string> CDocument::EXPRESSION_InfixPrepareForTable_s(const std::string_view& stringExpression, const std::vector< std::pair<size_t, size_t> >& vectorPosition, std::string& stringPreparedExpression)
+{                                                                                                  assert( stringExpression.empty() == false );
+   stringPreparedExpression += insert_method_( stringExpression, vectorPosition, "source::get_cell_value( dtotable, row, '{}')" );
+
+   return { true, "" };
+}
+
 
 
 void CDocument::RESULT_VisualStudio_s( const gd::table::dto::table& table_, std::string& stringResult )

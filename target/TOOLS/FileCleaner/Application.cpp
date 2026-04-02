@@ -2438,7 +2438,8 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "sort", "Sorts result on selected column name" });
       optionsCommand.add({ "stats", "Add statistics to generated output" });
       optionsCommand.add({ "table", "Table is used based on options set, for example generating sql insert queries will use table name to insort to" });
-      optionsCommand.add({ "where", "Specify conditions for filtering file names in result." });
+      optionsCommand.add({ "where", "Specify SQL like conditions for filtering result." });
+      optionsCommand.add({ "where-expression", "Use internal expression format for filtering result." });
       optionsCommand.add_flag( {"R", "Set recursive to 16, simple to scan all subfolders"} );
 #ifdef _WIN32
       optionsCommand.add_flag( {"vs", "Adapt to visual studio output window format, make files clickable"} );
@@ -2493,6 +2494,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "script", "Execute an **external script file** for advanced processing of the listed files. Useful for custom formatting or filtering." });
       optionsCommand.add({ "sort", "Sort the listed files based on a **specified column name** (e.g., name, size, date). This organizes the output for easier analysis." });
       optionsCommand.add({ "where", "Specify conditions for filtering file names in result." });
+      optionsCommand.add({ "where-expression", "Use internal expression format for filtering result." });
       optionsCommand.add_flag_or_option( {"parents", "Adds parent folders to file name when listing."} );
       optionsCommand.add_flag_or_option( {"R", "Enable **recursive listing** of files in subfolders. Sets the recursion depth to 16, ensuring all subdirectories are scanned."} );
       optionsCommand.add_flag({ "directory", 'd', "Display directory information only"});

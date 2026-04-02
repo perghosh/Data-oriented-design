@@ -206,7 +206,6 @@ std::pair<bool, std::string> RunExpression_Where_g(const std::string_view& strin
 }
 
 
-
 /** ---------------------------------------------------------------------------
  * @brief Executes a "where" expression on a table, filtering rows based on the expression.
  * 
@@ -274,3 +273,113 @@ std::pair<bool, std::string> RunExpression_Where_g(const std::string_view& strin
    return { true, "" };
 }
 
+std::pair<bool, std::string> RunExpression_WhereExpression_g(const std::string_view& stringExpression, gd::table::dto::table* ptable_)
+{
+   // ## convert string to tokens
+   std::vector<token> vectorToken;
+   std::pair<bool, std::string> result_ = gd::expression::token::parse_s(stringExpression, vectorToken, tag_formula{});
+   if( result_.first == false ) { throw std::invalid_argument(result_.second); }
+
+   // ## compile tokens and that menas to convert tokens to postfix, place them in correct order to be processed
+   std::vector<token> vectorPostfix;
+   vectorPostfix.reserve( vectorToken.size() );
+   result_ = gd::expression::token::compile_s(vectorToken, vectorPostfix, tag_postfix{});
+   if( result_.first == false ) { throw std::invalid_argument(result_.second); }
+
+
+   // ## create runtime and add methods for operations .......................
+
+   gd::expression::runtime runtime_;
+   runtime_.add( { (unsigned)uMethodDefaultSize_g, gd::expression::pmethodDefault_g, ""});
+   runtime_.add( { (unsigned)uMethodStringSize_g, gd::expression::pmethodString_g, std::string("str")});
+   runtime_.add( { (unsigned)uMethodSelectSize_g, pmethodSelect_g, std::string("source")});
+
+   std::vector<uint64_t> vectorDeleteRow; // rows to delete
+
+   runtime_.set_variable("dtotable", std::pair<const char*, void*>("dtotable", ptable_)); // set table used to calculate on
+
+   for( uint64_t uRow = 0; uRow < ptable_->size(); uRow++ )
+   {
+      runtime_.set_variable("row", (int64_t)uRow);                            // set line variable to the current line
+
+      gd::expression::value valueResult;
+      std::vector<gd::expression::value> vectorReturn;
+      result_ = gd::expression::token::calculate_s(vectorPostfix, &vectorReturn, runtime_); // calculate the expression
+      if( result_.first == false ) { return result_; }
+
+      bool bWhere = false;
+      for( const auto& value_ : vectorReturn )
+      {
+         if( value_.is_bool() == true )
+         {
+            bool bResult = value_.get_bool();
+            if( bResult == true ) { bWhere = true; break; }
+         }
+      }
+
+      if( bWhere == false ) { vectorDeleteRow.push_back(uRow); } // mark row for deletion
+
+      if( result_.first == false ) { return result_; }
+   }
+                                                                                                   LOG_VERBOSE_RAW("== Keep Rows: " & (ptable_->size() - vectorDeleteRow.size()));
+   if( vectorDeleteRow.empty() == false ) { ptable_->erase(vectorDeleteRow); }  // erase rows that did not match the where condition
+
+   return { true, "" };
+}
+
+
+std::pair<bool, std::string> RunExpression_WhereExpression_g(const std::string_view& stringExpression, gd::table::arguments::table* ptableKeyValue, std::function<void(const std::vector<uint64_t>&, const gd::table::arguments::table*)> callback_)
+{
+   // ## convert string to tokens
+
+   std::vector<gd::expression::token> vectorToken;
+   std::pair<bool, std::string> result_ = gd::expression::token::parse_s(stringExpression, vectorToken, tag_formula{});
+   if( result_.first == false ) { return result_; }
+
+   std::vector<token> vectorPostfix;
+   result_ = gd::expression::token::compile_s(vectorToken, vectorPostfix, tag_postfix{});
+   if( result_.first == false ) { return result_; }
+
+   // ## create runtime and add methods for operations
+
+   gd::expression::runtime runtime_;
+   runtime_.add( { (unsigned)uMethodDefaultSize_g, gd::expression::pmethodDefault_g, ""});
+   runtime_.add( { (unsigned)uMethodStringSize_g, gd::expression::pmethodString_g, std::string("str")});
+   runtime_.add( { (unsigned)uMethodSelectSize_g, pmethodSelect_g, std::string("source")});
+
+   std::vector<uint64_t> vectorDeleteRow; // rows to delete
+
+   runtime_.set_variable( "argstable", std::pair<const char*, void*>( "argstable", ptableKeyValue ) ); // set table used to calculate on
+
+   for( uint64_t uRow = 0; uRow < ptableKeyValue->size(); uRow++ )
+   {
+      auto* parguments_ = ptableKeyValue->row_get_arguments_pointer(uRow);
+      if( parguments_ == nullptr ) { continue; }                              // if there are no arguments, we cannot evaluate the expression
+
+      runtime_.set_variable( "args", std::pair<const char*, void*>("args", parguments_)); // set source variable to the expression source
+
+      gd::expression::value valueResult;
+      std::vector<gd::expression::value> vectorReturn;
+      result_ = gd::expression::token::calculate_s(vectorPostfix, &vectorReturn, runtime_); // calculate the expression
+
+      bool bWhere = false;
+      for( const auto& value_ : vectorReturn )
+      {
+         if( value_.is_bool() == true )
+         {
+            bool bResult = value_.get_bool();
+            if( bResult == true ) { bWhere = true; break; }
+         }
+      }
+
+      if( bWhere == false ) { vectorDeleteRow.push_back(uRow); } // mark row for deletion
+
+      if( result_.first == false ) { return result_; }
+   }
+
+   if( callback_ ) { callback_( vectorDeleteRow, ptableKeyValue ); }          // call callback before deleting rows
+                                                                                                   LOG_VERBOSE_RAW("== Keep Rows: " & (ptableKeyValue->size() - vectorDeleteRow.size()));
+   if( vectorDeleteRow.empty() == false ) { ptableKeyValue->erase(vectorDeleteRow); }  // erase rows that did not match the where condition
+
+   return { true, "" };
+}
