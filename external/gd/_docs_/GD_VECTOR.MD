@@ -1,6 +1,5 @@
 [← TOC](TOC.md)
 
-
 ---
 
 ## Table of Contents
