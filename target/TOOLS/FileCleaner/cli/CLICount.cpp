@@ -235,6 +235,14 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
       result_ = pdocument->CACHE_Where( "file-pattern", stringWhere, &tableResult );               if( !result_.first ) { return result_; }
    }
 
+   if( options_["where-expression"].is_true() == true )
+   {
+      std::string stringWhere = options_["where-expression"].as_string();
+      auto result_ = pdocument->CACHE_WhereExpression("file-pattern", stringWhere);// filter table based on where condition
+      if(result_.first == false) return result_;
+   }
+
+
    // ## If sorting filter . .................................................
 
    if( options_["sort"].is_true() == true )

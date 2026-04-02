@@ -186,6 +186,13 @@ std::pair<bool, std::string> CopyFiles_g( const std::string& stringTargetFolder,
 		if(result_.first == false) return result_;
    }
 
+   if(arguments_.exists("where-expression") == true)
+   {
+      auto result_ = pdocument->CACHE_WhereExpression(stringTableId, arguments_["where-expression"].as_string_view());// filter table based on where condition
+      if(result_.first == false) return result_;
+   }
+
+
 	// ## Prepare paths .......................................................
 
    std::filesystem::path pathSource = std::filesystem::canonical(stringSourceFolder);

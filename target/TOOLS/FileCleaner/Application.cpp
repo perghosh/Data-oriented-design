@@ -2474,6 +2474,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "newer", "Only copy files that are newer if target file is found" });
       optionsCommand.add({ "segment", "type of segment in code to search in"});
       optionsCommand.add({ "where", "Specify conditions for filtering file names in result." });
+      optionsCommand.add({ "where-expression", "Use internal expression format for filtering result." });
       optionsCommand.add_flag({ "R", "Set recursive to 16, simple to scan all subfolders" });
       optionsCommand.add_flag({ "overwrite", 'o', "Overwrite files existing files"});
       optionsCommand.add_flag({ "preview","Show preview of changes without applying them"});
