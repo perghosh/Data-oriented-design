@@ -74,12 +74,12 @@ end
 
    if( bOk )
    {
-       gd::expression::value result_;
-       code_.execute(runtime_, &result_);
-       gd::expression::value y_( runtime_.get_variable( "y" ) );
-       std::cout << "y = " << y_.as_string() << std::endl;
-       gd::expression::value x_( runtime_.get_variable( "x" ) );
-       std::cout << "x = " << x_.as_string() << std::endl;
+      gd::expression::value result_;
+      code_.execute(runtime_, &result_);
+      gd::expression::value y_( runtime_.get_variable( "y" ) );
+      std::cout << "y = " << y_.as_string() << std::endl;
+      gd::expression::value x_( runtime_.get_variable( "x" ) );
+      std::cout << "x = " << x_.as_string() << std::endl;
    }
 
 }

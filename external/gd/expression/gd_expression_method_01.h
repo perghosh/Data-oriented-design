@@ -92,6 +92,7 @@ const method pmethodDefault_g[] = {
    { (void*)&any_true_g, "any_true", 1, 1, method::eFlagVarArgs }, // any_true(a, b, ...) - any value true?
    { (void*)&average_g, "average", 1, 1, method::eFlagVarArgs },// average(a, b, ...) — min 1 arg
    { (void*)&ceil_g, "ceil", 1, 1},                 // ceil(number) - round up to integer
+   { (void*)&coalesce_g, "coalesce", 1, 1, method::eFlagVarArgs }, // coalesce(a, b, ...) - first non-null
    { (void*)&floor_g, "floor", 1, 1},               // floor(number) - round down to integer
    { (void*)&if_g, "if", 3, 1 },                    // if(condition, true_value, false_value)
    { (void*)&is_not_null_g, "is_not_null", 1, 1 },  // is_not_null(value) - check not null
@@ -114,11 +115,10 @@ constexpr size_t uMethodDefaultSize_g = sizeof(pmethodDefault_g) / sizeof(method
 // Arguments format: method_name(arg1, arg2, ...)
 const method pmethodString_g[] = {
    { (void*)&char_at_g, "char_at", 2, 1 },           // char_at(text, index) - get character at position
-   { (void*)&coalesce_g, "coalesce", 1, 1, method::eFlagVarArgs }, // coalesce(a, b, ...) - first non-null
    { (void*)&count_g, "count", 2, 1 },               // count(haystack, needle) - count occurrences
    { (void*)&ends_with_g, "ends_with", 2, 1 },       // ends_with(haystack, suffix) - check string ending
    { (void*)&find_g, "find", 3, 1 },                 // find(text, word, offset) - find substring position
-   { (void*)&has_g, "has", 2, 1 },                   // has(haystack, needle) - check if contains substring
+   { (void*)&has_g, "has", 1, 1, method::eFlagVarArgs },// has(haystack, needle, ...) - check if contains substring
    { (void*)&has_tag_g, "has_tag", 2, 1 },           // has_tag(text, tag) - check if text contains tag
    { (void*)&is_alpha_g, "is_alpha", 1, 1 },         // is_alpha(text) - check if only alphabetic chars
    { (void*)&is_empty_g, "is_empty", 1, 1 },         // is_empty(text) - check if empty or whitespace

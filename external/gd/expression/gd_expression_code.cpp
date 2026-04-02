@@ -153,7 +153,7 @@ std::string_view code::scan_line_end_s(const char* piszBegin, const char* piszEn
    return std::string_view(piszBegin, static_cast<size_t>(pisz_ - piszBegin));
 }
 
-/**
+/** ------------------------------------------------------------------------- trim_s
  * @brief Trim leading and trailing ASCII whitespace from a string_view.
  */
 std::string_view code::trim_s(std::string_view stringLine)
@@ -268,8 +268,7 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
    {
       // ### Skip blank / whitespace-only lines and move past terminator ------
 
-      // skip leading horizontal whitespace on a line
-      while( piszPosition < piszEnd && is_whitespace_(*piszPosition) ) { ++piszPosition; }
+      while( piszPosition < piszEnd && is_whitespace_(*piszPosition) ) { ++piszPosition; } // skip leading horizontal whitespace on a line
 
       if( piszPosition >= piszEnd ) { break; }
 

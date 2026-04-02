@@ -508,19 +508,48 @@ std::pair<bool, std::string> find_g(const std::vector< value >& vectorArgument, 
    return { false, "find_g - Invalid argument type" };
 }
 
-/// Check if word (needle) is contained in text (haystack).
-std::pair<bool, std::string> has_g(const std::vector< value >& vectorArgument, value* pvalueResult)
-{                                                                                                  assert(vectorArgument.size() > 1);
-   const auto& haystack_ = vectorArgument[1];
-   const auto& needle_ = vectorArgument[0];
-   if( haystack_.is_string() && needle_.is_string() )
-   {
-      auto stringText = haystack_.as_string_view();
-      auto stringWord = needle_.as_string_view();
-      *pvalueResult = (stringText.find(stringWord) != std::string_view::npos);
-      return { true, "" };
+/// Check if any of the needles (all arguments except last, that is first)
+std::pair<bool, std::string> has_g( const std::vector< value >& vectorArgument, value* pvalueResult )
+{
+   if( vectorArgument.empty() ) return { false, "has requires at least 1 argument" };
+
+   std::string stringTemporary;
+   std::string_view stringHaystack;
+   const auto& haystack_ = vectorArgument.back();
+   if( haystack_.is_string() == false ) 
+   { 
+      stringTemporary = haystack_.as_string();                                // convert to string if not string, this allows us to check for substrings in non-string values
+      stringHaystack = stringTemporary;                                       // use string view for searching, this allows us to avoid unnecessary string copies
    }
-   return { false, "has_g - Invalid argument type" };
+   else { stringHaystack = haystack_.as_string_view(); }
+  
+
+   // ## check if haystack has any of the needles, check backwards since haystack is last argument and needles are all arguments before haystack
+   for( size_t u = 0; u < vectorArgument.size() - 1; ++u )
+   {
+      const auto& needle_ = vectorArgument[u];
+      if( needle_.is_string() == true )
+      { 
+         std::string_view s_ = needle_.as_string_view();                      // get string view of needle, this allows us to avoid unnecessary string copies
+         if( stringHaystack.find(s_) != std::string_view::npos )
+         {
+            *pvalueResult = true;
+            return { true, "" };
+         }
+      }
+      else
+      {
+         auto stringNeedle = needle_.as_string();                             // get string of needle
+         if( stringHaystack.find(stringNeedle) != std::string_view::npos )
+         {
+            *pvalueResult = true;
+            return { true, "" };
+         } 
+      }
+   }
+
+   *pvalueResult = false;
+   return { true, "" };
 }
 
 /// Check if word (needle) is not contained in text (haystack).
