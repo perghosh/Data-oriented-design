@@ -61,7 +61,7 @@ inline bool is_string_delimiter_(char c)
  * matching `end` is found the entry is used to backpatch all pending jumps
  * that need to know where the block ends.
  */
-struct block_frame_
+struct block
 {
    enum enumKind : uint8_t
    {
@@ -206,15 +206,14 @@ std::pair<std::string_view, std::string_view> code::split_keyword_s(std::string_
    while( uEnd < stringLine.size() )
    {
       char c = stringLine[uEnd];
-      if( !( (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' ) )
-         break;
-      ++uEnd;
+      if( !( (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' ) ) break;
+      uEnd++;
    }
 
-   std::string_view svKeyword = stringLine.substr(0, uEnd);
-   std::string_view svRest    = trim_s(stringLine.substr(uEnd));
+   std::string_view stringKeyword = stringLine.substr(0, uEnd);
+   std::string_view stringRest    = trim_s(stringLine.substr(uEnd));
 
-   return { svKeyword, svRest };
+   return { stringKeyword, stringRest };
 }
 
 /** ------------------------------------------------------------------------- compile_expression_s
@@ -240,10 +239,10 @@ std::pair<bool, std::string> code::compile_expression_s( std::string_view string
 
 
 // ===========================================================================
-// code::compile_s
+// code::compile
 // ===========================================================================
 
-/**
+/** ------------------------------------------------------------------------- compile
  * @brief Compile source text into the flat statement list.
  *
  * The `runtime_` parameter is accepted for future use (e.g. pre-declaring
@@ -259,7 +258,7 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
    m_vectorStatement.clear();
 
    // ## Block stack: one entry per open `begin` we have not yet seen `end` for
-   std::vector<block_frame_> vectorBlock;
+   std::vector<block> vectorBlock;
 
    const char* piszPosition = piszBegin;
 
@@ -289,17 +288,17 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
       if( piszPosition < piszEnd && (*piszPosition == '\n' || *piszPosition == ';') )
       {
          if( *piszPosition == '\n' ) { ++iLine; }
-         ++piszPosition;
+         piszPosition++;
       }
 
       if( stringTrimmed.empty() ) { continue; }
 
       // ### Classify the line by its leading keyword ------------------------
 
-      auto [svKeyword, svRest] = split_keyword_s(stringTrimmed);
+      auto [stringKeyword, stringRest] = split_keyword_s(stringTrimmed);
 
       // ---- begin -----------------------------------------------------------
-      if( svKeyword == "begin" )
+      if( stringKeyword == "begin" )
       {
          // A `begin` without a preceding control-flow keyword is only allowed
          // at top level as a no-op block (rare, but not an error).
@@ -309,8 +308,8 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
          if( vectorBlock.empty() )
          {
             // bare begin / end block — push a dummy frame so `end` pops it
-            block_frame_ frame_;
-            frame_.m_eKind      = block_frame_::eKindIf; // reuse if-kind as "bare"
+            block frame_;
+            frame_.m_eKind      = block::eKindIf; // reuse if-kind as "bare"
             frame_.m_iCondIndex = -1;
             vectorBlock.push_back(std::move(frame_));
          }
@@ -319,21 +318,21 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
       }
 
       // ---- end -------------------------------------------------------------
-      if( svKeyword == "end" )
+      if( stringKeyword == "end" )
       {
          if( vectorBlock.empty() )
          {
             return { false, "[code::compile_s] unexpected 'end' without matching 'begin' at line " + std::to_string(iLine) };
          }
 
-         block_frame_ frame_ = std::move(vectorBlock.back());
+         block frame_ = std::move(vectorBlock.back());
          vectorBlock.pop_back();
 
          int32_t iHere = static_cast<int32_t>(m_vectorStatement.size());
 
          switch( frame_.m_eKind )
          {
-         case block_frame_::eKindIf:
+         case block::eKindIf:
          {
             // Patch the if-condition jump to land HERE (first statement after block)
             if( frame_.m_iCondIndex >= 0 )
@@ -345,7 +344,7 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
             break;
          }
 
-         case block_frame_::eKindElse:
+         case block::eKindElse:
          {
             // Patch the ElseJump (emitted at end of if-body) to land HERE
             if( frame_.m_iElseJumpIndex >= 0 )
@@ -353,7 +352,7 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
             break;
          }
 
-         case block_frame_::eKindWhile:
+         case block::eKindWhile:
          {
             // Emit the loop-back jump to the while condition
             statement stmtLoopBack_(statement::eKindLoopBack, frame_.m_iCondIndex);
@@ -375,7 +374,7 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
             break;
          }
 
-         case block_frame_::eKindFor:
+         case block::eKindFor:
          {
             // Emit step statement looping back to condition
             // The step tokens are already compiled inside the for-step statement.
@@ -404,9 +403,9 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
       }
 
       // ---- else ------------------------------------------------------------
-      if( svKeyword == "else" )
+      if( stringKeyword == "else" )
       {
-         if( vectorBlock.empty() || vectorBlock.back().m_eKind != block_frame_::eKindIf )
+         if( vectorBlock.empty() || vectorBlock.back().m_eKind != block::eKindIf )
          {
             return { false, "[code::compile_s] 'else' without matching 'if' at line " + std::to_string(iLine) };
          }
@@ -419,12 +418,12 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
          int32_t iElseBodyStart = static_cast<int32_t>(m_vectorStatement.size());
 
          // Patch the if-condition jump to land at the else-body start
-         block_frame_& frame_ = vectorBlock.back();
+         block& frame_ = vectorBlock.back();
          if( frame_.m_iCondIndex >= 0 )
             m_vectorStatement[frame_.m_iCondIndex].set_jump(iElseBodyStart);
 
          // Convert the if-frame to an else-frame and record the jump index
-         frame_.m_eKind         = block_frame_::eKindElse;
+         frame_.m_eKind         = block::eKindElse;
          frame_.m_iCondIndex    = -1;
          frame_.m_iElseJumpIndex = iElseJumpIndex;
 
@@ -434,16 +433,16 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
       }
 
       // ---- if --------------------------------------------------------------
-      if( svKeyword == "if" )
+      if( stringKeyword == "if" )
       {
-         if( svRest.empty() )
+         if( stringRest.empty() )
          {
             return { false, "[code::compile_s] 'if' without condition at line " + std::to_string(iLine) };
          }
 
          // Compile condition expression
          std::vector<token> vectorCond;
-         auto [bOk, stringErr] = compile_expression_s(svRest, vectorCond);
+         auto [bOk, stringErr] = compile_expression_s(stringRest, vectorCond);
          if( bOk == false ) { return { false, stringErr }; }
 
          int32_t iCondIndex = static_cast<int32_t>(m_vectorStatement.size());
@@ -453,24 +452,24 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
 
          // Push a block frame; `begin` on the next line will confirm it,
          // `end` will close and patch it.
-         block_frame_ frame_;
-         frame_.m_eKind      = block_frame_::eKindIf;
+         block frame_;
+         frame_.m_eKind      = block::eKindIf;
          frame_.m_iCondIndex = iCondIndex;
          vectorBlock.push_back(std::move(frame_));
          continue;
       }
 
       // ---- while -----------------------------------------------------------
-      if( svKeyword == "while" )
+      if( stringKeyword == "while" )
       {
-         if( svRest.empty() )
+         if( stringRest.empty() )
          {
             return { false, "[code::compile_s] 'while' without condition at line " + std::to_string(iLine) };
          }
 
          // Compile condition
          std::vector<token> vectorCond;
-         auto [bOk, stringErr] = compile_expression_s(svRest, vectorCond);
+         auto [bOk, stringErr] = compile_expression_s(stringRest, vectorCond);
          if( bOk == false ) { return { false, stringErr }; }
 
          int32_t iCondIndex = static_cast<int32_t>(m_vectorStatement.size());
@@ -478,8 +477,8 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
          stmtWhile_.m_stringSource = std::string(stringTrimmed);
          m_vectorStatement.push_back(std::move(stmtWhile_));
 
-         block_frame_ frame_;
-         frame_.m_eKind      = block_frame_::eKindWhile;
+         block frame_;
+         frame_.m_eKind      = block::eKindWhile;
          frame_.m_iCondIndex = iCondIndex;
          vectorBlock.push_back(std::move(frame_));
          continue;
@@ -488,9 +487,9 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
       // ---- for -------------------------------------------------------------
       // Syntax:  for <var> = <start>, <limit>, <step>
       // Example: for i = 0, 10, 1
-      if( svKeyword == "for" )
+      if( stringKeyword == "for" )
       {
-         if( svRest.empty() )
+         if( stringRest.empty() )
          {
             return { false, "[code::compile_s] 'for' without arguments at line " + std::to_string(iLine) };
          }
@@ -516,12 +515,12 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
          };
 
          // locate '='
-         size_t uEq = find_char_(svRest, '=');
+         size_t uEq = find_char_(stringRest, '=');
          if( uEq == std::string_view::npos )
             return { false, "[code::compile_s] 'for' missing '=' at line " + std::to_string(iLine) };
 
-         std::string_view svVar       = trim_s(svRest.substr(0, uEq));
-         std::string_view svAfterEq   = trim_s(svRest.substr(uEq + 1));
+         std::string_view svVar       = trim_s(stringRest.substr(0, uEq));
+         std::string_view svAfterEq   = trim_s(stringRest.substr(uEq + 1));
 
          // locate the two commas in the remainder
          size_t uComma1 = find_char_(svAfterEq, ',');
@@ -574,8 +573,8 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
          // emit ForStep AFTER the body (at `end`), and store its expression
          // in the block frame so we can emit it then.
 
-         block_frame_ frame_;
-         frame_.m_eKind         = block_frame_::eKindFor;
+         block frame_;
+         frame_.m_eKind         = block::eKindFor;
          frame_.m_iForCondIndex = iForCondIndex;
          frame_.m_iForStepIndex = -1; // filled when `end` is processed
          frame_.m_stringForVar  = std::string(svVar);
@@ -603,7 +602,7 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
             // the frame by re-using m_vectorBreak as a token-index store — but
             // that conflates types.  Instead we just store a full statement.
             //
-            // Solution: extend block_frame_ with an optional step statement.
+            // Solution: extend block with an optional step statement.
             // Since we cannot change the struct definition here (it is local),
             // we emit a special eKindExpr placeholder statement, remember its
             // index, and overwrite its kind/tokens at `end`.
@@ -669,16 +668,16 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
             statementStep.m_iJump       = iForCondIndex;
 
             // Stash in the frame via the break vector as a raw index trick is
-            // ugly; instead add a dedicated member.  Since we own block_frame_
+            // ugly; instead add a dedicated member.  Since we own block
             // locally and it already has m_iForStepIndex, let's store the
             // statement temporarily in a std::vector<statement> member.
-            // But block_frame_ is a local struct ... add a member there:
+            // But block is a local struct ... add a member there:
             //   statement m_stmtStep;
-            // We cannot modify block_frame_ from here because it was already
+            // We cannot modify block from here because it was already
             // defined above.  So we use a different trick: serialise the step
             // tokens into m_stringForVar with a sentinel, then rebuild at end.
             // This is messy.  The right solution: put `statement m_stmtStep`
-            // into block_frame_ — but that requires moving the definition.
+            // into block — but that requires moving the definition.
             //
             // Given the constraints of this single-file implementation we use
             // the simplest correct approach: emit the step as a normal eKindExpr
@@ -736,14 +735,14 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
       }
 
       // ---- break -----------------------------------------------------------
-      if( svKeyword == "break" )
+      if( stringKeyword == "break" )
       {
          // Find innermost loop frame
          bool bFoundLoop = false;
          for( int32_t i = static_cast<int32_t>(vectorBlock.size()) - 1; i >= 0; --i )
          {
-            if( vectorBlock[i].m_eKind == block_frame_::eKindWhile ||
-                vectorBlock[i].m_eKind == block_frame_::eKindFor )
+            if( vectorBlock[i].m_eKind == block::eKindWhile ||
+                vectorBlock[i].m_eKind == block::eKindFor )
             {
                int32_t iBreakIdx = static_cast<int32_t>(m_vectorStatement.size());
                m_vectorStatement.emplace_back(statement::eKindBreak);
@@ -760,24 +759,23 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
       }
 
       // ---- continue --------------------------------------------------------
-      if( svKeyword == "continue" )
+      if( stringKeyword == "continue" )
       {
          bool bFoundLoop = false;
          for( int32_t i = static_cast<int32_t>(vectorBlock.size()) - 1; i >= 0; --i )
          {
-            if( vectorBlock[i].m_eKind == block_frame_::eKindWhile ||
-                vectorBlock[i].m_eKind == block_frame_::eKindFor )
+            if( vectorBlock[i].m_eKind == block::eKindWhile ||
+                vectorBlock[i].m_eKind == block::eKindFor )
             {
-               int32_t iContIdx = static_cast<int32_t>(m_vectorStatement.size());
+               int32_t iContinueIndex = static_cast<int32_t>(m_vectorStatement.size());
                m_vectorStatement.emplace_back(statement::eKindContinue);
-               vectorBlock[i].m_vectorContinue.push_back(iContIdx);
+               vectorBlock[i].m_vectorContinue.push_back(iContinueIndex);
                bFoundLoop = true;
                break;
             }
          }
 
-         if( bFoundLoop == false )
-            return { false, "[code::compile_s] 'continue' outside loop at line " + std::to_string(iLine) };
+         if( bFoundLoop == false ) { return { false, "[code::compile_s] 'continue' outside loop at line " + std::to_string(iLine) }; }
 
          continue;
       }
