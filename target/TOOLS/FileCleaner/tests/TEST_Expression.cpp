@@ -41,7 +41,7 @@ if x > 0
 begin
     y = x * 2
 end
-else
+else << NOT WORKING
 begin
     y = 0
 end
@@ -51,7 +51,7 @@ begin
     x = x + 1
 end
 
-for i = 1, 10, 1
+for i = 1, 10, 1 << NOT WORKING
 begin
     x = x + i
 end
@@ -70,7 +70,7 @@ end
    gd::expression::runtime runtime_;
    runtime_.add("x", int64_t(0));
    gd::expression::code code_;
-   auto [bOk, stringError] = code_.compile_s(stringCode.data(), runtime_);
+   auto [bOk, stringError] = code_.compile(stringCode, runtime_);
 
    if( bOk )
    {

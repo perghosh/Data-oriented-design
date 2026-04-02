@@ -217,20 +217,18 @@ std::pair<std::string_view, std::string_view> code::split_keyword_s(std::string_
    return { svKeyword, svRest };
 }
 
-/**
+/** ------------------------------------------------------------------------- compile_expression_s
  * @brief Compile one expression string into a postfix token vector.
  *
  * Uses `tag_formula_keyword` so keyword operators (and, or, not, …) work
- * inside conditions and assignments, then runs `compile_s` for the shunting-
+ * inside conditions and assignments, then runs `compile` for the shunting-
  * yard reorder.
  */
-std::pair<bool, std::string> code::compile_expression_s(
-   std::string_view           stringExpr,
-   std::vector<token>&        vectorOut)
+std::pair<bool, std::string> code::compile_expression_s( std::string_view stringExpression, std::vector<token>& vectorOut)
 {
    std::vector<token> vectorInfix;
 
-   auto [bParse, stringParseError] = token::parse_s(stringExpr, vectorInfix, tag_formula_keyword{});
+   auto [bParse, stringParseError] = token::parse_s(stringExpression, vectorInfix, tag_formula{});
    if( bParse == false ) { return { false, stringParseError }; }
    if( vectorInfix.empty() ) { return { true, {} }; }
 
@@ -256,7 +254,7 @@ std::pair<bool, std::string> code::compile_expression_s(
  * @param runtime_   runtime context
  * @return { true, "" } on success, { false, error-message } on failure
  */
-std::pair<bool, std::string> code::compile_s(const char* piszBegin, const char* piszEnd, runtime& runtime_)
+std::pair<bool, std::string> code::compile(const char* piszBegin, const char* piszEnd, runtime& runtime_)
 {
    m_vectorStatement.clear();
 

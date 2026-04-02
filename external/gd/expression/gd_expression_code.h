@@ -243,10 +243,13 @@ struct code
 
    /// @brief compile source text into statements; runtime is used only for
    ///        variable lookup during expression pre-compilation (not execution)
-   std::pair<bool, std::string> compile_s(const std::string_view& stringSource, runtime& runtime_);
+   std::pair<bool, std::string> compile(const std::string_view& stringSource, runtime& runtime_);
 
    /// @brief compile from raw char pointers
-   std::pair<bool, std::string> compile_s(const char* piszBegin, const char* piszEnd, runtime& runtime_);
+   std::pair<bool, std::string> compile(const char* piszBegin, const char* piszEnd, runtime& runtime_);
+
+   /// @brief compile from null-terminated C string (convenience overload)
+   std::pair<bool, std::string> compile(const char* piszSource, runtime& runtime_);
 
    // ## execute ---------------------------------------------------------------
 
@@ -303,11 +306,14 @@ struct code
    ///        returns { keyword, rest } where keyword is empty if no keyword found
    static std::pair<std::string_view, std::string_view> split_keyword_s(std::string_view stringLine);
 
-   /// @brief compile one expression line into a postfix token vector
-   ///        Returns false + error string when token::parse_s / compile_s fails
-   static std::pair<bool, std::string> compile_expression_s(
-      std::string_view stringExpr,
-      std::vector<token>& vectorOut);
+   /// @brief compile one assignment / plain expression line (uses tag_formula so
+   ///        a lone '=' is treated as assignment, not equality)
+   static std::pair<bool, std::string> compile_expression_s( std::string_view stringExpr, std::vector<token>& vectorOut);
+
+   /// @brief compile a condition expression (uses tag_formula_keyword so
+   ///        keyword operators like 'and', 'or', 'not' are recognised and
+   ///        a lone '=' is treated as '==')
+   static std::pair<bool, std::string> compile_condition_s( std::string_view stringExpr, std::vector<token>& vectorOut);
 };
 
 // ---------------------------------------------------------------------------
@@ -315,9 +321,9 @@ struct code
 // ---------------------------------------------------------------------------
 
 /// @brief compile from std::string_view - thin redirect to pointer overload
-inline std::pair<bool, std::string> code::compile_s(const std::string_view& stringSource, runtime& runtime_)
+inline std::pair<bool, std::string> code::compile(const std::string_view& stringSource, runtime& runtime_)
 {
-   return compile_s(stringSource.data(), stringSource.data() + stringSource.size(), runtime_);
+   return compile(stringSource.data(), stringSource.data() + stringSource.size(), runtime_);
 }
 
 _GD_EXPRESSION_END

@@ -423,8 +423,10 @@ std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* p
  * @brief Parses a string into tokens with keyword operator support.
  *
  * This function processes the input string and generates a vector of tokens.
- * It handles keyword operators (and, or, not, in, is, xor, mod) in addition
+ * It handles keyword operators (and, or, not, in, is, xor, mod) in addition  <<<< ---- NOTE: this woks similar to SQL WHERE expression with same key words
  * to all standard token types.
+ * 
+ * @TODO: Add support for assign variable because now this keyword parsning do not have a good marker to handle this.
  *
  * @param piszBegin Pointer to the beginning of the input string.
  * @param piszEnd Pointer to the end of the input string.
