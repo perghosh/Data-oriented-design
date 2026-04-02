@@ -201,6 +201,8 @@ struct runtime
 
    int find_variable(const std::string_view& stringName) const;
    const value::variant_t& get_variable(size_t uIndex) const;
+   value::variant_t get_variable( std::string_view stringName ) const;
+
    void set_variable(size_t uIndex, const value::variant_t& value_) { m_vectorVariable[uIndex].second = value_; }
    void set_variable(const std::string_view& stringName, const value::variant_t& value_);
 

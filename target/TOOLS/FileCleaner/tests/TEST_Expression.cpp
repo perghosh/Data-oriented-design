@@ -11,6 +11,7 @@
 #include "gd/io/gd_io_archive_stream.h"
 #include "gd/io/gd_io_repository_stream.h"
 #include "gd/expression/gd_expression_token.h"
+#include "gd/expression/gd_expression_code.h"
 
 #include "main.h"
 
@@ -31,6 +32,58 @@ auto valueResult = gd::expression::token::calculate_s( "10 - -10" );
 auto valueResult = gd::expression::token::calculate_s("min( 100, 200 ) + 999 + max( 10, 30 )");
 auto valueResult = gd::expression::token::calculate_s( "10 >= x", {{"x", 10}} );
 */
+
+TEST_CASE("[expression] code", "[expression]") {
+/*
+std::string stringCode = R"(
+x = 1
+if x > 0
+begin
+    y = x * 2
+end
+else
+begin
+    y = 0
+end
+
+while x < 10
+begin
+    x = x + 1
+end
+
+for i = 1, 10, 1
+begin
+    x = x + i
+end
+)";
+*/
+
+std::string stringCode = R"(
+x = 1
+if x > 0
+begin
+    y = x * 2
+end
+)";
+
+
+   gd::expression::runtime runtime_;
+   runtime_.add("x", int64_t(0));
+   gd::expression::code code_;
+   auto [bOk, stringError] = code_.compile_s(stringCode.data(), runtime_);
+
+   if( bOk )
+   {
+       gd::expression::value result_;
+       code_.execute(runtime_, &result_);
+       gd::expression::value y_( runtime_.get_variable( "y" ) );
+       std::cout << "y = " << y_.as_string() << std::endl;
+       gd::expression::value x_( runtime_.get_variable( "x" ) );
+       std::cout << "x = " << x_.as_string() << std::endl;
+   }
+
+}
+
 
 TEST_CASE("[expression] vararg", "[expression]") {
    {

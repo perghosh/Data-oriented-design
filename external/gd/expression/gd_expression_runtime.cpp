@@ -85,6 +85,14 @@ const value::variant_t& runtime::get_variable(size_t uIndex) const
    return m_vectorVariable[uIndex].second;
 }
 
+/// @brief get variable value by name, returns value or nullptr if not found
+value::variant_t runtime::get_variable( std::string_view stringName ) const
+{
+   int iIndex = find_variable(stringName);
+   if( iIndex >= 0 ) return get_variable(iIndex);
+   return nullptr;
+}
+
 bool runtime::find_value(const std::string_view& stringName, value::variant_t* pvariant_) 
 {
    bool bFound = false; // if variable is found or not
