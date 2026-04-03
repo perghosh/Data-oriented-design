@@ -1026,7 +1026,7 @@ std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn
       {
          // ## Special handling for variables followed by = operator to treat as assignment rather than comparison
          auto itPeek = itToken + 1;
-         if( itPeek != vectorIn.end() && itPeek->get_token_type() == token_type_s("OPERATOR") && itPeek->get_name() == "=" )
+         if( itPeek != vectorIn.end() && itPeek->get_token_type() == token_type_s("OPERATOR") && itPeek->get_name() == "="  )
          {
             auto tokenAssign = *itToken;
             tokenAssign.set_assign();
@@ -1474,6 +1474,13 @@ value evaluate_operator_g(const std::string_view& stringOperator, value& valueLe
    // Switch on the first character for efficiency
    switch (stringOperator[0]) {
    case '+': 
+      /* @TODO: Implement += support if it is possible to do so and keep speed
+      if( stringOperator.size() > 1 && stringOperator[1] == '=' ) 
+      { 
+         add( valueLeft, valueRight, pruntime ); 
+      }
+      else return add(valueLeft, valueRight, pruntime);
+      */
       return add(valueLeft, valueRight, pruntime);
 
    case '-': 

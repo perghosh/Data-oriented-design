@@ -55,6 +55,56 @@ VALUE add(VALUE& l_, VALUE& r_, RUNTIME* pruntime)
    return VALUE();
 }
 
+template<typename VALUE, typename RUNTIME>
+VALUE add_assign(VALUE& l_, VALUE& r_, RUNTIME* pruntime)
+{                                                                             assert( pruntime != nullptr );
+   // first value need to be a variable, so we can assign the result back to it, if not then we can not perform the operation
+   if( r_.is_string() == false ) 
+   { 
+      if(pruntime != nullptr) pruntime->add("[add_assign] - Not a variable", tag_error{});
+      return VALUE();
+   }
+
+   std::string_view stringVariableName = l_.get_string();
+
+   // ## find variable in runtime, if not found then we can not perform the operation
+   auto iIndex = pruntime->find_variable( stringVariableName );
+   if( iIndex < 0 )
+   { 
+      if(pruntime != nullptr) pruntime->add("[add_assign] - Variable not found: " + std::string(stringVariableName), tag_error{});
+      return VALUE();
+   }
+
+   VALUE value_(pruntime->get_variable( stringVariableName ));
+   
+   VALUE valueResult;
+   bool bOk = value_.synchronize(r_, pruntime);
+   if(bOk == true) 
+   {
+      if( value_.is_integer() == true )
+      {
+         VALUE v_(value_.get_integer() + r_.get_integer());
+         valueResult = v_;
+      }
+      else if( value_.is_double() == true )
+      {
+         VALUE v_(value_.get_double() + r_.get_double());
+         valueResult = v_;
+      }
+      else if( value_.is_string() == true ) 
+      {
+         auto stringResult = value_.get_string() + r_.get_string();
+         VALUE v_(stringResult);
+         valueResult = v_;
+      }
+
+      pruntime->set_variable( iIndex, valueResult );
+   }
+
+   return valueResult;
+}
+
+
 /** ---------------------------------------------------------------------------
  * @brief Subtracts one VALUE object from another
  * 
