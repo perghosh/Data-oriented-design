@@ -86,6 +86,7 @@ end
 
 TEST_CASE("[expression] code lua", "[expression]") {
 std::string stringCode = R"(
+
 x = 1
 if x > 2 then
   y = x * 2;
@@ -101,6 +102,10 @@ end
 
 counter = 0
 while counter < 10 do
+  counter = counter + 1;
+end
+
+while counter < 20 do
   counter = counter + 1;
 end
 

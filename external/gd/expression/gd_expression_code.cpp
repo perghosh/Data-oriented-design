@@ -1270,10 +1270,7 @@ std::pair<bool, std::string> code::compile_lua(const char* piszBegin, const char
       // Delta defaults to 1 when omitted.  Range is inclusive (Lua semantics).
       if( stringKeyword == "for" )
       {
-         if( stringRest.empty() )
-         {
-            return { false, "[code::compile_lua] 'for' without arguments at line " + std::to_string(iLine) };
-         }
+         if( stringRest.empty() ) { return { false, "[code::compile_lua] 'for' without arguments at line " + std::to_string(iLine) }; }
 
          // Strip trailing 'do' from the remainder
          std::string_view stringForHeader = stringRest;
