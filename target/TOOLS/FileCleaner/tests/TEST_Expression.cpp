@@ -142,6 +142,10 @@ x = 3; z = 5
 
 c = 'h'
 
+g = "b"
+
+g = g + c
+
 if x > 2 then
   y = x * 2;
   y = y * x * 2;
@@ -188,6 +192,8 @@ z = x * y
       std::cout << "z = " << z_.as_string() << std::endl;
       gd::expression::value c_( runtime_.get_variable( "c" ) );
       std::cout << "c = " << c_.as_string() << std::endl;
+      gd::expression::value g_(runtime_.get_variable("g"));
+      std::cout << "g = " << g_.as_string() << std::endl;
       gd::expression::value counter_( runtime_.get_variable( "counter" ) );
       std::cout << "counter = " << counter_.as_string() << std::endl;
    }
