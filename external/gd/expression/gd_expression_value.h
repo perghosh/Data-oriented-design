@@ -26,7 +26,7 @@
 _GD_EXPRESSION_BEGIN 
 
 /**
- * \brief
+ * \brief any_pointer stores a named pointer to object used in script
  *
  *
  */
