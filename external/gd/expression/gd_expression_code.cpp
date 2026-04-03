@@ -42,10 +42,10 @@ _GD_EXPRESSION_BEGIN
 
 namespace {
 
-/// Characters that count as whitespace for line trimming
-inline bool is_whitespace_(char c)
+/// Characters that count as whitespace for line trimming @TODO  Optimize this
+inline bool is_whitespace_(char i)
 {
-   return c == ' ' || c == '\t' || c == '\r' || c == '\f' || c == '\v';
+   return i == ' ' || i == '\t' || i == '\r' || i == '\f' || i == '\v' || i == ';';
 }
 
 /// True when c opens a string literal (' or ")
@@ -319,10 +319,7 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
       // ---- end -------------------------------------------------------------
       if( stringKeyword == "end" )
       {
-         if( vectorBlock.empty() )
-         {
-            return { false, "[code::compile_s] unexpected 'end' without matching 'begin' at line " + std::to_string(iLine) };
-         }
+         if( vectorBlock.empty() ) { return { false, "[code::compile_s] unexpected 'end' without matching 'begin' at line " + std::to_string(iLine) }; }
 
          block frame_ = std::move(vectorBlock.back());
          vectorBlock.pop_back();
@@ -334,20 +331,17 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
          case block::eKindIf:
          {
             // Patch the if-condition jump to land HERE (first statement after block)
-            if( frame_.m_iCondIndex >= 0 )
-               m_vectorStatement[frame_.m_iCondIndex].set_jump(iHere);
+            if( frame_.m_iCondIndex >= 0 ) { m_vectorStatement[frame_.m_iCondIndex].set_jump(iHere); }
 
             // Patch any preceding ElseJump to also land HERE
-            if( frame_.m_iElseJumpIndex >= 0 )
-               m_vectorStatement[frame_.m_iElseJumpIndex].set_jump(iHere);
+            if( frame_.m_iElseJumpIndex >= 0 ) { m_vectorStatement[frame_.m_iElseJumpIndex].set_jump(iHere); }
             break;
          }
 
          case block::eKindElse:
          {
             // Patch the ElseJump (emitted at end of if-body) to land HERE
-            if( frame_.m_iElseJumpIndex >= 0 )
-               m_vectorStatement[frame_.m_iElseJumpIndex].set_jump(iHere);
+            if( frame_.m_iElseJumpIndex >= 0 ) { m_vectorStatement[frame_.m_iElseJumpIndex].set_jump( iHere ); }
             break;
          }
 
@@ -359,16 +353,13 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
             iHere = static_cast<int32_t>(m_vectorStatement.size()); // re-compute after push
 
             // Patch while condition to jump past loop-back
-            if( frame_.m_iCondIndex >= 0 )
-               m_vectorStatement[frame_.m_iCondIndex].set_jump(iHere);
+            if( frame_.m_iCondIndex >= 0 ) { m_vectorStatement[frame_.m_iCondIndex].set_jump(iHere); }
 
             // Patch break statements
-            for( int32_t iBreak : frame_.m_vectorBreak )
-               m_vectorStatement[iBreak].set_jump(iHere);
+            for( int32_t iBreak : frame_.m_vectorBreak ) { m_vectorStatement[iBreak].set_jump(iHere); }
 
             // Patch continue statements -> jump to while condition
-            for( int32_t iCont : frame_.m_vectorContinue )
-               m_vectorStatement[iCont].set_jump(frame_.m_iCondIndex);
+            for( int32_t iCont : frame_.m_vectorContinue ) { m_vectorStatement[iCont].set_jump(frame_.m_iCondIndex); }
 
             break;
          }
@@ -807,6 +798,659 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
 
 
 // ===========================================================================
+// code::compile_lua
+// ===========================================================================
+
+/** -------------------------------------------------------------------------- lua_translate_operators_s
+ * @brief Replace Lua-specific operator spellings with expression-engine equivalents.
+ *
+ * The only substitution currently needed is `~=` (Lua not-equal) -> `!=`.
+ * String literals inside the expression are skipped so their content is never
+ * modified.
+ *
+ * @param stringExpression  raw Lua expression text
+ * @return                  expression with Lua operators replaced
+ */
+std::string code::lua_translate_operators_s(std::string_view stringExpression)
+{
+   std::string stringResult;
+   stringResult.reserve(stringExpression.size());
+
+   const char* pisz_    = stringExpression.data();
+   const char* piszEnd_ = pisz_ + stringExpression.size();
+
+   while( pisz_ < piszEnd_ )
+   {
+      char iCharacter = *pisz_;
+
+      // ## skip string literals verbatim so we never alter their content
+      if( is_string_delimiter_(iCharacter) )
+      {
+         const char* piszAfter = scan_string_end_s(pisz_, piszEnd_);
+         stringResult.append(pisz_, static_cast<size_t>(piszAfter - pisz_));
+         pisz_ = piszAfter;
+         continue;
+      }
+
+      // ## translate ~= to !=
+      if( iCharacter == '~' && (pisz_ + 1) < piszEnd_ && pisz_[1] == '=' )
+      {
+         stringResult += "!=";
+         pisz_ += 2;
+         continue;
+      }
+
+      stringResult += iCharacter;
+      ++pisz_;
+   }
+
+   return stringResult;
+}
+
+
+/** -------------------------------------------------------------------------- compile_lua
+ * @brief Compile Lua-syntax source into the flat statement list.
+ *
+ * ### Lua syntax handled
+ *
+ * ```lua
+ * if condition then
+ *     -- body
+ * elseif condition then
+ *     -- body
+ * else
+ *     -- body
+ * end
+ *
+ * while condition do
+ *     -- body
+ * end
+ *
+ * repeat
+ *     -- body
+ * until condition
+ *
+ * for i = first, last [, delta] do
+ *     -- body
+ * end
+ *
+ * break
+ * ```
+ *
+ * ### Block delimiters
+ *
+ * | `compile`  | `compile_lua` |
+ * |------------|---------------|
+ * | `begin`    | `then` / `do` |
+ * | `end`      | `end`         |
+ *
+ * `then` and `do` close the control-flow header line and open the body —
+ * they may appear at the end of the same line as the keyword:
+ * `if x > 0 then` is one logical line, not two.
+ *
+ * ### repeat / until
+ *
+ * Compiled as: body statements, then an inverted-condition `eKindIf` that
+ * jumps PAST the loop when the `until` condition is TRUE (loop exits when
+ * condition becomes true), followed by an `eKindLoopBack` to the first body
+ * statement.
+ *
+ * Layout:
+ * ```
+ * [B]   <body statements>
+ * [U]   eKindIf(until_cond)  -> [U+2]  (exits when condition TRUE)
+ * [U+1] eKindLoopBack        -> [B]
+ * [U+2] (past loop)
+ * ```
+ *
+ * @param piszBegin  start of Lua source text
+ * @param piszEnd    one past end of source text
+ * @param runtime_   runtime context
+ * @return { true, "" } on success, { false, error-message } on failure
+ */
+std::pair<bool, std::string> code::compile_lua(const char* piszBegin, const char* piszEnd, runtime& runtime_)
+{
+   m_vectorStatement.clear();
+
+   std::vector<block> vectorBlock;
+
+   const char* piszPosition = piszBegin;
+   int32_t iLine = 0;                                                         ///< line counter for error messages
+
+   while( piszPosition < piszEnd )
+   {
+      // ### Skip leading horizontal whitespace on a line --------------------
+
+      while( piszPosition < piszEnd && is_whitespace_(*piszPosition) ) { ++piszPosition; }
+
+      if( piszPosition >= piszEnd ) { break; }
+
+      // blank line
+      if( *piszPosition == '\n' ) { ++piszPosition; ++iLine; continue; }
+
+      // ### Read one logical line -------------------------------------------
+
+      const char* piszLineEnd = nullptr;
+      std::string_view stringLine    = scan_line_end_s(piszPosition, piszEnd, &piszLineEnd);
+      std::string_view stringTrimmed = trim_s(stringLine);
+
+      // advance past terminator
+      piszPosition = piszLineEnd;
+      if( piszPosition < piszEnd && *piszPosition == '\n' ) { ++iLine; ++piszPosition; }
+
+      if( stringTrimmed.empty() ) { continue; }
+
+      // ### Split into leading keyword and remainder -------------------------
+
+      auto [stringKeyword, stringRest] = split_keyword_s( stringTrimmed );      // @TODO: Optimise: speed upp checks for keywords
+
+      // ---- end -------------------------------------------------------------
+      // Closes: if/elseif/else chain, while, repeat, for
+      if( stringKeyword == "end" )
+      {
+         if( vectorBlock.empty() ) { return { false, "[code::compile_lua] unexpected 'end' at line " + std::to_string(iLine) }; }
+
+         block frame_ = std::move(vectorBlock.back());
+         vectorBlock.pop_back();
+
+         int32_t iHere = static_cast<int32_t>(m_vectorStatement.size());
+
+         switch( frame_.m_eKind )
+         {
+         case block::eKindIf:
+         {
+            // Patch the last condition (if or elseif) to jump HERE
+            if( frame_.m_iCondIndex >= 0 ) { m_vectorStatement[frame_.m_iCondIndex].set_jump(iHere); }
+
+            // Patch the most-recent else-jump to land HERE
+            if( frame_.m_iElseJumpIndex >= 0 ) { m_vectorStatement[frame_.m_iElseJumpIndex].set_jump(iHere); }
+
+            // Patch any earlier elseif-chain else-jumps (stored in m_vectorBreak)
+            // @NOTE m_vectorBreak is reused for ElseJump chain indices in compile_lua
+            for( int32_t iElseJump : frame_.m_vectorBreak ) { m_vectorStatement[iElseJump].set_jump( iHere ); }
+
+            break;
+         }
+
+         case block::eKindElse:
+         {
+            // Patch the else-body jump to land HERE
+            if( frame_.m_iElseJumpIndex >= 0 ) { m_vectorStatement[frame_.m_iElseJumpIndex].set_jump(iHere); }
+
+            // Patch earlier elseif-chain jumps (also stored in m_vectorBreak)
+            for( int32_t iElseJump : frame_.m_vectorBreak ) { m_vectorStatement[iElseJump].set_jump(iHere); }
+
+            break;
+         }
+
+         case block::eKindWhile:
+         {
+            // Emit loop-back to while condition
+            statement stmtLoopBack_(statement::eKindLoopBack, frame_.m_iCondIndex);
+            m_vectorStatement.push_back(std::move(stmtLoopBack_));
+            iHere = static_cast<int32_t>(m_vectorStatement.size());
+
+            // Patch while condition to jump past loop
+            if( frame_.m_iCondIndex >= 0 ) { m_vectorStatement[frame_.m_iCondIndex].set_jump(iHere); }
+
+            for( int32_t iBreak : frame_.m_vectorBreak ) { m_vectorStatement[iBreak].set_jump( iHere ); }
+
+            for( int32_t iContinue : frame_.m_vectorContinue ) { m_vectorStatement[iContinue].set_jump( frame_.m_iCondIndex ); }
+
+            break;
+         }
+
+         case block::eKindFor:
+         {
+            // Emit loop-back to ForStep (which then jumps to ForCond)
+            statement stmtLoopBack_(statement::eKindLoopBack, frame_.m_iForStepIndex);
+            m_vectorStatement.push_back(std::move(stmtLoopBack_));
+            iHere = static_cast<int32_t>(m_vectorStatement.size());
+
+            // Patch ForCond false-exit to land HERE
+            if( frame_.m_iForCondIndex >= 0 )
+               m_vectorStatement[frame_.m_iForCondIndex].set_jump(iHere);
+
+            for( int32_t iBreak : frame_.m_vectorBreak )
+               m_vectorStatement[iBreak].set_jump(iHere);
+
+            for( int32_t iContinue : frame_.m_vectorContinue )
+               m_vectorStatement[iContinue].set_jump(frame_.m_iForStepIndex);
+
+            break;
+         }
+         } // switch frame kind
+
+         continue;
+      }
+
+      // ---- if --------------------------------------------------------------
+      // Syntax: if <condition> then
+      if( stringKeyword == "if" )
+      {
+         if( stringRest.empty() ) { return { false, "[code::compile_lua] 'if' without condition at line " + std::to_string(iLine) }; }
+
+         // Strip trailing 'then' keyword — it may appear at end of condition
+         std::string_view stringCondition = stringRest;
+         {
+            auto [stringLastKeyword, stringAfterLast] = split_keyword_s(stringCondition);
+            // walk to last token: find 'then' at the tail
+            // Simple approach: if the last word is 'then', remove it
+            if( stringCondition.size() >= 4 )
+            {
+               std::string_view stringTail = trim_s(stringCondition.substr(stringCondition.rfind(' ') == std::string_view::npos ? 0 : stringCondition.rfind(' ')));
+               if( stringTail == "then" )
+               {
+                  size_t uThenPos = stringCondition.rfind("then");
+                  stringCondition = trim_s(stringCondition.substr(0, uThenPos));
+               }
+            }
+         }
+
+         // std::string stringTranslated = lua_translate_operators_s(stringCondition); // @TODO: For later, now use C++ operator
+         std::vector<token> vectorCondition;
+         auto [bOk, stringErr] = compile_expression_s(stringCondition, vectorCondition);
+         if( bOk == false ) { return { false, stringErr }; }
+
+         int32_t iCondIndex = static_cast<int32_t>(m_vectorStatement.size());
+         statement stmtIf_(statement::eKindIf, std::move(vectorCondition));
+         stmtIf_.m_stringSource = std::string(stringTrimmed);
+         m_vectorStatement.push_back(std::move(stmtIf_));
+
+         block frame_;
+         frame_.m_eKind      = block::eKindIf;
+         frame_.m_iCondIndex = iCondIndex;
+         vectorBlock.push_back(std::move(frame_));
+         continue;
+      }
+
+      // ---- elseif ----------------------------------------------------------
+      // Syntax: elseif <condition> then
+      // Closes the previous if/elseif body and opens a new condition branch.
+      if( stringKeyword == "elseif" )
+      {
+         if( vectorBlock.empty() || vectorBlock.back().m_eKind != block::eKindIf )
+         {
+            return { false, "[code::compile_lua] 'elseif' without matching 'if' at line " + std::to_string(iLine) };
+         }
+         if( stringRest.empty() )
+         {
+            return { false, "[code::compile_lua] 'elseif' without condition at line " + std::to_string(iLine) };
+         }
+
+         // ## End the current if/elseif body with an unconditional jump.
+         // This jump will be chained into a list so all branches skip past the
+         // entire if/elseif/else/end block.  We store it in m_iElseJumpIndex
+         // by linking: the new ElseJump's jump will be patched at the NEXT
+         // elseif / else / end.  To support a chain of elseif branches we
+         // keep a vector of pending ElseJump indices in the block frame.
+         // Because block only stores one m_iElseJumpIndex we emit a new jump,
+         // patch the previous condition's false-branch to land at the new
+         // elseif condition, then record the new jump index.
+
+         int32_t iElseJumpIndex = static_cast<int32_t>(m_vectorStatement.size());
+         m_vectorStatement.emplace_back(statement::eKindElseJump); // will be patched at end
+
+         int32_t iNewCondStart = static_cast<int32_t>(m_vectorStatement.size());
+
+         // Patch the PREVIOUS condition's false-jump to land here (at the new elseif condition)
+         block& frame_ = vectorBlock.back();
+         if( frame_.m_iCondIndex >= 0 )
+            m_vectorStatement[frame_.m_iCondIndex].set_jump(iNewCondStart);
+
+         // The previous ElseJump still needs patching; collect it alongside any earlier ones.
+         // We reuse m_vectorBreak to store pending ElseJump indices (they will all be
+         // patched to the same final destination at `end`).
+         if( frame_.m_iElseJumpIndex >= 0 )
+            frame_.m_vectorBreak.push_back(frame_.m_iElseJumpIndex); // @NOTE reusing m_vectorBreak for ElseJump chain
+
+         frame_.m_iElseJumpIndex = iElseJumpIndex;
+
+         // ## Compile the elseif condition
+         std::string_view stringCondition = stringRest;
+         {
+            size_t uThenPos = stringCondition.rfind("then");
+            if( uThenPos != std::string_view::npos )
+               stringCondition = trim_s(stringCondition.substr(0, uThenPos));
+         }
+
+         //std::string stringTranslated = lua_translate_operators_s( stringCondition ); // @TODO: For later, now use C++ operator
+         std::vector<token> vectorCondition;
+         auto [bOk, stringErr] = compile_expression_s(stringCondition, vectorCondition);
+         if( bOk == false ) { return { false, stringErr }; }
+
+         int32_t iCondIndex = static_cast<int32_t>(m_vectorStatement.size());
+         statement stmtElseIf_(statement::eKindIf, std::move(vectorCondition));
+         stmtElseIf_.m_stringSource = std::string(stringTrimmed);
+         m_vectorStatement.push_back(std::move(stmtElseIf_));
+
+         frame_.m_iCondIndex = iCondIndex; // frame stays on stack, condition index updated
+         continue;
+      }
+
+      // ---- else ------------------------------------------------------------
+      if( stringKeyword == "else" )
+      {
+         if( vectorBlock.empty() || vectorBlock.back().m_eKind != block::eKindIf )
+         {
+            return { false, "[code::compile_lua] 'else' without matching 'if' at line " + std::to_string(iLine) };
+         }
+
+         // Emit the end-of-if-body unconditional jump
+         int32_t iElseJumpIndex = static_cast<int32_t>(m_vectorStatement.size());
+         m_vectorStatement.emplace_back(statement::eKindElseJump);
+
+         int32_t iElseBodyStart = static_cast<int32_t>(m_vectorStatement.size());
+
+         block& frame_ = vectorBlock.back();
+
+         // Patch the last condition's false-jump to land at else-body start
+         if( frame_.m_iCondIndex >= 0 )
+            m_vectorStatement[frame_.m_iCondIndex].set_jump(iElseBodyStart);
+
+         // Collect any pending ElseJumps from elseif chain into the frame's break list
+         if( frame_.m_iElseJumpIndex >= 0 )
+            frame_.m_vectorBreak.push_back(frame_.m_iElseJumpIndex);
+
+         frame_.m_eKind          = block::eKindElse;
+         frame_.m_iCondIndex     = -1;
+         frame_.m_iElseJumpIndex = iElseJumpIndex; // this one gets patched at `end`
+         continue;
+      }
+
+      // ---- while -----------------------------------------------------------
+      // Syntax: while <condition> do
+      if( stringKeyword == "while" )
+      {
+         if( stringRest.empty() )
+         {
+            return { false, "[code::compile_lua] 'while' without condition at line " + std::to_string(iLine) };
+         }
+
+         // Strip trailing 'do'
+         std::string_view stringCondition = stringRest;
+         {
+            size_t uDoPos = stringCondition.rfind("do");
+            if( uDoPos != std::string_view::npos )
+            {
+               // only strip if it is a standalone word
+               bool bWordBoundaryBefore = (uDoPos == 0 || is_whitespace_(stringCondition[uDoPos - 1]));
+               bool bWordBoundaryAfter  = ((uDoPos + 2) >= stringCondition.size() || is_whitespace_(stringCondition[uDoPos + 2]));
+               if( bWordBoundaryBefore && bWordBoundaryAfter )
+                  stringCondition = trim_s(stringCondition.substr(0, uDoPos));
+            }
+         }
+
+         // std::string stringTranslated = lua_translate_operators_s(stringCondition); @TODO: For later, now use C++ operator
+         std::vector<token> vectorCondition;
+         auto [bOk, stringErr] = compile_expression_s(stringCondition, vectorCondition);
+         if( bOk == false ) { return { false, stringErr }; }
+
+         int32_t iCondIndex = static_cast<int32_t>(m_vectorStatement.size());
+         statement stmtWhile_(statement::eKindWhile, std::move(vectorCondition));
+         stmtWhile_.m_stringSource = std::string(stringTrimmed);
+         m_vectorStatement.push_back(std::move(stmtWhile_));
+
+         block frame_;
+         frame_.m_eKind      = block::eKindWhile;
+         frame_.m_iCondIndex = iCondIndex;
+         vectorBlock.push_back(std::move(frame_));
+         continue;
+      }
+
+      // ---- repeat ----------------------------------------------------------
+      // Syntax: repeat ... until <condition>
+      // The block opener is the `repeat` keyword itself (no `do` / `then`).
+      // Compiled layout:
+      //   [B]   <body statements>
+      //   [U]   eKindIf(until_cond) -> [U+2]   exit when condition TRUE
+      //   [U+1] eKindLoopBack       -> [B]
+      //   [U+2] (past loop)
+      if( stringKeyword == "repeat" )
+      {
+         // Record the body start so we can point LoopBack at it
+         int32_t iBodyStart = static_cast<int32_t>(m_vectorStatement.size());
+
+         // Push a frame that records the body start in m_iCondIndex.
+         // We reuse eKindWhile; at `until` time we switch to a custom patch.
+         block frame_;
+         frame_.m_eKind      = block::eKindWhile;
+         frame_.m_iCondIndex = iBodyStart;          // body start, NOT a condition statement
+         vectorBlock.push_back(std::move(frame_));
+         continue;
+      }
+
+      // ---- until -----------------------------------------------------------
+      // Closes a `repeat` block. Syntax: until <condition>
+      if( stringKeyword == "until" )
+      {
+         if( vectorBlock.empty() || vectorBlock.back().m_eKind != block::eKindWhile )
+         {
+            return { false, "[code::compile_lua] 'until' without matching 'repeat' at line " + std::to_string(iLine) };
+         }
+         if( stringRest.empty() )
+         {
+            return { false, "[code::compile_lua] 'until' without condition at line " + std::to_string(iLine) };
+         }
+
+         block frame_ = std::move(vectorBlock.back());
+         vectorBlock.pop_back();
+
+         int32_t iBodyStart = frame_.m_iCondIndex; // recorded at `repeat` time
+
+         // Compile the until condition; when TRUE the loop exits
+         // std::string stringTranslated = lua_translate_operators_s(stringRest); @TODO: For later, now use C++ operator
+         std::vector<token> vectorCondition;
+         auto [bOk, stringErr] = compile_expression_s(stringRest, vectorCondition);
+         if( bOk == false ) { return { false, stringErr }; }
+
+         // Emit eKindIf(until_cond): true -> jump past loop (past the LoopBack)
+         int32_t iUntilCondIndex = static_cast<int32_t>(m_vectorStatement.size());
+         statement stmtUntilCond_(statement::eKindIf, std::move(vectorCondition));
+         stmtUntilCond_.m_stringSource = std::string(stringTrimmed);
+         m_vectorStatement.push_back(std::move(stmtUntilCond_));
+
+         // Emit LoopBack -> body start
+         statement stmtLoopBack_(statement::eKindLoopBack, iBodyStart);
+         m_vectorStatement.push_back(std::move(stmtLoopBack_));
+
+         int32_t iHere = static_cast<int32_t>(m_vectorStatement.size());
+
+         // Patch the until-condition jump: true -> past LoopBack (iHere)
+         m_vectorStatement[iUntilCondIndex].set_jump(iHere);
+
+         // Patch break statements
+         for( int32_t iBreak : frame_.m_vectorBreak )
+            m_vectorStatement[iBreak].set_jump(iHere);
+
+         continue;
+      }
+
+      // ---- for -------------------------------------------------------------
+      // Syntax: for <var> = <first>, <last> [, <delta>] do
+      // Delta defaults to 1 when omitted.  Range is inclusive (Lua semantics).
+      if( stringKeyword == "for" )
+      {
+         if( stringRest.empty() )
+         {
+            return { false, "[code::compile_lua] 'for' without arguments at line " + std::to_string(iLine) };
+         }
+
+         // Strip trailing 'do' from the remainder
+         std::string_view stringForHeader = stringRest;
+         {
+            size_t uDoPos = stringForHeader.rfind("do");
+            if( uDoPos != std::string_view::npos )
+            {
+               bool bWordBoundaryBefore = (uDoPos == 0 || is_whitespace_(stringForHeader[uDoPos - 1]));
+               bool bWordBoundaryAfter  = ((uDoPos + 2) >= stringForHeader.size() || is_whitespace_(stringForHeader[uDoPos + 2]));
+               if( bWordBoundaryBefore && bWordBoundaryAfter )
+                  stringForHeader = trim_s(stringForHeader.substr(0, uDoPos));
+            }
+         }
+
+         // Scan for '=' and commas, respecting string literals
+         auto find_char_lua_ = [](std::string_view sv, char iChar, size_t uFrom = 0) -> size_t
+         {
+            for( size_t u = uFrom; u < sv.size(); ++u )
+            {
+               if( is_string_delimiter_(sv[u]) )
+               {
+                  ++u;
+                  char iDelim = sv[u - 1];
+                  while( u < sv.size() && sv[u] != iDelim ) { ++u; }
+               }
+               else if( sv[u] == iChar ) { return u; }
+            }
+            return std::string_view::npos;
+         };
+
+         size_t uEqPos = find_char_lua_(stringForHeader, '=');
+         if( uEqPos == std::string_view::npos )
+            return { false, "[code::compile_lua] 'for' missing '=' at line " + std::to_string(iLine) };
+
+         std::string_view stringVar    = trim_s(stringForHeader.substr(0, uEqPos));
+         std::string_view stringAfterEq = trim_s(stringForHeader.substr(uEqPos + 1));
+
+         // First comma separates first from last
+         size_t uComma1 = find_char_lua_(stringAfterEq, ',');
+         if( uComma1 == std::string_view::npos )
+            return { false, "[code::compile_lua] 'for' missing last value at line " + std::to_string(iLine) };
+
+         std::string_view stringFirst = trim_s(stringAfterEq.substr(0, uComma1));
+         std::string_view stringAfterFirst = trim_s(stringAfterEq.substr(uComma1 + 1));
+
+         // Optional second comma separates last from delta
+         size_t uComma2 = find_char_lua_(stringAfterFirst, ',');
+         std::string_view stringLast;
+         std::string_view stringDelta;
+         if( uComma2 == std::string_view::npos )
+         {
+            stringLast  = trim_s(stringAfterFirst);
+            stringDelta = "1"; // Lua default delta
+         }
+         else
+         {
+            stringLast  = trim_s(stringAfterFirst.substr(0, uComma2));
+            stringDelta = trim_s(stringAfterFirst.substr(uComma2 + 1));
+         }
+
+         if( stringVar.empty()   ) return { false, "[code::compile_lua] 'for' empty variable at line " + std::to_string(iLine) };
+         if( stringFirst.empty() ) return { false, "[code::compile_lua] 'for' empty first value at line " + std::to_string(iLine) };
+         if( stringLast.empty()  ) return { false, "[code::compile_lua] 'for' empty last value at line " + std::to_string(iLine) };
+
+         // -- ForInit: var = first
+         {
+            std::string stringInit = std::string(stringVar) + " = " + std::string(stringFirst);
+            std::vector<token> vectorInit;
+            auto [bOk, stringErr] = compile_expression_s(stringInit, vectorInit);
+            if( bOk == false ) { return { false, stringErr }; }
+
+            statement stmtInit_(statement::eKindForInit, std::move(vectorInit));
+            stmtInit_.m_stringSource = std::string(stringTrimmed);
+            m_vectorStatement.push_back(std::move(stmtInit_));
+         }
+
+         // -- ForCond: var <= last  (inclusive, matching Lua semantics)
+         int32_t iForCondIndex = static_cast<int32_t>(m_vectorStatement.size());
+         {
+            std::string stringCond = std::string(stringVar) + " <= " + std::string(stringLast);
+            std::vector<token> vectorCondition;
+            auto [bOk, stringErr] = compile_expression_s(stringCond, vectorCondition);
+            if( bOk == false ) { return { false, stringErr }; }
+
+            statement stmtCond_(statement::eKindForCond, std::move(vectorCondition));
+            m_vectorStatement.push_back(std::move(stmtCond_));
+         }
+
+         // -- ForStep: emitted NOW so we can record its index.
+         // Layout:
+         //   [ForCond]   condition  -> past loop when false
+         //   [ForSkip]   ElseJump   -> body start  (skips step on first entry)
+         //   [ForStep]   step expr  -> ForCond
+         //   [body...]
+         //   [LoopBack]             -> ForStep
+         //   [past loop]
+         int32_t iForStepIndex = static_cast<int32_t>(m_vectorStatement.size()) + 1; // step is at +1 after the skip
+
+         // Emit ForSkip (unconditional jump over ForStep to body start)
+         statement stmtSkip_(statement::eKindElseJump);
+         stmtSkip_.m_iJump = iForStepIndex + 1; // body starts at step+1
+         m_vectorStatement.push_back(std::move(stmtSkip_));
+
+         // Emit ForStep: var = var + delta
+         {
+            std::string stringStep = std::string(stringVar) + " = " + std::string(stringVar) + " + " + std::string(stringDelta);
+            std::vector<token> vectorStep;
+            auto [bOk, stringErr] = compile_expression_s(stringStep, vectorStep);
+            if( bOk == false ) { return { false, stringErr }; }
+
+            statement stmtStep_(statement::eKindForStep, std::move(vectorStep));
+            stmtStep_.m_iJump = iForCondIndex; // step -> cond
+            m_vectorStatement.push_back(std::move(stmtStep_));
+         }                                                                     assert( static_cast<int32_t>(m_vectorStatement.size()) - 1 == iForStepIndex );
+
+         block frame_;
+         frame_.m_eKind         = block::eKindFor;
+         frame_.m_iForCondIndex = iForCondIndex;
+         frame_.m_iForStepIndex = iForStepIndex;
+         vectorBlock.push_back(std::move(frame_));
+         continue;
+      }
+
+      // ---- break -----------------------------------------------------------
+      if( stringKeyword == "break" )
+      {
+         bool bFoundLoop = false;
+         for( int32_t i = static_cast<int32_t>(vectorBlock.size()) - 1; i >= 0; --i )
+         {
+            if( vectorBlock[i].m_eKind == block::eKindWhile ||
+                vectorBlock[i].m_eKind == block::eKindFor )
+            {
+               int32_t iBreakIndex = static_cast<int32_t>(m_vectorStatement.size());
+               m_vectorStatement.emplace_back(statement::eKindBreak);
+               vectorBlock[i].m_vectorBreak.push_back(iBreakIndex);
+               bFoundLoop = true;
+               break;
+            }
+         }
+
+         if( bFoundLoop == false )
+            return { false, "[code::compile_lua] 'break' outside loop at line " + std::to_string(iLine) };
+
+         continue;
+      }
+
+      // ---- plain expression -----------------------------------------------
+      {
+         // std::string stringTranslated = lua_translate_operators_s(stringTrimmed); // @NOTE: keep for later decision on whether to translate operators in expression statements (currently only ~= -> !=)
+         std::vector<token> vectorPostfix;
+         // auto [bOk, stringErr] = compile_expression_s(stringTranslated, vectorPostfix); 
+
+         auto [bOk, stringErr] = compile_expression_s(stringTrimmed, vectorPostfix);
+         if( bOk == false ) { return { false, "[code::compile_lua] expression error at line " + std::to_string(iLine) + ": " + stringErr }; }
+
+         if( vectorPostfix.empty() == false )
+         {
+            statement stmtExpr_(statement::eKindExpr, std::move(vectorPostfix));
+            stmtExpr_.m_stringSource = std::string(stringTrimmed);
+            m_vectorStatement.push_back(std::move(stmtExpr_));
+         }
+      }
+
+   } // while source not exhausted
+
+   // ## patch all pending ElseJump indices in elseif chains
+   // (they are collected in m_vectorBreak of closed if-frames; any still on
+   //  the stack here indicate an unclosed block)
+
+   if( vectorBlock.empty() == false ) { return { false, "[code::compile_lua] " + std::to_string(vectorBlock.size()) + " unclosed block(s) at end of source" }; }
+
+   return { true, {} };
+}
+
+
+// ===========================================================================
 // code::execute
 // ===========================================================================
 
@@ -855,8 +1499,7 @@ std::pair<bool, std::string> code::execute(runtime& runtime_, value* pResult) co
          if( stmt_.has_tokens() )
          {
             auto [bOk, stringErr] = token::calculate_s(stmt_.m_vectorToken, &valueCondition, runtime_);
-            if( bOk == false )
-               return { false, "[code::execute] condition error: " + stringErr };
+            if( bOk == false ) { return { false, "[code::execute] condition error: " + stringErr }; }
          }
 
          if( valueCondition.as_bool() )
@@ -865,8 +1508,7 @@ std::pair<bool, std::string> code::execute(runtime& runtime_, value* pResult) co
          }
          else
          {
-            if( stmt_.m_iJump < 0 )
-               return { false, "[code::execute] unpatched jump in condition statement" };
+            if( stmt_.m_iJump < 0 ) { return { false, "[code::execute] unpatched jump in condition statement" }; }
             iPC = stmt_.m_iJump; // condition false: jump past block
          }
          break;
@@ -878,8 +1520,7 @@ std::pair<bool, std::string> code::execute(runtime& runtime_, value* pResult) co
          if( stmt_.has_tokens() )
          {
             auto [bOk, stringErr] = token::calculate_s(stmt_.m_vectorToken, &valueLast_, runtime_);
-            if( bOk == false )
-               return { false, "[code::execute] for-step error: " + stringErr };
+            if( bOk == false ) { return { false, "[code::execute] for-step error: " + stringErr }; }
          }
 
          if( stmt_.m_iJump < 0 )
@@ -894,8 +1535,7 @@ std::pair<bool, std::string> code::execute(runtime& runtime_, value* pResult) co
       case statement::eKindBreak:
       case statement::eKindContinue:
       {
-         if( stmt_.m_iJump < 0 )
-            return { false, "[code::execute] unpatched unconditional jump" };
+         if( stmt_.m_iJump < 0 ) { return { false, "[code::execute] unpatched unconditional jump" }; }
          iPC = stmt_.m_iJump;
          break;
       }

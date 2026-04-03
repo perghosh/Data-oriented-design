@@ -84,6 +84,32 @@ end
 
 }
 
+TEST_CASE("[expression] code lua", "[expression]") {
+std::string stringCode = R"(
+x = 1
+if x > 0 then
+  y = x * 2;
+  y = y * x * 2;
+end
+)";
+
+
+   gd::expression::runtime runtime_;
+   runtime_.add("x", int64_t(0));
+   gd::expression::code code_;
+   auto [bOk, stringError] = code_.compile_lua(stringCode, runtime_);
+
+   if( bOk )
+   {
+      gd::expression::value result_;
+      code_.execute(runtime_, &result_);
+      gd::expression::value y_( runtime_.get_variable( "y" ) );
+      std::cout << "y = " << y_.as_string() << std::endl;
+      gd::expression::value x_( runtime_.get_variable( "x" ) );
+      std::cout << "x = " << x_.as_string() << std::endl;
+   }
+}
+
 
 TEST_CASE("[expression] vararg", "[expression]") {
    {

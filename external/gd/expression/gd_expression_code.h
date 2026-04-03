@@ -314,6 +314,38 @@ struct code
    ///        keyword operators like 'and', 'or', 'not' are recognised and
    ///        a lone '=' is treated as '==')
    static std::pair<bool, std::string> compile_condition_s( std::string_view stringExpr, std::vector<token>& vectorOut);
+
+   // ## compile_lua -----------------------------------------------------------
+
+   /** -------------------------------------------------------------------------compile_lua
+    * @brief Compile Lua-syntax source text into the flat statement list.
+    *
+    * Accepts a subset of Lua control-flow syntax:
+    * - `if <cond> then ... [elseif <cond> then ...] [else ...] end`
+    * - `while <cond> do ... end`
+    * - `repeat ... until <cond>`
+    * - `for <var> = <first>, <last>[, <delta>] do ... end`  (delta defaults to 1)
+    * - `break`
+    *
+    * All expressions use the same evaluator as `compile`.
+    * Lua's `~=` (not-equal) is translated to `!=` before expression compilation.
+    *
+    * @param piszBegin  start of Lua source text
+    * @param piszEnd    one past end of source text
+    * @param runtime_   runtime context (variables, methods)
+    * @return { true, "" } on success, { false, error-message } on failure
+    */
+   std::pair<bool, std::string> compile_lua(const char* piszBegin, const char* piszEnd, runtime& runtime_);
+
+   /// @brief compile Lua source from string_view
+   std::pair<bool, std::string> compile_lua(const std::string_view& stringSource, runtime& runtime_);
+
+   /// @brief compile Lua source from null-terminated C string
+   std::pair<bool, std::string> compile_lua(const char* piszSource, runtime& runtime_);
+
+   /// @brief translate Lua-specific operator spellings to the expression engine's spelling
+   ///        Currently: `~=` -> `!=`
+   static std::string lua_translate_operators_s(std::string_view stringExpression);
 };
 
 // ---------------------------------------------------------------------------
@@ -324,6 +356,21 @@ struct code
 inline std::pair<bool, std::string> code::compile(const std::string_view& stringSource, runtime& runtime_)
 {
    return compile(stringSource.data(), stringSource.data() + stringSource.size(), runtime_);
+}
+
+/// @brief compile Lua source from std::string_view
+inline std::pair<bool, std::string> code::compile_lua(const std::string_view& stringSource, runtime& runtime_)
+{
+   return compile_lua(stringSource.data(), stringSource.data() + stringSource.size(), runtime_);
+}
+
+/// @brief compile Lua source from null-terminated C string
+inline std::pair<bool, std::string> code::compile_lua(const char* piszSource, runtime& runtime_)
+{
+   if( piszSource == nullptr ) { return { false, "[code::compile_lua] null source pointer" }; }
+   const char* piszEnd = piszSource;
+   while( *piszEnd != '\0' ) { ++piszEnd; }
+   return compile_lua(piszSource, piszEnd, runtime_);
 }
 
 _GD_EXPRESSION_END

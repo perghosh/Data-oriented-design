@@ -84,7 +84,8 @@ constexpr uint8_t puCharacterKeywordGroup_g[0x100] =
  */
 value token::as_value() const 
 {
-   if( get_token_type() == eTokenTypeValue) 
+   auto token_type_value_ = get_token_type();                                 // Get the token type (debug friendly)
+   if( token_type_value_ == eTokenTypeValue) 
    {
       switch (get_value_type()) 
       {
