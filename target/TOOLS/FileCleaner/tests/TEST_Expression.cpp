@@ -130,6 +130,71 @@ end
    }
 }
 
+/*
+  c += 'g'
+
+*/
+
+TEST_CASE("[expression] code lua 2", "[expression]") {
+std::string stringCode = R"(
+
+x = 3; z = 5
+
+c = 'h'
+
+if x > 2 then
+  y = x * 2;
+  y = y * x * 2;
+  
+  c += 'g'
+else 
+  y = 111; y = 1000;
+end
+
+counter = 0
+while counter < 10 do
+  counter = counter + 1;
+  z += counter
+end
+
+counter = 0
+while counter < 10 do
+  counter = counter + 1;
+end
+
+while counter < 20 do
+  counter = counter + 1;
+end
+
+z = x * y
+
+)";
+   std::cout << std::endl;
+
+   gd::expression::runtime runtime_;
+   runtime_.add("x", int64_t(0));
+   gd::expression::code code_;
+   auto [bOk, stringError] = code_.compile_lua(stringCode, runtime_);
+
+   if( bOk )
+   {
+      gd::expression::value result_;
+      code_.execute(runtime_, &result_);
+      gd::expression::value y_( runtime_.get_variable( "y" ) );
+      std::cout << "y = " << y_.as_string() << std::endl;
+      gd::expression::value x_( runtime_.get_variable( "x" ) );
+      std::cout << "x = " << x_.as_string() << std::endl;
+      gd::expression::value z_( runtime_.get_variable( "z" ) );
+      std::cout << "z = " << z_.as_string() << std::endl;
+      gd::expression::value c_( runtime_.get_variable( "c" ) );
+      std::cout << "c = " << c_.as_string() << std::endl;
+      gd::expression::value counter_( runtime_.get_variable( "counter" ) );
+      std::cout << "counter = " << counter_.as_string() << std::endl;
+   }
+
+   std::cout << std::endl;
+}
+
 
 TEST_CASE("[expression] vararg", "[expression]") {
    {
