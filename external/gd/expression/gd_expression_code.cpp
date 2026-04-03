@@ -229,7 +229,7 @@ std::pair<bool, std::string> code::compile_expression_s( std::string_view string
 
    auto [bParse, stringParseError] = token::parse_s(stringExpression, vectorInfix, tag_formula{});
    if( bParse == false ) { return { false, stringParseError }; }
-   if( vectorInfix.empty() ) { return { true, {} }; }
+   if( vectorInfix.empty() == true ) { return { true, {} }; }
 
    auto [bCompile, stringCompileError] = token::compile_s(vectorInfix, vectorOut, tag_postfix{});
    if( bCompile == false ) { return { false, stringCompileError }; }
@@ -1260,8 +1260,7 @@ std::pair<bool, std::string> code::compile_lua(const char* piszBegin, const char
          m_vectorStatement[iUntilCondIndex].set_jump(iHere);
 
          // Patch break statements
-         for( int32_t iBreak : frame_.m_vectorBreak )
-            m_vectorStatement[iBreak].set_jump(iHere);
+         for( int32_t iBreak : frame_.m_vectorBreak ) { m_vectorStatement[iBreak].set_jump(iHere); }
 
          continue;
       }

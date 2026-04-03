@@ -962,8 +962,7 @@ std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn
 {
    constexpr std::size_t uBufferSize = 256;
 
-   alignas(std::max_align_t) 
-   std::array<std::byte, uBufferSize> buffer_{};
+   alignas(std::max_align_t) std::array<std::byte, uBufferSize> buffer_{};
 
    std::pmr::monotonic_buffer_resource pool_{ buffer_.data(), buffer_.size() };
 

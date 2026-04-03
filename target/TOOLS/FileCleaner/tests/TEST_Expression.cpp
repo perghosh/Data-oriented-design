@@ -87,10 +87,23 @@ end
 TEST_CASE("[expression] code lua", "[expression]") {
 std::string stringCode = R"(
 x = 1
-if x > 0 then
+if x > 2 then
   y = x * 2;
   y = y * x * 2;
+else 
+  y = 111; y = 1000;
 end
+
+counter = 0
+while counter < 10 do
+  counter = counter + 1;
+end
+
+counter = 0
+while counter < 10 do
+  counter = counter + 1;
+end
+
 )";
 
 
@@ -107,6 +120,8 @@ end
       std::cout << "y = " << y_.as_string() << std::endl;
       gd::expression::value x_( runtime_.get_variable( "x" ) );
       std::cout << "x = " << x_.as_string() << std::endl;
+      gd::expression::value counter_( runtime_.get_variable( "counter" ) );
+      std::cout << "counter = " << counter_.as_string() << std::endl;
    }
 }
 
