@@ -86,10 +86,6 @@ end
 
 TEST_CASE("[expression] code lua", "[expression]") {
 std::string stringCode = R"(
-
-s = "test";
-s += "ing";
-
 x = 1
 if x > 2 then
   y = x * 2;

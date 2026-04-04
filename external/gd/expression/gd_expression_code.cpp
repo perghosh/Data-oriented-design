@@ -45,13 +45,14 @@ namespace {
 // Character classification bits
 constexpr uint8_t WHITESPACE_BIT       = 0x01;  // space, tab, \r, \f, \v, ;
 constexpr uint8_t STRING_DELIMITER_BIT = 0x02;  // ' and "
+constexpr uint8_t STRING_NEWLINE_BIT   = 0x04;  // \n and ;
 
 // 256-byte lookup table (fits comfortably in L1 cache)
 constexpr uint8_t piCharClass_s[256] =
 {
     // 0x00 - 0x1F  (control characters)
     0,0,0,0,0,0,0,0,
-    0, WHITESPACE_BIT, 0, WHITESPACE_BIT, WHITESPACE_BIT, WHITESPACE_BIT, 0, 0,   // 8:\b  9:\t  10:\n  11:\v  12:\f  13:\r
+    0, WHITESPACE_BIT, STRING_NEWLINE_BIT, WHITESPACE_BIT, WHITESPACE_BIT, WHITESPACE_BIT, 0, 0,   // 8:\b  9:\t  10:\n  11:\v  12:\f  13:\r
 
     0,0,0,0,0,0,0,0,
     0,0,0,0,0,0,0,0,
@@ -61,7 +62,7 @@ constexpr uint8_t piCharClass_s[256] =
     0,0,0,0,0,0,0,0,     // 40-47: ( ) * + , - . /
 
     0,0,0,0,0,0,0,0,     // 48-55: 0-7
-    0,0,0,0,0, WHITESPACE_BIT, 0,0,     // 56-63: 8 9 : ; < = > ?
+    0,0,0, STRING_NEWLINE_BIT, 0,0,0,0,     // 56-63: 8 9 : ; < = > ?     ← ; has STRING_NEWLINE_BIT
 
     0,0,0,0,0,0,0,0,     // 64-71: @ A-G
     0,0,0,0,0,0,0,0,     // 72-79: H-O
@@ -89,10 +90,18 @@ constexpr uint8_t piCharClass_s[256] =
     return (piCharClass_s[static_cast<unsigned char>(c)] & WHITESPACE_BIT) != 0;
 }
 
+[[nodiscard]] inline constexpr bool is_newline_(char c) noexcept
+{
+    return (piCharClass_s[static_cast<unsigned char>(c)] & STRING_NEWLINE_BIT) != 0;
+}
+
 [[nodiscard]] inline bool is_string_delimiter_(char c) noexcept
 {
     return (piCharClass_s[static_cast<unsigned char>(c)] & STRING_DELIMITER_BIT) != 0;
 }
+
+static_assert( is_newline_(';') == true );
+
 /**
  * @brief Internal block-stack entry used during compilation.
  *
@@ -965,7 +974,12 @@ std::pair<bool, std::string> code::compile_lua(const char* piszBegin, const char
       if( piszPosition >= piszEnd ) { break; }
 
       // blank line
-      if( *piszPosition == '\n' ) { ++piszPosition; ++iLine; continue; }
+      if( is_newline_(*piszPosition) ) 
+      { 
+         if( *piszPosition == '\n' ) { ++iLine; }
+         ++piszPosition; 
+         continue; 
+      }
 
       // ### Read one logical line -------------------------------------------
 

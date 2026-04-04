@@ -157,10 +157,12 @@ std::pair<bool, std::string> statement::add( const gd::argument::arguments& argu
 {
    auto result_ = add( argumentsStatement );
 
-   for( auto stringArgument : listArgument )
+   auto uRow = m_ptableStatement->get_row_back(); // get the last added row index
+
+   for( auto name_ : listArgument )
    {
-      auto argument_ = argumentsStatement[stringArgument];
-      if( argument_.is_string() == true && argument_.is_true() ) m_ptableStatement->cell_set( result_.first, stringArgument, argument_.as_string_view() );
+      auto v_ = argumentsStatement[name_].as_variant_view();
+      if( v_.is_true() ) m_ptableStatement->cell_add_argument( uRow, name_, v_ );
    }
 
    return { true, "" };
