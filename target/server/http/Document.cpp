@@ -566,6 +566,9 @@ std::pair<bool, std::string> CDocument::DATABASE_LoadStatements( const gd::argum
       auto result_ =  m_pMQueries->Load( stringStatementFile );               // load statements to query manager, this is used to generate queries from templates
                                                                                                    LOG_DEBUG_RAW( "Database statements loaded from file: " & stringStatementFile & " number of loaded statements " & m_pMQueries->Size() );
       if( result_.first == false  ) { return result_; }
+
+      // ## set property to file with statemets
+      GetApplication()->PROPERTY_Set( "file-statements", stringStatementFile );
    }
 
    return { true, "" };

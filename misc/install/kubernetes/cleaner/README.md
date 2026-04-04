@@ -40,10 +40,10 @@ kubectl apply -f deployment.yaml
 minikube image load cleaner-app:v1 --overwrite
 
 # 3. Tell Kubernetes to swap the old pods for new ones using the updated image
-kubectl rollout restart deployment/cleaner-112
+kubectl rollout restart deployment/cleaner-113
 
 # 4. (Optional) Watch the magic happen in k9s or via terminal
-kubectl get pods --selector app=cleaner-112 --watch
+kubectl get pods --selector app=cleaner-113 --watch
 ```
 
 
@@ -63,10 +63,10 @@ kubectl get pods --selector app=cleaner-112 --watch
 
 ```bash
 # For minikube
-minikube service cleaner-112-service
+minikube service cleaner-113-service
 
 # For other setups, get the external IP
-kubectl get svc cleaner-112-service
+kubectl get svc cleaner-113-service
 
 # Then open in browser: http://<EXTERNAL-IP>:80
 ```
@@ -398,6 +398,15 @@ kubectl top pods --selector app=cleaner-112
 
 # Access nginx logs
 kubectl logs --selector app=cleaner-112 --container cleaner-container --tail=100 --follow
+```
+
+## Usefull Commands
+```bash
+docker images cleaner-app:v1 # List images to confirm build
+kubectl get pods --selector app=cleaner-113 # Check pod status
+kubectl delete pod -l app=cleaner-app # Delete pods to force restart with new image
+docker run --rm -it cleaner-app:v1 ls -R /app # Test container locally
+minikube stop
 ```
 
 ## Additional Resources

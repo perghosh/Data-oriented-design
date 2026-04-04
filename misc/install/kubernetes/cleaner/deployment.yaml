@@ -1,18 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cleaner-112
+  name: cleaner-113
   labels:
-    app: cleaner-112
+    app: cleaner-113
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: cleaner-112
+      app: cleaner-113
   template:
     metadata:
       labels:
-        app: cleaner-112
+        app: cleaner-113
     spec:
       terminationGracePeriodSeconds: 30
       containers:
@@ -72,11 +72,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: cleaner-112-service
+  name: cleaner-113-service
 spec:
   type: LoadBalancer
   selector:
-    app: cleaner-112
+    app: cleaner-113
   ports:
   - name: http
     protocol: TCP
