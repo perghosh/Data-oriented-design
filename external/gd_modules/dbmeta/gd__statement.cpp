@@ -218,12 +218,12 @@ void statement::create_statement_s( gd::table::arguments::table& tableStatement 
    tableStatement.column_add( {
       { "uint32",   0, "key"         }, // key (these keys do also represent row number to be fast)
       { "uuid",     0, "uuid"        }, // unique identifier for statement
-      { "string",  32, "name"        }, // statement name, this is used to identify statement and also used in query templates to refer to statement
+      { "rstring",  0, "name"        }, // statement name, this is used to identify statement and also used in query templates to refer to statement
       { "uint32",   0, "type"        }, // type of statement, describes what kind of statement this is, like select, insert, update, delete, or other types of statements if needed
       { "uint32",   0, "format"      }, // statement format, this is used to determine how to generate sql statement, and how to parse arguments for statement
       { "uint32",   0, "rule"        }, // statement rule, this is used to determine how to use statement, and what is allowed for statement
       { "rstring",  0, "statement"   }, // raw data for statement, this is used to store the actual sql statement template, this can also be used to store other types of statements if needed
-      { "string",   0, "description" }, // optional description for statement, this can be used to provide additional information about statement, like what it does, or how to use it
+      { "rstring",  0, "description" }, // optional description for statement, this can be used to provide additional information about statement, like what it does, or how to use it
    }, gd::table::tag_type_name{});
    tableStatement.prepare();
 }

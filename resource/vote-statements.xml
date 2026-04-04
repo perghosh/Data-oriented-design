@@ -13,8 +13,27 @@ SELECT hex(TPoll.PollK) AS PollK, hex(TPollQuestion.PollQuestionK) AS PollQuesti
          TPollAnswer.FName AS A_FName, TPollAnswer.FAnswer AS A_FAnswer, TPollAnswer.FOrder AS A_FOrder, TPollAnswer.FDescription AS A_Description 
          FROM TPoll LEFT JOIN TPollQuestion ON TPoll.PollK = TPollQuestion.PollK LEFT JOIN TPollAnswer ON TPollQuestion.PollQuestionK = TPollAnswer.PollQuestionK 
          WHERE TPoll.PollK = X{PollK} ORDER BY 1,TPollQuestion.FOrder, 2,TPollAnswer.FOrder]]></statement>
+
+      <!-- Statements for casts
+       | Select poll header for vote
+       | Select poll questions for vote
+       | Select poll answers for questions
+       | -->
+      <statement name="cast-poll" format="jinja" type="select" description="Select poll header for vote">SELECT hex(PollK) AS PollK, FName, FHeader, FDescription FROM TPoll WHERE PollK = X{PollK}</statement>
+      <statement name="cast-poll_questions" format="jinja" type="select" description="Select poll questions for vote">SELECT hex(PollQuestionK) AS PollQuestionK, FName, FQuestion, FQuestionMore FROM TPollQuestion WHERE PollK = X{PollK}</statement>
+      <statement name="cast-poll_answers" format="jinja" type="select" description="Select poll answers for vote">SELECT hex(PollAnswerK) AS PollAnswerK, hex(PollQuestionK) AS PollQuestionK, FName, FAnswer FROM TPollAnswer WHERE PollK = X{PollK}</statement>
    </statements>
+   
 </document>
+
+<!-- 
+      "args": [ "http", "--site", "C:\\dev\\home\\web\\web-vote\\target\\vote", "--port", "8001", "--ip", "\"127.0.0.1\"", "--add-session", "00,01,02,03,04,05", "--database-open", "D:/temp/www/test.sqlite", "--database-meta-tables", "\"SELECT name AS 'table' FROM sqlite_master WHERE type='table' ORDER BY 1\"", "--database-dialect","sqlite", 
+                "--database-meta-columns", "\"SELECT m.name AS 'table', ci.cid AS ordinal, ci.name AS 'column', ci.type AS _type, ci.'notnull' AS _flag_null, ci.pk AS _flag_pk FROM sqlite_master m JOIN pragma_table_info(m.name) ci WHERE m.type = 'table' AND m.name NOT LIKE 'sqlite_%'\"",
+                "--database-statement-file", "C:\\dev\\home\\DOD\\resource\\vote-statements.xml"
+
+
+format: jinja, gdsplit, json, xml
+-->
 
 <!-- 
 
