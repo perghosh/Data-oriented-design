@@ -42,18 +42,57 @@ _GD_EXPRESSION_BEGIN
 
 namespace {
 
-/// Characters that count as whitespace for line trimming @TODO  Optimize this
-inline bool is_whitespace_(char i)
+// Character classification bits
+constexpr uint8_t WHITESPACE_BIT       = 0x01;  // space, tab, \r, \f, \v, ;
+constexpr uint8_t STRING_DELIMITER_BIT = 0x02;  // ' and "
+
+// 256-byte lookup table (fits comfortably in L1 cache)
+constexpr uint8_t piCharClass_s[256] =
 {
-   return i == ' ' || i == '\t' || i == '\r' || i == '\f' || i == '\v' || i == ';';
+    // 0x00 - 0x1F  (control characters)
+    0,0,0,0,0,0,0,0,
+    0, WHITESPACE_BIT, 0, WHITESPACE_BIT, WHITESPACE_BIT, WHITESPACE_BIT, 0, 0,   // 8:\b  9:\t  10:\n  11:\v  12:\f  13:\r
+
+    0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,
+
+    // 0x20 - 0x7E  (printable ASCII)
+    WHITESPACE_BIT, 0, STRING_DELIMITER_BIT, 0,0,0,0, STRING_DELIMITER_BIT,   // 32:' '   34:'"'   39:'\''
+    0,0,0,0,0,0,0,0,     // 40-47: ( ) * + , - . /
+
+    0,0,0,0,0,0,0,0,     // 48-55: 0-7
+    0,0,0,0,0, WHITESPACE_BIT, 0,0,     // 56-63: 8 9 : ; < = > ?
+
+    0,0,0,0,0,0,0,0,     // 64-71: @ A-G
+    0,0,0,0,0,0,0,0,     // 72-79: H-O
+    0,0,0,0,0,0,0,0,     // 80-87: P-W
+    0,0,0,0,0,0,0,0,     // 88-95: X-Z [ \ ] ^ _
+
+    0,0,0,0,0,0,0,0,     // 96-103: ` a-g
+    0,0,0,0,0,0,0,0,     // 104-111: h-o
+    0,0,0,0,0,0,0,0,     // 112-119: p-w
+    0,0,0,0,0,0,0,0,     // 120-127: x-z { | } ~ DEL
+
+    // 0x80 - 0xFF  (extended / non-ASCII) → treat as non-whitespace, non-delimiter
+    0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0
+};
+
+[[nodiscard]] inline bool is_whitespace_(char c) noexcept
+{
+    return (piCharClass_s[static_cast<unsigned char>(c)] & WHITESPACE_BIT) != 0;
 }
 
-/// True when c opens a string literal (' or ")
-inline bool is_string_delimiter_(char c)
+[[nodiscard]] inline bool is_string_delimiter_(char c) noexcept
 {
-   return c == '\'' || c == '"';
+    return (piCharClass_s[static_cast<unsigned char>(c)] & STRING_DELIMITER_BIT) != 0;
 }
-
 /**
  * @brief Internal block-stack entry used during compilation.
  *
