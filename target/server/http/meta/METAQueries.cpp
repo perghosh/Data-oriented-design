@@ -181,6 +181,7 @@ std::pair<bool, std::string> CQueries::Load_s( std::string_view stringFilename, 
             argumentsStatement["name"] = xmlnodeStatement.attribute( "name" ).value();
             argumentsStatement["type"] = xmlnodeStatement.attribute( "type" ).value();
             argumentsStatement["format"] = xmlnodeStatement.attribute( "format" ).value();
+            argumentsStatement["ui"] = xmlnodeStatement.attribute( "ui" ).value();
             argumentsStatement["description"] = xmlnodeStatement.attribute( "description" ).value();
 
             std::string stringStatement = xmlnodeStatement.text().get();
