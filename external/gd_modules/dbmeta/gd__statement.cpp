@@ -153,6 +153,20 @@ std::pair<bool, std::string> statement::add( const gd::argument::arguments& argu
    return { true, "" };
 }
 
+std::pair<bool, std::string> statement::add( const gd::argument::arguments& argumentsStatement, const std::initializer_list<std::string_view>& listArgument )
+{
+   auto result_ = add( argumentsStatement );
+
+   for( auto stringArgument : listArgument )
+   {
+      auto argument_ = argumentsStatement[stringArgument];
+      if( argument_.is_string() == true && argument_.is_true() ) m_ptableStatement->cell_set( result_.first, stringArgument, argument_.as_string_view() );
+   }
+
+   return { true, "" };
+}
+
+
 /// @brief Retrieves the UUID for a given row index. ------------------------- get_id
 gd::types::uuid statement::get_id( uint64_t uRow ) const
 {                                                                                                  assert( m_ptableStatement != nullptr ); assert( uRow < m_ptableStatement->size() );

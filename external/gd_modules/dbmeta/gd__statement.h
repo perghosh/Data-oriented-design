@@ -128,6 +128,7 @@ public:
    std::pair<bool, std::string> add( std::string_view stringName, std::string_view stringStatement, enumFormat eFormat = eFormatRaw, uint32_t uType = 0, uint32_t uRule = 0 ); ///< add statement to statement object
    std::pair<bool, std::string> add( std::string_view stringName, std::string_view stringStatement, std::string_view stingFormat, std::string_view stringType, std::string_view stringRule = ""); ///< add statement to statement object
    std::pair<bool, std::string> add( const gd::argument::arguments& argumentsStatement ); ///< add statement to statement object using arguments object, this is used when adding statement from query template
+   std::pair<bool, std::string> add( const gd::argument::arguments& argumentsStatement, const std::initializer_list<std::string_view>& listArgument );
 
    gd::types::uuid get_id( uint64_t uRow ) const; ///< get statement uuid by row index
    std::string_view get_name( uint64_t uRow ) const; ///< get statement name by row index
