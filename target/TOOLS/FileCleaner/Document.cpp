@@ -1451,6 +1451,8 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
 
    // ## Prepare columns for line list table 
    detail::columns* pcolumnsThread = new detail::columns{};                   // Columns for thread-local tables
+   pcolumnsThread->set_locked();                                              // Lock columns to prevent modification
+   detail::columns::auto_delete autoDeleteColumns( pcolumnsThread );          // Ensure columns are deleted when going out of scope
    ptableLineList->to_columns(*pcolumnsThread);
 
    // ## Worker function to process files in parallel .........................

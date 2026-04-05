@@ -308,33 +308,9 @@ struct code
 
    /// @brief compile one assignment / plain expression line (uses tag_formula so
    ///        a lone '=' is treated as assignment, not equality)
-   static std::pair<bool, std::string> compile_expression_s( std::string_view stringExpr, std::vector<token>& vectorOut);
+   static std::pair<bool, std::string> compile_expression_s( std::string_view stringExpression, std::vector<token>& vectorOut);
 
-   /// @brief compile a condition expression (uses tag_formula_keyword so
-   ///        keyword operators like 'and', 'or', 'not' are recognised and
-   ///        a lone '=' is treated as '==')
-   static std::pair<bool, std::string> compile_condition_s( std::string_view stringExpr, std::vector<token>& vectorOut);
-
-   // ## compile_lua -----------------------------------------------------------
-
-   /** -------------------------------------------------------------------------compile_lua
-    * @brief Compile Lua-syntax source text into the flat statement list.
-    *
-    * Accepts a subset of Lua control-flow syntax:
-    * - `if <cond> then ... [elseif <cond> then ...] [else ...] end`
-    * - `while <cond> do ... end`
-    * - `repeat ... until <cond>`
-    * - `for <var> = <first>, <last>[, <delta>] do ... end`  (delta defaults to 1)
-    * - `break`
-    *
-    * All expressions use the same evaluator as `compile`.
-    * Lua's `~=` (not-equal) is translated to `!=` before expression compilation.
-    *
-    * @param piszBegin  start of Lua source text
-    * @param piszEnd    one past end of source text
-    * @param runtime_   runtime context (variables, methods)
-    * @return { true, "" } on success, { false, error-message } on failure
-    */
+   /// @brief compile Lua source from raw char pointers
    std::pair<bool, std::string> compile_lua(const char* piszBegin, const char* piszEnd, runtime& runtime_);
 
    /// @brief compile Lua source from string_view

@@ -302,8 +302,10 @@ public:
    void clear() { m_vectorColumn.clear(); }
 
    int get_reference() const { return m_iReference; }
-   void add_reference() { m_iReference++; }
+   void add_reference() { if( m_iReference != -2 ) m_iReference++; }
    void release();
+   void set_locked() { assert( m_iReference != -2 ); m_iReference = -2; }
+   void delete_locked() { assert( m_iReference == -2 ); delete this; }
 
 
    //@}
@@ -323,20 +325,30 @@ public:
 
    // ## attributes ----------------------------------------------------------------
 public:
-   int m_iReference = 0;
+   int m_iReference = 0; ///< reference counter for this columns object, -2 means locked for delete, -1 and there is some error
    std::vector<column> m_vectorColumn;
 
    // ## free functions ------------------------------------------------------------
 public:
 
-
+public:
+   /// \brief helper class for automatic delete of locked columns object
+   struct auto_delete
+   {
+      explicit auto_delete( columns* p_ ) : m_pcolumns( p_ ) {}
+      ~auto_delete() { if( m_pcolumns != nullptr ) { m_pcolumns->delete_locked(); } }
+      columns* m_pcolumns;
+   };
 
 };
 
 /// decrease reference counter delete if no more references
-inline void columns::release() {                                                                   assert( m_iReference > 0 );
-   m_iReference--;
-   if( m_iReference == 0 ) delete this; 
+inline void columns::release() {
+   if( m_iReference != -2 )
+   {                                                                                               assert( m_iReference > 0 );
+      m_iReference--;
+      if( m_iReference == 0 ) delete this; 
+   }
 }
 
 _GD_TABLE_DETAIL_END

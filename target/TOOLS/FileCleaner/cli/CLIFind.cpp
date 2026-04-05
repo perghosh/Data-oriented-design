@@ -1322,10 +1322,10 @@ std::pair<bool, std::string> PrintKeyValueRows_s( CDocument* pdocument, gd::tabl
          uRowNumber++;                                                           // add one because rows in table are zero based
          stringPrint += std::format("({})", uRowNumber);                         // add the row number to the filename
 
-         // If no header line then line is used as header line
+         // ## If no header line then line is used as header line, format it nicely
          if( bLineIsHeader == true ) 
          { 
-            stringPrint += std::format("{:-<80}", stringPrint + "  ");          // add the filename to the stringPrint, with a separator before it
+            stringPrint = std::format("{:-<80}", stringPrint + "  ");          // add the filename to the stringPrint, with a separator before it
          }
 
          pdocument->MESSAGE_Display(stringPrint, { array_, {{"color", "line"}}, gd::types::tag_view{} });
