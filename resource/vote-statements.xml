@@ -19,7 +19,9 @@ SELECT hex(TPoll.PollK) AS PollK, hex(TPollQuestion.PollQuestionK) AS PollQuesti
        | Select poll questions for vote
        | Select poll answers for questions
        | -->
-      <statement name="cast-poll" format="jinja" type="select" description="Select poll header for vote">SELECT hex(PollK) AS PollK, FName, FHeader, FDescription FROM TPoll WHERE PollK = X{PollK}</statement>
+      <statement name="cast-poll" format="jinja" type="select" description="Select poll header for vote">
+         <ui>{ "table": "TPoll;FName,Name;FHeader,Header;FDescription,Description" }</ui>
+         <![CDATA[SELECT hex(PollK) AS PollK, FName, FHeader, FDescription FROM TPoll WHERE PollK = X{PollK}]]></statement>
       <statement name="cast-poll_questions" format="jinja" type="select" description="Select poll questions for vote">SELECT hex(PollQuestionK) AS PollQuestionK, FName, FQuestion, FQuestionMore FROM TPollQuestion WHERE PollK = X{PollK}</statement>
       <statement name="cast-poll_answers" format="jinja" type="select" description="Select poll answers for vote">SELECT hex(PollAnswerK) AS PollAnswerK, hex(PollQuestionK) AS PollQuestionK, FName, FAnswer FROM TPollAnswer WHERE PollK = X{PollK}</statement>
    </statements>

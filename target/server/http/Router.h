@@ -20,6 +20,8 @@
 
 #include "gd/gd_arguments.h"
 
+#include "api/API_Base.h"
+
 #include "dto/DTOResponse.h"
 
 class CApplication;
@@ -67,11 +69,11 @@ public:
 
 public:
    CRouter() {}
-   CRouter(CApplication* pApplication): m_pApplication(pApplication) {}
-   CRouter(CApplication* pApplication, CDocument* pDocument): m_pApplication(pApplication), m_pDocument(pDocument) {}
+   CRouter(CApplication* pApplication): m_context(pApplication) {}
+   CRouter(CApplication* pApplication, CDocument* pDocument): m_context(pApplication, pDocument) {}
    CRouter( const std::string_view& stringQueryString ) : m_stringQueryString( stringQueryString ) {}
-   CRouter( CApplication* pApplication, const std::string_view& stringQueryString ): m_pApplication(pApplication), m_stringQueryString(stringQueryString) {}
-   CRouter( CApplication* pApplication, const std::string_view& stringQueryString, std::string_view stringBody ): m_pApplication(pApplication), m_stringQueryString(stringQueryString), m_stringBody(stringBody) {}
+   CRouter( CApplication* pApplication, const std::string_view& stringQueryString ): m_context(pApplication), m_stringQueryString(stringQueryString) {}
+   CRouter( CApplication* pApplication, const std::string_view& stringQueryString, std::string_view stringBody ): m_context(pApplication), m_stringQueryString(stringQueryString), m_stringBody(stringBody) {}
    // copy
    CRouter( const CRouter& o ) { common_construct( o ); }
    CRouter( CRouter&& o ) noexcept { common_construct( std::move( o ) ); }
@@ -112,6 +114,18 @@ public:
    CRouter& operator=( CApplication* pApplication ) { m_pApplication = pApplication; return *this; }
    CRouter& operator=( CDocument* pDocument ) { m_pDocument = pDocument; return *this; }
 
+   // Convenience accessors that forward to m_context so existing call-sites
+   // in Run() / Prepare() / PrintResponseXml() do not need to change.
+   CApplication* GetApplication()             { return m_context.GetApplication(); }
+   const CApplication* GetApplication() const { return m_context.GetApplication(); }   
+   CDocument*    GetDocument()                { return m_context.GetDocument(); }
+   const CDocument* GetDocument() const       { return m_context.GetDocument(); }
+ 
+   // Keep m_pApplication / m_pDocument as thin aliases if needed by other
+   // translation units that include this header.  They delegate to m_context.
+   CApplication*& m_pApplication = *reinterpret_cast<CApplication**>( &m_context.m_papplication );
+   CDocument*&    m_pDocument    = *reinterpret_cast<CDocument**>(    &m_context.m_pdocument    );
+
 
 // ## methods ------------------------------------------------------------------
 public:
@@ -131,10 +145,14 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
-   CApplication* m_pApplication{};     ///< application instance
-   CDocument* m_pDocument{};           ///< document instance
+   CAPIContext  m_context;             ///< context object that holds application and document pointers, response data and other useful information for command handlers
+
+   //CApplication* m_pApplication{};     ///< application instance
+   //CDocument* m_pDocument{};           ///< document instance
+
    unsigned m_uFlags{};                ///< router flags
    unsigned m_uUserIndex{};            ///< user index for user in session table for users logged in
+
    std::string m_stringQueryString;    ///< query string from url
    std::string_view m_stringBody;      ///< body from http request
    std::vector<std::string_view> m_vectorCommand; ///< list of commands parsed from query string

@@ -52,7 +52,7 @@ std::pair<bool, std::string> CAPISystem::Execute()
             else if( stringCommand == "exists" )   { result_ = Execute_FileExists(); }
             else break;
 
-            if( m_objects.Empty() == false ) { m_objects["command"] = stringCommand; }
+            if( Objects().Empty() == false ) { Objects()["command"] = stringCommand; }
          }
       }
       else if( stringCommand == "meta" )
@@ -74,7 +74,7 @@ std::pair<bool, std::string> CAPISystem::Execute()
                else if( stringCommand == "exists" ){ result_ = Execute_MetadataQueryExists(); }    // exists
                else break;
 
-               if( m_objects.Empty() == false ) { m_objects["command"] = stringCommand; }
+               if( Objects().Empty() == false ) { Objects()["command"] = stringCommand; }
             }
          }
          else if(stringCommand == "db")
@@ -87,7 +87,7 @@ std::pair<bool, std::string> CAPISystem::Execute()
                if( stringCommand == "fields" )     { result_ = Execute_MetadataDBField(); }
                else break;
 
-               if( m_objects.Empty() == false ) { m_objects["command"] = stringCommand; }
+               if( Objects().Empty() == false ) { Objects()["command"] = stringCommand; }
             }
          }
       }
@@ -107,7 +107,7 @@ std::pair<bool, std::string> CAPISystem::Execute()
             else if( stringCommand == "list" )     { result_ = Execute_SessionList(); }
             else break;
 
-            if( m_objects.Empty() == false ) { m_objects["command"] = stringCommand; }
+            if( Objects().Empty() == false ) { Objects()["command"] = stringCommand; }
          }
       }
       else
@@ -144,7 +144,7 @@ std::pair<bool, std::string> CAPISystem::Execute_FileDelete()
    {
       std::filesystem::remove(stringPathFound);
       gd::argument::arguments* parguments_ = new gd::argument::arguments( { { "path", stringPathFound }, { "deleted", true } } ); // result data
-      m_objects.Add( parguments_ );
+      Objects().Add( parguments_ );
    }
    
    return { true, "" };
@@ -173,7 +173,7 @@ std::pair<bool, std::string> CAPISystem::Execute_FileDirectory()
       std::string stringDirectory = papplication_g->PROPERTY_Get( stringFolderType ).as_string();
 
       gd::argument::arguments* parguments_ = new gd::argument::arguments( { { "directory", stringDirectory } } ); // result data
-      m_objects.Add( parguments_ );
+      Objects().Add( parguments_ );
    }
    else if( stringAction == "set" )
    {
@@ -210,7 +210,7 @@ std::pair<bool, std::string> CAPISystem::Execute_FileExists()
    if( stringPathFound.empty() == false )
    {
       gd::argument::arguments* parguments_ = new gd::argument::arguments( { { "path", stringPathFound }, { "exists", true } } ); // result data
-      m_objects.Add( parguments_ );
+      Objects().Add( parguments_ );
    }
    
    return { true, "" };
@@ -247,7 +247,7 @@ std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryAdd()
    if( result_.first == true ) 
    {
       gd::argument::arguments* parguments_ = new gd::argument::arguments( { { "id", result_.second } } ); // result data
-      m_objects.Add( parguments_ );
+      Objects().Add( parguments_ );
    }
 
    return result_;
@@ -318,7 +318,7 @@ std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryCount()
 
    gd::argument::arguments* parguments_ = new gd::argument::arguments( { { "count", uCount } } ); // result data
 
-   m_objects.Add( parguments_ );
+   Objects().Add( parguments_ );
 
    return { true, "" };
 }
@@ -351,7 +351,7 @@ std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryExists()
       parguments_->append( "id", stringUuid );
    }
 
-   m_objects.Add( parguments_ );
+   Objects().Add( parguments_ );
 
    return { true, "" };
 }
@@ -399,7 +399,7 @@ std::pair<bool, std::string> CAPISystem::Execute_MetadataDBField()
    std::string stringTable_d = gd::table::debug::print( *ptable_ );
 #endif // NDEBUG
 
-   m_objects.Add( ptable_ );
+   Objects().Add( ptable_ );
 
    return { true, "" };
 }
@@ -443,7 +443,7 @@ std::pair<bool, std::string> CAPISystem::Execute_SessionAdd()
 
    gd::argument::arguments* parguments_ = new gd::argument::arguments( { { "index", uIndex } } );
    if( m_argumentsParameter.exists("new") == true ) { parguments_->append("session", stringSession); }
-   m_objects.Add( parguments_ );
+   Objects().Add( parguments_ );
    
    return { true, "" };
 }
@@ -491,7 +491,7 @@ std::pair<bool, std::string> CAPISystem::Execute_SessionCount()
    uint64_t uCount = pdocument->SESSION_Count();
 
    gd::argument::arguments* parguments_ = new gd::argument::arguments( { { "count", uCount } } );
-   m_objects.Add( parguments_ );
+   Objects().Add( parguments_ );
    
    return { true, "" };
 }
@@ -516,7 +516,7 @@ std::pair<bool, std::string> CAPISystem::Execute_SessionExists()
    int64_t iPosition = psessions->Find( uuid );
 
    gd::argument::arguments* parguments_ = new gd::argument::arguments( { { "index", iPosition } } );
-   m_objects.Add( parguments_ );
+   Objects().Add( parguments_ );
 
    return { true, "" };
 }
@@ -529,7 +529,7 @@ std::pair<bool, std::string> CAPISystem::Execute_SessionList()
 
    gd::table::dto::table* ptable_ = new gd::table::dto::table();
    psessions->Copy( *ptable_ );
-   m_objects.Add( ptable_ );
+   Objects().Add( ptable_ );
 
    // ## get list of sessions and place in in table object
    

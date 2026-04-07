@@ -77,6 +77,7 @@ std::pair<bool, std::string> CRouter::Parse()
  *        and a constructor matching (application, path, arguments, commandIndex).
  * @return pair of success flag and status message
  */
+ /*
 template<typename APIObject>
 std::pair<bool, std::string> CRouter::ExecuteCommand_( const std::vector<std::string_view>& vectorPath, const gd::argument::arguments& arguments_, unsigned& uCommandIndex)
 {
@@ -93,6 +94,33 @@ std::pair<bool, std::string> CRouter::ExecuteCommand_( const std::vector<std::st
    }
 
    uCommandIndex = apiobject_.GetCommandIndex();                              // get current active command index
+   return result_;
+}
+*/
+
+template<typename APIObject>
+std::pair<bool, std::string> CRouter::ExecuteCommand_( const std::vector<std::string_view>& vectorPath,  const gd::argument::arguments& arguments_,   unsigned& uCommandIndex )
+{
+   // [CONTEXT] Construct handler with shared context instead of raw application pointer.
+   APIObject apiobject_( m_context, vectorPath, arguments_, uCommandIndex );
+ 
+   auto result_ = apiobject_.Execute();
+ 
+   if( result_.first == true )
+   {
+      // Objects are already inside m_context.m_objects via the handler's
+      // AddObject() / GetObjects() calls — no separate transfer step needed
+      // when the context is shared.  The check below handles the legacy path
+      // where a handler that does not yet use context-based construction still
+      // fills its own m_objects.
+      Types::Objects* pobjectsResult = apiobject_.GetObjects();                                    assert( pobjectsResult );
+      if( pobjectsResult != nullptr && pobjectsResult->Empty() == false )
+      {
+         result_ = m_pdtoresponse->AddTransfer( pobjectsResult );
+      }
+   }
+ 
+   uCommandIndex = apiobject_.GetCommandIndex();
    return result_;
 }
 

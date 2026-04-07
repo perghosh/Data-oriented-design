@@ -157,60 +157,55 @@ std::pair<bool, std::string> CQueries::Load_s( std::string_view stringFilename, 
 {
    using namespace gd::modules::dbmeta;
 
-   if( std::filesystem::exists(stringFilename) == false ) { return { false, "File not found: " + std::string( stringFilename ) };	}
+   if( std::filesystem::exists( stringFilename ) == false ) { return { false, "File not found: " + std::string( stringFilename ) }; }
 
    gd::argument::arguments argumentsStatement;
    argumentsStatement.reserve( 256 );
 
    // ## Initialize pugixml document .........................................
    pugi::xml_document xmldocument;
-        
+
    // Load the XML file
-   pugi::xml_parse_result xmlparseresult = xmldocument.load_file(stringFilename.data());
-   if(!xmlparseresult) { return { false, "XML parsing error: " + std::string(xmlparseresult.description()) }; }
+   pugi::xml_parse_result xmlparseresult = xmldocument.load_file( stringFilename.data() );
+   if( !xmlparseresult ) { return { false, "XML parsing error: " + std::string( xmlparseresult.description() ) }; }
 
    // query statements nodes
-   for(pugi::xml_node xmlnodeStatements : xmldocument.document_element().children("statements") )
+   for( pugi::xml_node xmlnodeStatements : xmldocument.document_element().children( "statements" ) )
    {
-      for(pugi::xml_node xmlnodeStatement : xmlnodeStatements.children("statement"))
+      for( pugi::xml_node xmlnodeStatement : xmlnodeStatements.children( "statement" ) )
       {
          argumentsStatement.clear();
 
+         // === Attributes (always present) ===
+         argumentsStatement["uuid"] = xmlnodeStatement.attribute( "id" ).value();
+         argumentsStatement["name"] = xmlnodeStatement.attribute( "name" ).value();
+         argumentsStatement["type"] = xmlnodeStatement.attribute( "type" ).value();
+         argumentsStatement["format"] = xmlnodeStatement.attribute( "format" ).value();
+         argumentsStatement["description"] = xmlnodeStatement.attribute( "description" ).value();
+
+         pugi::xml_attribute xmlattrbuteUi = xmlnodeStatement.attribute( "ui" );
+         if( xmlattrbuteUi )
          {
-            argumentsStatement["uuid"] = xmlnodeStatement.attribute( "id" ).value();
-            argumentsStatement["name"] = xmlnodeStatement.attribute( "name" ).value();
-            argumentsStatement["type"] = xmlnodeStatement.attribute( "type" ).value();
-            argumentsStatement["format"] = xmlnodeStatement.attribute( "format" ).value();
-            argumentsStatement["ui"] = xmlnodeStatement.attribute( "ui" ).value();
-            argumentsStatement["description"] = xmlnodeStatement.attribute( "description" ).value();
-
-            std::string stringStatement = xmlnodeStatement.text().get();
-            argumentsStatement["statement"] = stringStatement;
-
-            auto result_ = statement_.add( argumentsStatement ); 
-            if( result_.first == false ) { return { false, "Error adding statement: " + result_.second }; }
+            argumentsStatement["ui"] = xmlattrbuteUi.value();
+         }
+         else
+         {
+            // fallback to <ui> child element
+            pugi::xml_node xmlnodeUi = xmlnodeStatement.child( "ui" );
+            if( xmlnodeUi )
+            {
+               argumentsStatement["ui"] = xmlnodeUi.child_value();
+            }
          }
 
-         /*
-         std::string stringId = xmlnodeStatement.attribute("id").value();
-         std::string stringName = xmlnodeStatement.attribute("name").value();
-         std::string stringType = xmlnodeStatement.attribute("type").value();
-         std::string_view stringFormat = xmlnodeStatement.attribute("format").value();
-         // get query value
-         std::string stringStatement = xmlnodeStatement.text().get();
+         std::string statementText = xmlnodeStatement.text().get();         // get element text, this will include CDATA content if present
 
-         statement::enumType eType = statement::eTypeSelect;
-         if( stringType.empty() == false ) eType = statement::to_type_s( stringType );
-         if( eType == statement::eTypeUnknown ) { return { false, "Unknown statement type: " + std::string( stringType ) }; }
+         argumentsStatement["statement"] = statementText;
 
-         auto eFormat = statement::to_format_s( stringFormat, gd::types::tag_validate{} );
-         if( eFormat == statement::eFormatUnknown ) { return { false, "Unknown statement format: " + std::string( stringFormat ) }; }
-
-         statement_.add( stringName, stringStatement, eFormat, eType );       // Add statement to collection
-         */
+         auto result_ = statement_.add( argumentsStatement, { "ui" } );
+         if( result_.first == false ) { return { false, "Error adding statement: " + result_.second }; }
       }
    }
-
    return { true, "" };
 }
 

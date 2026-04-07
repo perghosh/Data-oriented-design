@@ -133,6 +133,7 @@ public:
    gd::types::uuid get_id( uint64_t uRow ) const; ///< get statement uuid by row index
    std::string_view get_name( uint64_t uRow ) const; ///< get statement name by row index
    std::string_view get_statement( uint64_t uRow ) const; ///< get statement by row index
+   const gd::argument::shared::arguments* get_arguments( uint64_t uRow ) const; ///< get arguments by row index
 
 
    int64_t find( const gd::types::uuid* puuid ) const; ///< find statement by uuid, returns row index or -1 if not found
@@ -202,6 +203,13 @@ constexpr statement::enumFormat statement::to_format_s( std::string_view stringN
         : (stringName == "json" )                        ? eFormatJson
         : (stringName == "xml" )                         ? eFormatXml
         : eFormatUnknown; ///< error, unknown format
+}
+
+/// Get arguments for statement by row index, returns pointer to arguments object or nullptr if not found
+inline const gd::argument::shared::arguments* statement::get_arguments( uint64_t uRow ) const 
+{
+   if( m_ptableStatement == nullptr || uRow >= m_ptableStatement->size() ) { return nullptr; }
+   return m_ptableStatement->row_get_arguments_pointer( uRow );
 }
 
 

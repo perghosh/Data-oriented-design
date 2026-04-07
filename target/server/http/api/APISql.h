@@ -7,6 +7,14 @@ class CAPISql : public CAPI_Base
 // ## construction -------------------------------------------------------------
 public:
    CAPISql() {}
+
+   CAPISql( CAPIContext& context, const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsParameter )
+      : CAPI_Base( context, vectorCommand, argumentsParameter ) {}
+   CAPISql( CAPIContext& context, const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsParameter, unsigned uCommandIndex )
+      : CAPI_Base( context, vectorCommand, argumentsParameter, uCommandIndex ) {}
+   CAPISql( CAPIContext& context, std::vector<std::string_view>&& vectorCommand, gd::argument::arguments&& argumentsParameter )
+      : CAPI_Base( context, std::move( vectorCommand ), std::move( argumentsParameter ) ) {}
+
    CAPISql( const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsParameter )
       : CAPI_Base( vectorCommand, argumentsParameter ) {}
    CAPISql( const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsParameter, unsigned uCommandIndex )

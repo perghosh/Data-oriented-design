@@ -91,7 +91,7 @@ std::pair<bool, std::string> CAPISql::Execute_Add()
 
    std::string_view stringId = result_.second;
    gd::argument::arguments* parguments_ = new gd::argument::arguments( { { "Id", stringId } }, gd::types::tag_view{});
-   m_objects.Add( parguments_ );
+   Objects().Add(parguments_);
    
    return { true, "" };
 }

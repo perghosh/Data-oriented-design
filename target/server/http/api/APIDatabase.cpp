@@ -95,10 +95,10 @@ std::pair<bool, std::string> CAPIDatabase::Execute()
       if( result_.first == false ) { return result_; }
 
 #ifndef NDEBUG
-      auto uObjectCount_d = m_objects.Size();
+      auto uObjectCount_d = Objects().Size();
 #endif // NDEBUG
       
-      if( m_objects.Empty() == false ) { m_objects["command"] = stringCommand; }
+      if( Objects().Empty() == false ) { Objects()["command"] = stringCommand; }
    }
 
    SetCommandIndex( static_cast<unsigned>( uIndex ) );
@@ -187,7 +187,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Open()
 	if(stringDocument.empty() == true) stringDocument = "default";
 
    // ## Check if document already is connected to database
-   CDocument* pdocument = m_papplication->DOCUMENT_Get(stringDocument, true);
+   CDocument* pdocument = GetApplication()->DOCUMENT_Get(stringDocument, true);
    if( pdocument->IsDatabaseOpen() == true ) { return { false, "document already connected to database" }; }
 
    if(stringType.empty() == true || stringType == "sqlite")
@@ -297,7 +297,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
       // std::string stringTable_d = gd::table::debug::print( *ptable_ );
       // std::string stringTableHex_d = gd::binary_to_hex_g( stringTable_d );
 #endif // NDEBUG
-      m_objects.Add( ptable_ );
+      Objects().Add( ptable_ );
    }
 
    return pairReturn;
@@ -337,7 +337,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Ask()
          table_.row_get_arguments( 0u, *parguments_ );
       }
 
-      m_objects.Add( parguments_ );
+      Objects().Add( parguments_ );
    }
 
    return pairReturn;
@@ -376,15 +376,12 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
    else { variantInsertKey = pdatabase->get_insert_key(); }
 
    // ## if not the last command in endpoint sequence then add to arguments as
-   if( IsLastCommand() == false )
-   {
-      m_argumentsGlobal.set( "key", variantInsertKey.as_variant_view() );
-   }
+   if( IsLastCommand() == false ) { SetGlobal( "key", variantInsertKey.as_variant_view() ); } // "key" is default name for geneated key values if not specified. maybe this need to be changed
 
    if( argumentsKey.empty() == false )
    {
       gd::argument::arguments* parguments_ = new gd::argument::arguments( argumentsKey );
-      m_objects.Add( parguments_ );
+      Objects().Add( parguments_ );
    }
 
    return { true, "" };
@@ -418,7 +415,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Update()
    gd::variant vChangeCount = pdatabase->get_change_count();
    
    gd::argument::arguments* parguments_ = new gd::argument::arguments( {{ "count", vChangeCount.as_int64() }} );
-   m_objects.Add( parguments_ );
+   Objects().Add( parguments_ );
 
 
    return { true, "" };
@@ -452,7 +449,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Delete()
    gd::variant vChangeCount = pdatabase->get_change_count();
    
    gd::argument::arguments* parguments_ = new gd::argument::arguments( {{ "count", vChangeCount.as_int64() }} );
-   m_objects.Add( parguments_ );
+   Objects().Add( parguments_ );
    
 
    return { true, "" };
@@ -465,7 +462,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Delete()
  * @param "query" Query template to execute
  * @return A pair containing a boolean indicating success and a string containing the error message if any.
  */
-std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql)
+std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql, gd::argument::arguments& argumentsData )
 {
    std::pair<bool, std::string> result_( true, "" );
    CDocument* pdocument = GetDocument();                                                           assert( pdocument != nullptr );
@@ -528,9 +525,9 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql)
       auto result_ = gd::parse::json::parse_shallow_object_g( stringValues, argumentsValues, false );
       if( result_.first == false ) return result_;
 
-      if( m_argumentsGlobal.empty() == false )
+      if( IsGlobalEmpty() == false )
       {
-         for( const auto [key_, value_] : m_argumentsGlobal.named() )
+         for( const auto [key_, value_] : GetGlobalArguments().named() )
          {
             std::string stringKey("::");
             stringKey += key_;

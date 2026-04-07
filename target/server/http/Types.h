@@ -141,6 +141,7 @@ struct Objects
    size_t Size() const noexcept { return m_vectorObjects.size(); }
    size_t Back() const noexcept { return m_vectorObjects.size() - 1; }
    bool Empty() const noexcept { return m_vectorObjects.empty(); }
+   void Clear() noexcept { m_vectorObjects.clear(); }
 
    // ## attributes --------------------------------------------------------------
    std::vector< Object > m_vectorObjects;  ///< list of objects
