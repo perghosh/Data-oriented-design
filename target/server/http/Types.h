@@ -123,6 +123,19 @@ struct Object
    gd::argument::arguments m_argumentsAttribute{ m_buffer_ };
 };
 
+/** ==========================================================================
+ * @brief Manages a collection of result `Object` instances with associated metadata
+ * 
+ * The `Objects` struct serves as a container for multiple result objects (tables, 
+ * arguments, etc.) that are produced by endpoint commands. Each object can have 
+ * additional attributes stored in `m_vectorAttributes` for custom metadata or 
+ * configuration data specific to that object.
+ * 
+ * The index operator provides convenient access to the `m_argumentsAttribute` of 
+ * the most recently added object, enabling additional attributes to be associated 
+ * with the latest result object without needing to directly manage the internal
+ * structure of `Object`.
+ */
 struct Objects
 {
    // ## construction ------------------------------------------------------------
@@ -143,8 +156,12 @@ struct Objects
    bool Empty() const noexcept { return m_vectorObjects.empty(); }
    void Clear() noexcept { m_vectorObjects.clear(); }
 
+   void AddAttribute( const gd::argument::arguments& argumentsAttribute ) { m_vectorAttributes.emplace_back( Back(), argumentsAttribute ); }
+   void AddAttribute( unsigned uIndex, const gd::argument::arguments& argumentsAttribute ) { m_vectorAttributes.emplace_back( uIndex, argumentsAttribute ); }
+
    // ## attributes --------------------------------------------------------------
    std::vector< Object > m_vectorObjects;  ///< list of objects
+   std::vector< std::pair<unsigned, gd::argument::arguments> > m_vectorAttributes; /// list of extra information for objects, like custom data
 };
 
 

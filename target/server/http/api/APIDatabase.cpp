@@ -269,6 +269,8 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Query()
  */
 std::pair<bool, std::string> CAPIDatabase::Execute_Select()
 {
+   std::array<std::byte, 128> buffer_;
+   gd::argument::arguments argumentsOptional( buffer_ );
    gd::database::database_i* pdatabaseOpen = nullptr;
 
    CDocument* pdocument = GetDocument();                                                           if( pdocument == nullptr ) { return { false, GetLastError() }; }
@@ -278,7 +280,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
 
    // ## Prepare SQL statement ................................................
    std::string stringSelect;
-   auto result_ = Sql_Prepare(stringSelect);
+   auto result_ = Sql_Prepare(stringSelect, argumentsOptional);
    if( result_.first == false ) { return result_; }
 
    gd::com::pointer<gd::database::cursor_i> pcursor;
@@ -462,7 +464,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Delete()
  * @param "query" Query template to execute
  * @return A pair containing a boolean indicating success and a string containing the error message if any.
  */
-std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql, gd::argument::arguments& argumentsData )
+std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql, gd::argument::arguments& argumentsOptional )
 {
    std::pair<bool, std::string> result_( true, "" );
    CDocument* pdocument = GetDocument();                                                           assert( pdocument != nullptr );
@@ -618,6 +620,8 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql, g
 
          result_ = pqueries->GetQuery( stringQueryName, stringQueryTemplate );
          if( result_.first == false ) { return result_; }
+
+         argumentsOptional.push_back( { "name", stringQueryName } );          // add query name used to access query
       }
 
       sqlbuilder = stringQueryTemplate;                                       // assign to template
