@@ -83,6 +83,8 @@ public:
    // @API [tag: access, row] [description: Methods to return query row data]
    gd::types::uuid GetQueryId( uint64_t uRow );
    std::pair<bool, std::string> GetQuery( std::string_view stringName, std::string& stringQuery );
+   int64_t GetQueryRow( std::string_view stringName ) const; ///< get row index for query with specified name, returns -1 if not found
+   const gd::argument::shared::arguments* GetQueryArguments( uint64_t uRow ) const; ///< get arguments for query at specified row index, returns nullptr if not found
 
    // @API [tag: load, save]
    
@@ -113,5 +115,17 @@ public:
 
 };
 
+/// @brief Retrieves the row index of a query based on its name.
+inline int64_t CQueries::GetQueryRow( std::string_view stringName ) const
+{
+   auto iIndex = m_statement.find( stringName );
+   return iIndex;
+}
+
+/// @brief Retrieves the arguments associated with a query at the specified row index.
+inline const gd::argument::shared::arguments* CQueries::GetQueryArguments( uint64_t uRow ) const
+{
+   return m_statement.get_arguments( uRow );
+}
 
 NAMESPACE_META_END

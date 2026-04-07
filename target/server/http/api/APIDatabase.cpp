@@ -300,6 +300,27 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
       // std::string stringTableHex_d = gd::binary_to_hex_g( stringTable_d );
 #endif // NDEBUG
       Objects().Add( ptable_ );
+
+      if( argumentsOptional["name"].is_true() == true )
+      {                                                                                            assert( argumentsOptional["name"].is_string() == true && "name argument must be a string" );
+         auto stringName = argumentsOptional["name"].as_string();
+         Objects()["name"] = stringName;
+
+         // ## Check for ui information
+         META::CQueries* pqueries = pdocument->QUERIES_Get();
+         auto iRow = pqueries->GetQueryRow( stringName );                    assert( iRow != -1 && "query name not found in document queries" );
+         if( iRow != -1 )
+         {
+            auto parguments_ = pqueries->GetQueryArguments( static_cast<uint64_t>( iRow ) );
+            if( parguments_ != nullptr )
+            {
+               for( auto [key_, value_] : parguments_->named() ) 
+               { 
+                  Objects()[key_] = value_.as_string();         
+               }
+            }
+         }
+      }
    }
 
    return pairReturn;
@@ -616,12 +637,12 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql, g
       {
          // ## Get query based on name .........................................
          std::string_view stringQueryName( stringQueryTemplate.c_str() + 1, stringQueryTemplate.length() - 1 );
+         argumentsOptional.push_back( { "name", stringQueryName } );          // add query name used to access query
+
          META::CQueries* pqueries = pdocument->QUERIES_Get();
 
          result_ = pqueries->GetQuery( stringQueryName, stringQueryTemplate );
          if( result_.first == false ) { return result_; }
-
-         argumentsOptional.push_back( { "name", stringQueryName } );          // add query name used to access query
       }
 
       sqlbuilder = stringQueryTemplate;                                       // assign to template

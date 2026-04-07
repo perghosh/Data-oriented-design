@@ -76,6 +76,13 @@ std::pair<bool, std::string> CDTOResponse::AddTransfer( Types::Objects* pobjects
          {                                                                                         assert( value_.length() < 12 );
             m_tableBody.cell_set( uRow, key_, value_.as_string_view() );
          }
+         else
+         {
+            // ## @OPTIMIZED [tag: if] [description: check if value is string and use string_view to avoid unnecessary copy]
+            if( value_.is_string() == true ) { m_tableBody.cell_set_argument( uRow, key_, value_.as_string_view() ); }
+            else { m_tableBody.cell_set_argument( uRow, key_, value_.as_string() ); }
+         }
+
       }
 
    }
@@ -128,6 +135,15 @@ std::pair<bool, std::string> CDTOResponse::PrintXml( std::string& stringXml, con
             xmlnodeResult.append_attribute("echo").set_value( echo_.as_string_view() );
          }
 
+         // ### Check for arguments attributes and add them as xml attributes
+         const auto* parguments = m_tableBody.row_get_arguments_pointer( uRow ); // ensure arguments are loaded for row
+         if( parguments != nullptr )
+         {
+            for( const auto& [key_, value_] : parguments->named() )
+            {                                                                                      assert( value_.is_string() == true && "Only string values are supported for XML attributes" ); // for now we only support string
+               if( value_.is_string() == true ) { xmlnodeResult.append_attribute( key_ ).set_value( value_.as_string_view() ); }
+            }
+         }
 
          // ### If table then serialize table object
 
@@ -158,7 +174,7 @@ std::pair<bool, std::string> CDTOResponse::PrintXml( std::string& stringXml, con
    // ## serialize xml document to `stringXml`
    std::stringstream stringstream_;
    xmldocument.save( stringstream_, "", pugi::format_raw, pugi::encoding_utf8);
-   stringXml += stringstream_.str();
+   stringXml.append( std::istreambuf_iterator<char>( stringstream_.rdbuf() ), std::istreambuf_iterator<char>() ); // @OPTIMIZED [tag: string] [description: avoid unnecessary copy by appending directly to stringXml]
 
    return { true, "" };
 }

@@ -101,8 +101,8 @@ struct Object
 
    // ## construction ------------------------------------------------------------
    Object() = default;
-   Object( Types::enumType eType, void* pobject ) 
-      : m_eType(eType), m_pobject(pobject, [eType](void* p){ Types::Clear_g(eType, p); }) {}
+   Object( Types::enumType eType, void* pobject )                              // @CRITICAL [tag: memory] [description: object memory destruct, note that objects have special destruct logic] 
+      : m_eType( eType ), m_pobject( pobject, [eType]( void* p ) { Types::Clear_g( eType, p ); } ) {} 
    
    Object(const Object& o): m_eType(o.m_eType), m_pobject(nullptr)
       { m_argumentsAttribute = o.m_argumentsAttribute; }
@@ -123,7 +123,22 @@ struct Object
    gd::argument::arguments m_argumentsAttribute{ m_buffer_ };
 };
 
+/** ============================================================================
+ * @CLASS [tag: http,attribute] [summary: object_attribute_mapping]
+ * @brief Stores metadata for one result object in `Objects::m_vectorObjects`.
+ *
+ * `Attribute` links an object index (`uIndex`) to its associated
+ * key-value metadata (`argumentsAttribute`). The index points to the
+ * corresponding `Object` entry managed by `Objects`.
+ */
+struct Attribute
+{
+   size_t uIndex; ///< index of object in Objects::m_vectorObjects
+   gd::argument::arguments argumentsAttribute; ///< attributes for object at index
+};
+
 /** ==========================================================================
+ * @CLASS [tag: http,objects] [summary: Objects used to build response body]
  * @brief Manages a collection of result `Object` instances with associated metadata
  * 
  * The `Objects` struct serves as a container for multiple result objects (tables, 
@@ -144,7 +159,7 @@ struct Objects
    /// Index operator is used on latest added object and works on the member m_argumentsAttribute
    /// This can be used to add attribute values to the section for result data for specific endpoint command
    gd::argument::arguments::argument_proxy operator[]( std::string_view stringName ) {
-      Object& object_ = m_vectorObjects[Back()];
+      Object& object_ = m_vectorObjects[GetLastIndex()];
       return object_.arguments()[stringName];
    }
 
@@ -152,17 +167,30 @@ struct Objects
    void Add( gd::argument::arguments* p_ ) { m_vectorObjects.emplace_back( Object{ eTypeArguments, p_ } ); }
 
    size_t Size() const noexcept { return m_vectorObjects.size(); }
-   size_t Back() const noexcept { return m_vectorObjects.size() - 1; }
+   size_t GetLastIndex() const noexcept { return m_vectorObjects.size() - 1; }
    bool Empty() const noexcept { return m_vectorObjects.empty(); }
    void Clear() noexcept { m_vectorObjects.clear(); }
 
-   void AddAttribute( const gd::argument::arguments& argumentsAttribute ) { m_vectorAttributes.emplace_back( Back(), argumentsAttribute ); }
-   void AddAttribute( unsigned uIndex, const gd::argument::arguments& argumentsAttribute ) { m_vectorAttributes.emplace_back( uIndex, argumentsAttribute ); }
+   void AddAttribute( const gd::argument::arguments& argumentsAttribute ) { m_vectorAttributes.push_back( Attribute{GetLastIndex(), argumentsAttribute} ); }
+   void AddAttribute( size_t uIndex, const gd::argument::arguments& argumentsAttribute ) { m_vectorAttributes.push_back( Attribute{uIndex, argumentsAttribute} ); }
+   void AddAttribute( const Attribute& attribute ) { m_vectorAttributes.push_back( attribute ); }
+   void AddAttribute( Attribute&& attribute ) { m_vectorAttributes.push_back( std::move(attribute) ); }
+
+   const Attribute* GetAttribute( size_t uIndex ) const;
+
 
    // ## attributes --------------------------------------------------------------
    std::vector< Object > m_vectorObjects;  ///< list of objects
-   std::vector< std::pair<unsigned, gd::argument::arguments> > m_vectorAttributes; /// list of extra information for objects, like custom data
+   std::vector< Attribute > m_vectorAttributes; /// list of extra information for objects, like custom data
 };
+
+/// Get attribute for object at given index, returns nullptr if no attribute found for index
+inline const Attribute* Objects::GetAttribute( size_t uIndex ) const
+{
+   for( const auto& attribute : m_vectorAttributes ) { if( attribute.uIndex == uIndex ) return &attribute;  }
+   return nullptr;                                                            // No attribute found for the given index
+}
+
 
 
 

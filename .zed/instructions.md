@@ -196,13 +196,11 @@ The fourth level is playcode and testcode. Here it's okay to play around. Code c
 
 ## Search tags
 
-A encourage to use search tags and these are placed inside comments when needed or will make code searchable
-
 Format for these tags are:
 tagname [tag: context_words_comma_separated] [summary: short_summary] [description: if_needed_a_longer_description]
 
 - `@CRITICAL`: Indicates critical sections of code that require immediate attention.
-- `@NOTE` : Something that is important to note, may affect other parts, important to understand context etc
+- `@NOTE` : Something that is important to note, may effect other parts, important to understand context etc
 - `@FILE`: Describes the file (always placed at the top).
 - `@PROJECT`: Used for project management. Searching for a project name lists all its tasks.
 - `@TASK`: Describes a specific task or feature within the project.
@@ -210,19 +208,8 @@ tagname [tag: context_words_comma_separated] [summary: short_summary] [descripti
 - `@TODO`: Used to describe tasks that need to be completed. Short reminder
 - `@DEBUG`: Used to describe code used for debugging purposes.
 - `@CLASS`: classes and structs
+- `@OPTIMIZED`: Used to describe code that has been optimized for performance.
 - `@DEPRECATED`: Used to describe code that is no longer in use.
-
-There are also a @PROJECT and @TASK connection. It works like this:
-@PROJECT [name: prompt] [summary: Ask user for specified arguments]
-
-@TASK [summary: add prompt option to options class] [project:prompt] [user: per] [status:open] [created: 250828]
-[summary : Add prompt option to options class]
-[description: "This task involves adding a prompt option to the options class, allowing users to specify whether they want to be prompted for input before executing a command."]
-
-@TASK [summary: add prompt values] [project:prompt] [user: per] [status:open] [created: 250828]
-[summary : Add values specified in prompt]
-[description: "Prompt values are separated with ; if found the add those to options before reading values from arguments"]
-@TASK is connected to @PROJECT with the [project:prompt] and doing that I have a search tool that can filter out based on these settings.
 
 ---
 
