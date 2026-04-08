@@ -80,8 +80,24 @@ const size_t uMethodSourceSize_g = sizeof(pmethodSource_g) / sizeof(gd::expressi
 
 
 
-/**
- * Build SQL query from template string and arguments values.
+/**  -------------------------------------------------------------------------- Build
+ * @CRITICAL [tag: build, sql] [description: main method to build SQL query from template and arguments]
+ * @brief Build SQL query by replacing placeholders with values from arguments
+ * 
+ * Processes SQL template string (`m_stringSql`) by:
+ * 1. Detecting preprocessing tags (`{??...??}`) for expression evaluation
+ * 2. If found, evaluates embedded expressions using runtime with custom methods (`exists`, `get_argument`)
+ * 3. Replaces argument placeholders (`{...}`) with values from `m_argumentsValues`
+ * 
+ * @param stringSqlReady Output parameter receiving the fully processed SQL string
+ * @return std::pair<bool, std::string> Success flag and error message (empty on success)
+ * 
+ * @code
+ * CSqlBuilder builder;
+ * builder.Initialize(arguments_, "SELECT * FROM users WHERE id = {id} AND {??exists('name')}");
+ * std::string stringSql;
+ * auto [bOk, stringError] = builder.Build(stringSql);
+ * @endcode
  */
 std::pair<bool, std::string> CSqlBuilder::Build( std::string& stringSqlReady )
 {

@@ -1104,36 +1104,32 @@ std::string replace_g(const std::string_view& stringSource, std::function<gd::va
       }
       else
       {
-         pit += 2;                                                             // move past "{?"
+         pit += 2;                                                            // move past "{?"
  
          // ## check for custom replacement block: {?? text here ??}
          // A second '?' immediately after "{?" triggers the custom path.
-         if( pit < pitEnd && *pit == iQuestion_g )
+         if( pit < pitEnd && *pit == iQuestion_g )                            // check for second '?' "{??", if found then this is custom replacement block
          {
-            pit++;                                                             // move past the second '?', now pointing at content start
+            pit++;                                                            // move past the second '?', now pointing at content start
  
             const char* piBegin = pit;
  
-            // ## scan forward for the closing sequence "??}"
-            const char* piClose = nullptr;
-            for( const char* p = piBegin; p + 2 < pitEnd; p++ )
+            // ### scan forward for the closing sequence "??}"
+            const char* piClose = nullptr; // close position of custom block
+            for( const char* pi_ = piBegin; pi_ + 2 < pitEnd; pi_++ )
             {
-               if( p[0] == iQuestion_g && p[1] == iQuestion_g && p[2] == iEndBrace_g )
-               {
-                  piClose = p;
-                  break;
-               }
+               if( pi_[0] == iQuestion_g && pi_[1] == iQuestion_g && pi_[2] == iEndBrace_g ) { piClose = pi_; break; } // found closing "??}"
             }
  
             if( piClose == nullptr )
-            {
-               if( pbError != nullptr ) *pbError = true;                      // malformed: closing "??}" not found
+            {                                                                // Missing closing "??}" for custom block
+               if( pbError != nullptr ) *pbError = true;                     // malformed: closing "??}" not found
                return std::string();
             }
  
-            // ## pass the entire inner text to the callback and append the result
-            std::string_view stringCustom( piBegin, piClose - piBegin );
-            std::string stringResult = expression_( stringCustom, pbError );
+            // ### pass the entire inner text to the callback and append the result
+            std::string_view stringCustom( piBegin, piClose - piBegin ); // content between "??" and "??}"
+            std::string stringResult = expression_( stringCustom, pbError );  // call expression callback with content
             if( pbError != nullptr && *pbError == true ) return std::string(); // if error occurred in expression callback, return empty string
             stringNew += stringResult;                                        // append returned string as-is
  

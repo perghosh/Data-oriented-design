@@ -92,7 +92,10 @@ std::pair<bool, std::string> CAPIDatabase::Execute()
          return { false, "unknown database command: " + std::string(stringCommand) };
       }
 
-      if( result_.first == false ) { return result_; }
+      if( result_.first == false ) 
+      {                                                                                           LOG_ERROR( "DB error: " & result_.second );
+         return result_; 
+      }
 
 #ifndef NDEBUG
       auto uObjectCount_d = Objects().Size();
