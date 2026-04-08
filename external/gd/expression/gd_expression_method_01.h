@@ -42,6 +42,7 @@ std::pair<bool, std::string> product_g(const std::vector< value >& vectorArgumen
 std::pair<bool, std::string> variance_g(const std::vector< value >& vectorArgument, value* pvalueResult);
 
 std::pair<bool, std::string> coalesce_g(const std::vector< value >& vectorArgument, value* pvalueResult);  
+std::pair<bool, std::string> exists_g(const std::vector< value >& vectorArgument, value* pvalueResult);  
 
 std::pair<bool, std::string> abs_g(const std::vector<value>& vectorArgument, value* pvalueResult);
 std::pair<bool, std::string> round_g(const std::vector<value>& vectorArgument, value* pvalueResult);
@@ -93,6 +94,7 @@ const method pmethodDefault_g[] = {
    { (void*)&average_g, "average", 1, 1, method::eFlagVarArgs },// average(a, b, ...) — min 1 arg
    { (void*)&ceil_g, "ceil", 1, 1},                 // ceil(number) - round up to integer
    { (void*)&coalesce_g, "coalesce", 1, 1, method::eFlagVarArgs }, // coalesce(a, b, ...) - first non-null
+   { (void*)&exists_g, "exists", 2, 1},             // exists(value) - check if value exists and if so it returns argument, otherwise returns null
    { (void*)&floor_g, "floor", 1, 1},               // floor(number) - round down to integer
    { (void*)&if_g, "if", 3, 1 },                    // if(condition, true_value, false_value)
    { (void*)&is_not_null_g, "is_not_null", 1, 1 },  // is_not_null(value) - check not null

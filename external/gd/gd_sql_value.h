@@ -83,14 +83,29 @@ inline std::string replace_g(const std::string_view& stringSource, const gd::arg
 /// Replace values in string with values from arguments object, arguments replaced are in braces, if argument is not found it is kept. That enables multiple replacements.
 std::string replace_g( const std::string_view& stringSource, const gd::argument::arguments& argumentsValue, tag_brace, tag_keep_not_found );
 
-std::string replace_g(const std::string_view& stringSource, std::function<gd::variant_view (const std::string_view&)> find_, bool* pbError, tag_preprocess);
+std::string replace_g(const std::string_view& stringSource, std::function<gd::variant_view (const std::string_view&)> find_, std::function<std::string (std::string_view, bool* pbError)> expression_, bool* pbError, tag_preprocess);
+
 inline std::string replace_g(const std::string_view& stringSource, const gd::argument::arguments& argumentsValue, bool* pbError, tag_preprocess) {
    return replace_g(stringSource, [&argumentsValue] ( const auto& name_ ) -> gd::variant_view {
       return argumentsValue[name_].as_variant_view();
-   }, pbError, tag_preprocess{});
+   }, nullptr, pbError, tag_preprocess{});
 }
 inline std::string replace_g(const std::string_view& stringSource, const gd::argument::arguments& argumentsValue, tag_preprocess) {
    return replace_g( stringSource, argumentsValue, nullptr, tag_preprocess{});
 }
+
+inline std::string replace_g(const std::string_view& stringSource, const gd::argument::arguments& argumentsValue, std::function<std::string (std::string_view, bool* pbError)> expression_,bool* pbError, tag_preprocess) {
+   return replace_g(stringSource, [&argumentsValue] ( const auto& name_ ) -> gd::variant_view {
+      return argumentsValue[name_].as_variant_view();
+   }, expression_, pbError, tag_preprocess{});
+}
+
+inline std::string replace_g(const std::string_view& stringSource, const gd::argument::shared::arguments& argumentsValue, std::function<std::string (std::string_view, bool* pbError)> expression_,bool* pbError, tag_preprocess) {
+   return replace_g(stringSource, [&argumentsValue] ( const auto& name_ ) -> gd::variant_view {
+      return argumentsValue[name_].as_variant_view();
+   }, expression_, pbError, tag_preprocess{});
+}
+
+
 
 _GD_SQL_QUERY_END

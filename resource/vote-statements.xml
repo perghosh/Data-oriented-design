@@ -3,7 +3,8 @@
    <statements>
       <statement name="vote-get_first" format="raw" type="select">SELECT hex(PollK) AS PollK FROM TPoll LIMIT 1</statement>
       <statement name="vote-poll_search" format="jinja" type="select">SELECT hex(PollK) id, FName name, FHeader header FROM TPoll WHERE FName LIKE ''%{=name}%'' OR ''%{=header}%'' ORDER BY FName</statement>
-      <statement name="vote-poll_search_all" format="jinja" type="select">SELECT hex(PollK) id, FName name, FHeader header FROM TPoll ORDER BY FName</statement>
+      <!-- <statement name="vote-poll_search_all" format="jinja" type="select">SELECT hex(PollK) id, FName name, FHeader header FROM TPoll ORDER BY FName</statement> -->
+      <statement name="vote-poll_search_all" format="jinja" type="select">SELECT hex(PollK) id, FName name, FHeader header FROM TPoll {?? exists( args::exists( args, "name" ), "WHERE FName LIKE ''%{=name}%'' OR FHeader LIKE ''%{=name}%''" ) ??} ORDER BY FName</statement>
       <statement name="vote-poll_table" format="jinja" type="select">SELECT PollK, FName, FHeader, FDescription FROM TPoll WHERE PollK = x{PollK}</statement>
       
       <statement name="vote-count" format="jinja" type="select">SELECT COUNT(*) AS uCount FROM TPoll WHERE PollK = {PollK}</statement>

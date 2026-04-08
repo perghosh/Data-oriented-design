@@ -764,20 +764,20 @@ std::pair<bool,std::string> replace_implementation(const std::string_view& strin
          if(*it != '\'' ) stringNew += *it;                                    // no quote then copy character
          else
          {                                                                     // string is found, when in string we need to copy until end of string is found
-            const char* pbszFind = &(*it) + 1; 
+            const char* piFind = &(*it) + 1; 
 
             // ## Check for double qoute, same as single .....................
-            if( *pbszFind == '\'' )
+            if( *piFind == '\'' )
             {
                stringNew += *it;
                it++;
                continue;
             }
 
-            pbszFind = gd::parse::strchr( pbszFind, '\'', gd::parse::sql{} );  // method used to find last quote, this method knows how to skip double quoutes
-            if(pbszFind != nullptr && pbszFind <= &(*(itEnd - 1)))
+            piFind = gd::parse::strchr( piFind, '\'', gd::parse::sql{} );  // method used to find last quote, this method knows how to skip double quoutes
+            if(piFind != nullptr && piFind <= &(*(itEnd - 1)))
             {
-               auto uSize = (pbszFind - &(*it));
+               auto uSize = (piFind - &(*it));
                stringNew.append( &(*it), uSize + 1);                           // append text including first quote (note + 1)
                it += uSize;                                                    // move iterator to end of string
             }
@@ -785,8 +785,8 @@ std::pair<bool,std::string> replace_implementation(const std::string_view& strin
             {
                auto uSizeToEnd = std::distance(it, itEnd);                     // get distance to end of string
                if( uSizeToEnd > 20 ) uSizeToEnd = 20;                          // limit to 20 characters
-               const auto* pbszPosition = &( *it );
-               return { false, std::string("no quote ending: ") + std::string( pbszPosition, uSizeToEnd) }; // end of string not found, return text and the first 20 characters
+               const auto* piPosition = &( *it );
+               return { false, std::string("no quote ending: ") + std::string( piPosition, uSizeToEnd) }; // end of string not found, return text and the first 20 characters
             }
          }
       }
@@ -952,11 +952,11 @@ std::string replace_g(const std::string_view& stringSource, const gd::argument::
          if(*it != '\'' ) stringNew += *it;                                    // no quote then copy character
          else
          {                                                                     // string is found, when in string we need to copy until end of string is found
-            const char* pbszFind = &(*it) + 1; 
-            pbszFind = gd::parse::strchr( pbszFind, '\'', gd::parse::sql{} );  // method used to find last quote, this method knows how to skip double quoutes
-            if(pbszFind != nullptr && pbszFind <= &(*(itEnd - 1)))
+            const char* piFind = &(*it) + 1; 
+            piFind = gd::parse::strchr( piFind, '\'', gd::parse::sql{} );  // method used to find last quote, this method knows how to skip double quoutes
+            if(piFind != nullptr && piFind <= &(*(itEnd - 1)))
             {
-               auto uSize = (pbszFind - &(*it));
+               auto uSize = (piFind - &(*it));
                stringNew.append( &(*it), uSize + 1);                           // append text including first quote (note + 1)
                it += uSize;
             }
@@ -968,7 +968,7 @@ std::string replace_g(const std::string_view& stringSource, const gd::argument::
       }
       else
       {
-         const char* pbszFromKeep = &(*it);                                    // keep start position if name for template argument isnt found and therefore kept
+         const char* piFromKeep = &(*it);                                    // keep start position if name for template argument isnt found and therefore kept
          stringName.clear();
          it++;
          while(*it != '}' && it != itEnd)
@@ -978,7 +978,7 @@ std::string replace_g(const std::string_view& stringSource, const gd::argument::
          }
 
          // store old part if no replace value is found for name, then this should be kept
-         std::string_view stringKeepOld( pbszFromKeep, stringName.length() + 2 ); // 2 = sizeof("{}") - zero terminator
+         std::string_view stringKeepOld( piFromKeep, stringName.length() + 2 ); // 2 = sizeof("{}") - zero terminator
 
          if(*it == '}')
          {
@@ -1057,31 +1057,42 @@ std::string replace_g(const std::string_view& stringSource, const gd::argument::
  * Input: "SELECT * FROM users WHERE active = {?status,1,0}"
  * If find_("status") returns true: "SELECT * FROM users WHERE active = 1"
  * If find_("status") returns false: "SELECT * FROM users WHERE active = 0"
+ * 
+ * @example
+ * Input: "SELECT * FROM users WHERE active = {??custom_expression??}"
+ * The entire text "custom_expression" is passed verbatim to find_(), and whatever
+ * variant_view it returns is appended to the output.
+ * 
+ * Syntax summary:
+ *   {?name;true_val;false_val}   — conditional replacement (existing behaviour)
+ *   {??text here??}              — custom replacement: full text passed to find_()
+ * 
  */
-std::string replace_g(const std::string_view& stringSource, std::function<gd::variant_view (const std::string_view&)> find_, bool* pbError, tag_preprocess )
+std::string replace_g(const std::string_view& stringSource, std::function<gd::variant_view (const std::string_view&)> find_, std::function<std::string (std::string_view, bool*)> expression_, bool* pbError, tag_preprocess )
 {
    using namespace gd::types;
-
+ 
    unsigned uArgumentIndex = 0;
    std::string stringName;       // current variable name that is replaced
    std::string stringNew;        // new created string
    std::string_view stringExpression; // current variable name that is replaced
-
+ 
+   stringNew.reserve( stringSource.length() );                               // pre allocate
+ 
    if( pbError != nullptr ) *pbError = false;
-
+ 
    for( const char* pit = stringSource.data(), * pitEnd = stringSource.data() + stringSource.length(); pit < pitEnd; pit++ )
-   //for(auto it = std::begin( stringSource ), itEnd = std::end( stringSource ); it != itEnd; it++ )
    {
       if(*pit != iBeginBrace_g || (*pit == iBeginBrace_g && *(pit + 1) != iQuestion_g) )
       {
          if(*pit != '\'' ) stringNew += *pit;                                  // no quote then copy character
          else
          {                                                                     // string is found, when in string we need to copy until end of string is found
-            const char* pbszFind = pit + 1; 
-            pbszFind = gd::parse::strchr( pbszFind, '\'', gd::parse::sql{} );  // method used to find last quote, this method knows how to skip double quoutes
-            if( pbszFind != nullptr && pbszFind <= pitEnd )
+            const char* piFind = pit + 1; 
+            piFind = gd::parse::strchr( piFind, '\'', gd::parse::sql{} );  // method used to find last quote, this method knows how to skip double quoutes
+            if( piFind != nullptr && piFind <= pitEnd )
             {
-               auto uSize = (pbszFind - pit);
+               auto uSize = (piFind - pit);
                stringNew.append( pit, uSize + 1);                              // append text including first quote (note + 1)
                pit += uSize;
             }
@@ -1093,36 +1104,73 @@ std::string replace_g(const std::string_view& stringSource, std::function<gd::va
       }
       else
       {
-         stringExpression = std::string_view();
          pit += 2;                                                             // move past "{?"
-
-         const char* pbszBegin = pit;
-         const char* pbszEnd = gd::parse::strchr( pbszBegin, stringSource.data() + stringSource.length(), '}', '{', gd::parse::tag_scope{});
-
+ 
+         // ## check for custom replacement block: {?? text here ??}
+         // A second '?' immediately after "{?" triggers the custom path.
+         if( pit < pitEnd && *pit == iQuestion_g )
+         {
+            pit++;                                                             // move past the second '?', now pointing at content start
+ 
+            const char* piBegin = pit;
+ 
+            // ## scan forward for the closing sequence "??}"
+            const char* piClose = nullptr;
+            for( const char* p = piBegin; p + 2 < pitEnd; p++ )
+            {
+               if( p[0] == iQuestion_g && p[1] == iQuestion_g && p[2] == iEndBrace_g )
+               {
+                  piClose = p;
+                  break;
+               }
+            }
+ 
+            if( piClose == nullptr )
+            {
+               if( pbError != nullptr ) *pbError = true;                      // malformed: closing "??}" not found
+               return std::string();
+            }
+ 
+            // ## pass the entire inner text to the callback and append the result
+            std::string_view stringCustom( piBegin, piClose - piBegin );
+            std::string stringResult = expression_( stringCustom, pbError );
+            if( pbError != nullptr && *pbError == true ) return std::string(); // if error occurred in expression callback, return empty string
+            stringNew += stringResult;                                        // append returned string as-is
+ 
+            pit = piClose + 2;                                                // advance past "??}" — loop's pit++ will step over '}'
+            continue;
+         }
+ 
+         // ## existing conditional replacement block: {?name;true_val;false_val}
+         stringExpression = std::string_view();
+ 
+         const char* piBegin = pit;
+         const char* piEnd = gd::parse::strchr( piBegin, stringSource.data() + stringSource.length(), '}', '{', gd::parse::tag_scope{});
+ 
          // ## parse first part to found out what to do
-         const char* pbszSemicolon = gd::parse::strchr( pbszBegin, pbszEnd, iSemicolon_g );
-         if(*pbszSemicolon != iSemicolon_g)
+         const char* piSemicolon = gd::parse::strchr( piBegin, piEnd, iSemicolon_g );
+         if(*piSemicolon != iSemicolon_g)
          {
             if( pbError != nullptr ) *pbError = true;
             // ERROR: TODO fix code for error
             return std::string();
          }
-
+ 
          // ## check name or expression
-         stringExpression = std::string_view( pbszBegin, pbszSemicolon - pbszBegin );
+         stringExpression = std::string_view( piBegin, piSemicolon - piBegin );
          gd::variant_view value_ = find_(stringExpression);
          bool bTrue = true;
          if( value_.empty() == true ) bTrue = false;
          else { bTrue = value_.is_true(); }
-
+ 
          //bool bTrue = find_(stringExpression).is_null() == false ? true : false;
-
+ 
          // ### extract rest
-         pbszBegin = pbszSemicolon + 1;
-         stringExpression = std::string_view( pbszBegin, pbszEnd - pbszBegin );
+         piBegin = piSemicolon + 1;
+         stringExpression = std::string_view( piBegin, piEnd - piBegin );
          std::vector<std::string_view> vectorPart;
          gd::utf8::split( stringExpression, iSemicolon_g, vectorPart );
-
+ 
          if(vectorPart.empty() == false)
          {
             if(bTrue == true)
@@ -1134,14 +1182,13 @@ std::string replace_g(const std::string_view& stringSource, std::function<gd::va
                stringNew.append( vectorPart[1] );
             }
          }
-
-         pit = pbszEnd;
+ 
+         pit = piEnd;
       }
    }// for(auto it = std::begin( stringSource ...
-
+ 
    return stringNew;
 }
-
 
 
 _GD_SQL_QUERY_END

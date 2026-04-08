@@ -300,6 +300,28 @@ std::pair<bool, std::string> coalesce_g(const std::vector<value>& vectorArgument
    return { true, "" };
 }
 
+/// Check if a value exists (is not null) and return the value if it exists, otherwise return null.
+std::pair<bool, std::string> exists_g(const std::vector<value>& vectorArgument, value* pvalueResult)
+{                                                                                                  assert(vectorArgument.size() > 1);
+   const auto& v_ = vectorArgument[1];
+
+   bool bExists = false;
+
+   if( v_.is_bool() == true ) { bExists = v_.as_bool(); }
+   else if( v_.is_null() == false ) { bExists = true; }
+   
+   if( bExists == true )
+   {
+      *pvalueResult = vectorArgument[0];
+      return { true, "" };
+   }
+   else
+   {
+      *pvalueResult = value();                                                  // return null if value does not exist
+      return { true, "" };
+   }
+}
+   
 
 /// Calculate absolute value
 std::pair<bool, std::string> abs_g(const std::vector<value>& vectorArgument, value* pvalueResult)
