@@ -767,7 +767,7 @@ std::pair<bool,std::string> replace_implementation(const std::string_view& strin
             const char* piFind = &(*it) + 1; 
 
             // ## Check for double qoute, same as single .....................
-            if( *piFind == '\'' )
+            if( *piFind == '\'' )                                             // '' - double quote, copy one and continue
             {
                stringNew += *it;
                it++;

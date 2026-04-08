@@ -655,7 +655,7 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql, g
 
    if( sqlbuilder.IsSqlReady() == false )
    {
-      result_ = sqlbuilder.Build( stringExecute );
+      result_ = sqlbuilder.Build( stringExecute );                            // @CRITICAL: [tag: sql] [description: Build SQL statement from template and values]
       if( result_.first == false ) { return result_; }
    }
    else
