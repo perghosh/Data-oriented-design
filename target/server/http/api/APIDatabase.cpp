@@ -663,6 +663,11 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql, g
       stringExecute =std::move( sqlbuilder.GetSql() );
    }
 
+#if (TARGET_COMPILE_MODE_ & 1)
+   LOG_VERBOSE_RAW( "Prepared SQL: " & stringExecute.substr( 0, 150 ) );
+#endif
+
+
    stringSql = std::move(stringExecute);
 
    return { true, "" };

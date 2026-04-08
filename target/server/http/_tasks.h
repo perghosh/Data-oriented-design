@@ -24,20 +24,12 @@
   
  */
 
+/*
+@PROJECT [name: logging] [tag: log] [description: turn on/off different log types to make development simpler]
 
- /*
-
-@PROJECT [name: load-queries] [tag: load, queries] [description: Load queries used in web server ]
-
-@TASK [project: load-queries] [tag: document, load, queries] [status: open] [user: per]
-[summary: Add method to document that load queries from xml]
-[description: Method in document to load queries, why it is placed there is because the METAQueries should focus on data only]
-
-@TASK [project: load-queries] [tag: document, validate, queries] [status: open] [user: per]
-[description: Validate that queries are correct]
-  
- */
-
+@TASK [project: logging] [description: Log SQL to check queries, needed for development} [tag: log, sql] [status: open] [user: per]
+*/
+ 
 /*
 @PROJECT [name: vote-detail] [tag: html] [description: test logic for adding vote information for vote]
 

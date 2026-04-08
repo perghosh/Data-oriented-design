@@ -13,6 +13,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 
 include(include_external)
+include(include_compile)
 
 # add_subdirectory("playground") # use this to test code for later use in web server
 # add_subdirectory("tests") # tests to check logic in web server
@@ -80,26 +81,23 @@ if( USE_TARGET_ )
    set(TARGET_NAME_ "http")
 
    add_executable(${TARGET_NAME_}
-      ${external_sqlite}
-      ${external_pugixml}
-      ${GD_SOURCES_ALL}
-      ${GD_MODULES__SOURCES_ALL}
+      ${external_sqlite} ${external_pugixml} ${GD_SOURCES_ALL} ${GD_MODULES__SOURCES_ALL}
       # ${APPLICATION_DIRECTORY_}/ApplicationBasic.cpp
 
       ${TARGET_FILES_}
       ${TARGET_SOURCE_FILES_}
-     # ${HTTP_FILES_}                                                           # current directory files
-     # ${HTTP_STATE_FILES_}                                                     # files from state subdirectory
+     # ${HTTP_FILES_}                                                         # current directory files
+     # ${HTTP_STATE_FILES_}                                                   # files from state subdirectory
       "main.cpp"                                                              # main file where method main is located
    )
    
-   set_target_properties(${TARGET_NAME_} PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF )
+   set_target_properties(${TARGET_NAME_} PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF ) # C++23 default, turn off other compiler features
 
    target_include_directories(${TARGET_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
    target_include_directories(${TARGET_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/source)
    target_compile_definitions(${TARGET_NAME_} PRIVATE _CRT_SECURE_NO_WARNINGS GD_LOG_SIMPLE GD_DATABASE_SQLITE_USE GD_DATABASE_ODBC_USE)
    set_compiler_options()
-
+   setup_compile_flags(${TARGET_NAME_} "DEVELOPER,VERBOSE")                   # Possible values: DEVELOPER, VERBOSE, MEMORY, SAFE (comma-separated list)
 
 #   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 #      target_link_libraries(${TARGET_NAME_} ${CMAKE_DL_LIBS})
