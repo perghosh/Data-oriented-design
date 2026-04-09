@@ -802,8 +802,8 @@ std::pair<bool,std::string> replace_implementation(const std::string_view& strin
 
          if(*it == '}')
          {
-            bool bRaw = false;
-            gd::variant_view v_;
+            bool bRaw = false; // mark if value is added raw without sql escaping
+            gd::variant_view variantviewInsert; // value to insert
 
             if(stringName.empty() == false)
             {
@@ -817,30 +817,30 @@ std::pair<bool,std::string> replace_implementation(const std::string_view& strin
 
             if(stringName.empty() == true)
             {
-               v_ = argumentsValue[uArgumentIndex].as_variant_view();
+               variantviewInsert = argumentsValue[uArgumentIndex].as_variant_view();
                uArgumentIndex++;
             }
             else
             {
-               // ## investigate type of name
+               // ### investigate type of name
                char iFirst = stringName.at( 0 );                              // get first character
 
                if( is_ctype_g( iFirst, "digit"_ctype ) == true)               // is value a number
                {
                   unsigned uIndex = std::stoul( stringName );                                      assert( uIndex < 0xffff ); //realistic ??
-                  v_ = argumentsValue[uIndex].as_variant_view();
+                  variantviewInsert = argumentsValue[uIndex].as_variant_view();
                }
-               else { v_ = argumentsValue[stringName].as_variant_view(); }
+               else { variantviewInsert = argumentsValue[stringName].as_variant_view(); }
             }
 
             // ## check if value is required and if value is found return error
-            if( bRequired == true && v_.is_null() == true )
+            if( bRequired == true && variantviewInsert.is_null() == true )
             {
                return { false, std::string("required value not found: ") + stringName };
             }
 
-            if( bRaw == false ) append_g( v_, stringNew );                     // add value to work in sql
-            else                append_g( v_, stringNew, gd::sql::tag_raw{});  // add value to string without fix for quotes if needed for value
+            if( bRaw == false ) append_g( variantviewInsert, stringNew );                     // add value to work in sql
+            else                append_g( variantviewInsert, stringNew, gd::sql::tag_raw{});  // add value to string without fix for quotes if needed for value
          }// if(*it == '}') {
       }
    }// for(auto it = std::begin( stringSource ...

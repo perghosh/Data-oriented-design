@@ -548,6 +548,12 @@ std::pair<bool, std::string> CDocument::DATABASE_Prepare( const gd::argument::ar
       if( eDialect == gd::sql::eSqlDialectUnknown ) { return { false, "Unknown database dialect: " + stringDialect }; }
 
       m_pMDatabase->SetDialect(eDialect);
+
+      // ## Check if dialect is set for application, if not the set it
+      if( GetApplication()->PROPERTY_Exists( "database-dialect" ) == false )
+      {
+         GetApplication()->PROPERTY_Set( "database-dialect", stringDialect );
+      }
    }
 
    return { true, "" };

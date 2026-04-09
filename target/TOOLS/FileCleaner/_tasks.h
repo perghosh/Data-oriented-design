@@ -5,6 +5,19 @@ cleaner find -filter "*.h;*.cpp" -R --pattern "@TASK" --segment comment --keys "
 */
 
 /*
+@PROJECT [name: default-filter-recursive] 
+[description: Now there is a need to write ** to simplify recursive and searc in all files, add to configuration what to use as default]
+
+@TASK [tag: configuration] [description: add to configuration to set default filter and recursive, filter to what files to look in] 
+[project: default-filter-recursive]
+
+@TASK [tag: configuration] [description: if no filter argument is found then check configuratioin for default] 
+[project: default-filter-recursive]
+
+
+ */
+
+/*
 @PROJECT [name: hot] [description: Hot operations, collec what to do here]
 
 @TASK [title: prompt] [project:hot] [user: per] [status:open] [level: 2] [created: 250830]
@@ -16,41 +29,6 @@ cleaner find -filter "*.h;*.cpp" -R --pattern "@TASK" --segment comment --keys "
 [description: "Add better description for prompt values, what it does and how to use it"]
 */
 
-
-/*
-@PROJECT [name: prompt]
-
-@TASK [title: add prompt option to options class] [project:prompt] [user: per] [status:open] [created: 250828]
-[summary : Add prompt option to options class]
-[description: "This task involves adding a prompt option to the options class, allowing users to specify whether they want to be prompted for input before executing a command."]
-
-@TASK [title: add prompt values] [project:prompt] [user: per] [status:open] [created: 250828]
-[summary : Add values specified in prompt]
-[description: "Prompt values are separated with ; if found the add those to options before reading values from arguments"]
-
-*/
-
-// ----------------------------------------------------------------------------
-
-/*
-@PROJECT [name: history] [description: History operations]
-
-@TASK [title: home directory] [project:history] [user: kevin] [status:closed] [created: 250830]
-[summary : Replace GetHistoryPath_s with CApplication::FolderGetHome_s to get home directory]
-
-@TASK [title: pin history item] [project:history] [user: per] [status:open] [created: 250828]
-[summary : Pin a history item]
-[description: "This task involves adding a pin feature to the history, allowing users to pin specific commands for easy access later."]
-
-@TASK [title: unpin history item] [project:history] [user: per] [status:open] [created: 250828]
-[summary : Unpin a history item]
-[description: "This task involves adding an unpin feature to the history, allowing users to unpin specific commands that are no longer needed."]
-
-@TASK [title: check for duplicate aliases] [project:history] [user: per] [status:open] [created: 251111]
-[summary : Check for duplicate aliases]
-[description: "This task involves checking for duplicate aliases in the history. If there are any print some sort of warning"]
-
-*/
 
 // ----------------------------------------------------------------------------
 
@@ -102,16 +80,6 @@ cleaner find -filter "*.h;*.cpp" -R --pattern "@TASK" --segment comment --keys "
 
 */
 
-/*
-@PROJECT [name: overload] [summary: Add overloading of arguments using the history command]
-
-@TASK [summary: overload history command arguments] [project:overload] [user: per] [status:open] [created: 251114] [type: code]
-[description: Running history commands reads arguments from saved history string, but to change check what type of arguments that is passed running the history command]
-
-@TASK [summary: test that overload works] [project:overload] [user: per] [status:open] [created: 251114] [type: code]
-[description: Check to see how the overload works, there might be problems there last time I checked]
-
-*/
 
 /*
 @PROJECT [name: ignore] [summary: Global flag to disable ignore settings]
