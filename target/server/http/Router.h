@@ -54,8 +54,10 @@ public:
 
    enum enumResultFormat
    {
-      eResultFormatXml        = 0x00000000,
-      eResultFormatJson       = 0x00000100,
+      eResultFormatXml        = 0x00000100,  // Xml formatde data
+      eResultFormatJson       = 0x00000200,  // Json formated data
+      eResultFormatBinary     = 0x00000400,  // For images, files, etc.
+      eResultFormatMultipart  = 0x00000800,  // For multipart/form-data
    };
 
    enum enumRequestFormat
@@ -106,8 +108,10 @@ public:
    bool IsRequestFormatJson() const { return ( m_uFlags & eRequestFormatMask ) == eRequestFormatJson; }
    void* GetRequestData() const { return m_pairRequestData.second; }
 
-   bool IsXml() const { return ( m_uFlags & eResultFormatJson ) == 0; }
+   bool IsXml() const { return ( m_uFlags & eResultFormatXml ) == eResultFormatXml; }
    bool IsJson() const { return ( m_uFlags & eResultFormatJson ) == eResultFormatJson; }
+   bool IsBinary() const { return ( m_uFlags & eResultFormatBinary ) == eResultFormatBinary; }
+   bool IsMultipart() const { return ( m_uFlags & eResultFormatMultipart ) == eResultFormatMultipart; }
 
    void SetResponseData( unsigned uType, void* pData ) { m_pairRequestData = { uType, pData }; }
    
@@ -146,9 +150,6 @@ public:
 // ## attributes ----------------------------------------------------------------
 public:
    CAPIContext  m_context;             ///< context object that holds application and document pointers, response data and other useful information for command handlers
-
-   //CApplication* m_pApplication{};     ///< application instance
-   //CDocument* m_pDocument{};           ///< document instance
 
    unsigned m_uFlags{};                ///< router flags
    unsigned m_uUserIndex{};            ///< user index for user in session table for users logged in

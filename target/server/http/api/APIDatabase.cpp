@@ -706,8 +706,15 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
    using namespace gd::sql;
    std::array<char, 128> buffer_;
 
+   META::CDatabase* pdatabase_ = pdocument->DATABASE_Get();
+   auto uDialect = pdatabase_->GetDialect();
+
    std::string stringForm = argumentsOptions["form"].as_string(); // layout is required and should be string
    std::string stringContainer = argumentsOptions["container"].as_string(); // container is required and should be string
+
+   auto* pdatabase = pdocument->GetDatabase();
+   if( pdatabase == nullptr ) return { false, "no database connection in document: " + std::string( pdocument->GetName() ) };
+
 
    if( stringContainer.empty() == true ) { stringContainer = "//values"; }
 
@@ -722,7 +729,7 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
       pugi::xpath_node_set xpathnodesetValues = pxmldocument->select_nodes(stringContainer.c_str());
       for( auto& xpathnode_ : xpathnodesetValues )
       {
-         query queryInsert;
+         query queryInsert{ enumSqlDialect( uDialect ) };
 
          queryInsert << table_g( stringTable, buffer_ ); 
 
@@ -732,10 +739,18 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
             std::string_view stringName = xmlattribute_.name();
             std::string_view stringValue = xmlattribute_.value();
 
-            queryInsert << field_g( stringName, buffer_ ).value( stringValue );
+            gd::argument::arguments argumentsFind( buffer_ );
+            argumentsFind.append( { {std::string_view("table"), gd::variant_view(stringTable)}, {std::string_view("column"), gd::variant_view(stringName)} }, gd::types::tag_view{});
+            int64_t iRow = pdatabase_->Column_FindRow( argumentsFind ); 
+            if( iRow == -1 ) { return { false, "column not found in database: " + std::string(stringName) }; }
+
+            auto uType = pdatabase_->Column_GetType( iRow );
+            queryInsert << field_g( stringName, buffer_ ).value( stringValue ).type( uType );
          }
 
          std::string stringInsertSql = queryInsert.sql_get( eSqlInsert );
+         auto result_ = pdatabase->execute( stringInsertSql );
+         if( result_.first == false ) { return result_; }
       }
    }
 

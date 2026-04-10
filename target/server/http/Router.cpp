@@ -38,6 +38,7 @@ CRouter::~CRouter()
 
    if( m_pairRequestData.second != nullptr )
    {
+      // @CRITICAL [tag: router, request data] [description: Clean up request data based on its type to prevent memory leaks]
       unsigned uType = m_pairRequestData.first;
       void* pData = m_pairRequestData.second;
       if( uType == eRequestFormatXml )
