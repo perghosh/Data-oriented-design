@@ -92,7 +92,7 @@ public:
 
 // ## free functions ------------------------------------------------------------
 public:
-   std::pair<bool, std::string> XML_BulkInsert( const gd::argument::arguments& argumentsOptions, pugi::xml_document* pxmldocument, CDocument* pdocument );
+   std::pair<bool, std::string> XML_BulkInsert( const gd::argument::arguments& argumentsOptions, pugi::xml_document* pxmldocument, CDocument* pdocument, gd::argument::arguments* pargumentsReturn = nullptr );
 
 
 };

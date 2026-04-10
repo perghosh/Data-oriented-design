@@ -165,6 +165,7 @@ struct Objects
 
    void Add( gd::table::dto::table* p_ ) { m_vectorObjects.emplace_back( Object{ eTypeDtoTable, p_ } ); }
    void Add( gd::argument::arguments* p_ ) { m_vectorObjects.emplace_back( Object{ eTypeArguments, p_ } ); }
+   void Add( const gd::argument::arguments& arguments_ ) { m_vectorObjects.emplace_back( Object{ eTypeArguments, new gd::argument::arguments(arguments_) } ); }
 
    size_t Size() const noexcept { return m_vectorObjects.size(); }
    size_t GetLastIndex() const noexcept { return m_vectorObjects.size() - 1; }

@@ -119,19 +119,21 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Execute()
    std::array<std::byte, 128> buffer_;
    gd::argument::arguments argumentsOptions(buffer_);
 
-   std::string stringName = m_argumentsParameter["name"].as_string();
-   std::string stringFormat = m_argumentsParameter["format"].as_string();
+   std::string stringName = GetParameterArguments()["name"].as_string();
+   std::string stringFormat = GetParameterArguments()["format"].as_string();
    CDocument* pdocument = GetDocument();
 
    if( Exists( "xml" ) )
    {
-      std::string stringTable = m_argumentsParameter["table"].as_string();
+      std::string stringTable = GetParameterArguments()["table"].as_string();
       if( stringTable.empty() == false ) { argumentsOptions["table"] = stringTable; }
 
       argumentsOptions["form"] = "attribute";
-
+      gd::argument::arguments argumentsReturn;
+      argumentsReturn.reserve( 64 );
       pugi::xml_document* pxmldocument = GetParameterArguments()["xml"].get_pointer<pugi::xml_document>(); // get pointer to xml pointer that is prepared
-      XML_BulkInsert( argumentsOptions, pxmldocument, pdocument );
+      XML_BulkInsert( argumentsOptions, pxmldocument, pdocument, &argumentsReturn );
+      Objects().Add( argumentsReturn );
    }
 
    return { true, "" };
@@ -701,10 +703,11 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql, g
 }
 
 
-std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::arguments& argumentsOptions, pugi::xml_document* pxmldocument, CDocument* pdocument )
+std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::arguments& argumentsOptions, pugi::xml_document* pxmldocument, CDocument* pdocument, gd::argument::arguments* pargumentsReturn )
 {
    using namespace gd::sql;
-   std::array<char, 128> buffer_;
+   std::array<char, 128> buffer_; // buffer to avoid allocate memory
+   uint64_t uInsertCount = 0;
 
    META::CDatabase* pdatabase_ = pdocument->DATABASE_Get();
    auto uDialect = pdatabase_->GetDialect();
@@ -720,7 +723,7 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
 
    if( stringForm == "attribute" )
    {
-      // Values are placed as attributes in xml
+      // ## xml form is like <values column1="value1" column2="value2" />
 
       std::string stringTable = argumentsOptions["table"].as_string(); // table is required and should be string  
       if( stringTable.empty() == true ) { return { false, "table name is required for attribute form" }; }
@@ -731,10 +734,10 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
       {
          query queryInsert{ enumSqlDialect( uDialect ) };
 
-         queryInsert << table_g( stringTable, buffer_ ); 
+         queryInsert << table_g( stringTable, buffer_ );                     // set table for insert query
 
          pugi::xml_node xmlnodeValue = xpathnode_.node();
-         for( auto& xmlattribute_ : xmlnodeValue.attributes() )
+         for( auto& xmlattribute_ : xmlnodeValue.attributes() )              // loop attributes in element and add attribute name and values to query
          {
             std::string_view stringName = xmlattribute_.name();
             std::string_view stringValue = xmlattribute_.value();
@@ -751,8 +754,54 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
          std::string stringInsertSql = queryInsert.sql_get( eSqlInsert );
          auto result_ = pdatabase->execute( stringInsertSql );
          if( result_.first == false ) { return result_; }
+         uInsertCount++;
       }
    }
+   else
+   {
+      // ## xml form is like <values><value element="name" value="value" /></values> 
+      std::string stringElement = argumentsOptions["element"].as_string();   // element name for columns
+      std::string stringValue = argumentsOptions["value"].as_string();       // value attribute name
+      std::string stringTable = argumentsOptions["table"].as_string();       // table name for insert
+
+      if( stringTable.empty() == true ) { return { false, "table name is required for element form" }; }
+      if( stringElement.empty() == true ) { stringElement = "element"; }     // default element attribute
+      if( stringValue.empty() == true ) { stringValue = "value"; }           // default value attribute
+
+      // ### Loop container elements (each represents one row)
+      pugi::xpath_node_set xpathnodesetValues = pxmldocument->select_nodes(stringContainer.c_str());
+      for( auto& xpathnode_ : xpathnodesetValues )
+      {
+         query queryInsert{ enumSqlDialect( uDialect ) };
+         queryInsert << table_g( stringTable, buffer_ );                     // set table for insert query
+
+         pugi::xml_node xmlnodeValues = xpathnode_.node();
+         for( auto& xmlnodeValue_ : xmlnodeValues.children() )               // loop child elements (each is a column)
+         {
+            if( xmlnodeValue_.name() == nullptr || stringElement != xmlnodeValue_.name() ) continue; // skip if no element name
+
+            std::string_view stringName = xmlnodeValue_.attribute(stringElement.c_str()).value();
+            std::string_view stringFieldValue = xmlnodeValue_.attribute(stringValue.c_str()).value();
+
+            if( stringName.empty() == true ) continue;                       // skip if no element name
+
+            gd::argument::arguments argumentsFind( buffer_ );
+            argumentsFind.append( { {std::string_view("table"), gd::variant_view(stringTable)}, {std::string_view("column"), gd::variant_view(stringName)} }, gd::types::tag_view{});
+            int64_t iRow = pdatabase_->Column_FindRow( argumentsFind );
+            if( iRow == -1 ) { return { false, "column not found in database: " + std::string(stringName) }; }
+
+            auto uType = pdatabase_->Column_GetType( iRow );
+            queryInsert << field_g( stringName, buffer_ ).value( stringFieldValue ).type( uType );
+         }
+
+         std::string stringInsertSql = queryInsert.sql_get( eSqlInsert );
+         auto result_ = pdatabase->execute( stringInsertSql );
+         if( result_.first == false ) { return result_; }
+         uInsertCount++;
+      }
+   }
+
+   if( pargumentsReturn != nullptr ) { pargumentsReturn->push_back( { "count", gd::variant_view(uInsertCount) } ); }
 
    return { true, "" };
 }
