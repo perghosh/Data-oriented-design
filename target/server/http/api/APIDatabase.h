@@ -67,6 +67,7 @@ public:
 
    std::pair<bool, std::string> Execute() override;
 
+   std::pair<bool, std::string> Execute_Execute(); ///< Execute any statement based on information passed to endpoint
    
    std::pair<bool, std::string> Execute_Create();  ///< Create new database
    std::pair<bool, std::string> Execute_Open();    ///< Open existing database
@@ -91,7 +92,7 @@ public:
 
 // ## free functions ------------------------------------------------------------
 public:
-
+   std::pair<bool, std::string> XML_BulkInsert( const gd::argument::arguments& argumentsOptions, pugi::xml_document* pxmldocument, CDocument* pdocument );
 
 
 };

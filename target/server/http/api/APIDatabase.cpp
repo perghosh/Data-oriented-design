@@ -6,6 +6,9 @@
 #include "gd/gd_file.h"
 #include "gd/database/gd_database_io.h"
 
+#include "gd/gd_sql_query.h"
+#include "gd/gd_sql_query_builder.h"
+
 #include "pugixml/pugixml.hpp"
 #include "jsoncons/json.hpp"
 #include "jsoncons_ext/jsonpath/jsonpath.hpp"
@@ -76,7 +79,8 @@ std::pair<bool, std::string> CAPIDatabase::Execute()
 
       SetCommand( stringCommand );                                            // set current command being processed, this is the command at m_uCommandIndex in m_vectorCommand
 
-      if( stringCommand == "create" ) { result_ = Execute_Create(); }         // endpoint db/create
+      if( stringCommand == "execute" ) { result_ = Execute_Execute(); }       // endpoint db/execute
+      else if( stringCommand == "create" ) { result_ = Execute_Create(); }    // endpoint db/create
       else if( stringCommand == "open" ) { result_ = Execute_Open(); }        // endpoint db/open
       else if( stringCommand == "query" ) { result_ = Execute_Query(); }      // endpoint db/query
       else if( stringCommand == "select" ) { result_ = Execute_Select(); }    // endpoint db/select
@@ -106,6 +110,29 @@ std::pair<bool, std::string> CAPIDatabase::Execute()
 
    SetCommandIndex( static_cast<unsigned>( uIndex ) );
 
+
+   return { true, "" };
+}
+
+std::pair<bool, std::string> CAPIDatabase::Execute_Execute()
+{
+   std::array<std::byte, 128> buffer_;
+   gd::argument::arguments argumentsOptions(buffer_);
+
+   std::string stringName = m_argumentsParameter["name"].as_string();
+   std::string stringFormat = m_argumentsParameter["format"].as_string();
+   CDocument* pdocument = GetDocument();
+
+   if( Exists( "xml" ) )
+   {
+      std::string stringTable = m_argumentsParameter["table"].as_string();
+      if( stringTable.empty() == false ) { argumentsOptions["table"] = stringTable; }
+
+      argumentsOptions["form"] = "attribute";
+
+      pugi::xml_document* pxmldocument = GetParameterArguments()["xml"].get_pointer<pugi::xml_document>(); // get pointer to xml pointer that is prepared
+      XML_BulkInsert( argumentsOptions, pxmldocument, pdocument );
+   }
 
    return { true, "" };
 }
@@ -669,6 +696,48 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql, g
 
 
    stringSql = std::move(stringExecute);
+
+   return { true, "" };
+}
+
+
+std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::arguments& argumentsOptions, pugi::xml_document* pxmldocument, CDocument* pdocument )
+{
+   using namespace gd::sql;
+   std::array<char, 128> buffer_;
+
+   std::string stringForm = argumentsOptions["form"].as_string(); // layout is required and should be string
+   std::string stringContainer = argumentsOptions["container"].as_string(); // container is required and should be string
+
+   if( stringContainer.empty() == true ) { stringContainer = "//values"; }
+
+   if( stringForm == "attribute" )
+   {
+      // Values are placed as attributes in xml
+
+      std::string stringTable = argumentsOptions["table"].as_string(); // table is required and should be string  
+      if( stringTable.empty() == true ) { return { false, "table name is required for attribute form" }; }
+
+      // ### Loop elements in container
+      pugi::xpath_node_set xpathnodesetValues = pxmldocument->select_nodes(stringContainer.c_str());
+      for( auto& xpathnode_ : xpathnodesetValues )
+      {
+         query queryInsert;
+
+         queryInsert << table_g( stringTable, buffer_ ); 
+
+         pugi::xml_node xmlnodeValue = xpathnode_.node();
+         for( auto& xmlattribute_ : xmlnodeValue.attributes() )
+         {
+            std::string_view stringName = xmlattribute_.name();
+            std::string_view stringValue = xmlattribute_.value();
+
+            queryInsert << field_g( stringName, buffer_ ).value( stringValue );
+         }
+
+         std::string stringInsertSql = queryInsert.sql_get( eSqlInsert );
+      }
+   }
 
    return { true, "" };
 }

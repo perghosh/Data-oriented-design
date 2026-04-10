@@ -377,6 +377,7 @@ public:
 
    /// True if the named argument exists in m_argumentsParameter
    bool Exists( const std::string_view& stringName ) const;
+   const gd::argument::arguments& GetParameterArguments() const { return m_argumentsParameter; }
 
    // -- global argument helpers (forwarded to context) ----------------------
 
