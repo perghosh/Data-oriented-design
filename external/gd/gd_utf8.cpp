@@ -2110,7 +2110,7 @@ namespace gd {
           * @param stringTo string where escaped text is written to
           * @return true if text is properly converted
           */
-         bool convert_utf8_to_json(const uint8_t* pubszText, const uint8_t* pubszEnd, std::string& stringTo )
+         bool convert_utf8_to_json( const uint8_t* pubszText, const uint8_t* pubszEnd, std::string& stringTo )
          {
             if( pubszText < pubszEnd )
             {
@@ -2128,7 +2128,7 @@ namespace gd {
                      else
                      {
                         stringTo += '\\';
-                        switch(*pubszPosition)
+                        switch( *pubszPosition )
                         {
                         case '\"': stringTo += '\"'; break;
                         case '\\': stringTo += '\\'; break;
@@ -2138,20 +2138,39 @@ namespace gd {
                         case '\n': stringTo += 'n';  break;
                         case '\r': stringTo += 'r';  break;
                         case '\t': stringTo += 't';  break;
-                        default: assert(false); break;
+                        default: assert( false ); break;
                         }
                         pubszPosition++;
                      }// if else
                   }
                   else
                   {
+
+                     // ## Decode the UTF-8 character to its Unicode code point
+                     uint32_t uCodePoint = 0;
+                     if( uCharacterSize == 2 ) { uCodePoint = ( ( pubszPosition[0] & 0x1F ) << 6 ) | ( pubszPosition[1] & 0x3F ); }
+                     else if( uCharacterSize == 3 )
+                     {
+                        uCodePoint = ( ( pubszPosition[0] & 0x0F ) << 12 ) | ( ( pubszPosition[1] & 0x3F ) << 6 ) | ( pubszPosition[2] & 0x3F );
+                     }
+                     else if( uCharacterSize == 4 )
+                     {
+                        uCodePoint = ( ( pubszPosition[0] & 0x07 ) << 18 ) | ( ( pubszPosition[1] & 0x3F ) << 12 ) | ( ( pubszPosition[2] & 0x3F ) << 6 ) | ( pubszPosition[3] & 0x3F );
+                     }
+                     else
+                     {
+                        return false;
+                     }
+
+                     // Output as \uXXXX (for code points up to U+FFFF)
                      stringTo += '\\';
                      stringTo += 'u';
                      for( int i = 0; i < 4; i++ )
                      {
-                        uint8_t uHexDigit = ( pubszPosition[i / 2] >> ( 4 - ( i % 2 ) * 4 ) ) & 0x0F; // Get the hex digit from the UTF-8 character bytes
+                        uint8_t uHexDigit = ( uCodePoint >> ( 12 - i * 4 ) ) & 0x0F;
                         stringTo += pszHEX_s[uHexDigit];
                      }
+
                      pubszPosition += uCharacterSize;
                   }
                }// for(
