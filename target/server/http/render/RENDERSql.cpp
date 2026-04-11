@@ -105,7 +105,7 @@ std::pair<bool, std::string> CRENDERSql::Add( const pugi::xml_node& xmlnodeValue
       if( string_.empty() == false ) { argumentsField["value"] = string_; }
       else
       {                                                                       // if value is not in attribute try to get it from node value
-         string_ = node_.child_value();
+         string_ = node_.child_value();                                       // @TODO: need to have logick for utf8 or ascii
          if( string_.empty() == false ) { argumentsField["value"] = string_; }
       }
 

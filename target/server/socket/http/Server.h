@@ -200,7 +200,7 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
    std::string stringPath = path_cat_g(stringRoot, request_.target());
    if(request_.target().back() == '/') { stringPath.append("index.html"); }
    else
-   {                                                                                               LOG_DEBUG_RAW( stringPath );
+   {                                                                                               LOG_DEBUG_RAW( stringPath & "\n" );
       
    }
 

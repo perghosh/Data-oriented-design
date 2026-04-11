@@ -461,7 +461,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
                result_ = CONFIG_Load(pathConfigLocation.string());                                LOG_WARNING_RAW_IF(result_.first == false, result_.second);
                                                                                                   LOG_DEBUG_RAW_IF(result_.first == true, "== Loaded configuration file: " & pathConfigLocation.string());
             }
-            else { LOG_DEBUG_RAW("Configuration file not found in current directory or parent directories."); }
+            else { LOG_DEBUG_RAW("Configuration file not found in current directory or parent directories.\n"); }
          }
          else
          {

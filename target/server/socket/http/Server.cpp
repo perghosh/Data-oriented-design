@@ -15,7 +15,7 @@ std::pair<bool, std::string> CServer::Initialize()
 
 
 std::pair<bool, std::string> CServer::ProcessRequest(boost::beast::http::verb eVerb, std::string_view stringCommand, std::vector<std::pair<std::string, std::string>>& vectorResponse) 
-{                                                                                                     LOG_INFORMATION_RAW("Command: " + std::string(stringCommand));
+{                                                                                                     LOG_INFORMATION_RAW("Command: " + std::string(stringCommand) & "\n");
    using namespace gd::com::server::router;
    // ## Create command object from request
    gd::com::server::server_i* pserver = m_ppapplication->ROUTER_GetActiveServer();
