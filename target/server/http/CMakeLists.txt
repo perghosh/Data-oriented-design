@@ -49,6 +49,10 @@ file(GLOB FILES_ "dto/*.h" "dto/*.cpp" )
 list(APPEND TARGET_FILES_ ${FILES_})
 unset(FILES_)
 
+file(GLOB FILES_ "lua/*.h" "lua/*.cpp" )
+list(APPEND TARGET_FILES_ ${FILES_})
+unset(FILES_)
+
 file(GLOB FILES_ "meta/*.h" "meta/*.cpp" )
 list(APPEND TARGET_FILES_ ${FILES_})
 unset(FILES_)
@@ -81,7 +85,7 @@ if( USE_TARGET_ )
    set(TARGET_NAME_ "http")
 
    add_executable(${TARGET_NAME_}
-      ${external_sqlite} ${external_pugixml} ${GD_SOURCES_ALL} ${GD_MODULES__SOURCES_ALL}
+      ${external_sqlite} ${external_pugixml} ${external_lua} ${GD_SOURCES_ALL} ${GD_MODULES__SOURCES_ALL}
       # ${APPLICATION_DIRECTORY_}/ApplicationBasic.cpp
 
       ${TARGET_FILES_}
