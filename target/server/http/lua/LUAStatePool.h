@@ -37,6 +37,13 @@ borrow->script( "print('hello')" );
 #include <utility>
 #include <vector>
 
+extern "C" {
+   #include "lua/lua.h"
+   #include "lua/lualib.h"
+   #include "lua/lauxlib.h"
+}
+
+
 #include "lua/sol.hpp"
 
 

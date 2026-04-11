@@ -143,7 +143,7 @@ std::unique_ptr<sol::state> LuaStatePool::create_state( const std::function<void
       sol::lib::table, sol::lib::math, sol::lib::io
    );
 
-   psolstateLua->set_exception_handler( &OnError );
+   //psolstateLua->set_exception_handler( &OnError );
 
    callbackRegister( *psolstateLua );                                            // caller controls exactly what gets registered
 
@@ -163,7 +163,7 @@ void LuaStatePool::reset_state( sol::state& solstateLua )
    solstateLua["user"]    = sol::lua_nil;
    solstateLua["request"] = sol::lua_nil;
 
-   solstateLua.gc();                                                             // reclaim memory held by previous script's temporaries
+   //solstateLua.gc();                                                             // reclaim memory held by previous script's temporaries
 }
 
 uint64_t LuaStatePool::next_id() { return m_uNextStateId.fetch_add( 1, std::memory_order_relaxed ); }

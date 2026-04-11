@@ -58,7 +58,7 @@ file(GLOB source_application_root ${CMAKE_SOURCE_DIR}/source/application/root/*.
 
 # file(GLOB external_fmt ${CMAKE_SOURCE_DIR}/external/fmt/*.cc)
 # file(GLOB external_gd ${CMAKE_SOURCE_DIR}/external/gd/*.cpp)
-# file(GLOB external_lua ${CMAKE_SOURCE_DIR}/external/lua/*.c)
+file(GLOB external_lua ${CMAKE_SOURCE_DIR}/external/lua/*.c)
 file(GLOB external_sqlite ${CMAKE_SOURCE_DIR}/external/sqlite/*.c)
 file(GLOB external_pugixml ${CMAKE_SOURCE_DIR}/external/pugixml/*.cpp)
 
