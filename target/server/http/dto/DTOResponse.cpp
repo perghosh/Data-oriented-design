@@ -152,7 +152,10 @@ std::pair<bool, std::string> CDTOResponse::PrintXml( std::string& stringXml, con
          {
             gd::table::dto::table* ptable = (gd::table::dto::table*)pobject;  //  cast to table object
             stringJson += '[';
-            to_string( *ptable, stringJson, tag_io_json{}, tag_io_name{});
+            gd::argument::arguments argumentsJson( { "format", "escape" } ); // arguments for json serialization, we want to escape special characters in json string to be safely embedded in xml
+            to_string( *ptable, 0, ptable->get_row_count(), argumentsJson, nullptr, stringJson, tag_io_header{}, tag_io_json{});
+
+            //to_string( *ptable, stringJson, tag_io_json{}, tag_io_name{}); // @TODO OLD: Remove comment when tested
             stringJson += ']';
             // #### add json as xml node as cdata
             xmlnodeResult.append_child(node_cdata).set_value(stringJson);

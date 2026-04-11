@@ -327,6 +327,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
    {
       auto ptable_ = new gd::table::dto::table( gd::table::tag_full_meta{} );
       gd::database::to_table( pcursor.get(), ptable_ );
+
 #ifndef NDEBUG
       // std::string stringTable_d = gd::table::debug::print( *ptable_ );
       // std::string stringTableHex_d = gd::binary_to_hex_g( stringTable_d );

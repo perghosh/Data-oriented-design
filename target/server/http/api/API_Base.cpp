@@ -4,6 +4,38 @@
 
 #include "API_Base.h"
 
+
+void CAPIContext::ResetResults()
+{
+   m_objects.Clear();
+   m_argumentsGlobal.clear();
+   m_stringLastError.clear();
+   ClearFlag( eFlagHasResult );
+   ClearFlag( eFlagHasError );
+}
+
+void CAPIContext::ResetDatabase() 
+{ 
+   if( ( m_uFlags & eFlagDatabaseOwner ) != 0 && m_pdatabase != nullptr )
+   {
+      m_pdatabase->close();
+      m_pdatabase->release();
+   }
+
+   m_pdatabase = nullptr; 
+   ClearFlag( eFlagDatabaseOwner ); 
+}
+
+
+void CAPIContext::Reset()
+{
+   m_papplication = nullptr;
+   m_pdocument    = nullptr;
+   m_uFlags       = eFlagNone;
+   ResetResults();
+}
+
+
 // ## implementation -----------------------------------------------------------
 
 /** -------------------------------------------------------------------------- CAPI_Base::common_construct

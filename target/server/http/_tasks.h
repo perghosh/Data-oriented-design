@@ -31,16 +31,9 @@
 */
  
 /*
-@PROJECT [name: vote-detail] [tag: html] [description: test logic for adding vote information for vote]
+@PROJECT [name: security, functions] [tag: log] [summary: server methods that are usefull for security]
 
-@TASK [project: vote-detail] [tag: vote, questions] [status: open] [user: per]
-[description: Add questions to vote, this is the information about the vote that is shown to user when they click on a vote in the list of quetions.]
-
-@TASK [project: vote-detail] [tag: vote, answer] [status: open] [user: per]
-[description: Add answer information to questions, what type of answers that ar valid for vote]
-
-@TASK [project: vote-detail] [tag: vote, rules] [status: open] [user: per]
-[description: Add rules for vote, this is the logic that decide what is possible for voter]
-
-
- */
+@TASK [project: security] [description: Get user ip number, may be used to match so that user ip do not change or to generate session for user}
+[tag: ip, session] [status: open] [user: per]
+*/
+ 

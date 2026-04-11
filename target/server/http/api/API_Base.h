@@ -8,10 +8,12 @@
 #include <utility>
 #include <vector>
 
-#include "../Types.h"
-
 #include "gd/gd_arguments.h"
 #include "gd/gd_variant_view.h"
+#include "gd/gd_database.h"
+
+#include "../Types.h"
+
 
 // #include "APIContext.h"    // client/session context object
 
@@ -101,10 +103,11 @@ private:
 public:
    enum enumFlag : unsigned
    {
-      eFlagNone      = 0x00000000,
-      eFlagBound     = 0x00000001,  ///< application and document pointers are valid
-      eFlagHasError  = 0x00000002,  ///< an error has been stored via SetError()
-      eFlagHasResult = 0x00000004,  ///< at least one object was added to m_objects
+      eFlagNone            = 0x00000000,
+      eFlagBound           = 0x00000001,  ///< application and document pointers are valid
+      eFlagHasError        = 0x00000002,  ///< an error has been stored via SetError()
+      eFlagHasResult       = 0x00000004,  ///< at least one object was added to m_objects
+      eFlagDatabaseOwner   = 0x00000008,  ///< Ownss the database, releases it on destruction (not yet implemented)
    };
 
 // ## methods ----------------------------------------------------------------
@@ -137,6 +140,7 @@ public:
    bool IsBound()    const { return ( m_uFlags & eFlagBound )     != 0; }
    bool HasError()   const { return ( m_uFlags & eFlagHasError )  != 0; }
    bool HasResult()  const { return ( m_uFlags & eFlagHasResult ) != 0; }
+   bool IsDatabaseOwner() const { return ( m_uFlags & eFlagDatabaseOwner ) != 0; }
 
    // ## Error helpers .......................................................
 
@@ -146,11 +150,8 @@ public:
       SetFlag( eFlagHasError );
    }
 
-   void ClearError()
-   {
-      m_stringLastError.clear();
-      ClearFlag( eFlagHasError );
-   }
+   /// Clear error state and message
+   void ClearError() { m_stringLastError.clear(); ClearFlag( eFlagHasError ); }
 
    const std::string& GetLastError() const { return m_stringLastError; }
 
@@ -187,23 +188,12 @@ public:
 
    /// Clear accumulated results and error state; keeps application/document binding intact.
    /// Useful when re-using a context across unrelated request cycles (e.g. keep-alive connections).
-   void ResetResults()
-   {
-      m_objects.Clear();
-      m_argumentsGlobal.clear();
-      m_stringLastError.clear();
-      ClearFlag( eFlagHasResult );
-      ClearFlag( eFlagHasError );
-   }
+   void ResetResults();
+
+   void ResetDatabase();
 
    /// Full reset; unbinds all pointers and clears every field.
-   void Reset()
-   {
-      m_papplication = nullptr;
-      m_pdocument    = nullptr;
-      m_uFlags       = eFlagNone;
-      ResetResults();
-   }
+   void Reset();
 
 // ## internal flag helpers --------------------------------------------------
 private:
@@ -214,6 +204,7 @@ private:
 public:
    CApplication*           m_papplication{};       ///< non-owning; lifetime managed by server layer
    CDocument*              m_pdocument{};          ///< non-owning; resolves to the calling user's document
+   gd::database::database_i* m_pdatabase{};        ///< database used for this request
    Types::Objects          m_objects;              ///< accumulates result objects across chained API sections
    gd::argument::arguments m_argumentsGlobal;      ///< global values shared across sections (e.g. insert key passed to next section)
    std::string             m_stringLastError;      ///< last error message recorded in this context

@@ -16,6 +16,22 @@ namespace {
       return true;
    }
 
+   /// Escape characters in string for json format and return true if string is modified
+   bool format_escape( std::string_view stringValue, std::string& stringNew )
+   {
+      if( stringValue.empty() == false && gd::utf8::json::find_character_to_escape( stringValue ) != nullptr )
+      {
+         auto stringEscaped = gd::utf8::json::convert_utf8_to_json( stringValue );
+         stringNew += stringEscaped;
+      }
+      else
+      {
+         stringNew += stringValue;
+      }
+      return true;
+   }
+
+
    enum enumOption {
       eOptionScientific    = 0b0000'0000'0000'0000'0000'0000'0000'0001,
    };
@@ -492,7 +508,21 @@ std::pair<bool, const char*> read_g(std::vector<std::string>& vectorHeader, cons
 
 // std::pair< bool, std::string >
 
-/// convert table to json array
+/**  -------------------------------------------------------------------------- to_string
+ * @brief Convert table rows to JSON array format
+ * 
+ * Converts a range of table rows into a JSON array string. Each row is represented
+ * as a JSON array of values. Handles type conversion, null values, string escaping,
+ * and scientific notation based on options.
+ * 
+ * @param table Table to convert
+ * @param uBegin Starting row index (zero-based)
+ * @param uCount Number of rows to convert
+ * @param argumentsOption Options controlling output format (supports "format": "escape", "scientific": true)
+ * @param format_text_ Optional custom text formatting function; if null uses default or "escape" based on options
+ * @param stringOut Output string to append JSON data; if empty, content is moved instead of appended
+ * @param tag_io_json Tag dispatch parameter for JSON format
+ */
 void to_string( const dto::table& table, uint64_t uBegin, uint64_t uCount, const gd::argument::arguments& argumentsOption, const std::function<bool(const std::string_view&, std::string& stringNew)>& format_text_, std::string& stringOut, tag_io_json )
 {
    unsigned uOptions = 0;
@@ -501,6 +531,7 @@ void to_string( const dto::table& table, uint64_t uBegin, uint64_t uCount, const
    std::vector<gd::variant_view> vectorValue;   // used to fetch values from table
 
    if( format_text_ ) { functionFormat = format_text_; }
+   else if( argumentsOption["format"].as_string() == "escape" ) { functionFormat = format_escape; } 
 
    if( argumentsOption["scientific"].is_true() == true ) uOptions |= eOptionScientific;
 
@@ -521,10 +552,7 @@ void to_string( const dto::table& table, uint64_t uBegin, uint64_t uCount, const
          if( uColumn > 0 ) stringResult += ",";                                // add `,` to separate columns
          auto value_ = *it;                                                    // active column value
 
-         if( value_.is_null() == true )
-         {
-            stringResult += "null";                                            // for javascript null
-         }
+         if( value_.is_null() == true ) { stringResult += "null"; }           // for javascript null
          else if( value_.is_string() == true )
          {
             stringResult += "\"";
@@ -801,6 +829,7 @@ void to_string(const dto::table& table, uint64_t uBegin, uint64_t uCount, const 
    std::vector<gd::variant_view> vectorValue;   // used to fetch values from table
 
    if( format_text_ ) { functionFormat = format_text_; }
+   else if( argumentsOption["format"].as_string() == "escape" ) { functionFormat = format_escape; } 
 
    if( argumentsOption["scientific"].is_true() == true ) uOptions |= eOptionScientific;
 
