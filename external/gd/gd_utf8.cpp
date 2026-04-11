@@ -2118,28 +2118,42 @@ namespace gd {
                while( pubszPosition < pubszEnd )
                {
                   uint32_t uCharacterSize = gd::utf8::get_character_size( pubszPosition );            assert( uCharacterSize != 0 ); assert( uCharacterSize == 1 ? *pubszPosition < 0x80 : true );
-                  if( uCharacterSize == 1 && pIsJsonEscape_s[*pubszPosition] == 0 )
+                  if( uCharacterSize == 1 )
                   {
-                     stringTo += (char)*pubszPosition;
-                     pubszPosition++;
+                     if( pIsJsonEscape_s[*pubszPosition] == 0 )
+                     {
+                        stringTo += (char)*pubszPosition;
+                        pubszPosition++;
+                     }
+                     else
+                     {
+                        stringTo += '\\';
+                        switch(*pubszPosition)
+                        {
+                        case '\"': stringTo += '\"'; break;
+                        case '\\': stringTo += '\\'; break;
+                        case '/':  stringTo += '/';  break;
+                        case '\b': stringTo += 'b';  break;
+                        case '\f': stringTo += 'f';  break;
+                        case '\n': stringTo += 'n';  break;
+                        case '\r': stringTo += 'r';  break;
+                        case '\t': stringTo += 't';  break;
+                        default: assert(false); break;
+                        }
+                        pubszPosition++;
+                     }// if else
                   }
                   else
                   {
                      stringTo += '\\';
-                     switch(*pubszPosition)
+                     stringTo += 'u';
+                     for( int i = 0; i < 4; i++ )
                      {
-                     case '\"': stringTo += '\"'; break;
-                     case '\\': stringTo += '\\'; break;
-                     case '/':  stringTo += '/';  break;
-                     case '\b': stringTo += 'b';  break;
-                     case '\f': stringTo += 'f';  break;
-                     case '\n': stringTo += 'n';  break;
-                     case '\r': stringTo += 'r';  break;
-                     case '\t': stringTo += 't';  break;
-                     default: assert(false); break;
+                        uint8_t uHexDigit = ( pubszPosition[i / 2] >> ( 4 - ( i % 2 ) * 4 ) ) & 0x0F; // Get the hex digit from the UTF-8 character bytes
+                        stringTo += pszHEX_s[uHexDigit];
                      }
-                     pubszPosition++;
-                  }// if else
+                     pubszPosition += uCharacterSize;
+                  }
                }// for(
             } // if(
 
