@@ -693,7 +693,9 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql, g
    }
 
 #if (TARGET_COMPILE_MODE_ & 1)
-   LOG_VERBOSE_RAW( "Prepared SQL: " & gd::utf8::substr(stringExecute, 120) & "\n");
+   if( gd::utf8::validate_ascii( stringExecute ).first == true ) { 
+      LOG_VERBOSE_RAW( "Prepared SQL: " & gd::utf8::substr(stringExecute, 120) & "\n");
+   }
 #endif
 
 

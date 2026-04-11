@@ -941,13 +941,38 @@ inline message& message::operator&(std::string_view stringAppend) {
 
 template<>
 inline message& message::operator&(std::string stringAppend) {
-   std::wstring stringUnicode(stringAppend.size(), L' ');
-   for( size_t u = 0; u < stringAppend.size(); u++ ) { stringUnicode[u] = stringAppend[u]; }
+   std::wstring stringUnicode;
+   stringUnicode.reserve( stringAppend.size() );
+
+   bool bToUtf8 = false; // Check for invalid ascii characters (above 128)
+   for( const auto& it : stringAppend ) { if( (uint8_t)(it) > 128 ) { bToUtf8 = true; break; } }
+
+   if( bToUtf8 )
+   {
+      stringUnicode = gd::utf8::convert_ascii_to_unicode( stringAppend );
+   }
+   else
+   {  
+      for( size_t u = 0; u < stringAppend.size(); u++ ) { stringUnicode += (wchar_t)stringAppend[u]; }
+   }
 
    *this & stringUnicode;
 
    return *this;
 }
+
+template<>
+inline message& message::operator&(std::u8string stringAppend) {
+   std::wstring stringUnicode;
+   stringUnicode.reserve( stringAppend.size() );
+
+   gd::utf8::convert_utf8_to_uft16( (const uint8_t*)stringAppend.c_str(), stringUnicode );
+
+   *this & stringUnicode;
+
+   return *this;
+}
+
 
 
 

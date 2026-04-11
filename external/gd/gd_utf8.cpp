@@ -234,8 +234,12 @@ namespace gd {
       {
          switch( pNeededByteCount_s[*pubszCharacter] )
          {
-         case 0:
+         case 0: {
+#ifndef NDEBUG
+            [[maybe_unused]] const char* pbsz_d = (const char*)pubszCharacter;                     assert( false );
+#endif
             throw std::runtime_error("invalid UTF-8  (operation = character)");
+            } break;
          case 1:
             return static_cast<uint32_t>(*pubszCharacter);
          case 2:
@@ -422,7 +426,24 @@ namespace gd {
          return { true, pubEnd };
       }
 
-      /** ---------------------------------------------------------------------
+      /** -------------------------------------------------------------------- validate_ascii
+       * @brief Validates that all bytes in a range are valid ASCII characters (< 0x80).
+       * @param pubBegin Pointer to the first byte in the range to validate.
+       * @param pubEnd Pointer to one past the last byte in the range to validate.
+       * @return A pair where the first element is true if all bytes are valid ASCII, false otherwise. The second element points to the first non-ASCII byte if validation fails, or to pubEnd if validation succeeds.
+       */
+      std::pair<bool, const uint8_t*> validate_ascii( const uint8_t* pubBegin, const uint8_t* pubEnd )
+      {                                                                                            assert( pubBegin <= pubEnd ); assert( pubEnd - pubBegin < 0x1000'0000 );
+         auto pubPosition = pubBegin;
+         for( auto pubPosition = pubBegin; pubPosition != pubEnd; pubPosition++ )
+         {
+            if( *pubPosition < 0x80 ) continue;
+            return  { false, pubPosition };
+         }
+         return { true, pubEnd };
+      }
+
+      /** -------------------------------------------------------------------- validate_hex
        * @brief Validates string hexadecimal characters
        * @param pubBegin start of string
        * @param pubEnd end of string
@@ -1395,26 +1416,27 @@ namespace gd {
    namespace utf8 {
       namespace move {
 
-         /**
+         /** -------------------------------------------------------------------- next
           * @brief move to next character in utf8 buffer
           * @param pubszPosition pointer to position where movement starts
           * @return {const uint8_t*} new position
           */
          const uint8_t* next(const uint8_t* pubszPosition)
          {
-            if(*pubszPosition != '\0')
-            {
-               if((*pubszPosition & 0x80) == 0)          return pubszPosition + 1;
-               else if((*pubszPosition & 0xc0) == 0xc0)  return pubszPosition + 2;
-               else if((*pubszPosition & 0xf0) == 0xe0)  return pubszPosition + 3;
-               else if((*pubszPosition & 0xf8) == 0xf0)  return pubszPosition + 4;
-               else throw std::runtime_error("invalid UTF-8 (operation = next)");
-            }
+             if(*pubszPosition == '\0')      return pubszPosition;
 
-            return pubszPosition;
+             uint8_t uChar = *pubszPosition;
+
+             if     ((uChar & 0x80) == 0)    return pubszPosition + 1; // 0xxxxxxx (ASCII)
+             else if((uChar & 0xe0) == 0xc0) return pubszPosition + 2; // 110xxxxx (2-byte)
+             else if((uChar & 0xf0) == 0xe0) return pubszPosition + 3; // 1110xxxx (3-byte)
+             else if((uChar & 0xf8) == 0xf0) return pubszPosition + 4; // 11110xxx (4-byte)
+             else throw std::runtime_error("invalid UTF-8 (operation = next)");
          }
 
-         /**
+
+
+         /** ----------------------------------------------------------------- next
           * @brief Move forward in text
           * @param pubszPosition pointer to current position in text
           * @param uCount number of characters to move
@@ -1503,21 +1525,40 @@ namespace gd {
             return pubNext;
          }
 
-         /**
+         /** ------------------------------------------------------------------ previous
           * @brief Move to previous character in utf8 buffer
+          * 
+          * Note that this method assumes that the input position is valid and 
+          * points to a character boundary. If the input position is not valid, 
+          * the behavior is undefined. The caller's responsibility to ensure that 
+          * the input position is valid before calling this method.
+          * 
           * @param pubszPosition pointer to position where movement starts
           * @return {const uint8_t*} new position
           */
          const uint8_t* previous(const uint8_t* pubszPosition)
          {
             auto pubszTest = pubszPosition - 1;
-            if((*pubszTest & 0x80) == 0)                return pubszPosition - 1;
-            else if((*(pubszTest - 1) & 0xc0) == 0xc0)  return pubszPosition - 2;
-            else if((*(pubszTest - 2) & 0xf0) == 0xe0)  return pubszPosition - 3;
-            else if((*(pubszTest - 3) & 0xf8) == 0xf0)  return pubszPosition - 4;
-            else throw std::runtime_error("invalid UTF-8 (operation = previous)");
 
-            return pubszPosition;
+            // Skip continuation bytes backwards
+            while ((pubszTest[0] & 0xC0) == 0x80) { --pubszTest; }
+
+            uint8_t uChar = *pubszTest;
+
+            // ## Validate it's actually a start byte
+            if((uChar & 0x80) == 0) 
+            {
+               return pubszTest;  // ASCII
+            }
+
+            // ## Check valid UTF-8 start byte patterns
+            int iExpectedLength = 0;
+            if ((uChar & 0xE0) == 0xC0) iExpectedLength = 2;      // 110xxxxx
+            else if ((uChar & 0xF0) == 0xE0) iExpectedLength = 3; // 1110xxxx
+            else if ((uChar & 0xF8) == 0xF0) iExpectedLength = 4; // 11110xxx
+            else { throw std::runtime_error("invalid UTF-8 start byte"); }
+
+            return pubszTest;
          }
 
          /**
@@ -3192,6 +3233,18 @@ namespace gd {
 
             vector_.clear();
          }
+      }
+
+      std::string substr( const uint8_t* puBegin, const uint8_t* puEnd, size_t uCount )
+      {
+         const uint8_t* puPosition = puBegin;
+         while( puPosition < puEnd && uCount > 0 )
+         {
+            puPosition = move::next( puPosition );
+            uCount--;
+         }
+
+         return std::string( (const char*)puBegin, puPosition - puBegin );
       }
 
       /** ---------------------------------------------------------------------

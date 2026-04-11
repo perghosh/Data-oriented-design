@@ -25,7 +25,7 @@
 | Counting/Size       | count(...), strlen(...), size(...), get_character_size(...)                                                          | Functions for counting UTF-8 characters and calculating required buffer sizes.                                 |
 | Conversion          | convert(...), convert_ascii(...), convert_utf8_to_ascii(...), convert_unicode(...), convert_json(...), itoa/utoa(...)| Methods for converting between ASCII, UTF-8, Unicode, JSON, and numeric/text representations.                 |
 | Validation          | validate(...), validate_hex(...), is_text(...), is_npos(...), is_found(...)                                          | Functions for validating UTF-8, hex, and text buffers, and checking search results.                           |
-| String Operations   | split(...), split_pair(...), mid(...), offset(...), indent(...), trim(...), trim_left(...), trim_right(...)          | Methods for splitting, trimming, extracting, and indenting strings and buffers.                               |
+| String Operations   | split(...), split_pair(...), substr(...), mid(...), offset(...), indent(...), trim(...), trim_left(...), trim_right(...) | Methods for splitting, trimming, extracting, and indenting strings and buffers.                               |
 | Formatting/Printing | print(...), print_hex(...), quoted(...), quoted_if_text(...), format::replace(...), format::pad_left/right(...)      | Functions for formatting, quoting, and printing UTF-8 strings and buffers.                                    |
 | URI/XML Handling    | uri::character(...), uri::size(...), uri::count(...), uri::convert_uri_to_uf8(...), xml::convert_utf8_to_xml(...)    | Methods for working with URI/URL and XML-escaped text, including conversion and validation.                   |
 | Comparison/Find     | find(...), find_nth(...), find_character(...), ascii::strcmp(...), ascii::stricmp(...), strchr(...)                  | Methods for searching, comparing, and finding characters or sequences in strings and buffers.                 |
@@ -183,10 +183,13 @@ namespace gd {
 
       /// validate utf8 text, returns true if valid utf8 characters, false if not
       std::pair<bool, const uint8_t*> validate( const uint8_t* pubBegin, const uint8_t* pubEnd );
-      inline std::pair<bool, const uint8_t*> validate( const std::string_view& stringText ) { return validate( reinterpret_cast<const uint8_t*>(stringText.data()), reinterpret_cast<const uint8_t*>(stringText.data()) + stringText.length() ); }
+      inline std::pair<bool, const uint8_t*> validate( std::string_view stringText ) { return validate( reinterpret_cast<const uint8_t*>(stringText.data()), reinterpret_cast<const uint8_t*>(stringText.data()) + stringText.length() ); }
+
+      std::pair<bool, const uint8_t*> validate_ascii( const uint8_t* pubBegin, const uint8_t* pubEnd );
+      inline std::pair<bool, const uint8_t*> validate_ascii( std::string_view stringText ) { return validate_ascii( reinterpret_cast<const uint8_t*>( stringText.data() ), reinterpret_cast<const uint8_t*>( stringText.data() ) + stringText.length() ); }
 
       std::pair<bool, const uint8_t*> validate_hex( const uint8_t* pubBegin, const uint8_t* pubEnd );
-      inline std::pair<bool, const uint8_t*> validate_hex( const std::string_view& stringText ) { return validate_hex( reinterpret_cast<const uint8_t*>(stringText.data()), reinterpret_cast<const uint8_t*>(stringText.data()) + stringText.length() ); }
+      inline std::pair<bool, const uint8_t*> validate_hex( std::string_view stringText ) { return validate_hex( reinterpret_cast<const uint8_t*>(stringText.data()), reinterpret_cast<const uint8_t*>(stringText.data()) + stringText.length() ); }
 
 
       // ## @API [tag: utf8, convert] [description: methods used to convert between different string formats and mostly utf8]
@@ -893,7 +896,7 @@ namespace gd {
          split( stringText.data(), stringText.data() + stringText.length(), chSplitWith, vectorPart );
       }
 
-      // ## split with escape character, double split character is used to escape split character
+      // @API [tag: split] [description: split with escape character, double split character is used to escape split character]
 
       /// Split string into std::string parts, each part is separated by `chSplit` character, escape character is used to escape split character
       void split(const std::string_view& stringText, char chSplitWith, std::vector<std::string>& vectorPart, tag_escape);
@@ -961,9 +964,18 @@ namespace gd {
          return vector_;
       }
 
+      // @API [tag: substr] [summary: count codepoints to prepare for extraction]
 
+      /// get substring of text with `uCount` codepoints, if pair pointer is sent the mark where substring is extracted from
+      std::string substr( const uint8_t* puBegin, const uint8_t* puEnd, size_t uCount );
+      inline std::string substr(const char* pbszBegin, const char* pbszEnd, size_t uCount) {
+         return substr( (const uint8_t*)pbszBegin, (const uint8_t*)pbszEnd, uCount );
+      }
+      inline std::string substr(const std::string_view& stringText, size_t uCount) {
+         return substr( &(*stringText.begin()), stringText.data() + stringText.length(), uCount );
+      }
 
-      // ## mid methods, select text between something
+      // @API [tag: mid] [description: select text between something]
 
       /// get mid section and if pair pointer is sent the mark where mid section is extracted from
       std::string mid( const uint8_t* puBegin, const uint8_t* puEnd, uint8_t uStop, std::pair< const uint8_t*, const uint8_t* >* ppairPosition );
@@ -983,7 +995,7 @@ namespace gd {
          return stringMid;
       }
 
-      // ## Offset methods, find in string and mark offset positions from start of string
+      // @API [tag: offset] [description: find in string and mark offset positions from start of string]
 
       /// Find offset positions for character in text
       void offset( const char* pbBegin, const char* pbEnd, char chMarkOffset, std::vector<std::size_t>& vectorOffset );
