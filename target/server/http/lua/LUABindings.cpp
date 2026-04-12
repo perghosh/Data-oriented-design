@@ -1,0 +1,58 @@
+
+// @FILE [tag: lua, bindings] [summary: Lua bindings for web server] [description: Exposes C++ functions and classes to Lua scripts executed in the web server context. This includes utilities for handling HTTP requests, responses, and application-specific logic. The bindings are implemented using the sol2 library to create seamless interoperability between C++ and Lua. The file defines functions that can be called from Lua scripts to interact with the web server's functionality, such as sending responses, accessing request data, and managing sessions.]
+
+#include "LUAObjects.h"
+#include "LUABindings.h"
+
+LUA_BEGIN
+
+void RegisterDatabase( sol::state& stateLua )
+{
+	stateLua.new_usertype<Database>(
+      "Database", sol::constructors<Database(), Database( void* ), Database( sol::table )>(),
+      "IsOpen", &Database::IsOpen,
+      "Open", &Database::Open,
+		"Execute", &Database::Execute,
+      "Ask", &Database::Ask,
+      "Close", &Database::Close
+   );
+}
+
+void RegisterCursor( sol::state& stateLua )
+{
+	stateLua.new_usertype<Cursor>(
+      "Cursor", sol::constructors<Cursor( Database* )>(),
+      "IsOpen", &Cursor::IsOpen,
+		"Open", &Cursor::Open,
+      "Next", &Cursor::Next,
+      "IsValidRow", &Cursor::IsValidRow,
+      "Close", &Cursor::Close,
+      "GetValue", &Cursor::GetValue,
+      "GetTable", &Cursor::GetTable
+   );
+}
+
+
+void RegisterDocument( sol::state& stateLua )
+{
+	stateLua.new_usertype<Document>(
+      "Document", sol::constructors<Document()>()
+   ); 
+}
+
+void RegisterApplication( sol::state& stateLua )
+{
+	stateLua.new_usertype<Application>(
+      "Application", sol::constructors<Application()>(),
+      "GetDocument", &Application::GetDocument,
+		"GetProperty", &Application::GetProperty,
+      "GetPropertyCount", &Application::GetPropertyCount,
+      "GetPropertyName", &Application::GetPropertyName,
+      "Message", &Application::Message,
+      "Initialize", &Application::Initialize,
+      "SetLogLevel", &Application::SetLogLevel,
+		"SetProperty", &Application::SetProperty
+   ); 
+}
+
+LUA_END

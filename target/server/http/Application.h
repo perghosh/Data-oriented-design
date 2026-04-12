@@ -19,6 +19,8 @@
 
 #include "application/ApplicationBasic.h"
 
+#include "lua/LUAStatePool.h"
+
 #include "Document.h"
 
 class CServer;
@@ -148,7 +150,7 @@ public:
    /// Handle array values
    void CONFIG_HandleArray( std::string_view stringGroup, std::string_view stringName, const gd::argument::shared::arguments& arguments_ );
 
-	// @FILE [tag: document] [description: document management in application]
+	// @API [tag: document] [description: document management in application]
 
    // ## Add documents
    CDocument* DOCUMENT_Add(const std::string_view& stringName);
@@ -173,11 +175,15 @@ public:
    std::vector<std::unique_ptr<CDocument>>::const_iterator DOCUMENT_Begin() const;
    std::vector<std::unique_ptr<CDocument>>::const_iterator DOCUMENT_End() const;
 
+   // @API [tag: lua]
+   LUA::LuaStatePool* LUA_GetPool() { return &m_luastatepool; }
+   const LUA::LuaStatePool* LUA_GetPool() const { return &m_luastatepool; }
+    
 
 // @API [tag: command] [description: broadcast commands]
 
 
-   std::pair<bool, std::string> SERVER_Execute(const std::string_view& stringCommand, const gd::argument::arguments& argumentsVariable, gd::variant* pvariantResult );
+   //std::pair<bool, std::string> SERVER_Execute(const std::string_view& stringCommand, const gd::argument::arguments& argumentsVariable, gd::variant* pvariantResult );
 
 
 // @API [tag: message] [description: Application are able to print messages, both normal messages, progress and error messages]
@@ -216,25 +222,25 @@ public:
 
    // ## attributes ----------------------------------------------------------------
 public:
-   CServer* m_pserverBoost{};     ///< server object , used to handle incoming data and send response, holds boost objects
-   CHttpServer* m_phttpserver{};  ///< http server object, used to handle http requests
+   CServer* m_pserverBoost{};       ///< server object , used to handle incoming data and send response, holds boost objects
+   CHttpServer* m_phttpserver{};    ///< http server object, used to handle http requests
    gd::com::server::server_i* m_pserver{}; ///< active server
 
-   std::mutex m_mutex;           ///< general mutex for application
+   std::mutex m_mutex;              ///< general mutex for application
 
-   std::shared_mutex m_sharedmutex;                ///< mutex used for application command that may be used by different threads
-
-   std::mutex m_mutexDatabase;   ///< Handle database locking
+   std::mutex m_mutexDatabase;      ///< Handle database locking
    gd::database::database_i* m_pdatabase{}; ///< active database
    std::vector<gd::database::database_i*> m_vectorDatabase; ///< list of databases (for most situations only one database is used)
 
-   std::mutex m_mutexDocument;   ///< Handle document locking
+   std::mutex m_mutexDocument;      ///< Handle document locking
    CDocument* m_pdocumentActive{};  ///< active document
    std::vector< std::unique_ptr<CDocument> > m_vectorDocument;///< list of connected documents, if used in multidocument environment
 
+   LUA::LuaStatePool m_luastatepool;///< pool of lua states, used to execute lua code in different threads
+
    std::unique_ptr<gd::table::arguments::table> m_ptableSite;  ///< table holding site information like ip and root folder, port etc.
 
-   std::mutex m_mutexError;           ///< mutex used to manage errors in threaded environment
+   std::mutex m_mutexError;         ///< mutex used to manage errors in threaded environment
    std::vector< gd::argument::arguments > m_vectorError; ///< vector storing internal errors
 
    std::unique_ptr<gd::table::table> m_ptableConfig; ///< Table used to store configuration data

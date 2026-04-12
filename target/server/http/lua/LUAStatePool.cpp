@@ -6,9 +6,17 @@ LUA_BEGIN
 // --------------------------------------------------------------- LuaStatePool
 // ----------------------------------------------------------------------------
 
-LuaStatePool::LuaStatePool(size_t uMaxPoolSize, size_t uHardConcurrencyLimit )
-   : m_uMaxPoolSize{ uMaxPoolSize > 0 ? uMaxPoolSize : std::thread::hardware_concurrency() }
-   , m_uHardConcurrencyLimit{ uHardConcurrencyLimit }
+/**  -------------------------------------------------------------------------- LuaStatePool
+ * @brief Construct an empty pool.  Use `emplace()` to add named states,
+ *        or call `emplace( stringName, uCount )` to pre-warm a group.
+ *
+ * @param uMaxPoolSize           Upper bound on the number of states the pool
+ *                               may hold simultaneously.  0 = `hardware_concurrency`.
+ * @param uHardConcurrencyLimit  Maximum states that may be *in use* at once.
+ *                               0 = unbounded.  When the limit is reached,
+ *                               `acquire()` blocks until one is released.
+ */
+LuaStatePool::LuaStatePool(size_t uMaxPoolSize, size_t uHardConcurrencyLimit ): m_uMaxPoolSize{ uMaxPoolSize > 0 ? uMaxPoolSize : std::thread::hardware_concurrency() }, m_uHardConcurrencyLimit{ uHardConcurrencyLimit }
 {
    m_vectorStates.reserve( m_uMaxPoolSize );
 }
@@ -16,9 +24,21 @@ LuaStatePool::LuaStatePool(size_t uMaxPoolSize, size_t uHardConcurrencyLimit )
 
 // ## public interface ---------------------------------------------------------
 
-LuaStatePool::state& LuaStatePool::emplace( std::string_view stringName, std::function<void(sol::state&)> callbackRegister )
+/**  -------------------------------------------------------------------------- Add
+ * @brief Create one new state with the given name and register it in the pool.
+ *
+ *        The caller supplies `callbackRegister` to bind whatever Lua bindings
+ *        this state needs.  Registration is intentionally external so that
+ *        different named groups can expose different APIs.
+ *
+ * @param stringName         Name assigned to the new state (non-unique).
+ * @param callbackRegister   Called once after `open_libraries` to register
+ *                           types and functions into the new state.
+ * @return                   Reference to the newly created `state` record.
+ */
+LuaStatePool::state& LuaStatePool::Add( std::string_view stringName, std::function<void(sol::state&)> callbackRegister, enumLuaFeature eLuaFeature )
 {
-   auto psolstateLua = create_state( callbackRegister );
+   auto psolstateLua = Create( callbackRegister, eLuaFeature );
 
    std::lock_guard<std::mutex> lockguardPool{ m_mutexPool };
 
@@ -27,15 +47,35 @@ LuaStatePool::state& LuaStatePool::emplace( std::string_view stringName, std::fu
    return *pstate_;
 }
 
-void LuaStatePool::emplace( std::string_view stringName, size_t uCount, std::function<void(sol::state&)> callbackRegister )
+/**  -------------------------------------------------------------------------- Add
+ * @brief Convenience overload: create `uCount` states that all share the
+ *        same name and the same registration callback.
+ *
+ * @param stringName         Shared name for all created states.
+ * @param uCount             Number of states to create.
+ * @param callbackRegister   Registration callback applied to each new state.
+ * @param eLuaFeature        Determines which standard Lua libraries to open.
+ */
+void LuaStatePool::Add( std::string_view stringName, size_t uCount, std::function<void(sol::state&)> callbackRegister, enumLuaFeature eLuaFeature )
 {
    for( size_t u = 0; u < uCount; ++u )
    {
-      emplace( stringName, callbackRegister );
+      Add( stringName, callbackRegister, eLuaFeature );
    }
 }
 
-LuaStatePool::borrow LuaStatePool::acquire( std::string_view stringName )
+/**  -------------------------------------------------------------------------- acquire
+ * @brief Borrow an idle state whose name matches `stringName`.
+ *
+ *        Scans the pool for the first state with a matching name whose
+ *        in-use flag is clear, sets the flag, and returns a `borrow` token.
+ *        If all matching states are busy and `m_uHardConcurrencyLimit` has
+ *        been reached the call **blocks** until one becomes available.
+ *
+ * @param stringName   Name of the desired state group.
+ * @return             `borrow` RAII token wrapping the acquired state.
+ */
+LuaStatePool::borrow LuaStatePool::Acquire( std::string_view stringName )
 {
    while( true )
    {
@@ -78,7 +118,16 @@ LuaStatePool::borrow LuaStatePool::acquire( std::string_view stringName )
    }
 }
 
-bool LuaStatePool::erase( uint64_t uId )
+/** -------------------------------------------------------------------------- Erase
+ * @brief Erase the state with the given id from the pool.
+ *
+ * Waits until the target state is idle, then removes it from the pool.
+ *
+ * @param uId   Unique id of the state to erase (assigned at construction).
+ * @return      `true` if a state was found and erased; `false` if no state
+ *              with the given id exists in the pool.
+ */
+bool LuaStatePool::Erase( uint64_t uId )
 {
    // ## wait outside the lock until the target state is idle, then erase
    while( true )
@@ -99,7 +148,7 @@ bool LuaStatePool::erase( uint64_t uId )
              std::memory_order_acquire,
              std::memory_order_relaxed ) )
       {
-         reset_state( *stateTarget.m_psolstateLua );
+         reset_state( *stateTarget.m_pstateLua );
          m_vectorStates.erase( it );                                             // unique_ptr destructor destroys state + sol::state
          m_conditionStateAvailable.notify_all();
          return true;
@@ -134,36 +183,50 @@ void LuaStatePool::set_reset_callback( std::function<void(sol::state&)> callback
 
 // ## internal helpers ---------------------------------------------------------
 
-std::unique_ptr<sol::state> LuaStatePool::create_state( const std::function<void(sol::state&)>& callbackRegister )
-{
-   auto psolstateLua = std::make_unique<sol::state>();
 
-   psolstateLua->open_libraries(
-      sol::lib::base, sol::lib::coroutine, sol::lib::string,
-      sol::lib::table, sol::lib::math, sol::lib::io
-   );
+/**  -------------------------------------------------------------------------- Create
+ * @brief Create a new `sol::state` and register it with the given callback.
+ *
+ *        Opens standard libraries according to `eLuaFeature`, then calls
+ *        `callbackRegister` to bind any additional types and functions.
+ *
+ * @param callbackRegister   Registration callback applied to the new state.
+ * @param eLuaFeature        Determines which standard Lua libraries to open.
+ * @return                   Unique pointer to the newly created `sol::state`.
+ */
+std::unique_ptr<sol::state> LuaStatePool::Create( const std::function<void(sol::state&)>& callbackRegister, enumLuaFeature eLuaFeature )
+{
+   auto pstateLua = std::make_unique<sol::state>();
+
+   if( eLuaFeature == eLuaFeatureCore )
+   {
+      pstateLua->open_libraries( sol::lib::base, sol::lib::string, sol::lib::table, sol::lib::math, sol::lib::io );
+   }
+   else if( eLuaFeature == eLuaFeatureAll )
+   {
+      pstateLua->open_libraries( sol::lib::base, sol::lib::coroutine, sol::lib::string, sol::lib::table, sol::lib::math, sol::lib::io, sol::lib::package, sol::lib::debug );
+   }
 
    //psolstateLua->set_exception_handler( &OnError );
 
-   callbackRegister( *psolstateLua );                                            // caller controls exactly what gets registered
-
-   return psolstateLua;
+   if( callbackRegister ) callbackRegister( *pstateLua );                     // caller controls exactly what gets registered
+   return pstateLua;
 }
 
-void LuaStatePool::reset_state( sol::state& solstateLua )
+void LuaStatePool::reset_state( sol::state& stateLua )
 {
    if( m_callbackReset )
    {
-      m_callbackReset( solstateLua );
+      m_callbackReset( stateLua );
       return;
    }
 
    // ## default: clear known per-request globals
-   solstateLua["app"]     = sol::lua_nil;
-   solstateLua["user"]    = sol::lua_nil;
-   solstateLua["request"] = sol::lua_nil;
+   stateLua["app"]     = sol::lua_nil;
+   stateLua["user"]    = sol::lua_nil;
+   stateLua["request"] = sol::lua_nil;
 
-   //solstateLua.gc();                                                             // reclaim memory held by previous script's temporaries
+   //stateLua.gc();                                                           // reclaim memory held by previous script's temporaries
 }
 
 uint64_t LuaStatePool::next_id() { return m_uNextStateId.fetch_add( 1, std::memory_order_relaxed ); }

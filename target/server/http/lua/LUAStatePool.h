@@ -81,6 +81,11 @@ class LuaStatePool
 {
 // ## types --------------------------------------------------------------------
 public:
+   enum enumLuaFeature
+   {
+      eLuaFeatureCore = 0,     ///< opens standard lua libraries (base, table, string)
+      eLuaFeatureAll,          ///< opens all lua libraries
+   };
 
    // --------------------------------------------------------------------------
    /**
@@ -97,8 +102,8 @@ public:
    {
    // ## construction ----------------------------------------------------------
       state() = delete;
-      state( uint64_t uId, std::string stringName, std::unique_ptr<sol::state> psolstateLua )
-         : m_uId{ uId }, m_stringName{ std::move( stringName ) }, m_psolstateLua{ std::move( psolstateLua ) }, m_bInUse{ false } {}
+      state( uint64_t uId, std::string stringName, std::unique_ptr<sol::state> pstateLua )
+         : m_uId{ uId }, m_stringName{ std::move( stringName ) }, m_pstateLua{ std::move( pstateLua ) }, m_bInUse{ false } {}
 
       state( const state& ) = delete;
       state& operator=( const state& ) = delete;
@@ -106,8 +111,11 @@ public:
       state& operator=( state&& ) = delete;
 
    // ## operators -------------------------------------------------------------
-      sol::state& operator*()  const { return *m_psolstateLua; }
-      sol::state* operator->() const { return m_psolstateLua.get(); }
+      sol::state& operator*()  const { return *m_pstateLua; }
+      sol::state* operator->() const { return m_pstateLua.get(); }
+
+      void script( std::string_view stringScript ) { m_pstateLua->script( stringScript ); }
+      void safe_script( std::string_view stringScript ) { m_pstateLua->safe_script( stringScript ); }
 
    // ## attributes ------------------------------------------------------------
       const uint64_t        m_uId;         ///< unique id assigned at construction, never changes
@@ -116,7 +124,7 @@ public:
 
    private:
       friend class LuaStatePool;
-      std::unique_ptr<sol::state> m_psolstateLua; ///< owning; only pool touches this directly
+      std::unique_ptr<sol::state> m_pstateLua; ///< owning; only pool touches this directly
    };
 
 
@@ -192,21 +200,8 @@ public:
 
 // ## construction -------------------------------------------------------------
 public:
-
-   /**  -------------------------------------------------------------------------- LuaStatePool
-    * @brief Construct an empty pool.  Use `emplace()` to add named states,
-    *        or call `emplace( stringName, uCount )` to pre-warm a group.
-    *
-    * @param uMaxPoolSize           Upper bound on the number of states the pool
-    *                               may hold simultaneously.  0 = `hardware_concurrency`.
-    * @param uHardConcurrencyLimit  Maximum states that may be *in use* at once.
-    *                               0 = unbounded.  When the limit is reached,
-    *                               `acquire()` blocks until one is released.
-    */
-   explicit LuaStatePool(
-      size_t uMaxPoolSize          = 0,
-      size_t uHardConcurrencyLimit = 0
-   );
+   /// Construct an empty pool.  Use `emplace()` to add named states, or call
+   explicit LuaStatePool( size_t uMaxPoolSize = 0, size_t uHardConcurrencyLimit = 0 );
 
    ~LuaStatePool() = default;
 
@@ -219,55 +214,16 @@ public:
 // ## public interface ---------------------------------------------------------
 public:
 
-   /**  -------------------------------------------------------------------------- emplace
-    * @brief Create one new state with the given name and register it in the pool.
-    *
-    *        The caller supplies `callbackRegister` to bind whatever Lua bindings
-    *        this state needs.  Registration is intentionally external so that
-    *        different named groups can expose different APIs.
-    *
-    * @param stringName         Name assigned to the new state (non-unique).
-    * @param callbackRegister   Called once after `open_libraries` to register
-    *                           types and functions into the new state.
-    * @return                   Reference to the newly created `state` record.
-    */
-   state& emplace( std::string_view stringName, std::function<void(sol::state&)> callbackRegister );
+   /// Add a new state to the pool with the given name and registration callback.
+   state& Add( std::string_view stringName, std::function<void(sol::state&)> callbackRegister, enumLuaFeature eLuaFeature = eLuaFeatureCore );
+   /// Convenience overload: add `uCount` states with the same name and registration callback.
+   void Add( std::string_view stringName, size_t uCount, std::function<void(sol::state&)> callbackRegister, enumLuaFeature eLuaFeature = eLuaFeatureCore );
 
-   /**  -------------------------------------------------------------------------- emplace
-    * @brief Convenience overload: create `uCount` states that all share the
-    *        same name and the same registration callback.
-    *
-    * @param stringName         Shared name for all created states.
-    * @param uCount             Number of states to create.
-    * @param callbackRegister   Registration callback applied to each new state.
-    */
-   void emplace( std::string_view stringName, size_t uCount, std::function<void(sol::state&)> callbackRegister );
+   /// Borrow an idle state whose name matches `stringName`.  Blocks if all matching states are busy.
+   [[nodiscard]] borrow Acquire( std::string_view stringName );
 
-   /**  -------------------------------------------------------------------------- acquire
-    * @brief Borrow an idle state whose name matches `stringName`.
-    *
-    *        Scans the pool for the first state with a matching name whose
-    *        in-use flag is clear, sets the flag, and returns a `borrow` token.
-    *        If all matching states are busy and `m_uHardConcurrencyLimit` has
-    *        been reached the call **blocks** until one becomes available.
-    *
-    * @param stringName   Name of the desired state group.
-    * @return             `borrow` RAII token wrapping the acquired state.
-    */
-   [[nodiscard]] borrow acquire( std::string_view stringName );
-
-   /**  -------------------------------------------------------------------------- erase
-    * @brief Remove the state with the given `uId` from the pool.
-    *
-    *        If the state is currently in use the call **blocks** until it is
-    *        released.  After this call the associated `state` object is
-    *        destroyed and the id is never reused.
-    *
-    * @param uId   Unique id of the state to remove.
-    * @return      `true` if a state with that id was found and erased,
-    *              `false` if no such id exists.
-    */
-   bool erase( uint64_t uId );
+   /// Erase the state with the given id from the pool.  Waits until the target state is idle before erasing.
+   bool Erase( uint64_t uId );
 
    /**  -------------------------------------------------------------------------- size
     * @brief Total number of states currently owned by the pool (idle + in use).
@@ -296,14 +252,8 @@ public:
 // ## internal helpers ---------------------------------------------------------
 private:
 
-   /**  -------------------------------------------------------------------------- create_state
-    * @brief Allocate a new `sol::state`, open libraries, install the exception
-    *        handler, and invoke `callbackRegister`.
-    *
-    * @param callbackRegister   Registration callback for this specific state.
-    * @return                   Fully initialised, ready-to-use lua state.
-    */
-   std::unique_ptr<sol::state> create_state( const std::function<void(sol::state&)>& callbackRegister );
+   /// Create a new `sol::state` and register it with the given callback.
+   std::unique_ptr<sol::state> Create( const std::function<void(sol::state&)>& callbackRegister, enumLuaFeature eLuaFeature = eLuaFeatureCore );
 
    /**  -------------------------------------------------------------------------- reset_state
     * @brief Clear per-request globals so a recycled state is safe for the
