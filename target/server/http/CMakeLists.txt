@@ -72,11 +72,20 @@ add_subdirectory("playground") # playground http logic
 # ============================================================================= set_compiler_options
 # Set global compiler options
 function( set_compiler_options )
-   if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+   if(MSVC)  # This catches MSVC, clang-cl, and other Visual Studio-compatible compilers
       target_compile_options(${TARGET_NAME_} PRIVATE "/bigobj")
-      target_compile_definitions(${TARGET_NAME_} PRIVATE _WIN32_WINNT=0x0601)
+   endif()
+   
+   # Platform-specific defines (works for ALL compilers on that platform)
+   if(WIN32)
+      target_compile_definitions(${TARGET_NAME_} PRIVATE _WIN32_WINNT=0x0A00 WIN32_LEAN_AND_MEAN NOMINMAX ) # Windows 10/11 (was 0x0601 for Windows 7)
+   elseif(APPLE)
+      target_compile_definitions(${TARGET_NAME_} PRIVATE __MAC_OS_X_VERSION_MIN_REQUIRED=101200 )
+   elseif(UNIX AND NOT APPLE)
+      target_compile_definitions(${TARGET_NAME_} PRIVATE _GNU_SOURCE )
    endif()
 endfunction()
+
 
 set( USE_TARGET_ ON ) # ========================================================= ${http}
 if( USE_TARGET_ )
@@ -96,7 +105,7 @@ if( USE_TARGET_ )
    )
    
    set_target_properties(${TARGET_NAME_} PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF ) # C++23 default, turn off other compiler features
-
+   
    target_include_directories(${TARGET_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
    target_include_directories(${TARGET_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/source)
    target_compile_definitions(${TARGET_NAME_} PRIVATE _CRT_SECURE_NO_WARNINGS GD_LOG_SIMPLE GD_DATABASE_SQLITE_USE GD_DATABASE_ODBC_USE)

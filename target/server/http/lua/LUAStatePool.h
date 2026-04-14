@@ -103,7 +103,7 @@ public:
    // ## construction ----------------------------------------------------------
       state() = delete;
       state( uint64_t uId, std::string stringName, std::unique_ptr<sol::state> pstateLua )
-         : m_uId{ uId }, m_stringName{ std::move( stringName ) }, m_pstateLua{ std::move( pstateLua ) }, m_bInUse{ false } {}
+         : m_uId{ uId }, m_stringName{ std::move( stringName ) }, m_bInUse{ false }, m_pstateLua{ std::move( pstateLua ) } {}
 
       state( const state& ) = delete;
       state& operator=( const state& ) = delete;

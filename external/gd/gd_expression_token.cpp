@@ -73,7 +73,7 @@ const char* token::next_s(const char* pbszBegin, const char* pbszEnd, token* pto
 
    while(pbszPosition < pbszEnd)
    {
-      uint8_t uType = puCharType_g[*pbszPosition];
+      uint8_t uType = puCharType_g[static_cast<uint8_t>(*pbszPosition)];
       switch(uType)
       {
       case cchartype_g( "space", tag_main_type{}):
@@ -95,7 +95,7 @@ const char* token::next_s(const char* pbszBegin, const char* pbszEnd, token* pto
 const char* token::read_s(const char* pbszBegin, const char* pbszEnd, token* ptoken, tag_digit)
 {
    using namespace gd::types;
-   uint16_t uCType = 0;
+   uint16_t uCType = uint16_t(0u);
    const char* pbszPosition = pbszBegin;
    while(is_ctype_g(*pbszPosition, "decimal"_ctype) && pbszPosition < pbszEnd)
    {
