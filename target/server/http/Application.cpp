@@ -27,13 +27,18 @@
 #include "gd/gd_sql_types.h"
 #include "gd/gd_database_sqlite.h"
 
+#include "gd/parse/gd_parse_json.h"
+
 #include "gd/console/gd_console_console.h"
+
+#include "lua/sol.hpp"
 
 #if defined(_MSC_VER)
 #   include "windows.h"   
 #endif
 
 #include "dto/DTOResponse.h"
+#include "lua/LUABindings.h"
 
 #include "Server.h"
 //#include "HttpServer.h"
@@ -323,6 +328,12 @@ std::pair<bool, std::string> CApplication::Configure(const gd::cli::options& opt
 
    // ## set global settings from command line
 
+   if( optionsActive.exists( "script-lua-pool" ) == true )
+   {
+      auto result_ = LUA_Initialize( optionsActive["script-lua-pool"].as_string_view() );
+      if( result_.first == false ) return result_;
+   }
+
    if( optionsActive.exists( "database-open" ) == true )           
    {
       gd::argument::arguments argumentsOpen;
@@ -502,7 +513,7 @@ void CApplication::PrepareOption_s(gd::cli::options& optionsApplication)
    optionsApplication.add({"database-statement-file", "File with statements to load at startup"});
 
    // ## Script settings
-   optionsApplication.add({"script-pool", "File with scripts to load at startup"});
+   optionsApplication.add({"script-lua-pool", "File with scripts to load at startup, note that json format is expected, sample {core:4, external:2}"});
    
 
    {  // ## `http` command, manage settings for http server
@@ -1014,6 +1025,40 @@ bool CApplication::DOCUMENT_Empty() const
 void CApplication::DOCUMENT_Clear()
 {
    m_vectorDocument.clear();
+}
+
+std::pair<bool, std::string> CApplication::LUA_Initialize( std::string_view stringLuaPool )
+{
+   std::array<std::byte, 128> buffer_; // Buffer for Lua initialization, adjust size as needed
+   gd::argument::arguments argumentsLuaPool( buffer_ );
+
+   gd::parse::json::parse_shallow_object_g( stringLuaPool, argumentsLuaPool );      // Parse the Lua pool configuration string into arguments
+
+   return LUA_Initialize( argumentsLuaPool );
+}
+
+std::pair<bool, std::string> CApplication::LUA_Initialize(const gd::argument::arguments& argumentsLuaPool)
+{
+   // ## Initialize Lua script pool based on the provided arguments
+
+   unsigned uCoreCount = argumentsLuaPool["core"].as_uint();                  // Get the number of core Lua states
+
+   LUA::LuaStatePool* ppool_ = LUA_GetPool();
+
+   if( uCoreCount > 0 )
+   {
+      ppool_->Add( "core", uCoreCount, []( auto& state_ ) {
+         LUA::RegisterApplication( state_ );
+         LUA::RegisterDocument( state_ );
+         LUA::RegisterDatabase( state_ );
+         LUA::RegisterCursor( state_ );
+      }, LUA::LuaStatePool::eLuaFeatureCore );
+   }
+
+   // 
+   // This is a placeholder for the actual Lua initialization logic, which would depend on how you manage Lua scripts in your application.
+   // You would typically create a Lua state, load scripts into it, and store references to the scripts for later use.
+   return { true, "" }; // Return success for now
 }
 
 

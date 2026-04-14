@@ -12,8 +12,11 @@
 
 LUA_BEGIN
 
-void RegisterTable( sol::state& stateLua );
-void RegisterDocument( sol::state& stateLua );
 void RegisterApplication( sol::state& stateLua );
+void RegisterDocument( sol::state& stateLua );
+void RegisterDatabase( sol::state& stateLua );
+void RegisterCursor( sol::state& stateLua );
+void RegisterTable( sol::state& stateLua );
+
 
 LUA_END

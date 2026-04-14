@@ -178,6 +178,8 @@ public:
    // @API [tag: lua]
    LUA::LuaStatePool* LUA_GetPool() { return &m_luastatepool; }
    const LUA::LuaStatePool* LUA_GetPool() const { return &m_luastatepool; }
+   std::pair<bool, std::string> LUA_Initialize(std::string_view stringLuaPool);
+   std::pair<bool, std::string> LUA_Initialize(const gd::argument::arguments& argumentsLuaPool);
     
 
 // @API [tag: command] [description: broadcast commands]

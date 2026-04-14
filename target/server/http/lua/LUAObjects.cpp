@@ -1,6 +1,21 @@
 // @FILE [tag: lua, objects] [summary: Implementation file for LUA objects and utility functions] [type: source] [name: LUAObjects.cpp]
 
 #include <filesystem>
+#include <string>
+#include <string_view>
+#include <variant>
+
+#include "gd/gd_file.h"
+#include "gd/gd_parse.h"
+#include "gd/gd_table_aggregate.h"
+#include "gd/gd_table_io.h"
+#include "gd/gd_sql_value.h"
+#include "gd/gd_arguments.h"
+#include "gd/gd_table_table.h"
+#include "gd/gd_table_column-buffer.h"
+#include "gd/gd_variant.h"
+
+#include "lua/sol.hpp"
 
 #include "../Document.h"
 #include "../Application.h"
@@ -164,7 +179,7 @@ Table::Table(const std::string_view& stringColumn )
 /// Use parse logic in table to generate columns, read internal dto table docs to find how that works
 Table::Table( uint64_t uRowCount, const std::string_view& stringColumn )
 {
-   m_ptable = new gd::table::dto::table( (unsigned)uRowCount, gd::table::tag_full_meta{});
+   m_ptable = new gd::table::dto::table( static_cast<unsigned>(uRowCount), gd::table::tag_full_meta{});
    add_column_s( m_ptable, stringColumn );
 }
 
@@ -173,6 +188,469 @@ Table::~Table()
 { 
    delete m_ptable; 
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Set column attribute for attribute name
+ * @param column_ {int64_t|string} column attribute is set to
+ * @param stringAttribute name for attribute, could be "name|alias"
+ * @param value_ value set for attribute
+ */
+void Table::SetColumnAttribute(std::variant< int64_t, std::string_view> column_, const std::string_view& stringAttribute, std::variant<int64_t, std::string_view> value_ )
+{
+   bool bError = false;
+   int iColumn;
+
+   if( column_.index() == 1 ) { iColumn = m_ptable->column_find_index( std::get<1>( column_ ) ); if( iColumn < 0 ) { throw sol::error( std::format("invalid column name {}", std::get<1>( column_ )) ); } }
+   else                       { iColumn = (int)std::get<0>( column_ ); }
+
+   if( stringAttribute == "name" )
+   {
+      if( value_.index() == 1 ) m_ptable->column_rename( iColumn, std::get<1>( value_ ) );
+      else bError = false;
+   }
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Returns list of selected column attribute
+ * Column attribute are returned as lua table for all columns
+ * @param stringAttribute column attribugte name to return as table, "name", "alias", 
+ * @return sol::table table with selected column attribute value
+ */
+sol::table Table::GetColumns( const sol::variadic_args& variadicargs )
+{
+   auto uArgumentCount = variadicargs.size();
+   sol::state_view stateview_ = variadicargs.lua_state();
+
+   sol::table tableAttributeValue = stateview_.create_table();
+
+   if(uArgumentCount == 1)
+   {
+      sol::type eType = variadicargs[0].get_type();
+      if( eType != sol::type::string ) { throw sol::error( "invalid argument" ); }
+
+      std::string stringAttribute = variadicargs[0];
+
+      uint32_t uAttribute = gd::types::detail::hash_type( stringAttribute );      // to optimize, no need to compare strings to check what type to return
+
+      for(unsigned uIndex = 0, uCount = m_ptable->get_column_count(); uIndex < uCount; uIndex++)
+      {
+         switch(uAttribute)
+         {
+         case gd::types::detail::hash_type("name"):
+            tableAttributeValue.add( m_ptable->column_get_name( uIndex ) );
+            break;
+         case gd::types::detail::hash_type("alias"):
+            tableAttributeValue.add( m_ptable->column_get_alias( uIndex ) );
+            break;
+         case gd::types::detail::hash_type("type"):
+            tableAttributeValue.add( m_ptable->column_get_type( uIndex ) );
+            break;
+         case gd::types::detail::hash_type("ctype"):
+            tableAttributeValue.add( m_ptable->column_get_ctype( uIndex ) );
+            break;
+         }
+      }
+   }
+   else
+   {
+      throw sol::error( "invalid argument" );
+   }
+
+   return tableAttributeValue;
+}
+
+/// Get cell value in table
+std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> Table::GetCellValue( uint64_t uRow, std::variant<int64_t, std::string_view> column_ ) const
+{                                                                                                  assert( m_ptable != nullptr );
+   int iColumn;
+   gd::variant_view value_;
+
+   if( column_.index() == 1 ) 
+   { 
+      auto name_ = std::get<1>( column_ );
+      iColumn = m_ptable->column_find_index( name_ ); 
+      if( iColumn < 0 ) 
+      { 
+         throw sol::error( std::format("invalid column name {}", name_) ); 
+      } 
+   }
+   else
+   { 
+      iColumn = (int)std::get<0>( column_ ); 
+   }
+
+   if( uRow < m_ptable->get_row_count() && ( unsigned )iColumn < m_ptable->get_column_count() )
+   {
+      value_ = m_ptable->cell_get_variant_view( uRow, iColumn );
+   }
+   else
+   {
+      std::string stringError = std::format("row or column is invalid or out of range, max row: {}, specified row: {}", (m_ptable->get_row_count() - 1), uRow );
+
+      if( column_.index() == 1 ) stringError += std::string(", column name: ") + std::get<1>( column_ ).data();
+
+      throw sol::error( stringError );
+   }
+
+   return ConvertToAny_g( value_ );
+}
+
+/// Set value to cell in table
+void Table::SetCellValue( uint64_t uRow, std::variant<int64_t, std::string_view> column_, std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> value_ )
+{                                                                                                  assert( m_ptable != nullptr );
+   int iColumn;
+
+   if( column_.index() == 1 ) { iColumn = m_ptable->column_find_index( std::get<1>( column_ ) ); if( iColumn < 0 ) { throw sol::error( std::format("invalid column name {}", std::get<1>( column_ )) ); } }
+   else                       { iColumn = (int)std::get<0>( column_ ); }
+
+   if( uRow < m_ptable->get_row_count() && ( unsigned )iColumn < m_ptable->get_column_count() )
+   { 
+      gd::variant_view variantviewValue;
+      ConvertFromAny_g( value_, variantviewValue );
+      m_ptable->cell_set( uRow, iColumn, variantviewValue, gd::table::tag_convert{});
+   }
+   else
+   {
+      std::string stringError("row or column is invalid or out of range");
+      throw sol::error( stringError );
+   }
+}
+
+void Table::SetCellValues( const Table& table, const sol::table& tableArguments )
+{
+   const auto* ptableRight = table.GetTable();
+
+   gd::argument::arguments argumentsValue;
+   ConvertToArguments_g( tableArguments, argumentsValue );
+   
+   if(argumentsValue.exists("lookup") == true)
+   {
+      unsigned uColumnLeft;
+      unsigned uColumnRight;
+      auto pairJoin = argumentsValue.find_pair( "lookup" );
+      if( pairJoin.first.is_integer() == true )
+      {
+         uColumnLeft = pairJoin.first.as_uint();
+         uColumnRight = pairJoin.second.as_uint();
+      }
+
+      std::vector< std::pair<uint64_t,uint64_t> > vectorJoin;
+      gd::table::dto::table::join_s( m_ptable, uColumnLeft, ptableRight, uColumnRight, vectorJoin );
+
+
+      auto pairCopy = argumentsValue.find_pair( "copy" );
+      if(pairCopy.first.is_integer() == true)
+      {
+         uColumnLeft = pairCopy.first.as_uint();
+         uColumnRight = pairCopy.second.as_uint();
+      }
+
+      for( auto itCopyRow : vectorJoin )
+      {
+         const auto value_ = ptableRight->cell_get_variant_view( itCopyRow.second, uColumnRight );
+         m_ptable->cell_set( itCopyRow.first, uColumnLeft, value_ );
+      }
+   }
+
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief fill column or area in table with value
+ * @param column_ column or area to fill with value
+ * @param value_ value to set to specified cells
+ */
+void Table::Fill(std::variant<int64_t, std::string_view, sol::table> column_, std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> value_)
+{
+   int iColumn = -1;
+
+   if( column_.index() == 1 )      { iColumn = m_ptable->column_find_index( std::get<1>( column_ ) ); if( iColumn < 0 ) { throw sol::error( std::format("invalid column name {}", std::get<1>( column_ )) ); } }
+   else if( column_.index() == 1 ) { iColumn = (int)std::get<0>( column_ ); }
+   else 
+   {                                                                                               assert( false ); // TODO: fix this
+
+   }
+
+   gd::variant_view variantviewValue;
+   ConvertFromAny_g( value_, variantviewValue );                               // convert value to search for to variant view that is used to find value in table
+
+   if(iColumn != -1)
+   {
+      m_ptable->column_fill( (unsigned)iColumn, variantviewValue );
+   }
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Find value in table
+ * @param column_ column where value are searched for
+ * @param value_ value to search for
+ * @return int64_t row index to row where value was found
+ */
+int64_t Table::Find(std::variant<int64_t, std::string_view> column_, std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> value_)
+{
+   int iColumn;
+
+   if( column_.index() == 1 ) { iColumn = m_ptable->column_find_index( std::get<1>( column_ ) ); if( iColumn < 0 ) { throw sol::error( std::format("invalid column name {}", std::get<1>( column_ )) ); } }
+   else                       { iColumn = (int)std::get<0>( column_ ); }
+
+
+   gd::variant_view variantviewValue;
+   ConvertFromAny_g( value_, variantviewValue );                               // convert value to search for to variant view that is used to find value in table
+
+   int64_t iRow = m_ptable->find_variant_view( (unsigned)iColumn, variantviewValue );
+
+   return iRow;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Add row to table
+ * @param row_ optinal value that holds number of rows to add or table with row values
+ */
+void Table::AddRow(const sol::optional<std::variant<uint64_t, sol::table>> row_)
+{                                                                                                  assert( m_ptable != nullptr );
+   if(row_.has_value() == true)
+   {
+      const std::variant<uint64_t, sol::table>& temp_ = row_.value();
+      if(temp_.index() == 0)
+      {
+         uint64_t uRowCount = std::get<0>( temp_ );
+         m_ptable->row_add( uRowCount );
+      }
+      else
+      {
+         const auto& table_ = std::get<1>( temp_ );
+         std::vector<gd::variant_view> vectorValue;
+         ConvertTo_g( table_, vectorValue );
+         m_ptable->row_add( vectorValue, gd::table::tag_convert{});
+      }
+   }
+   else
+   {
+      m_ptable->row_add();
+   }
+}
+
+/** ----------------------------------------------------------------------------
+ * @brief Read data from file or from sent data.
+ * 
+ * Read information into table. It could be a csv file that is read. Make sure that
+ * the csv file format matches.
+ * 
+ * @param stringFileOrData File name or raw data that is read into table
+ * @param format_ options how to read data into table
+ * @param format_.begin first row to read
+ * @param format_.columns comma separated string with columns read values are inserted to
+ * @param format_.file if true then load text from file
+ * @param format_.format format of string read into table, `csv` = CSV formated text
+ */
+void Table::Read( const std::string_view& stringFileOrData, const std::variant<std::string_view,sol::table>& format_ )
+{
+   using namespace gd::types;
+
+   std::string stringData;
+   std::string_view stringTable;
+   gd::argument::arguments argumentsOption;
+
+   if( format_.index() == 0 )
+   {
+      argumentsOption.append( "format", std::get<0>( format_ ) );
+   }
+   else
+   {
+      ConvertToArguments_g( std::get<1>( format_ ), argumentsOption );
+   }
+
+
+   if( argumentsOption["file"].is_true() == true && std::filesystem::exists(stringFileOrData) == true)
+   {
+      auto result_ = gd::file::read_file_g( stringFileOrData, stringData );
+      if( result_.first == false ) { throw sol::error( result_.second ); }
+
+      stringTable = stringData;
+   }
+   else
+   {
+      stringTable = stringFileOrData;
+   }
+
+   std::string stringFormat = argumentsOption["format"].as_string();
+
+   // ## CSV reading ----------------------------------------------------------
+   if( stringFormat.empty() == true || stringFormat == "csv" )                  // ## if csv data then read csv values into table
+   {
+      uint64_t uFirstRow = 0;
+      std::string_view stringCsv( stringTable );
+      if( argumentsOption["begin"].is_true() ) uFirstRow = argumentsOption["begin"].as_uint64();
+
+      // ## Move to row where to start reading if not 0
+      if( uFirstRow != 0 )
+      {
+         const char* pbszBegin = stringTable.data();
+         for( uint64_t u = 0; u < uFirstRow && pbszBegin != nullptr; u++ )
+         {
+            pbszBegin = gd::parse::strchr( pbszBegin, '\n', gd::parse::csv() );
+            if( pbszBegin != nullptr ) pbszBegin = gd::parse::next_non_space_g( pbszBegin );
+         }
+
+         if( pbszBegin != nullptr )
+         {  // set 
+            stringCsv = std::string_view( pbszBegin, (&stringTable.back() + 1) - pbszBegin );
+         }
+         else return;                                                          // no more rows
+      }
+      else { stringCsv = stringTable; }
+
+      if( argumentsOption.exists( "length" ) == true )                          // ## do we have max number of rows (length)
+      {
+         uint64_t uLength = argumentsOption["length"].as_uint64();
+         const char* pbszPosition = stringCsv.data();
+         for( uint64_t u = 0; u < uLength && pbszPosition != nullptr; u++ )
+         {
+            pbszPosition = gd::parse::strchr( pbszPosition, '\n', gd::parse::csv() );
+         }
+
+         const char* pbszBegin = stringCsv.data();
+         if( pbszPosition != nullptr && pbszPosition > pbszBegin )
+         {
+            pbszPosition--;
+            while( pbszPosition > pbszBegin && is_ctype_g( *pbszPosition, "space"_ctype ) == true ) pbszPosition--;
+            pbszPosition++;                                                     // add one because it should then point to valid character, it should point to character after last valid character
+         }
+
+         stringCsv = std::string_view( pbszBegin, pbszPosition - pbszBegin );
+      }
+
+
+      // ## read csv data into table
+
+      std::string stringColumns = argumentsOption["columns"].as_string();
+      if(stringColumns.empty() == false)                                       // if columns is set the convert to column index and pass that to know what column value is placed in
+      {
+         std::vector< unsigned > vectorColumnIndex;
+         std::vector< std::variant< unsigned, std::string > > vectorColumn;
+         gd::utf8::split( stringColumns, ',', vectorColumn );
+         for(const auto& it : vectorColumn)
+         {
+            unsigned uColumn;
+            if( it.index() == 0 ) uColumn = std::get<0>( it ); 
+            else
+            {
+               uColumn = (unsigned)m_ptable->column_find_index( std::get<1>( it ) );
+               if( uColumn >= m_ptable->get_column_count() ) throw sol::error( std::string("column out of range: ") + std::get<1>( it ) );
+            }
+            vectorColumnIndex.push_back( uColumn );
+         }
+
+         auto result_ = gd::table::read_g( *m_ptable, stringCsv, vectorColumnIndex, ',', '\n', gd::table::tag_io_csv{});
+         if( result_.first == false ) throw sol::error( result_.second );
+      }
+      else
+      {                                                                        // values in cvs should match columns in table
+         // ## Default csv reading, not using any special settings
+         auto result_ = gd::table::read_g( *m_ptable, stringCsv, ',', '\n', gd::table::tag_io_csv{});
+         if( result_.first == false ) throw sol::error( result_.second );
+      }
+   }
+}
+
+/**
+ * @brief 
+~~~(.lua)
+-- create table
+local tableMainResult = Table.new( "rstring,name;string,20,unit;double,value;double,standard_error;int64,code" )
+-- read csv file
+tableMainResult:Read( sCsvFile, { format="csv", begin=1, file=1} ) 
+-- write sql insert into queries
+local sSqlResult = tableMainResult:Write( { table="TName", format="sql"} )
+~~~
+ * @param tableOption 
+ * @return 
+ */
+std::string Table::Write(const sol::table& tableOption)
+{
+   using namespace gd::table;
+
+   std::string stringResult;                 // written result returned
+   gd::argument::arguments argumentsOption;  // options harvested from table argument
+   std::vector<unsigned> vectorColumn;
+
+   ConvertToArguments_g( tableOption, argumentsOption );
+
+   // ## check for columns to 
+   if( argumentsOption.exists( "columns" ) == true )
+   {
+      std::string_view stringColumns = argumentsOption["columns"].as_string_view();
+      std::vector< std::variant< unsigned, std::string > > vector_;
+      gd::utf8::split( stringColumns, ',', vector_ );
+      for( auto it : vector_ )
+      {
+         if( it.index() == 1 )
+         {
+            int iColumn = m_ptable->column_find_index( std::get<1>( it ) );
+            if( iColumn != -1 ) { vectorColumn.push_back( unsigned( iColumn ) ); }
+            else                { throw sol::error( std::string( "Unknown column: ") + std::get<1>( it ) ); }
+         }
+         else { vectorColumn.push_back( std::get<0>( it ) ); }
+      }
+      vectorColumn;
+   }
+
+   int32_t iMax = -1;
+   if( argumentsOption.exists("max_column_width") == true ) iMax = argumentsOption["max_column_width"].as_int();
+   int64_t iCount = -1;
+   if( argumentsOption.exists("count") == true ) iCount = argumentsOption["count"].as_int64();
+   bool bHeader = false;
+   if( argumentsOption.exists("header") == true ) bHeader = argumentsOption["header"].is_true();
+   bool bBody = true;
+   if( argumentsOption.exists("body") == true ) bBody = argumentsOption["body"].is_true();
+
+   std::string stringFormat = argumentsOption["format"].as_string();
+   if( stringFormat == "cli" ) 
+   {
+      if(bBody == false)
+      {
+         if(bHeader == true)
+         {
+            stringResult = to_string( *m_ptable, tag_io_header{},tag_io_cli{} );
+         }
+      }
+      else
+      {
+         stringResult = to_string( *m_ptable, argumentsOption, tag_io_cli{} );
+      }
+   }
+   else if(stringFormat == "csv")
+   {
+      //std::string stringTable = argumentsOption["table"].as_string();
+      //gd::table::write_insert_g( stringTable, *m_ptable, stringResult, tag_io_sql{} );
+   }
+   else if(stringFormat == "sql")
+   {
+      gd::argument::arguments argumentsWriteOption;
+      std::string stringTable = argumentsOption["table"].as_string();
+      if( argumentsOption.exists("names") == true ) { argumentsWriteOption.append_argument( "names", argumentsOption["names"].as_variant_view() ); }
+      
+      if(argumentsOption.exists("template") == true)                            // if template then generate strings from that template
+      {
+         // ## 
+         uint64_t uRow = argumentsOption["row"].as_uint64();
+         if( uRow >= m_ptable->get_reserved_row_count() ) throw sol::error( std::format("Max row is {}, row {} is out of range", m_ptable->get_reserved_row_count() - 1, uRow ));
+         gd::argument::arguments argumentsValue = m_ptable->row_get_arguments( uRow );
+         std::string stringTemplate = argumentsOption["template"].as_string();
+      }
+      else
+      {
+         // ## write insert queries
+         if( vectorColumn.empty() == true ) { gd::table::write_insert_g( stringTable, *m_ptable, stringResult, argumentsWriteOption, tag_io_sql{} ); }
+         else { gd::table::write_insert_g( stringTable, *m_ptable, vectorColumn, stringResult, argumentsWriteOption, tag_io_sql{} ); }
+      }
+   }
+
+
+
+   return stringResult;
+}
+
 
 
 // ----------------------------------------------------------------------------

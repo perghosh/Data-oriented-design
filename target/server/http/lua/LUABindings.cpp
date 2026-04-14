@@ -6,6 +6,28 @@
 
 LUA_BEGIN
 
+void RegisterApplication( sol::state& stateLua )
+{
+	stateLua.new_usertype<Application>(
+      "Application", sol::constructors<Application()>(),
+      "GetDocument", &Application::GetDocument,
+		"GetProperty", &Application::GetProperty,
+      "GetPropertyCount", &Application::GetPropertyCount,
+      "GetPropertyName", &Application::GetPropertyName,
+      "Message", &Application::Message,
+      "Initialize", &Application::Initialize,
+      "SetLogLevel", &Application::SetLogLevel,
+		"SetProperty", &Application::SetProperty
+   ); 
+}
+
+void RegisterDocument( sol::state& stateLua )
+{
+	stateLua.new_usertype<Document>(
+      "Document", sol::constructors<Document()>()
+   ); 
+}
+
 void RegisterDatabase( sol::state& stateLua )
 {
 	stateLua.new_usertype<Database>(
@@ -32,27 +54,24 @@ void RegisterCursor( sol::state& stateLua )
    );
 }
 
-
-void RegisterDocument( sol::state& stateLua )
+void RegisterTable( sol::state& stateLua )
 {
-	stateLua.new_usertype<Document>(
-      "Document", sol::constructors<Document()>()
-   ); 
-}
-
-void RegisterApplication( sol::state& stateLua )
-{
-	stateLua.new_usertype<Application>(
-      "Application", sol::constructors<Application()>(),
-      "GetDocument", &Application::GetDocument,
-		"GetProperty", &Application::GetProperty,
-      "GetPropertyCount", &Application::GetPropertyCount,
-      "GetPropertyName", &Application::GetPropertyName,
-      "Message", &Application::Message,
-      "Initialize", &Application::Initialize,
-      "SetLogLevel", &Application::SetLogLevel,
-		"SetProperty", &Application::SetProperty
-   ); 
+	stateLua.new_usertype<Table>(
+      "Table", sol::constructors<Table(), Table( const std::string_view& ), Table( uint64_t, const std::string_view& )>(),
+      "__len", &Table::GetRowCount,
+      "AddRow", &Table::AddRow,
+      "GetColumnCount", &Table::GetColumnCount,
+      "GetColumns", &Table::GetColumns,
+      "GetRowCount", &Table::GetRowCount,
+      "Fill", &Table::Fill,
+      "Find", &Table::Find,
+      "GetCellValue", &Table::GetCellValue,
+      "SetCellValue", &Table::SetCellValue,
+      "SetCellValues", &Table::SetCellValues,
+      "SetColumnAttribute", &Table::SetColumnAttribute,
+      "Read", &Table::Read,
+      "Write", &Table::Write
+      );
 }
 
 LUA_END
