@@ -29,6 +29,11 @@ TEST_CASE( "[lua] first", "[lua]" )
 
    auto lua_ = ppool_->Acquire("test");
 
+	std::unique_ptr<LUA::Application> papplication = std::make_unique<LUA::Application>( papplication_.get() );
+	lua_.get_luastate()["app"] = std::move( papplication );											 // set global variable named "app" to prepared application
 
-   lua_->script( "print('Hello from Lua!')" );
+   lua_->script( R"(
+   local iPropertyCount = app:GetPropertyCount()
+   print( "Property count: " .. iPropertyCount )
+   )" );
 }

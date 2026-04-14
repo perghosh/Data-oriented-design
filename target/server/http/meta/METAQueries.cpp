@@ -133,6 +133,20 @@ std::pair<bool, std::string> CQueries::GetQuery( std::string_view stringName, st
    return { false, std::format( "No query found for name '{}'", stringName ) };
 }
 
+/** --------------------------------------------------------------------------
+ * @brief Retrieves all values of a specific argument name from the arguments attached to a query at the given row index.
+ * @param uRow The row index of the query.
+ * @param stringName The name of the argument.
+ * @return A vector of variant views representing the values of the specified argument.
+ */
+std::vector< gd::variant_view > CQueries::GetArgumentsValues( uint64_t uRow, std::string_view stringName ) const
+{
+   const gd::argument::shared::arguments* parguments = GetQueryArguments( uRow );
+   if( parguments == nullptr ) return {};
+
+   return parguments->get_argument_all( stringName, gd::types::tag_view{} );
+}
+
 std::pair<bool, std::string> CQueries::Load( std::string_view stringPath )
 {
    gd::file::path path_( stringPath );
@@ -176,33 +190,36 @@ std::pair<bool, std::string> CQueries::Load_s( std::string_view stringFilename, 
       {
          argumentsStatement.clear();
 
-         // === Attributes (always present) ===
+         // ## Attributes (always present)
          argumentsStatement["uuid"] = xmlnodeStatement.attribute( "id" ).value();
          argumentsStatement["name"] = xmlnodeStatement.attribute( "name" ).value();
          argumentsStatement["type"] = xmlnodeStatement.attribute( "type" ).value();
          argumentsStatement["format"] = xmlnodeStatement.attribute( "format" ).value();
          argumentsStatement["description"] = xmlnodeStatement.attribute( "description" ).value();
 
+         // ## Handle 'ui' attribute or child element (optional)
          pugi::xml_attribute xmlattrbuteUi = xmlnodeStatement.attribute( "ui" );
-         if( xmlattrbuteUi )
-         {
-            argumentsStatement["ui"] = xmlattrbuteUi.value();
-         }
+         if( xmlattrbuteUi ) { argumentsStatement["ui"] = xmlattrbuteUi.value(); }
          else
-         {
-            // fallback to <ui> child element
+         {  // ### fallback to <ui> child element
             pugi::xml_node xmlnodeUi = xmlnodeStatement.child( "ui" );
-            if( xmlnodeUi )
-            {
-               argumentsStatement["ui"] = xmlnodeUi.child_value();
-            }
+            if( xmlnodeUi ) { argumentsStatement["ui"] = xmlnodeUi.child_value(); }
+         }
+
+         // ## Handle 'code' attribute or child element (optional)
+         pugi::xml_attribute xmlattrbuteCode = xmlnodeStatement.attribute( "code" );
+         if( xmlattrbuteCode ) { argumentsStatement["code"] = xmlattrbuteCode.value(); }
+         else
+         {  // ### fallback to <code> child element
+            pugi::xml_node xmlnodeCode = xmlnodeStatement.child( "code" );
+            if( xmlnodeCode ) { argumentsStatement["code"] = xmlnodeCode.child_value(); }
          }
 
          std::string statementText = xmlnodeStatement.text().get();         // get element text, this will include CDATA content if present
 
          argumentsStatement["statement"] = statementText;
 
-         auto result_ = statement_.add( argumentsStatement, { "ui" } );
+         auto result_ = statement_.add( argumentsStatement, { "ui", "code"});
          if( result_.first == false ) { return { false, "Error adding statement: " + result_.second }; }
       }
    }

@@ -86,6 +86,9 @@ public:
    int64_t GetQueryRow( std::string_view stringName ) const; ///< get row index for query with specified name, returns -1 if not found
    const gd::argument::shared::arguments* GetQueryArguments( uint64_t uRow ) const; ///< get arguments for query at specified row index, returns nullptr if not found
 
+   std::vector< gd::variant_view > GetArgumentsValues( std::string_view stringName ) const; 
+   std::vector< gd::variant_view > GetArgumentsValues( uint64_t uRow, std::string_view stringName ) const; ///< return values from attached arguments with selected name
+
    // @API [tag: load, save]
    
    std::pair<bool, std::string> Load( std::string_view stringPath );
@@ -126,6 +129,14 @@ inline int64_t CQueries::GetQueryRow( std::string_view stringName ) const
 inline const gd::argument::shared::arguments* CQueries::GetQueryArguments( uint64_t uRow ) const
 {
    return m_statement.get_arguments( uRow );
+}
+
+/// @brief Retrieves the values of arguments associated with a query based on its name.
+inline std::vector< gd::variant_view > CQueries::GetArgumentsValues( std::string_view stringName ) const
+{
+   auto iIndex = m_statement.find( stringName );
+   if( iIndex < 0 ) { return {}; }
+   return GetArgumentsValues( static_cast<uint64_t>(iIndex), stringName );
 }
 
 NAMESPACE_META_END

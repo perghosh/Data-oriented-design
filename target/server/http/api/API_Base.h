@@ -299,15 +299,11 @@ private:
 // ## operator ---------------------------------------------------------------
 public:
    /// Get argument by name (first value for that name from URI parameters)
-   gd::variant_view operator[]( const char* piName )
-   { return m_argumentsParameter.get_argument( std::string_view( piName ) ).as_variant_view(); }
+   gd::variant_view operator[]( const char* piName ) { 
+      return m_argumentsParameter.get_argument( std::string_view( piName ) ).as_variant_view(); }
 
-   gd::variant_view operator[]( std::tuple<const char*, size_t> index_ )
-   {
-      return m_argumentsParameter
-         .find_argument( std::string_view( std::get<0>( index_ ) ), (unsigned)std::get<1>( index_ ) )
-         .as_variant_view();
-   }
+   gd::variant_view operator[]( std::tuple<std::string_view, size_t> index_ ) { 
+      return m_argumentsParameter.find_argument( std::get<0>( index_ ), (unsigned)std::get<1>( index_ ) ).as_variant_view(); }
 
 // ## methods ----------------------------------------------------------------
 public:
@@ -356,6 +352,7 @@ public:
    gd::variant_view Get( std::string_view stringName ) const { return m_argumentsParameter.get_argument( stringName ); }
 
    gd::variant_view GetArgument( std::string_view stringName ) const { return m_argumentsParameter.get_argument( stringName ); }
+   gd::variant_view GetNextArgument( std::string_view stringName );
 
    /// Count the uses of a keyed argument based on current command index
    size_t GetArgumentIndex( const std::string_view& stringName ) const;

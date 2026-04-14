@@ -111,6 +111,35 @@ CDocument* CAPI_Base::GetDocument()
    return pdocument;
 }
 
+/** -------------------------------------------------------------------------- CAPI_Base::GetNextArgument
+ * @brief Returns the next occurrence of a named request argument and advances its internal counter.
+ *
+ * Uses `GetArgumentIndex( stringName )` to determine which occurrence to read:
+ * - `0`  -> first lookup by name only (`GetArgument( stringName )`)
+ * - `>0` -> indexed lookup via `operator[]` (for repeated keys like `xml`, `xml[2]`, ...)
+ *
+ * If a non-null value is found, `IncrementArgumentCounter( stringName )` is called so the
+ * next invocation returns the following occurrence for the same argument name.
+ *
+ * @param stringName Argument key to read from `m_argumentsParameter`.
+ * @return gd::variant_view View of the resolved value; null view when no occurrence exists.
+ */
+gd::variant_view CAPI_Base::GetNextArgument( std::string_view stringName )
+{
+   gd::variant_view value_; // value for this occurrence of the argument
+
+   size_t uIndex = GetArgumentIndex( stringName );                            // get the current use-count for this argument name
+   if( uIndex == 0 ) value_ = GetArgument( stringName );                      // first occurrence: look up by name only
+   else              value_ = ( *this )[{stringName, uIndex}];                // subsequent occurrence: look up by name and index (e.g. "xml", "xml[2]", etc.)
+
+   if( value_.is_null() == false )
+   {
+      IncrementArgumentCounter( stringName );                                 // advance the counter for this argument name so that the next call picks up the next occurrence
+   }
+
+   return value_;
+}
+
 /** -------------------------------------------------------------------------- CAPI_Base::GetArgumentIndex
  * @brief Returns the current use-count for a named argument (single-name variant).
  *

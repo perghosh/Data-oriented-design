@@ -167,7 +167,10 @@ public:
       sol::state& operator*()  const { return **m_pstateTarget; }
       sol::state* operator->() const { return &(**m_pstateTarget); }
 
+   
    // ## interface -------------------------------------------------------------
+
+      sol::state& get_luastate() { return **m_pstateTarget; }
 
       /**  -------------------------------------------------------------------------- id
        * @brief Id of the borrowed state.

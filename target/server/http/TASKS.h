@@ -37,3 +37,11 @@
 [tag: ip, session] [status: open] [user: per]
 */
  
+/*
+@PROJECT [name: scripting] [tag: script, lua, python, gdscript] [description: Script logic inside web server]
+
+@TASK [project: scripting] [tag: lua, cli, configuration] [status: open] [user: per]
+[summary: initialize lua scripting for webserver]
+[description: lua engines are store in a lua pool and this pool has to be initialized at startup]
+[sample: http]
+*/

@@ -17,6 +17,7 @@
 #include "../gd_types.h"
 #include "../gd_arguments.h"
 #include "../gd_arguments_shared.h"
+#include "../gd_variant_arg.h"
 
 
 #ifndef _GD_PARSE_JSON_BEGIN
@@ -29,6 +30,8 @@ _GD_PARSE_JSON_BEGIN
 
 std::pair<bool, std::string> parse_shallow_object_g( std::string_view stringJson, gd::argument::arguments& argumentsJson, bool bEncode = true );
 std::pair<bool, std::string> parse_shallow_object_g( std::string_view stringJson, gd::argument::shared::arguments& argumentsJson, bool bEncode = true );
+
+std::pair<bool, std::string> parse_shallow_object_g( std::string_view stringJson, gd::args& argsJson, bool bEncode = true );
 
 
 /**

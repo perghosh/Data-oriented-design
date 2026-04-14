@@ -500,6 +500,9 @@ void CApplication::PrepareOption_s(gd::cli::options& optionsApplication)
    optionsApplication.add({"database-meta-columns", "Query to read columns from connected database"});
    optionsApplication.add({"database-dialect", "Set the SQL dialect for the connected database"});
    optionsApplication.add({"database-statement-file", "File with statements to load at startup"});
+
+   // ## Script settings
+   optionsApplication.add({"script-pool", "File with scripts to load at startup"});
    
 
    {  // ## `http` command, manage settings for http server

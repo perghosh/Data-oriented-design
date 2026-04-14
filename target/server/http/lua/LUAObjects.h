@@ -13,6 +13,8 @@
 #include "gd/gd_database.h"
 #include "gd/gd_database_sqlite.h"
 
+#include "../api/API_Base.h"
+
 
 #ifndef LUA_BEGIN
 #  define LUA_BEGIN namespace LUA {
@@ -189,6 +191,69 @@ public:
    gd::com::pointer<gd::database::cursor_i> m_pcursor;
 };
 
+// ----------------------------------------------------------------------------
+// -------------------------------------------------------------------- Request
+// ----------------------------------------------------------------------------
+
+/**
+ * \brief Request wrapper in lua
+ */
+class Request
+{
+// ## construction -------------------------------------------------------------
+public:
+   Request() {}
+   Request( CAPI_Base* puserrequest ) { m_puserrequest = puserrequest; }
+   // copy
+   Request( const Request& o ) { common_construct( o ); }
+   // assign
+   Request& operator=( const Request& o ) { common_construct( o ); return *this; }
+
+   ~Request() {}
+private:
+   // common copy
+   void common_construct( const Request& o ) { m_puserrequest = o.m_puserrequest; }
+
+// ## operator -----------------------------------------------------------------
+public:
+
+/** \name OPERATION
+*///@{
+//@}
+
+// ## attributes ----------------------------------------------------------------
+public:
+   CAPI_Base* m_puserrequest = nullptr; ///< pointer to CAPI_Base is same as request object
+};
+
+
+// ----------------------------------------------------------------------------
+// ------------------------------------------------------------------- Response
+// ----------------------------------------------------------------------------
+
+/**
+ * \brief Response wrapper in lua
+ */
+class Response
+{
+// ## construction -------------------------------------------------------------
+public:
+   Response() {}
+   Response( CAPIContext* papicontext ) { m_papicontext = papicontext; }
+
+   ~Response() {}
+private:
+   // common copy
+
+// ## operator -----------------------------------------------------------------
+public:
+
+// ## attributes ----------------------------------------------------------------
+public:
+   CAPIContext* m_papicontext = nullptr; ///< pointer to API context, used to access request and response objects, and other information about current request
+};
+
+
 /** @CLASS [tag: Document. lua, wrapper] [summary: Wrapper for CDocument class in lua]
  * \brief Document wrapper in lua
  */
@@ -277,7 +342,7 @@ public:
    // ## attributes ----------------------------------------------------------------
 public:
    bool m_bOwner = false;  ///< if application class owns `CApplication` object
-   CApplication* m_papplication;
+   CApplication* m_papplication = nullptr;
 };
 
 LUA_END

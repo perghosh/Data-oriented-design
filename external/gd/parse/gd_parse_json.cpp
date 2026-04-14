@@ -65,9 +65,7 @@ std::pair<bool, std::string> parse_shallow_object_implementation( std::string_vi
       bHasBraces = true;
       piPosition++;                                                           // skip '{'
       
-      // Skip whitespace after opening brace
-      piPosition = gd::utf8::move::next_non_space( piPosition, piEnd );
-      //while( piPosition < piEnd && ( *piPosition == ' ' || *piPosition == '\t' || *piPosition == '\n' || *piPosition == '\r' ) ) { piPosition++; }
+      piPosition = gd::utf8::move::next_non_space( piPosition, piEnd );      // Skip whitespace after opening brace
    }
    
    // ## Parse key-value pairs ..............................................
@@ -197,7 +195,7 @@ std::pair<bool, std::string> parse_shallow_object_implementation( std::string_vi
          }
          else { stringValue = std::string_view( piValueStart, piValueEnd - piValueStart ); }
 
-         argumentsJson.push_back( { stringKey, gd::variant_type::utf8( stringValue ) } );
+         argumentsJson.push_back_view( std::string_view( stringKey ), gd::variant_type::utf8( stringValue ) );
       }
       else
       {
@@ -221,7 +219,7 @@ std::pair<bool, std::string> parse_shallow_object_implementation( std::string_vi
          // Check or error, and you shouldn't find string here
          if( bSuccess == false || variantValue.is_string() == true ) { return { false, "Invalid JSON value" }; }
          
-         argumentsJson.append_argument( stringKey, variantValue );
+         argumentsJson.push_back( stringKey, variantValue );
       }
       
       
@@ -254,7 +252,7 @@ std::pair<bool, std::string> parse_shallow_object_implementation( std::string_vi
    return { true, "" };
 }
 
-/**
+/** ------------------------------------------------------------------------- parse_shallow_object_g
  * \brief Parse a JSON object into key-value pairs (shallow copy).
  * 
  * Parses a JSON object string into key-value pairs stored in a regular arguments object.
@@ -273,7 +271,7 @@ std::pair<bool, std::string> parse_shallow_object_g( std::string_view stringJson
    return parse_shallow_object_implementation( stringJson, argumentsJson, bEncode );
 }
 
-/**
+/** -------------------------------------------------------------------------- parse_shallow_object_g
  * \brief Parse a JSON object into key-value pairs (shallow copy).
  * 
  * Parses a JSON object string into key-value pairs stored in a shared arguments object.
@@ -290,6 +288,25 @@ std::pair<bool, std::string> parse_shallow_object_g( std::string_view stringJson
 std::pair<bool, std::string> parse_shallow_object_g( std::string_view stringJson, gd::argument::shared::arguments& argumentsJson, bool bEncode )
 {
    return parse_shallow_object_implementation( stringJson, argumentsJson, bEncode );
+}
+
+/** -------------------------------------------------------------------------- parse_shallow_object_g
+ * \brief Parse a JSON object into key-value pairs (shallow copy).
+ * 
+ * Parses a JSON object string into key-value pairs stored in a view arguments object.
+ * Values are stored as strings without recursively parsing nested objects or arrays.
+ * 
+ * @param stringJson The JSON string to parse (with or without surrounding braces)
+ * @param argumentsJson Output view arguments object to store parsed key-value pairs
+ * @return Pair of success flag and error message
+ * 
+ * Example:
+ *   "{\"name\":\"John\",\"age\":30}" -> {{"name", "John"}, {"age", "30"}}
+ *   "key=value&another=data" -> {{"key", "value"}, {"another", "data"}}
+ */
+std::pair<bool, std::string> parse_shallow_object_g( std::string_view stringJson, gd::args& argsJson, bool bEncode )
+{
+   return parse_shallow_object_implementation( stringJson, argsJson, bEncode );
 }
 
 

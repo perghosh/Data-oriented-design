@@ -1226,7 +1226,9 @@ public:
    arguments& push_back( std::string_view stringName, const variant& variantValue ) { return append_argument( stringName, variantValue); }
    arguments& push_back( std::string_view stringName, const variant_view& variantviewValue ) { return append_argument( stringName, variantviewValue, tag_view{}); }
    arguments& push_back( const std::pair<std::string_view, gd::variant_view>& pairArgument ) { return append_argument(pairArgument, tag_view{}); }
-
+   arguments& push_back_view(std::string_view key_, gd::variant_view value_) { return append_argument(key_, value_); }
+   arguments& push_back_view(const std::pair<std::string_view, gd::variant_view>& pairArgument) { return append_argument(pairArgument.first, pairArgument.second); }
+   
    // ## @API [tag: set] [description: set methods, if value exists it is overwritten, otherwise it is appended]
    //    Set values for selected position in buffer, it could be for a name, index or pointer
    //    If position is not found, new value is appended to buffer

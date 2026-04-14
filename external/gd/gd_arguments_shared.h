@@ -1203,7 +1203,11 @@ public:
 
    arguments& push_back( const variant_view& variantviewValue ) { return append_argument(variantviewValue, tag_view{}); }
    arguments& push_back( std::string_view stringName, const variant_view& variantviewValue ) { return append_argument( stringName, variantviewValue, tag_view{}); }
+   arguments& push_back( std::string_view stringName, const variant& variantValue ) { return append_argument( stringName, variantValue); }
    arguments& push_back( const std::pair<std::string_view, gd::variant_view>& pairArgument ) { return append_argument(pairArgument, tag_view{}); }
+   arguments& push_back_view(std::string_view key_, gd::variant_view value_) { return append_argument(key_, value_); }
+   arguments& push_back_view(const std::pair<std::string_view, gd::variant_view>& pairArgument) { return append_argument(pairArgument.first, pairArgument.second); }
+
 
 
    // ## @API [tag: set] [description: set methods, if value exists it is overwritten, otherwise it is appended]
@@ -1261,7 +1265,7 @@ public:
    pointer insert( size_t uIndex, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_view );
    pointer insert( pointer pPosition, const gd::variant_view& variantviewValue, tag_view );
    pointer insert( pointer pPosition, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_view );
-   pointer insert(pointer pPosition, argument_type uType, const_pointer pBuffer, unsigned int uLength);
+   pointer insert( pointer pPosition, argument_type uType, const_pointer pBuffer, unsigned int uLength);
 //@}
 
    // ## @API [tag: merge] [description: merges values from another arguments object]

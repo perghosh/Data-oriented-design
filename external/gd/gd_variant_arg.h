@@ -402,15 +402,21 @@ struct args_view
       return rend();
    }
 
+   // @API [summary: STL algorithmic methods]
+
+   /// @brief Check if any element satisfies the predicate ------------------- any_of()
    template<typename PREDICATE>
    bool any_of(PREDICATE predicate_) const { return std::any_of(begin(), end(), predicate_); }
 
+   /// @brief Check if all elements satisfy the predicate ------------------- all_of()
    template<typename PREDICATE>
    bool all_of(PREDICATE predicate_) const { return std::all_of(begin(), end(), predicate_); }
-
+   
+   /// @brief Check if no elements satisfy the predicate -------------------- none_of()
    template<typename PREDICATE>
    bool none_of(PREDICATE predicate_) const { return std::none_of(begin(), end(), predicate_); }
 
+   /// @brief Count the number of elements with a specific key --------------- count()
    size_t count(std::string_view stringKey) const;
 
    // ## Front/back access
@@ -426,7 +432,7 @@ struct args_view
    std::vector<arg_view> m_vectorArgs; // Container for arg_view objects
 };
 
-/// Equality operator for args_view
+/// Equality operator for args_view ------------------------------------------ operator==
 inline bool args_view::operator==(const args_view& o) const
 {
    if(size() != o.size()) return false;
@@ -437,7 +443,7 @@ inline bool args_view::operator==(const args_view& o) const
    return true;
 }
 
-/// @brief Find an argument by key
+/// @brief Find an argument by key ------------------------------------------- find()
 inline args_view::const_iterator args_view::find(std::string_view stringKey) const
 {
    for(const_iterator it = begin(); it != end(); ++it)
@@ -448,7 +454,7 @@ inline args_view::const_iterator args_view::find(std::string_view stringKey) con
    return end();
 }
 
-/// @brief Count the number of arguments with a given key
+/// @brief Count the number of arguments with a given key -------------------- count()
 inline size_t args_view::count(std::string_view stringKey) const
 {
    size_t uCount = 0;
@@ -532,6 +538,15 @@ struct args
    // ## Modifiers
    void push_back(const arg& arg_) { m_vectorArgs.push_back(arg_); }
    void push_back(arg&& arg_) { m_vectorArgs.push_back(std::move(arg_)); }
+   args& push_back(const std::string& stringKey, const gd::variant& variantValue) { m_vectorArgs.push_back(arg(stringKey, variantValue)); return *this; }
+   args& push_back(std::string&& stringKey, gd::variant&& variantValue) { m_vectorArgs.push_back(arg(stringKey, variantValue)); return *this; }
+   args& push_back_view(std::string_view key_, gd::variant_view value_) { m_vectorArgs.push_back(arg_view(key_, value_)); return *this; }
+   template <typename ARGUMENT>
+   args& push_back(const std::pair<std::string_view, ARGUMENT>& pairArgument) {
+      if constexpr (std::is_same_v<ARGUMENT, gd::variant_view>) { m_vectorArgs.push_back(arg_view(pairArgument.first, pairArgument.second)); } 
+      else { m_vectorArgs.push_back(arg(pairArgument.first, pairArgument.second)); }
+      return *this;
+   }
    void pop_back() { m_vectorArgs.pop_back(); }
 
    template<typename... Args>
@@ -564,10 +579,7 @@ struct args
    {
       args_view argsview_;
       argsview_.reserve(size());
-      for(const auto& arg_ : *this)
-      {
-         argsview_.push_back(arg_);
-      }
+      for(const auto& arg_ : *this) { argsview_.push_back(arg_); }
       return argsview_;
    }
 
@@ -579,40 +591,28 @@ struct args
    template<typename PREDICATE>
    auto find_if(PREDICATE predicate_)
    {
-      for(auto it = begin(); it != end(); ++it)
-      {
-         if(predicate_(*it)) return it;
-      }
+      for(auto it = begin(); it != end(); ++it) { if(predicate_(*it)) return it; }
       return end();
    }
 
    template<typename PREDICATE>
    auto find_if(PREDICATE predicate_) const
    {
-      for(auto it = begin(); it != end(); ++it)
-      {
-         if(predicate_(*it)) return it;
-      }
+      for(auto it = begin(); it != end(); ++it) { if(predicate_(*it)) return it; }
       return end();
    }
 
    template<typename PREDICATE>
    reverse_iterator find_if_reverse(PREDICATE predicate_)
    {
-      for(reverse_iterator it = rbegin(); it != rend(); ++it)
-      {
-         if(predicate_(*it)) return it;
-      }
+      for(reverse_iterator it = rbegin(); it != rend(); ++it) { if(predicate_(*it)) return it; }
       return rend();
    }
 
    template<typename PREDICATE>
    const_reverse_iterator find_if_reverse(PREDICATE predicate_) const
    {
-      for(const_reverse_iterator it = rbegin(); it != rend(); ++it)
-      {
-         if(predicate_(*it)) return it;
-      }
+      for(const_reverse_iterator it = rbegin(); it != rend(); ++it) { if(predicate_(*it)) return it; }
       return rend();
    }
 
@@ -624,8 +624,8 @@ struct args
    bool none_of(PREDICATE predicate_) const { return std::none_of(begin(), end(), predicate_); }
 
    // ## Batch operations
-   template<typename InputIt>
-   void assign(InputIt first, InputIt last) { m_vectorArgs.assign(first, last); }
+   template<typename ITERATOR>
+   void assign(ITERATOR first, ITERATOR last) { m_vectorArgs.assign(first, last); }
    void assign(size_type uCount, const arg& arg_) { m_vectorArgs.assign(uCount, arg_); }
    void assign(std::initializer_list<arg> list) { m_vectorArgs.assign(list); }
 

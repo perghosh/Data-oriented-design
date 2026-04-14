@@ -417,6 +417,30 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
    auto* pdatabase = pdocument->GetDatabase();
    if( pdatabase == nullptr ) return { false, "no database connection in document: " + std::string( pdocument->GetName() ) };
 
+
+   std::string stringQuery = GetNextArgument( "query" ).as_string();         // get query to execute
+   if( stringQuery.empty() == false ) 
+   {  
+      if( stringQuery[0u] == '#' ) { stringQuery.erase( 0, 1 ); }             // remove leading #
+
+      // ## Process code if any
+      META::CQueries* pqueries = pdocument->QUERIES_Get();
+      auto vectorCode = pqueries->GetArgumentsValues( stringQuery );
+      if( vectorCode.empty() == false )
+      {
+         auto* ppool_ = GetApplication()->LUA_GetPool();
+         auto lua_ = ppool_->Acquire("core");
+      /*
+         CAPIContext context( *GetApplication(), m_vectorCommand, m_argumentsParameter, m_uCommandIndex + 1 ); // create new context for code execution with command index set to next command after current query command
+         CAPI_Code api_code( context, vectorCode, m_argumentsParameter ); // create API for code execution with code as command vector
+         auto result_ = api_code.Execute(); // execute code
+         if( result_.first == false ) { return result_; }
+         */
+      }
+
+   }
+
+
    // ## Prepare SQL statement ................................................
    std::string stringExecute;
    auto result_ = Sql_Prepare(stringExecute);
@@ -804,7 +828,7 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
       }
    }
 
-   if( pargumentsReturn != nullptr ) { pargumentsReturn->push_back( { "count", gd::variant_view(uInsertCount) } ); }
+   if( pargumentsReturn != nullptr ) { pargumentsReturn->push_back_view( std::string_view("count"), gd::variant_view(uInsertCount) ); }
 
    return { true, "" };
 }

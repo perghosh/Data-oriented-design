@@ -338,10 +338,7 @@ std::vector<variant> get_values(const args& args_)
 {
    std::vector<variant> vectorResult;
    vectorResult.reserve(args_.size());
-   for(const auto& arg_ : args_)
-   {
-      vectorResult.push_back(arg_.get_value());
-   }
+   for(const auto& arg_ : args_) { vectorResult.push_back(arg_.get_value()); }
    return vectorResult;
 }
 
