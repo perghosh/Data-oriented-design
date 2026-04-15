@@ -1032,7 +1032,8 @@ std::pair<bool, std::string> CApplication::LUA_Initialize( std::string_view stri
    std::array<std::byte, 128> buffer_; // Buffer for Lua initialization, adjust size as needed
    gd::argument::arguments argumentsLuaPool( buffer_ );
 
-   gd::parse::json::parse_shallow_object_g( stringLuaPool, argumentsLuaPool );      // Parse the Lua pool configuration string into arguments
+   auto result_ = gd::parse::json::parse_shallow_object_g( stringLuaPool, argumentsLuaPool );      // Parse the Lua pool configuration string into arguments
+   if( result_.first == false ) { return { false, std::string( "Failed to parse Lua pool configuration: " ) + result_.second }; }
 
    return LUA_Initialize( argumentsLuaPool );
 }
@@ -1052,6 +1053,7 @@ std::pair<bool, std::string> CApplication::LUA_Initialize(const gd::argument::ar
          LUA::RegisterDocument( state_ );
          LUA::RegisterDatabase( state_ );
          LUA::RegisterCursor( state_ );
+         LUA::RegisterTable( state_ );
       }, LUA::LuaStatePool::eLuaFeatureCore );
    }
 

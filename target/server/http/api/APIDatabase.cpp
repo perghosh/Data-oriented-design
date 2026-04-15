@@ -1,3 +1,6 @@
+// @FILE [tag: database, api] [description: API class for database operations] [type: source] [name: APIDatabase.cpp]
+
+#include <memory>
 #include <filesystem>
 
 #include "gd/gd_binary.h"
@@ -15,6 +18,8 @@
 
 #include "../service/SERVICE_SqlBuilder.h"
 #include "../render/RENDERSql.h"
+
+#include "../lua/LUAObjects.h"
 
 #include "../Router.h"
 #include "../Document.h"
@@ -425,11 +430,16 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
 
       // ## Process code if any
       META::CQueries* pqueries = pdocument->QUERIES_Get();
-      auto vectorCode = pqueries->GetArgumentsValues( stringQuery );
+      auto vectorCode = pqueries->GetArgumentsValues( stringQuery, "code" );  // get code for insert
       if( vectorCode.empty() == false )
       {
          auto* ppool_ = GetApplication()->LUA_GetPool();
-         auto lua_ = ppool_->Acquire("core");
+         auto lua_ = ppool_->Acquire( "core" );                              // acquire lua state from pool to execute code, relased in destructor
+         auto& state_ = lua_.get_luastate();
+
+         // ## Prepare objects for code execution, these are added to state as global variables
+         std::unique_ptr<LUA::Application> papplication = std::make_unique<LUA::Application>( GetApplication() );
+         state_["app"] = std::move( papplication );    
       /*
          CAPIContext context( *GetApplication(), m_vectorCommand, m_argumentsParameter, m_uCommandIndex + 1 ); // create new context for code execution with command index set to next command after current query command
          CAPI_Code api_code( context, vectorCode, m_argumentsParameter ); // create API for code execution with code as command vector

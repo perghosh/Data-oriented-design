@@ -115,9 +115,6 @@ public:
 
    void SetResponseData( unsigned uType, void* pData ) { m_pairRequestData = { uType, pData }; }
    
-   CRouter& operator=( CApplication* pApplication ) { m_pApplication = pApplication; return *this; }
-   CRouter& operator=( CDocument* pDocument ) { m_pDocument = pDocument; return *this; }
-
    // Convenience accessors that forward to m_context so existing call-sites
    // in Run() / Prepare() / PrintResponseXml() do not need to change.
    CApplication* GetApplication()             { return m_context.GetApplication(); }
@@ -125,11 +122,6 @@ public:
    CDocument*    GetDocument()                { return m_context.GetDocument(); }
    const CDocument* GetDocument() const       { return m_context.GetDocument(); }
  
-   // Keep m_pApplication / m_pDocument as thin aliases if needed by other
-   // translation units that include this header.  They delegate to m_context.
-   CApplication*& m_pApplication = *reinterpret_cast<CApplication**>( &m_context.m_papplication );
-   CDocument*&    m_pDocument    = *reinterpret_cast<CDocument**>(    &m_context.m_pdocument    );
-
 
 // ## methods ------------------------------------------------------------------
 public:

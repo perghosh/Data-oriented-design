@@ -139,12 +139,12 @@ std::pair<bool, std::string> CQueries::GetQuery( std::string_view stringName, st
  * @param stringName The name of the argument.
  * @return A vector of variant views representing the values of the specified argument.
  */
-std::vector< gd::variant_view > CQueries::GetArgumentsValues( uint64_t uRow, std::string_view stringName ) const
+std::vector< gd::variant_view > CQueries::GetArgumentsValues( uint64_t uRow, std::string_view stringKey ) const
 {
    const gd::argument::shared::arguments* parguments = GetQueryArguments( uRow );
    if( parguments == nullptr ) return {};
 
-   return parguments->get_argument_all( stringName, gd::types::tag_view{} );
+   return parguments->get_argument_all( stringKey, gd::types::tag_view{} );
 }
 
 std::pair<bool, std::string> CQueries::Load( std::string_view stringPath )
