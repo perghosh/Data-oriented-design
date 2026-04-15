@@ -1306,6 +1306,7 @@ public:
 
    bool empty() const noexcept { return m_pbuffer->size() == 0; }
    size_t size( tag_memory ) const noexcept { return buffer_size(); }
+   unsigned int count() const;
    unsigned int count(std::string_view stringName) const;
    /// number of arguments found in arguments object
    [[nodiscard]] size_t size() const;
