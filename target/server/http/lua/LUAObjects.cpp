@@ -105,6 +105,29 @@ std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> ConvertToAny_g(
    return sol::lua_nil;
 }
 
+std::variant<int64_t, std::string, double, bool, sol::table, sol::lua_nil_t> ConvertToAnyWithTable_g( gd::variant_view value_ )
+{
+   if( value_.is_integer() == true )      { return value_.as_int64(); }
+   else if( value_.is_string() == true )  { return value_.as_string(); }
+   else if( value_.is_decimal() == true ) { return value_.as_double(); }
+   return sol::lua_nil;
+}
+
+std::variant<int64_t, std::string, double, bool, sol::table, sol::lua_nil_t> ConvertToAnyWithTable_g( const gd::argument::arguments& argumentsValue )
+{
+   sol::table table_;
+
+   for( const auto& [key_, value_] : argumentsValue.named() )
+   {
+      if( value_.is_integer() == true ) { table_[key_] = value_.as_int64(); }
+      else if( value_.is_string() == true ) { table_[key_] = value_.as_string(); }
+      else if( value_.is_decimal() == true ) { table_[key_] = value_.as_double(); }
+   }
+   return table_;
+}
+
+
+
 std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> ConvertToAny_g( const gd::variant_view& value_ )
 {
    if( value_.is_integer() == true )      { return value_.as_int64(); }
@@ -200,13 +223,25 @@ void Table::SetColumnAttribute(std::variant< int64_t, std::string_view> column_,
    bool bError = false;
    int iColumn;
 
-   if( column_.index() == 1 ) { iColumn = m_ptable->column_find_index( std::get<1>( column_ ) ); if( iColumn < 0 ) { throw sol::error( std::format("invalid column name {}", std::get<1>( column_ )) ); } }
-   else                       { iColumn = (int)std::get<0>( column_ ); }
+   if( column_.index() == 1 ) 
+   { 
+      iColumn = m_ptable->column_find_index( std::get<1>( column_ ) ); 
+      if( iColumn < 0 ) { bError = true; } 
+   }
+   else { iColumn = (int)std::get<0>( column_ ); }
 
-   if( stringAttribute == "name" )
+   if( bError == false && stringAttribute == "name" )
    {
       if( value_.index() == 1 ) m_ptable->column_rename( iColumn, std::get<1>( value_ ) );
-      else bError = false;
+      else bError = true;
+   }
+
+   if( bError == true )
+   {
+      std::string stringError = std::format( "invalid attribute value for column {}, attribute: {}, value: ", iColumn, stringAttribute );
+      if( value_.index() == 0 ) stringError += std::to_string( std::get<0>( value_ ) );
+      else if( value_.index() == 1 ) stringError += std::get<1>( value_ );
+      throw sol::error( stringError );
    }
 }
 
@@ -715,11 +750,37 @@ void Database::Open( const std::variant<std::string_view, sol::table>& connect_ 
    }
 }
 
+/// Execute sql statement, this is for sql statements that doesn't return value, for example insert, update, delete, create table, etc.
 void Database::Execute( const std::string_view& stringSql )
 {
    auto [bOk, stringError] = m_pdatabase->execute( stringSql );
    if( bOk == false ) { throw sol::error( stringError ); }
 }
+
+/// Execute sql statement and return value, this is for sql statements that return value or values, using `returns`
+std::variant<int64_t, std::string, double, bool, sol::table, sol::lua_nil_t> Database::ExecuteReturn( const std::string_view& stringSql )
+{
+   std::array<std::byte, 128> buffer_;
+   gd::argument::arguments argumentsKey( buffer_ );
+
+   auto [bOk, stringError] = m_pdatabase->execute( stringSql, [&argumentsKey]( const auto* parguments_ ){ argumentsKey = *parguments_; return true; });
+   if( bOk == false ) { throw sol::error( stringError ); }
+
+   auto uCount = argumentsKey.count();
+   if( uCount == 1 )
+   {
+      return ConvertToAnyWithTable_g( argumentsKey[0u].as_variant_view() );
+   }
+   else if( argumentsKey.size() > 0 )
+   {
+      return ConvertToAnyWithTable_g( argumentsKey );
+   }
+   else
+   {
+      return sol::lua_nil;
+   }
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief Ask for value in database, this method will only take first value found from query
@@ -859,6 +920,15 @@ Table Cursor::GetTable()
    return Table( ptable.release() );
 }
 
+// ----------------------------------------------------------------------------
+// ------------------------------------------------------------------ Document
+// ----------------------------------------------------------------------------
+
+
+Database Document::GetDatabase()
+{                                                                                                  assert( m_pdatabase != nullptr );
+   return Database( (void*)m_pdatabase );
+}
 
 
 
@@ -879,6 +949,11 @@ Application::~Application()
 Document Application::GetDocument()
 {                                                                                                  assert( m_papplication != nullptr );
    return Document( (void*)m_papplication->GetDocument() );
+}
+
+Database Application::GetDatabase()
+{                                                                                                  assert( m_pdatabase != nullptr );
+   return Database( (void*)m_pdatabase );
 }
 
 /// return number of properties in application

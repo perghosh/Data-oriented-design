@@ -366,7 +366,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
 
 std::pair<bool, std::string> CAPIDatabase::Execute_Ask()
 {
-   gd::database::database_i* pdatabaseOpen = nullptr;
+   //gd::database::database_i* pdatabaseOpen = nullptr;
 
    CDocument* pdocument = GetDocument();                                                           if( pdocument == nullptr ) { return { false, GetLastError() }; }
 
@@ -438,8 +438,13 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
          auto& state_ = lua_.get_luastate();
 
          // ## Prepare objects for code execution, these are added to state as global variables
-         std::unique_ptr<LUA::Application> papplication = std::make_unique<LUA::Application>( GetApplication() );
+         std::unique_ptr<LUA::Application> papplication = std::make_unique<LUA::Application>( GetApplication(), pdatabase );
          state_["app"] = std::move( papplication );    
+         std::unique_ptr<LUA::Document> pdocument = std::make_unique<LUA::Document>( GetDocument(), pdatabase );
+         state_["doc"] = std::move( pdocument );
+
+         lua_.reset( { "app", "doc"}, true );
+
       /*
          CAPIContext context( *GetApplication(), m_vectorCommand, m_argumentsParameter, m_uCommandIndex + 1 ); // create new context for code execution with command index set to next command after current query command
          CAPI_Code api_code( context, vectorCode, m_argumentsParameter ); // create API for code execution with code as command vector
@@ -447,6 +452,8 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
          if( result_.first == false ) { return result_; }
          */
       }
+
+      return { true, "" }; 
 
    }
 

@@ -1824,6 +1824,21 @@ arguments& arguments::merge(const arguments& arguments_)
    return *this;
 }
 
+/*----------------------------------------------------------------------------- count */ /**
+ * Count param values for name
+ * \return unsigned int number of param values found for name
+ */
+unsigned int arguments::count() const
+{
+   unsigned int uCount = 0;
+   for( auto pPosition = next(); pPosition != nullptr; pPosition = next(pPosition) )
+   {
+      uCount++;
+   }
+
+   return uCount;
+}
+
 
 /*----------------------------------------------------------------------------- count */ /**
  * Count param values for name

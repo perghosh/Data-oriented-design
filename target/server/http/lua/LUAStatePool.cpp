@@ -1,4 +1,4 @@
-#include "LuaStatePool.h"
+#include "LUAStatePool.h"
 
 LUA_BEGIN
 
@@ -38,11 +38,11 @@ LuaStatePool::LuaStatePool(size_t uMaxPoolSize, size_t uHardConcurrencyLimit ): 
  */
 LuaStatePool::state& LuaStatePool::Add( std::string_view stringName, std::function<void(sol::state&)> callbackRegister, enumLuaFeature eLuaFeature )
 {
-   auto psolstateLua = Create( callbackRegister, eLuaFeature );
+   std::unique_ptr<sol::state> psolstateLua = Create( callbackRegister, eLuaFeature ); // create the new sol::state first to avoid blocking the pool lock during registration
 
    std::lock_guard<std::mutex> lockguardPool{ m_mutexPool };
 
-   auto& pstate_ = m_vectorStates.emplace_back( std::make_unique<state>( next_id(), std::string{ stringName }, std::move( psolstateLua ) ) );
+   auto& pstate_ = m_vectorStates.emplace_back( std::make_unique<state>( next_id(), std::string{ stringName }, std::move( psolstateLua ), this ) );
 
    return *pstate_;
 }
@@ -87,10 +87,7 @@ LuaStatePool::borrow LuaStatePool::Acquire( std::string_view stringName )
             if( pstate_->m_stringName != stringName ) { continue; }
 
             bool bExpectedIdle = false;
-            if( pstate_->m_bInUse.compare_exchange_strong(
-                   bExpectedIdle, true,
-                   std::memory_order_acquire,
-                   std::memory_order_relaxed ) )
+            if( pstate_->m_bInUse.compare_exchange_strong( bExpectedIdle, true, std::memory_order_acquire, std::memory_order_relaxed ) )
             {
                return borrow{ *pstate_ };
             }
@@ -116,6 +113,26 @@ LuaStatePool::borrow LuaStatePool::Acquire( std::string_view stringName )
          return false;
       });
    }
+}
+
+void LuaStatePool::Reset( uint64_t uId, const std::list<std::string_view>& listStringName, bool bCallGC )
+{
+   std::lock_guard<std::mutex> lockguardPool{ m_mutexPool };
+   auto it = std::find_if( m_vectorStates.begin(), m_vectorStates.end(),
+                           [uId]( const std::unique_ptr<state>& pstate_ ) { return pstate_->m_uId == uId; }
+   );
+
+   if( it == m_vectorStates.end() ) { return; }                        // id not found
+
+   state& stateTarget = **it;
+   auto* pstateLua = stateTarget.get_raw_luastate();                                               assert( pstateLua != nullptr && "Lua state is null" );
+   for( const auto& stringName : listStringName )
+   {
+      (*pstateLua)[stringName] = nullptr;
+   }
+
+   if( bCallGC ) { pstateLua->collect_garbage(); }
+   
 }
 
 /** -------------------------------------------------------------------------- Erase
@@ -223,10 +240,10 @@ void LuaStatePool::reset_state( sol::state& stateLua )
 
    // ## default: clear known per-request globals
    stateLua["app"]     = sol::lua_nil;
-   stateLua["user"]    = sol::lua_nil;
+   stateLua["doc"]    = sol::lua_nil;
    stateLua["request"] = sol::lua_nil;
 
-   //stateLua.gc();                                                           // reclaim memory held by previous script's temporaries
+   stateLua.collect_garbage();                                                // reclaim memory held by previous script's temporaries
 }
 
 uint64_t LuaStatePool::next_id() { return m_uNextStateId.fetch_add( 1, std::memory_order_relaxed ); }

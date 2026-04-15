@@ -137,6 +137,7 @@ public:
    bool IsOpen() const { return (m_pdatabase != nullptr); }
    void Open( const std::variant<std::string_view,sol::table>& connect_ );
    void Execute( const std::string_view& stringSql );
+   std::variant<int64_t, std::string, double, bool, sol::table, sol::lua_nil_t> ExecuteReturn( const std::string_view& stringSql );
    std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> Ask( const std::string_view& stringSql, std::optional<std::string> type_ );
    void Close();
 //@}
@@ -263,6 +264,7 @@ class Document
 public:
    Document() : m_pdocument{ nullptr } { }
    Document( void* pdocument ) : m_pdocument{ (CDocument*)pdocument } { }
+   Document( void* pdocument, gd::database::database_i* pdatabase ) { m_pdocument = (CDocument*)pdocument; m_pdatabase = pdatabase; }
    // copy
    Document( const Document& o ) { common_construct( o ); }
    // assign
@@ -271,21 +273,18 @@ public:
    ~Document() {}
 private:
    // common copy
-   void common_construct( const Document& o ) { m_pdocument = o.m_pdocument; }
+   void common_construct( const Document& o ) { m_pdocument = o.m_pdocument; m_pdatabase = o.m_pdatabase; }
 
 // ## operator -----------------------------------------------------------------
 public:
 
-/** \name OPERATION
-*///@{
-   //Table GetCacheTable( const std::string_view& stringCacheId );
-   //MetaTables GetMetaTables();
-   //MetaFields GetMetaFields();
-//@}
+// @API [tag: operation]
+   Database GetDatabase();
 
 // ## attributes ----------------------------------------------------------------
 public:
    CDocument* m_pdocument;
+   gd::database::database_i* m_pdatabase = nullptr;
 };
 
 
@@ -298,6 +297,7 @@ class Application
 public:
    Application();
    Application( CApplication* papplication ) { m_papplication = papplication; }
+   Application( CApplication* papplication, gd::database::database_i* pdatabase ) { m_papplication = papplication; m_pdatabase = pdatabase; }
    // copy
    Application( const Application& o ) { common_construct( o ); }
    // assign
@@ -306,7 +306,7 @@ public:
    ~Application();
 private:
    // common copy
-   void common_construct( const Application& o ) {}
+   void common_construct( const Application& o ) { m_papplication = o.m_papplication; m_pdatabase = o.m_pdatabase; }
 
    // ## operator -----------------------------------------------------------------
 public:
@@ -316,6 +316,7 @@ public:
    /** \name GET/SET
    *///@{
    Document GetDocument();
+   Database GetDatabase();
 
    /// Return total number of properties in application
    uint64_t GetPropertyCount();
@@ -343,6 +344,7 @@ public:
 public:
    bool m_bOwner = false;  ///< if application class owns `CApplication` object
    CApplication* m_papplication = nullptr;
+   gd::database::database_i* m_pdatabase = nullptr;
 };
 
 LUA_END

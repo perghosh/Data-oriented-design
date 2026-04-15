@@ -102,8 +102,8 @@ public:
    {
    // ## construction ----------------------------------------------------------
       state() = delete;
-      state( uint64_t uId, std::string stringName, std::unique_ptr<sol::state> pstateLua )
-         : m_uId{ uId }, m_stringName{ std::move( stringName ) }, m_bInUse{ false }, m_pstateLua{ std::move( pstateLua ) } {}
+      state( uint64_t uId, std::string stringName, std::unique_ptr<sol::state> pstateLua, LuaStatePool* pluastatepool )
+         : m_uId{ uId }, m_stringName{ std::move( stringName ) }, m_bInUse{ false }, m_pstateLua{ std::move( pstateLua ) }, m_pluastatepool{ pluastatepool } {}
 
       state( const state& ) = delete;
       state& operator=( const state& ) = delete;
@@ -117,10 +117,14 @@ public:
       void script( std::string_view stringScript ) { m_pstateLua->script( stringScript ); }
       void safe_script( std::string_view stringScript ) { m_pstateLua->safe_script( stringScript ); }
 
+      sol::state* get_raw_luastate() { return m_pstateLua.get(); }
+      void reset( const std::list<std::string_view>& listObject = {}, bool bCallGC = false ) { assert( m_pluastatepool ); m_pluastatepool->Reset( m_uId, listObject, bCallGC ); }
+
    // ## attributes ------------------------------------------------------------
-      const uint64_t        m_uId;         ///< unique id assigned at construction, never changes
-      const std::string     m_stringName;  ///< non-unique name used to match acquire requests
-      std::atomic<bool>     m_bInUse;      ///< true while borrowed by a caller
+      const uint64_t       m_uId;         ///< unique id assigned at construction, never changes
+      const std::string    m_stringName;  ///< non-unique name used to match acquire requests
+      std::atomic<bool>    m_bInUse;      ///< true while borrowed by a caller
+      LuaStatePool*        m_pluastatepool = nullptr;///< back-pointer to pool for internal use (optional, can be used for callbacks or state reset)
 
    private:
       friend class LuaStatePool;
@@ -184,14 +188,16 @@ public:
        */
       std::string_view name() const { return m_pstateTarget->m_stringName; }
 
+      void reset( const std::list<std::string_view>& listObject = {}, bool bCallGC = false ) { m_pstateTarget->reset( listObject, bCallGC ); }
+
+
    // ## attributes ------------------------------------------------------------
    private:
       state* m_pstateTarget;  ///< non-owning; pool is the sole owner
 
    // ## helpers ---------------------------------------------------------------
    private:
-      void release()
-      {
+      void release() {
          if( m_pstateTarget )
          {
             m_pstateTarget->m_bInUse.store( false, std::memory_order_release );
@@ -224,6 +230,8 @@ public:
 
    /// Borrow an idle state whose name matches `stringName`.  Blocks if all matching states are busy.
    [[nodiscard]] borrow Acquire( std::string_view stringName );
+
+   void Reset( uint64_t uId, const std::list<std::string_view>& listStringName, bool bCallGC = false );
 
    /// Erase the state with the given id from the pool.  Waits until the target state is idle before erasing.
    bool Erase( uint64_t uId );
@@ -275,17 +283,17 @@ private:
 
 // ## attributes ---------------------------------------------------------------
 private:
-   size_t                     m_uMaxPoolSize;            ///< upper bound on total owned states
-   size_t                     m_uHardConcurrencyLimit;   ///< 0 = unlimited concurrent borrows
+   size_t                  m_uMaxPoolSize;            ///< upper bound on total owned states
+   size_t                  m_uHardConcurrencyLimit;   ///< 0 = unlimited concurrent borrows
 
-   std::vector<std::unique_ptr<state>> m_vectorStates;   ///< sole owner of all state objects; never reallocated after reserve
+   std::vector<std::unique_ptr<state>> m_vectorStates;///< sole owner of all state objects; never reallocated after reserve
 
-   mutable std::mutex         m_mutexPool;               ///< guards `m_vectorStates` for structural changes (emplace / erase)
-   std::condition_variable    m_conditionStateAvailable; ///< signalled when a borrow is released
+   mutable std::mutex      m_mutexPool;               ///< guards `m_vectorStates` for structural changes (emplace / erase)
+   std::condition_variable m_conditionStateAvailable; ///< signalled when a borrow is released
 
-   std::function<void(sol::state&)> m_callbackReset;     ///< optional; invoked before in-use flag is cleared
+   std::function<void(sol::state&)> m_callbackReset;  ///< optional; invoked before in-use flag is cleared
 
-   std::atomic<uint64_t>      m_uNextStateId{ 1 };       ///< monotonic id counter; 0 is reserved as "invalid"
+   std::atomic<uint64_t>   m_uNextStateId{ 1 };       ///< monotonic id counter; 0 is reserved as "invalid"
 };
 
 

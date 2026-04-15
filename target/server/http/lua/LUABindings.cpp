@@ -10,6 +10,7 @@ void RegisterApplication( sol::state& stateLua )
 {
 	stateLua.new_usertype<Application>(
       "Application", sol::constructors<Application()>(),
+      "GetDatabase", &Application::GetDatabase,
       "GetDocument", &Application::GetDocument,
 		"GetProperty", &Application::GetProperty,
       "GetPropertyCount", &Application::GetPropertyCount,
@@ -24,7 +25,8 @@ void RegisterApplication( sol::state& stateLua )
 void RegisterDocument( sol::state& stateLua )
 {
 	stateLua.new_usertype<Document>(
-      "Document", sol::constructors<Document()>()
+      "Document", sol::constructors<Document()>(),
+      "GetDatabase", &Document::GetDatabase
    ); 
 }
 
@@ -35,6 +37,7 @@ void RegisterDatabase( sol::state& stateLua )
       "IsOpen", &Database::IsOpen,
       "Open", &Database::Open,
 		"Execute", &Database::Execute,
+      "ExecuteReturn", &Database::ExecuteReturn,
       "Ask", &Database::Ask,
       "Close", &Database::Close
    );

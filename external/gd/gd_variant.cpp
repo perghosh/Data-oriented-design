@@ -364,11 +364,13 @@ void variant::as_string( std::string& string_ ) const
    case eTypeNumberString: {                                                                       assert( strlen( m_V.pbsz ) == m_uSize );
          string_.append( m_V.pbsz, m_uSize );
       }
+      break;
    case eTypeNumberWString : {
       std::string s;
       gd::utf8::convert_utf16_to_uft8( reinterpret_cast<const uint16_t*>(m_V.pwsz), s);
       string_.append( s );
       }
+      break;
    default: {
          string_.append( as_string() );
       }

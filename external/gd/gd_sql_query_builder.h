@@ -1,4 +1,4 @@
-// @FILE [tag: sql, query, builder] [description: logic to build SQL queries] [type: header] [name: gd_sql_query_builder.h]
+// @FILE [tag: sql, query, builder, orm] [description: logic to build SQL queries] [type: header] [name: gd_sql_query_builder.h]
 
 /**
  * \file gd_sql_query_builder.h

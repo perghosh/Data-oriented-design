@@ -1311,6 +1311,7 @@ public:
 
    bool empty() const noexcept { return m_uLength == 0; }
    size_t size( tag_memory ) const noexcept { return m_uLength; }
+   unsigned int count() const;
    unsigned int count(std::string_view stringName) const;
    /// number of arguments found in arguments object
    [[nodiscard]] size_t size() const;
