@@ -1079,6 +1079,7 @@ std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> Request::GetGlo
    return ConvertToAny_g( variantValue );
 }
 
+/// @brief Set global variable to Request, these values can be used to fill in missing values
 void Request::SetGlobalVariable( std::string_view stringName, std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> value_, std::optional<std::string> type_ )
 {
    gd::variant variantValue = ConvertFromAny_g( value_ );

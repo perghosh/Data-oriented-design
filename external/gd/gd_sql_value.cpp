@@ -548,7 +548,7 @@ void append_g( const gd::variant_view& variantValue, std::string& stringSql, tag
 
 }
 
-/** --------------------------------------------------------------------------
+/** -------------------------------------------------------------------------- append_g
  * @brief Append string_view value to string in a format that works for sql
  * 
  * Methods used to check type and append string to sql string
@@ -676,10 +676,121 @@ void append_g( std::string_view stringValue, unsigned uType, unsigned uDialect, 
    stringSql += '\'';
 }
 
+/**  ---------------------------------------------------------------- append_identifier_g
+ * @brief Append a dialect-quoted SQL identifier to `stringSql`
+ * 
+ * Wraps `stringColumn` using the identifier delimiter required by `uDialect`
+ * and appends the result to `stringSql`.
+ * 
+ * Use this for SQL identifiers such as column names or table names when the
+ * generated SQL must follow dialect-specific quoting rules.
+ * 
+ * @param stringColumn identifier text to append
+ * @param uDialect SQL dialect selecting which identifier quote characters to use
+ * @param stringSql destination SQL string that receives the quoted identifier
+ * @return void Appends the formatted identifier to `stringSql`
+ */
+void append_identifier_g( std::string_view stringColumn, unsigned uDialect, std::string& stringSql )
+{
+   using namespace gd::types;
+
+   auto escape_add = [&]( std::string_view stringIdentifier, char iQuoteCharacter )
+   {
+      const char* piData = stringIdentifier.data();
+      const char* piStart = piData;
+      const char* piEnd = piData + stringIdentifier.size();
+
+      while( piData < piEnd )
+      {
+         if( *piData == iQuoteCharacter )
+         {
+            if( piData > piStart )
+            {
+               stringSql.append( piStart, piData - piStart );
+            }
+
+            stringSql += iQuoteCharacter;
+            stringSql += iQuoteCharacter;
+            piData++;
+            piStart = piData;
+         }
+         else { piData++; }
+      }
+
+      if( piData > piStart ) { stringSql.append( piStart, piData - piStart ); }
+   };
+
+   // Handle identifiers (e.g., column names) - need to quote if they contain special characters or are reserved words
+   // Different databases have different identifier quoting characters:
+   switch( uDialect )
+   {
+   case eSqlDialectPostgreSql:
+   case eSqlDialectCockroachDB:
+   case eSqlDialectRedshift:
+   // PostgreSQL family uses double quotes for identifiers
+   stringSql += '"';
+   escape_add( stringColumn, '"' );
+   stringSql += '"';
+   break;
+
+   case eSqlDialectMySql:
+   case eSqlDialectMariaDB:
+   // MySQL/MariaDB uses backticks for identifiers
+   stringSql += '`';
+   escape_add( stringColumn, '`' );
+   stringSql += '`';
+   break;
+
+   case eSqlDialectSqlServer:
+   // SQL Server uses square brackets for identifiers
+   stringSql += '[';
+   escape_add( stringColumn, ']' );
+   stringSql += ']';
+   break;
+
+   case eSqlDialectOracle:
+   // Oracle uses double quotes for identifiers
+   stringSql += '"';
+   escape_add( stringColumn, '"' );
+   stringSql += '"';
+   break;
+
+   case eSqlDialectSqlite:
+   // SQLite allows both double quotes and backticks, but double quotes are more standard
+   stringSql += '"';
+   escape_add( stringColumn, '"' );
+   stringSql += '"';
+   break;
+
+   case eSqlDialectDB2:
+   // DB2 uses double quotes for identifiers
+   stringSql += '"';
+   escape_add( stringColumn, '"' );
+   stringSql += '"';
+   break;
+
+   default:
+   // Default to double quotes for ANSI compliance
+   stringSql += '"';
+   escape_add( stringColumn, '"' );
+   stringSql += '"';
+   break;
+   }
+}
 
 
-/** ---------------------------------------------------------------------------
+
+/** --------------------------------------------------------------------------- make_bulk_g
  * @brief Prepare two sql queries used for doing some sort of database bulk operation
+ * 
+ * Why two queries?
+ * Doing inserts you often have two parts, one fixed and one that is repeated for each row, for example:
+ * @verbatim
+ * INSERT INTO table_name (column1, column2) VALUES
+ * and then the part that is repeated for each row:
+ * (value1, value2), (value1, value2), (value1, value2)
+ * @endverbatim
+ * 
  * @param stringFixed fixed string part that is only added once
  * @param stringParameter parameter part is the part that is copied bulk count times
  * @param uCount total number of rows to execute

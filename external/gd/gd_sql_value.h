@@ -55,7 +55,11 @@ void append_g( const gd::variant& variantValue, std::string& stringSql );
 void append_g( const gd::variant_view& variantValue, std::string& stringSql );
 void append_g( const gd::variant_view& variantValue, std::string& stringSql, tag_raw );
 
+/// Append value to string, value is converted to string depending on type and dialect             @CRITICAL [tag: sql, format] [description: Append value to string, value is converted to string depending on type and dialect] [type: function] [name: append_g]
 void append_g( std::string_view stringValue, unsigned uType, unsigned uDialect, std::string& stringSql );
+
+/// Append identifier to string, that is the name of a column or table, it is escaped if needed and depending on dialect
+void append_identifier_g( std::string_view stringColumn, unsigned uDialect, std::string& stringSql );
 
 inline void append_g( const gd::variant& variantValue, std::string& stringSql, tag_raw ) { append_g( gd::variant_view( variantValue ), stringSql, tag_raw{}); }
 

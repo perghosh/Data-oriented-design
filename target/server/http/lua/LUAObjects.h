@@ -109,7 +109,7 @@ public:
    gd::table::dto::table* m_ptable;
 };
 
-/**
+/** @CLASS [tag: Database. lua, wrapper] [summary: Wrapper for gd::database::database_i class in lua]
  * \brief Database wrapper in lua
  */
 class Database
@@ -196,7 +196,7 @@ public:
 // ------------------------------------------------------------------- Response
 // ----------------------------------------------------------------------------
 
-/**
+/** @CLASS [tag: Response. lua, wrapper] [summary: Wrapper for response object in lua]
  * \brief Response wrapper in lua
  */
 class Response
@@ -315,7 +315,7 @@ public:
 // -------------------------------------------------------------------- Request
 // ----------------------------------------------------------------------------
 
-/**
+/** @CLASS [tag: Request. lua, wrapper] [summary: Wrapper for request object in lua]
  * \brief Request wrapper in lua
  */
 class Request
