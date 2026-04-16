@@ -120,6 +120,9 @@ public:
    CDocument*          GetDocument()          { return m_pdocument; }
    const CDocument*    GetDocument() const    { return m_pdocument; }
 
+   gd::database::database_i* GetDatabase() { return m_pdatabase; }
+   const gd::database::database_i* GetDatabase() const { return m_pdatabase; }
+
    /// Bind a document pointer; also sets eFlagBound when application is already set
    void SetDocument( CDocument* pdocument )
    {

@@ -555,10 +555,13 @@ stringType = gd::types::type_name_g( variantTest.type() ); std::cout << stringTy
 
  * @param stringType type to change to
 */
-void variant::convert( const std::string_view& stringType )
+bool variant::convert( const std::string_view& stringType )
 {
    auto eType = gd::types::type_g( stringType );
+   if( eType == eTypeUnknown ) return false;
    convert( (variant_type::enumType)eType );
+
+   return true;
 }
 
 /** ---------------------------------------------------------------------------
@@ -1271,6 +1274,20 @@ bool variant::convert_to_s( const gd::variant* pvariantFrom, gd::variant* pvaria
          pvariantTo->m_V.p = pbszText;
          pvariantTo->m_uSize = uCount;                                         // set memory size needed to store ascii text
          pvariantTo->m_uType = (variant_type::eTypeString|variant_type::eFlagAllocate);// set internal value type
+         }
+         break;
+      case eTypeNumberGuid: {
+         gd::types::uuid uuid_ = gd::types::from_string_g( pvariantFrom->as_string_view(), gd::types::tag_uuid{} );
+         pvariantTo->assign( uuid_ );
+         }
+         break;
+      case eTypeNumberBinary: {
+         auto stringBinary = pvariantFrom->as_string_view();                                       assert( ( stringBinary.length() % 2 ) == 0 );// binary string must be even number of characters)
+         std::vector<uint8_t> vectorBinary;
+         vectorBinary.resize( stringBinary.length() / 2 );
+         gd::types::from_string_g( stringBinary, vectorBinary, gd::types::tag_hex{} );
+         gd::types::binary binary_( vectorBinary.data(), vectorBinary.size() );
+         pvariantTo->assign( binary_ );
          }
          break;
       default:

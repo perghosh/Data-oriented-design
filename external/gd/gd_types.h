@@ -1308,7 +1308,6 @@ struct uuid
 
    
    bool operator==( const uuid& o ) const { return memcmp( m_puData, o.m_puData, 16 ) == 0; }
-   //bool operator==( const uuid& o ) const { return memcmp( m_puData, o.m_puData, 16 ) == 0; }
 
    uuid& operator=( const uuid& o ) { for( size_t i = 0; i < 16; i++ ) { m_puData[i] = o.m_puData[i]; } return *this; }
    uuid& operator=( const uint8_t* pbData ) { for( size_t i = 0; i < 16; i++ ) { m_puData[i] = pbData[i]; } return *this; }
@@ -1327,6 +1326,8 @@ struct uuid
 
 /// Generate a new UUID (version 4, random)
 uuid uuid_generate_g();
+void from_string_g( const std::string_view& stringHex, std::span<uint8_t> spanBinary, tag_hex );
+uuid from_string_g( std::string_view stringUuid, tag_uuid );
 
 /*-----------------------------------------*/ /**
  * \brief wrapper used to set binary value
@@ -1342,6 +1343,7 @@ struct binary
 
    const uint8_t* data() const { return m_puData; }
    size_t length() const { return m_uLength; }
+   size_t size() const { return m_uLength; }
 
    const uint8_t* m_puData;
    size_t m_uLength;

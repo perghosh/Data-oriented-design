@@ -245,6 +245,96 @@ uuid uuid_generate_g()
    return uuid_;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Hex nibble decode table — maps ASCII byte to its 4-bit value.
+ * Indices below 0x30 ('0') are unreachable for valid hex input; entries for
+ * non-hex characters are 0 (asserts guard misuse in debug builds).
+ * Covers 0x30–0x66 ('0'–'f'), 104 bytes — fits in one or two cache lines.
+ */
+static constexpr uint8_t puHexNibble_s[0x67] =
+{
+   //  0     1     2     3     4     5     6     7     8     9     A     B     C     D     E     F
+   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* 0x00-0x0F */
+   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* 0x10-0x1F */
+   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* 0x20-0x2F */
+   0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* 0x30-0x3F  '0'-'9' */
+   0x00, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* 0x40-0x4F  'A'-'F' */
+   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* 0x50-0x5F */
+   0x00, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,                                                        /* 0x60-0x66  'a'-'f' */
+};
+
+/** ---------------------------------------------------------------------------
+ * @brief Convert hex string_view to binary span (pre-allocated, exact fit assumed).
+ * Input must be a plain hex string with no separators — caller is responsible
+ * for ensuring `spanBinary.size() == stringHex.length() / 2`.
+ * Each pair of hex characters is decoded into one output byte using a branchless
+ * nibble table; no format overhead, no allocations, no bounds checks at runtime.
+ *
+ * @param stringHex  hex-encoded source, e.g. "deadbeef..."
+ * @param spanBinary pre-allocated destination; size must be `stringHex.length() / 2`
+ */
+void from_string_g( const std::string_view& stringHex, std::span<uint8_t> spanBinary, tag_hex )
+{                                                                                                    assert( (stringHex.length() & 1) == 0 );
+                                                                                                     assert( spanBinary.size() >= stringHex.length() / 2 );
+   const uint8_t* puBegin = reinterpret_cast<const uint8_t*>( stringHex.data() );
+   const uint8_t* puEnd   = puBegin + stringHex.length();
+   uint8_t*       puSet   = spanBinary.data();
+
+   while( puBegin != puEnd )
+   {                                                                                                 assert( *puBegin < sizeof(puHexNibble_s) ); assert( *(puBegin + 1) < sizeof(puHexNibble_s) );
+      *puSet++ = static_cast<uint8_t>( puHexNibble_s[*puBegin] << 4 ) | puHexNibble_s[*(puBegin + 1)];
+      puBegin += 2;
+   }
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Convert UUID-formatted string_view to a `gd::types::uuid` value.
+ * Accepts the three canonical RFC 4122 formats:
+ *   - 32-char compact:   `00000000000000000000000000000000`
+ *   - 36-char dashed:    `00000000-0000-0000-0000-000000000000`
+ *   - 38-char braced:    `{00000000-0000-0000-0000-000000000000}`
+ * Dashes and braces are skipped; every other character is a hex nibble.
+ * Two nibbles are merged into one output byte via `puHexNibble_s`.
+ * No heap use, no branching inside the decode loop.
+ *
+ * @param stringUuid  UUID string in one of the three formats above
+ * @return uuid       decoded 16-byte UUID value
+ */
+uuid from_string_g( std::string_view stringUuid, tag_uuid )
+{                                                                                                    assert( stringUuid.length() == 32 || stringUuid.length() == 36 || stringUuid.length() == 38 );
+   uuid uuid_;
+
+   const uint8_t* puBegin = reinterpret_cast<const uint8_t*>( stringUuid.data() );
+   const uint8_t* puEnd   = puBegin + stringUuid.length();
+   uint8_t*       puSet   = uuid_.m_puData;
+
+   // ## skip surrounding braces for the 38-char `{...}` format
+   if( stringUuid.length() == 38 ) { puBegin++; puEnd--; }
+
+   if( stringUuid.length() == 32 )
+   {
+      // ## compact path — no dashes, unroll the 16 iterations in pairs of two bytes
+      //    to give the compiler better auto-vectorisation hints
+      for( ; puBegin != puEnd; puBegin += 2 )
+      {                                                                                              assert( *puBegin < sizeof(puHexNibble_s) ); assert( *(puBegin + 1) < sizeof(puHexNibble_s) );
+         *puSet++ = static_cast<uint8_t>( puHexNibble_s[*puBegin] << 4 ) | puHexNibble_s[*(puBegin + 1)];
+      }
+   }
+   else
+   {
+      // ## dashed path — skip '-' separators at positions 8, 13, 18, 23 of the 36-char form
+      while( puBegin != puEnd )
+      {
+         if( *puBegin == '-' ) { puBegin++; continue; }
+                                                                                                     assert( *puBegin < sizeof(puHexNibble_s) ); assert( *(puBegin + 1) < sizeof(puHexNibble_s) );
+         *puSet++ = static_cast<uint8_t>( puHexNibble_s[*puBegin] << 4 ) | puHexNibble_s[*(puBegin + 1)];
+         puBegin += 2;
+      }
+   }
+
+   return uuid_;
+}
+
 
 
 _GD_TYPES_END

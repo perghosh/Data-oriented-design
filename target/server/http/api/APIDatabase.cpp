@@ -107,7 +107,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute()
       }
 
 #ifndef NDEBUG
-      auto uObjectCount_d = Objects().Size();
+      [[maybe_unused]] auto uObjectCount_d = Objects().Size();
 #endif // NDEBUG
       
       if( Objects().Empty() == false ) { Objects()["command"] = stringCommand; }
@@ -270,7 +270,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Open()
  */
 std::pair<bool, std::string> CAPIDatabase::Execute_Query()
 {
-   gd::database::database_i* pdatabaseOpen = nullptr;
+   //gd::database::database_i* pdatabaseOpen = nullptr;
 
    CDocument* pdocument = GetDocument();
    if( pdocument == nullptr ) { return { false, GetLastError() }; }
@@ -308,7 +308,6 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
 {
    std::array<std::byte, 128> buffer_;
    gd::argument::arguments argumentsOptional( buffer_ );
-   gd::database::database_i* pdatabaseOpen = nullptr;
 
    CDocument* pdocument = GetDocument();                                                           if( pdocument == nullptr ) { return { false, GetLastError() }; }
 
@@ -414,8 +413,6 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Ask()
  */
 std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
 {
-   gd::database::database_i* pdatabaseOpen = nullptr;
-
    CDocument* pdocument = GetDocument();
    if( pdocument == nullptr ) { return { false, GetLastError() }; }
 
@@ -442,15 +439,26 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
          state_["app"] = std::move( papplication );    
          std::unique_ptr<LUA::Document> pdocument = std::make_unique<LUA::Document>( GetDocument(), pdatabase );
          state_["doc"] = std::move( pdocument );
+         std::unique_ptr<LUA::Request> prequest = std::make_unique<LUA::Request>( GetContext() );
+         state_["req"] = std::move( prequest );
+
+         std::string stringError;
+         for( auto& stringCode : vectorCode )
+         {
+            try 
+            {
+               state_.safe_script( stringCode );
+            }
+            catch(const sol::error& e) 
+            {                                                                                      LOG_ERROR( "Lua Error: " << e.what() );
+               stringError = std::format( "Lua Error: {}", e.what() );
+               break;
+            }
+         }
 
          lua_.reset( { "app", "doc"}, true );
 
-      /*
-         CAPIContext context( *GetApplication(), m_vectorCommand, m_argumentsParameter, m_uCommandIndex + 1 ); // create new context for code execution with command index set to next command after current query command
-         CAPI_Code api_code( context, vectorCode, m_argumentsParameter ); // create API for code execution with code as command vector
-         auto result_ = api_code.Execute(); // execute code
-         if( result_.first == false ) { return result_; }
-         */
+         if( stringError.empty() == false ) { return { false, stringError }; }
       }
 
       return { true, "" }; 

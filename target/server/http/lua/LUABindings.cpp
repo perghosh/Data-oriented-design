@@ -43,6 +43,18 @@ void RegisterDatabase( sol::state& stateLua )
    );
 }
 
+void RegisterRequest( sol::state& stateLua )
+{
+	stateLua.new_usertype<Request>(
+      "Request", sol::constructors<Request()>(),
+      "GetApplication", &Request::GetApplication,
+      "GetDocument", &Request::GetDocument,
+      "GetDatabase", &Request::GetDatabase,
+      "GetGlobalVariable", &Request::GetGlobalVariable,
+      "SetGlobalVariable", &Request::SetGlobalVariable
+   );
+}
+
 void RegisterCursor( sol::state& stateLua )
 {
 	stateLua.new_usertype<Cursor>(

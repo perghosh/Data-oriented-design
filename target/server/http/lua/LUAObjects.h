@@ -193,42 +193,6 @@ public:
 };
 
 // ----------------------------------------------------------------------------
-// -------------------------------------------------------------------- Request
-// ----------------------------------------------------------------------------
-
-/**
- * \brief Request wrapper in lua
- */
-class Request
-{
-// ## construction -------------------------------------------------------------
-public:
-   Request() {}
-   Request( CAPI_Base* puserrequest ) { m_puserrequest = puserrequest; }
-   // copy
-   Request( const Request& o ) { common_construct( o ); }
-   // assign
-   Request& operator=( const Request& o ) { common_construct( o ); return *this; }
-
-   ~Request() {}
-private:
-   // common copy
-   void common_construct( const Request& o ) { m_puserrequest = o.m_puserrequest; }
-
-// ## operator -----------------------------------------------------------------
-public:
-
-/** \name OPERATION
-*///@{
-//@}
-
-// ## attributes ----------------------------------------------------------------
-public:
-   CAPI_Base* m_puserrequest = nullptr; ///< pointer to CAPI_Base is same as request object
-};
-
-
-// ----------------------------------------------------------------------------
 // ------------------------------------------------------------------- Response
 // ----------------------------------------------------------------------------
 
@@ -346,5 +310,46 @@ public:
    CApplication* m_papplication = nullptr;
    gd::database::database_i* m_pdatabase = nullptr;
 };
+
+// ----------------------------------------------------------------------------
+// -------------------------------------------------------------------- Request
+// ----------------------------------------------------------------------------
+
+/**
+ * \brief Request wrapper in lua
+ */
+class Request
+{
+// ## construction -------------------------------------------------------------
+public:
+   Request() {}
+   Request( CAPIContext* pcontext ) { m_pcontext = pcontext; }
+   // copy
+   Request( const Request& o ) { common_construct( o ); }
+   // assign
+   Request& operator=( const Request& o ) { common_construct( o ); return *this; }
+
+   ~Request() {}
+private:
+   // common copy
+   void common_construct( const Request& o ) { m_pcontext = o.m_pcontext; }
+
+// ## operator -----------------------------------------------------------------
+public:
+// @API [tag: operation]
+   Application GetApplication(); ///< Return application, application is allways valid
+   Document GetDocument(); ///< Returns document that is allways valid
+   Database GetDatabase(); ///< Return database object for current request, if database connection is open
+
+   std::variant<int64_t, std::string, double, bool, sol::lua_nil_t>
+      GetGlobalVariable( std::string_view stringName, std::optional<std::string> type_ = std::nullopt ); ///< Get global variable for current request, if variable does not exist it will return nil value
+   void SetGlobalVariable( std::string_view stringName, std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> value_, std::optional<std::string> type_ = std::nullopt );
+
+
+// ## attributes ----------------------------------------------------------------
+public:
+   CAPIContext* m_pcontext = nullptr; ///< pointer to API context, used to access request and response objects, and other information about current request
+};
+
 
 LUA_END

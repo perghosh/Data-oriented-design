@@ -417,6 +417,8 @@ public:
    void assign( unsigned int uType, uint64_t uValue, variant_type::tag_raw ) { clear(); m_uType = uType; m_uSize = 0; m_V.uint64 = uValue; }
    void assign( const std::string& v ) { _set_value( v ); }
    void assign( const std::wstring& v ) { _set_value( v ); }
+   void assign( const gd::types::uuid& v ) { _set_value( v ); }
+   void assign( const gd::types::binary& v ) { _set_value( v ); }
    template<typename TYPE>
    void assign( const TYPE* v, unsigned int uType, unsigned int uLength, variant_type::tag_raw ) { clear(); m_uType = uType|variant_type::eFlagAllocate; m_uSize = uLength; m_V.p = (void*)allocate( uLength * sizeof(TYPE) ); memcpy( m_V.p, v, uLength * sizeof(TYPE) ); }
 
@@ -451,6 +453,8 @@ public:
    void _set_value( const utf8& v, unsigned int uType, variant_type::tag_utf8 ) { clear(); m_uType = uType|variant_type::eFlagAllocate; m_uSize = size_cast(v.m_uLength); m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( get_heap_buffer(), v.m_pbsz, m_uSize + 1u ); }
    void _set_value( const std::string& v ) { clear(); m_uType = variant_type::eTypeString|variant_type::eFlagAllocate; m_uSize = size_cast(v.length()); m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( get_heap_buffer(), v.c_str(), m_uSize); m_V.pbsz[m_uSize] = '\0'; }
    void _set_value( const std::wstring& v ) { clear(); m_uType = variant_type::eTypeWString|variant_type::eFlagAllocate; m_uSize = size_cast(v.length()); m_V.pbsz = (char*)allocate( ( m_uSize + 1u ) * sizeof(wchar_t) ); memcpy( get_heap_buffer(), v.c_str(), ( m_uSize + 1u ) * sizeof(wchar_t)); m_V.pwsz[m_uSize] = L'\0'; }
+   void _set_value( const gd::types::uuid& v ) { clear(); m_uType = variant_type::eTypeGuid|variant_type::eFlagAllocate; m_uSize = 16; m_V.pb = (uint8_t*)allocate(m_uSize); memcpy( m_V.pb, v.data(), m_uSize); }
+   void _set_value( const gd::types::binary& v ) { clear(); m_uType = variant_type::eTypeBinary|variant_type::eFlagAllocate; m_uSize = v.size(); m_V.pb = (uint8_t*)allocate(m_uSize); memcpy( m_V.pb, v.data(), m_uSize); }
    // void _set_value( _variant v );
 
    //void _set_binary_value( const uint8_t* v, unsigned int uLength ) { clear(); m_uType = variant_type::eTypeBinary|variant_type::eFlagAllocate; m_uSize = uLength; m_V.pb = (unsigned char*)allocate( m_uSize ); memcpy( m_V.pb, v, m_uSize ); }
@@ -591,7 +595,7 @@ public:
 
    void convert( variant_type::enumType eType );
    void convert( unsigned uType ) { convert( (variant_type::enumType)uType ); }
-   void convert( const std::string_view& stringType );
+   bool convert( const std::string_view& stringType );
 
 // ## @API [tag: compare] [description: methods to compare value in variant]
 

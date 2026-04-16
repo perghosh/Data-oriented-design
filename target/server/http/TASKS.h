@@ -43,5 +43,5 @@
 @TASK [project: scripting] [tag: lua, cli, configuration] [status: open] [user: per]
 [summary: initialize lua scripting for webserver]
 [description: lua engines are store in a lua pool and this pool has to be initialized at startup]
-[sample: http]
+[sample: http script-pool]
 */

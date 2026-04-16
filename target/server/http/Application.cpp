@@ -1052,6 +1052,7 @@ std::pair<bool, std::string> CApplication::LUA_Initialize(const gd::argument::ar
          LUA::RegisterApplication( state_ );
          LUA::RegisterDocument( state_ );
          LUA::RegisterDatabase( state_ );
+         LUA::RegisterRequest( state_ );
          LUA::RegisterCursor( state_ );
          LUA::RegisterTable( state_ );
       }, LUA::LuaStatePool::eLuaFeatureCore );

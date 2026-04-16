@@ -1419,7 +1419,15 @@ arguments& arguments::append_argument( const std::string& stringName, const gd::
    return append_argument( std::string_view(stringName), variantValue );
 }
 
-/// Add argument named value and try to convert string to proper type
+/** -------------------------------------------------------------------------- append_argument
+ * @brief Add argument named value and try to convert string to proper type
+ * 
+ * Try to convert the string value to the appropriate type based on string content.
+ * 
+ * @param stringName Name of the argument
+ * @param stringValue Value of the argument as a string
+ * @return Reference to the arguments object
+ */
 arguments& arguments::append_argument(const std::string_view stringName, const std::string_view& stringValue, tag_parse_type )
 {
    gd::variant_view v_ = stringValue;
@@ -4048,4 +4056,3 @@ namespace debug {
 
 }
 _GD_ARGUMENT_END
-

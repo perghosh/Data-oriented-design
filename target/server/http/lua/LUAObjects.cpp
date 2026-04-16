@@ -110,6 +110,7 @@ std::variant<int64_t, std::string, double, bool, sol::table, sol::lua_nil_t> Con
    if( value_.is_integer() == true )      { return value_.as_int64(); }
    else if( value_.is_string() == true )  { return value_.as_string(); }
    else if( value_.is_decimal() == true ) { return value_.as_double(); }
+   else if( value_.is_binary() == true )  { return value_.as_string(); }
    return sol::lua_nil;
 }
 
@@ -122,6 +123,7 @@ std::variant<int64_t, std::string, double, bool, sol::table, sol::lua_nil_t> Con
       if( value_.is_integer() == true ) { table_[key_] = value_.as_int64(); }
       else if( value_.is_string() == true ) { table_[key_] = value_.as_string(); }
       else if( value_.is_decimal() == true ) { table_[key_] = value_.as_double(); }
+      else if( value_.is_binary() == true ) { table_[key_] = value_.as_string(); }
    }
    return table_;
 }
@@ -627,7 +629,6 @@ std::string Table::Write(const sol::table& tableOption)
          }
          else { vectorColumn.push_back( std::get<0>( it ) ); }
       }
-      vectorColumn;
    }
 
    int32_t iMax = -1;
@@ -948,7 +949,8 @@ Application::~Application()
 
 Document Application::GetDocument()
 {                                                                                                  assert( m_papplication != nullptr );
-   return Document( (void*)m_papplication->GetDocument() );
+   if( m_pdatabase == nullptr ) return Document( (void*)m_papplication->GetDocument() );
+   return Document( (void*)m_papplication->GetDocument(), m_pdatabase );
 }
 
 Database Application::GetDatabase()
@@ -1043,6 +1045,50 @@ void Application::Message(const std::string_view & stringTypeOrMessage, std::opt
    }
 }
 
+// ----------------------------------------------------------------------------
+// -------------------------------------------------------------------- Request
+// ----------------------------------------------------------------------------
 
+
+Application Request::GetApplication()
+{
+   return Application( m_pcontext->GetApplication(), m_pcontext->GetDatabase() );
+}
+   
+Document Request::GetDocument()
+{
+   return Document( m_pcontext->GetDocument(), m_pcontext->GetDatabase() );
+}
+
+Database Request::GetDatabase()
+{
+   return Database( (void*)m_pcontext->GetDatabase() );
+}
+
+/// @brief Get global variable from Request, these values can be used to fill in missing values
+std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> Request::GetGlobalVariable( std::string_view stringName, std::optional<std::string> type_ )
+{
+   gd::variant_view variantValue = m_pcontext->GetGlobal( stringName );
+   if( type_.has_value() == true )
+   {
+      gd::variant variantValueTemp = variantValue.as_variant();
+      bool bOk = variantValueTemp.convert( type_.value() );
+      if( bOk == false ) { throw sol::error( std::format( "Failed to convert value to type: {}", type_.value() ) ); }
+      return ConvertToAny_g( variantValueTemp );
+   }
+   return ConvertToAny_g( variantValue );
+}
+
+void Request::SetGlobalVariable( std::string_view stringName, std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> value_, std::optional<std::string> type_ )
+{
+   gd::variant variantValue = ConvertFromAny_g( value_ );
+   if( type_.has_value() == true )
+   {
+      bool bOk = variantValue.convert( type_.value() );
+      if( bOk == false ) { throw sol::error( std::format( "Failed to convert value to type: {}", type_.value() ) ); }
+   }
+
+   m_pcontext->SetGlobal( stringName, variantValue.as_variant_view() );
+}
 
 LUA_END
