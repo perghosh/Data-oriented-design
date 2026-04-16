@@ -523,6 +523,7 @@ public:
 
 /** \name OPERATION
 *///@{
+   unsigned get_dialect() const { return static_cast<unsigned>(m_eSqlDialect); }
    void sql_set_dialect( enumSqlDialect eSqlDialect ) { m_eSqlDialect = eSqlDialect; }
 
 

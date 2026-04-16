@@ -590,7 +590,7 @@ std::string query::sql_get_select() const
             const table* ptable = table_get_for_key(it->get_table_key());                          assert(ptable != nullptr); // no table found for key indicates internal error for query object, this shouldn't happen
             if( ptable->has("alias") == true )
             {
-               stringSelect += ptable->alias();
+               append_identifier_g( ptable->alias(), get_dialect(), stringSelect);
                stringSelect += ".";
             }
 
@@ -598,9 +598,7 @@ std::string query::sql_get_select() const
             if( it->has("alias") == true )                                        // found alias ?
             {
                stringSelect += " AS ";
-               if( flag_has_s(uFormatOptions, eFormatUseQuotes) == false ) stringSelect += it->alias();
-               else format_add_and_surround_s(stringSelect, it->alias(), '\"');
-
+               append_identifier_g( it->alias(), get_dialect(), stringSelect);
             }
          }
       }
@@ -619,9 +617,7 @@ std::string query::sql_get_select() const
          if( it->has("alias") == true )                                        // found alias ?
          {
             stringSelect += " AS ";
-            if( flag_has_s(uFormatOptions, eFormatUseQuotes) == false ) stringSelect += it->alias();
-            else format_add_and_surround_s(stringSelect, it->alias(), '\"');
-
+            append_identifier_g( it->alias(), get_dialect(), stringSelect);
          }
 
       }
@@ -640,18 +636,18 @@ std::string query::sql_get_from() const
 
    // ## Add table to to query, builds information from schema, name and alias if found
    //    *sample* schema = application, name = TCustomer, alias = Customer1 -> applicaton.TCustomer Customer1
-   auto fAddTableName = [](const table* ptable, std::string& stringFrom) -> void {
+   auto fAddTableName = [&](const table* ptable, std::string& stringFrom) -> void {
       if( ptable->has("schema") == true )
       {
          stringFrom += ptable->schema();
          stringFrom += ".";
       }
 
-      stringFrom += ptable->name();
+      append_identifier_g( ptable->name(), get_dialect(), stringFrom);
       if( ptable->has("alias") == true )                                       // found alias ?
       {
          stringFrom += " ";
-         stringFrom += ptable->alias();
+         append_identifier_g( ptable->alias(), get_dialect(), stringFrom);
       }
    };
 
@@ -880,7 +876,7 @@ std::string query::sql_get_where() const
          const table* ptable = table_get_for_key(itCondition->get_table_key());                    assert(ptable != nullptr); // no table found for key indicates internal error for query object, this shouldn't happen
          if( ptable->has("alias") == true )
          {
-            stringWhere += ptable->alias();
+            append_identifier_g( ptable->alias(), get_dialect(), stringWhere);
             stringWhere += ".";
          }
 
@@ -975,11 +971,12 @@ std::string query::sql_get_insert() const
    {
       stringInsert += ptableInsertInto->schema();
       stringInsert += ".";
-      stringInsert += ptableInsertInto->name();
+      append_identifier_g( ptableInsertInto->name(), get_dialect(), stringInsert );
+
    }
    else
    {
-      stringInsert += ptableInsertInto->name();
+      append_identifier_g( ptableInsertInto->name(), get_dialect(), stringInsert );
    }
 
    // ## Add fields for table
@@ -992,7 +989,7 @@ std::string query::sql_get_insert() const
       {
          if( uFieldIndex == 0 ) stringInsert += " (";
          else if( uFieldIndex > 0 ) stringInsert += ", ";
-         stringInsert += itField->name();
+         append_identifier_g( itField->name(), get_dialect(), stringInsert );
          uFieldIndex++;
       }
    }
@@ -1019,30 +1016,30 @@ std::string query::sql_get_update( unsigned uTableKey ) const
       {
          if( ptable->has( "schema" ) == true )
          {
-            stringUpdate += ptable->schema();
+            append_identifier_g( ptable->schema(), get_dialect(), stringUpdate );
             stringUpdate += ".";
-            stringUpdate += ptable->name();
+            append_identifier_g( ptable->name(), get_dialect(), stringUpdate );
          }
          else
          {
-            stringUpdate += ptable->name();
+            append_identifier_g( ptable->name(), get_dialect(), stringUpdate );
          }
       }
    }
    else if( m_eSqlDialect != eSqlDialectMySql && m_eSqlDialect != eSqlDialectMariaDB )
    {
-      if( ptable->has( "alias" ) == true ) { stringUpdate += ptable->alias(); }
+      if( ptable->has( "alias" ) == true ) { append_identifier_g( ptable->alias(), get_dialect(), stringUpdate ); }
       else
       {
          if( ptable->has( "schema" ) == true )
          {
-            stringUpdate += ptable->schema();
+            append_identifier_g( ptable->schema(), get_dialect(), stringUpdate );
             stringUpdate += ".";
-            stringUpdate += ptable->name();
+            append_identifier_g( ptable->name(), get_dialect(), stringUpdate );
          }
          else
          {
-            stringUpdate += ptable->name();
+            append_identifier_g( ptable->name(), get_dialect(), stringUpdate );
          }
       }
    }
@@ -1088,13 +1085,13 @@ std::string query::sql_get_update( const std::vector<gd::variant_view>& vectorVa
    const auto ptable = &(*std::begin(m_vectorTable));
    if( ptable->has( "schema" ) == true )
    {
-      stringUpdate += ptable->schema();
+      append_identifier_g( ptable->schema(), get_dialect(), stringUpdate );
       stringUpdate += ".";
-      stringUpdate += ptable->name();
+      append_identifier_g( ptable->name(), get_dialect(), stringUpdate );
    }
    else
    {
-      stringUpdate += ptable->name();
+      append_identifier_g( ptable->name(), get_dialect(), stringUpdate );
    }
 
    stringUpdate += "\nSET ";
@@ -1106,7 +1103,7 @@ std::string query::sql_get_update( const std::vector<gd::variant_view>& vectorVa
       if( itField->is_update() == false ) [[unlikely]] continue;             // no update field ?
 
       if( uFieldIndex > 0 ) stringUpdate += ", ";
-      stringUpdate += itField->name();
+      append_identifier_g( itField->name(), get_dialect(), stringUpdate );
       stringUpdate += std::string_view{ " = " };
       auto uType = itField->type();
       if( uType == 0 ) { value_get_s( vectorValue[uFieldIndex], stringUpdate); }
@@ -1135,13 +1132,13 @@ std::string query::sql_get_delete() const
    const auto ptable = &(*std::begin(m_vectorTable));
    if( ptable->has( "schema" ) == true )
    {
-      stringDelete += ptable->schema();
+      append_identifier_g( ptable->schema(), get_dialect(), stringDelete );
       stringDelete += ".";
-      stringDelete += ptable->name();
+      append_identifier_g( ptable->name(), get_dialect(), stringDelete );
    }
    else
    {
-      stringDelete += ptable->name();
+      append_identifier_g( ptable->name(), get_dialect(), stringDelete );
    }
 
    return stringDelete;
@@ -1163,10 +1160,10 @@ std::string query::sql_get_groupby() const
       const table* ptable = table_get_for_key(itField->get_table_key());                             assert(ptable != nullptr); // no table found for key indicates internal error for query object, this shouldn't happen
       if( ptable->has("alias") == true )
       {
-         stringGroupBy += ptable->alias();
+         append_identifier_g( ptable->alias(), get_dialect(), stringGroupBy );
          stringGroupBy += ".";
       }
-      stringGroupBy += itField->name();
+      append_identifier_g( itField->name(), get_dialect(), stringGroupBy );
    }
 
    return stringGroupBy;
@@ -1239,11 +1236,11 @@ std::string query::sql_get_orderby( std::string_view stringOrderByPrefix ) const
       {
          if( ptable->has( "alias" ) == true )
          {
-            stringOrderBy += ptable->alias();
+            append_identifier_g( ptable->alias(), get_dialect(), stringOrderBy );
             stringOrderBy += ".";
          }
 
-         stringOrderBy += it->name();
+         append_identifier_g( it->name(), get_dialect(), stringOrderBy );
 
          auto iAscending = order_.as_int();
          if( iAscending >= 0 ) stringOrderBy += std::string_view{ " ASC" };
@@ -1327,10 +1324,10 @@ std::string query::sql_get_returning() const
          const table* ptable = table_get_for_key(itField->get_table_key());                        assert(ptable != nullptr); // no table found for key indicates internal error for query object, this shouldn't happen
          if( ptable->has("alias") == true )
          {
-            stringReturning += ptable->alias();
+            append_identifier_g( ptable->alias(), get_dialect(), stringReturning );
             stringReturning += ".";
          }
-         stringReturning += itField->name();
+         append_identifier_g( itField->name(), get_dialect(), stringReturning );
       }
    }
 

@@ -457,9 +457,25 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
          }
 
          lua_.reset( { "app", "doc"}, true );
-
          if( stringError.empty() == false ) { return { false, stringError }; }
       }
+
+      if( Exists( "xml" ) )
+      {
+         std::array<std::byte, 128> buffer_;
+         gd::argument::arguments argumentsOptions(buffer_);
+
+         std::string stringTable = GetParameterArguments()["table"].as_string();
+         if( stringTable.empty() == false ) { argumentsOptions["table"] = stringTable; }
+
+         argumentsOptions["form"] = "attribute";
+         gd::argument::arguments argumentsReturn;
+         argumentsReturn.reserve( 64 );
+         pugi::xml_document* pxmldocument = GetParameterArguments()["xml"].get_pointer<pugi::xml_document>(); // get pointer to xml pointer that is prepared
+         XML_BulkInsert( argumentsOptions, pxmldocument, pdocument, &argumentsReturn );
+         Objects().Add( argumentsReturn );
+      }
+
 
       return { true, "" }; 
 

@@ -454,7 +454,7 @@ public:
    void _set_value( const std::string& v ) { clear(); m_uType = variant_type::eTypeString|variant_type::eFlagAllocate; m_uSize = size_cast(v.length()); m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( get_heap_buffer(), v.c_str(), m_uSize); m_V.pbsz[m_uSize] = '\0'; }
    void _set_value( const std::wstring& v ) { clear(); m_uType = variant_type::eTypeWString|variant_type::eFlagAllocate; m_uSize = size_cast(v.length()); m_V.pbsz = (char*)allocate( ( m_uSize + 1u ) * sizeof(wchar_t) ); memcpy( get_heap_buffer(), v.c_str(), ( m_uSize + 1u ) * sizeof(wchar_t)); m_V.pwsz[m_uSize] = L'\0'; }
    void _set_value( const gd::types::uuid& v ) { clear(); m_uType = variant_type::eTypeGuid|variant_type::eFlagAllocate; m_uSize = 16; m_V.pb = (uint8_t*)allocate(m_uSize); memcpy( m_V.pb, v.data(), m_uSize); }
-   void _set_value( const gd::types::binary& v ) { clear(); m_uType = variant_type::eTypeBinary|variant_type::eFlagAllocate; m_uSize = v.size(); m_V.pb = (uint8_t*)allocate(m_uSize); memcpy( m_V.pb, v.data(), m_uSize); }
+   void _set_value( const gd::types::binary& v ) { clear(); m_uType = variant_type::eTypeBinary|variant_type::eFlagAllocate; m_uSize = (unsigned int)v.size(); m_V.pb = (uint8_t*)allocate(m_uSize); memcpy( m_V.pb, v.data(), m_uSize); }
    // void _set_value( _variant v );
 
    //void _set_binary_value( const uint8_t* v, unsigned int uLength ) { clear(); m_uType = variant_type::eTypeBinary|variant_type::eFlagAllocate; m_uSize = uLength; m_V.pb = (unsigned char*)allocate( m_uSize ); memcpy( m_V.pb, v, m_uSize ); }

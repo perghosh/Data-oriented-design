@@ -694,7 +694,7 @@ void append_identifier_g( std::string_view stringColumn, unsigned uDialect, std:
 {
    using namespace gd::types;
 
-   auto escape_add = [&]( std::string_view stringIdentifier, char iQuoteCharacter )
+   auto escape_add_ = [&]( std::string_view stringIdentifier, char iQuoteCharacter )
    {
       const char* piData = stringIdentifier.data();
       const char* piStart = piData;
@@ -729,7 +729,7 @@ void append_identifier_g( std::string_view stringColumn, unsigned uDialect, std:
    case eSqlDialectRedshift:
    // PostgreSQL family uses double quotes for identifiers
    stringSql += '"';
-   escape_add( stringColumn, '"' );
+   escape_add_( stringColumn, '"' );
    stringSql += '"';
    break;
 
@@ -737,42 +737,42 @@ void append_identifier_g( std::string_view stringColumn, unsigned uDialect, std:
    case eSqlDialectMariaDB:
    // MySQL/MariaDB uses backticks for identifiers
    stringSql += '`';
-   escape_add( stringColumn, '`' );
+   escape_add_( stringColumn, '`' );
    stringSql += '`';
    break;
 
    case eSqlDialectSqlServer:
    // SQL Server uses square brackets for identifiers
    stringSql += '[';
-   escape_add( stringColumn, ']' );
+   escape_add_( stringColumn, ']' );
    stringSql += ']';
    break;
 
    case eSqlDialectOracle:
    // Oracle uses double quotes for identifiers
    stringSql += '"';
-   escape_add( stringColumn, '"' );
+   escape_add_( stringColumn, '"' );
    stringSql += '"';
    break;
 
    case eSqlDialectSqlite:
    // SQLite allows both double quotes and backticks, but double quotes are more standard
    stringSql += '"';
-   escape_add( stringColumn, '"' );
+   escape_add_( stringColumn, '"' );
    stringSql += '"';
    break;
 
    case eSqlDialectDB2:
    // DB2 uses double quotes for identifiers
    stringSql += '"';
-   escape_add( stringColumn, '"' );
+   escape_add_( stringColumn, '"' );
    stringSql += '"';
    break;
 
    default:
    // Default to double quotes for ANSI compliance
    stringSql += '"';
-   escape_add( stringColumn, '"' );
+   escape_add_( stringColumn, '"' );
    stringSql += '"';
    break;
    }

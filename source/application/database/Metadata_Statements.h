@@ -1,3 +1,5 @@
+// @FILE 
+
 /**
  * \file Metadata_Statements.h
  * 
@@ -74,7 +76,7 @@ public:
 
 // ## construction -------------------------------------------------------------
 public:
-   CStatement(): m_uType(0), m_uuidKey( gd::uuid::new_uuid_s() ) {}
+   CStatement(): m_uuidKey( gd::uuid::new_uuid_s() ), m_uType(0) {}
    CStatement( unsigned uType, const std::string_view& stringName, const std::string_view& stringSql ): m_uType(uType), m_uuidKey( gd::uuid::new_uuid_s() ) { SetName( stringName ); SetSql( stringSql ); }
    CStatement( const std::string_view& stringType, const std::string_view& stringName, const std::string_view& stringSql ): m_uType(GetStatementType_g(stringType)), m_uuidKey( gd::uuid::new_uuid_s() ) { SetName( stringName ); SetSql( stringSql ); }
    CStatement( const std::string_view& stringType, const std::string_view& stringName, const std::string_view& stringSql, unsigned uFlags ): m_uType(GetStatementType_g(stringType)), m_uFlags(uFlags), m_uuidKey( gd::uuid::new_uuid_s() ) { SetName( stringName ); SetSql( stringSql ); }
