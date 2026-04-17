@@ -162,6 +162,20 @@ std::pair<bool, std::string> CQueries::Load( std::string_view stringPath )
 
 /** -------------------------------------------------------------------------- Load_s
  * @brief Loads SQL statements from an XML file into a statement collection.
+ * 
+ * This function parses the XML file specified by `stringFilename` and populates the provided
+ * statement collection with the loaded statements.
+ * *Sample XML structure:*
+ * @verbatim
+ * <statements>
+ *     <statement uuid="00000000-0000-0000-0000-000000000000" name="Example" type="insert" format="jinja" description="Example statement">
+ *         <ui>Example UI</ui>
+ *         <code>Example code</code>
+ *         <statement>INSERT INTO TPollVote (PollAnswerK, FTie) VALUES (X{PollAnswerK}, X{FTie})</statement>
+ *     </statement>
+ * </statements>
+ * @endverbatim
+ * 
  * @param stringFilename The path to the XML file containing statement definitions.
  * @param statement_ The statement collection to populate with loaded statements.
  * @param  Tag dispatch parameter to indicate XML format loading.
@@ -183,6 +197,8 @@ std::pair<bool, std::string> CQueries::Load_s( std::string_view stringFilename, 
    pugi::xml_parse_result xmlparseresult = xmldocument.load_file( stringFilename.data() );
    if( !xmlparseresult ) { return { false, "XML parsing error: " + std::string( xmlparseresult.description() ) }; }
 
+   std::string stringStatementText; // Temporary variable to hold statement text
+
    // query statements nodes
    for( pugi::xml_node xmlnodeStatements : xmldocument.document_element().children( "statements" ) )
    {
@@ -190,23 +206,23 @@ std::pair<bool, std::string> CQueries::Load_s( std::string_view stringFilename, 
       {
          argumentsStatement.clear();
 
-         // ## Attributes (always present)
+         // ## Attributes (always present) ...................................
          argumentsStatement["uuid"] = xmlnodeStatement.attribute( "id" ).value();
          argumentsStatement["name"] = xmlnodeStatement.attribute( "name" ).value();
          argumentsStatement["type"] = xmlnodeStatement.attribute( "type" ).value();
          argumentsStatement["format"] = xmlnodeStatement.attribute( "format" ).value();
          argumentsStatement["description"] = xmlnodeStatement.attribute( "description" ).value();
 
-         // ## Handle 'ui' attribute or child element (optional)
+         // ## Handle 'ui' attribute or child element (optional) .............
          pugi::xml_attribute xmlattrbuteUi = xmlnodeStatement.attribute( "ui" );
          if( xmlattrbuteUi ) { argumentsStatement["ui"] = xmlattrbuteUi.value(); }
          else
-         {  // ### fallback to <ui> child element
+         {  // ### fallback to <ui> child element ............................
             pugi::xml_node xmlnodeUi = xmlnodeStatement.child( "ui" );
             if( xmlnodeUi ) { argumentsStatement["ui"] = xmlnodeUi.child_value(); }
          }
 
-         // ## Handle 'code' attribute or child element (optional)
+         // ## Handle 'code' attribute or child element (optional) ...........
          pugi::xml_attribute xmlattrbuteCode = xmlnodeStatement.attribute( "code" );
          if( xmlattrbuteCode ) { argumentsStatement["code"] = xmlattrbuteCode.value(); }
          else
@@ -215,9 +231,23 @@ std::pair<bool, std::string> CQueries::Load_s( std::string_view stringFilename, 
             if( xmlnodeCode ) { argumentsStatement["code"] = xmlnodeCode.child_value(); }
          }
 
-         std::string statementText = xmlnodeStatement.text().get();         // get element text, this will include CDATA content if present
+         // ## Handle statement text (optional) ................................
 
-         argumentsStatement["statement"] = statementText;
+         pugi::xml_node xmlnodeStatementChild = xmlnodeStatement.child( "statement" );
+         if( xmlnodeStatementChild ) 
+         { 
+            stringStatementText = xmlnodeStatementChild.child_value(); 
+         }
+         else
+         {
+            stringStatementText = xmlnodeStatement.text().get();              // get element text, this will include CDATA content if present
+         }
+
+         if( stringStatementText.empty() == false )                           // if statement text is present, add it to arguments with key "statement"
+         { 
+            argumentsStatement["statement"] = stringStatementText;
+            stringStatementText.clear();
+         }
 
          auto result_ = statement_.add( argumentsStatement, { "ui", "code"});
          if( result_.first == false ) { return { false, "Error adding statement: " + result_.second }; }

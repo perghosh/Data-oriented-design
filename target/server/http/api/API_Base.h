@@ -178,6 +178,7 @@ public:
 
    gd::argument::arguments&       GlobalArguments()       { return m_argumentsGlobal; }
    const gd::argument::arguments& GlobalArguments() const { return m_argumentsGlobal; }
+   const gd::argument::arguments* GetGlobalArguments() const { return &m_argumentsGlobal; }
 
    /// Read a global value by name (set by one section, readable by the next)
    gd::variant_view GetGlobal( std::string_view stringName ) const { return m_argumentsGlobal.get_argument( stringName ); }

@@ -33,8 +33,11 @@
 /*
 @PROJECT [name: security, functions] [tag: log] [summary: server methods that are usefull for security]
 
-@TASK [project: security] [description: Get user ip number, may be used to match so that user ip do not change or to generate session for user}
+@TASK [project: security] [description: Get user ip number, may be used to match so that user ip do not change or to generate session for user]
 [tag: ip, session] [status: open] [user: per]
+
+@TASK [project: security] [description: Max size for post data for statement. This to avoid specific problems for selected statement] 
+[tag: post, size] [status: open] [user: per]
 */
  
 /*

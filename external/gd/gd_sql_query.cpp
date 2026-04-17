@@ -1449,7 +1449,34 @@ std::string query::sql_get(enumSql eSql, const unsigned* puPartOrder) const
    return stringSql;
 }
 
+std::string query::sql_get_jinja( std::string_view stringTemplate, const gd::argument::arguments* pargumentsValues ) const
+{
+   std::array<std::byte, 256> buffer_; 
+   gd::argument::arguments argumentsValues( buffer_ );
 
+   for( auto itField = field_begin(), itEndField = field_end(); itField != itEndField; itField++ )
+   {
+      std::string_view stringValue = itField->value();
+      if( stringValue.empty() == true ) continue;
+
+      std::u8string_view stringValueUtf8( reinterpret_cast<const char8_t*>( stringValue.data() ), stringValue.size() );
+
+      std::string_view stringName = itField->name();
+      argumentsValues.append( stringName, stringValueUtf8 );
+   }
+
+   if( pargumentsValues != nullptr )
+   {
+      argumentsValues.merge( *pargumentsValues );                            // merge with arguments sent to method
+   }
+
+
+   std::string stringSql;
+   stringSql.reserve( stringTemplate.size() ); 
+   replace_g( stringTemplate, argumentsValues, stringSql, tag_brace{});
+
+   return stringSql;
+}
 
 /** --------------------------------------------------------------------------
  * @brief Clears all tables, fields, and conditions from the query.

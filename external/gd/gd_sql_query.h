@@ -570,6 +570,8 @@ public:
    [[nodiscard]] std::string sql_get( enumSql eSql ) const;
    [[nodiscard]] std::string sql_get( enumSql eSql, const unsigned* puPartOrder ) const;
 
+   [[nodiscard]] std::string sql_get_jinja( std::string_view stringTemplate, const gd::argument::arguments* pargumentsValues = nullptr ) const;
+
    [[nodiscard]] std::string get_select() const { return sql_get( eSqlSelect ); }
    [[nodiscard]] std::string get_insert() const { return sql_get( eSqlInsert ); }
    [[nodiscard]] std::string get_update() const { return sql_get( eSqlUpdate ); }

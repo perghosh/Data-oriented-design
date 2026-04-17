@@ -72,6 +72,7 @@ std::pair<bool,std::string> replace_g( const std::string_view& stringSource, con
 /// Replace values in string with values from arguments object, arguments replaced are in braces
 inline std::string replace_g(const std::string_view& stringSource, const gd::argument::arguments& argumentsValue, tag_brace) {
    std::string stringNew;
+   stringNew.reserve( stringSource.size() );
    replace_g(stringSource, argumentsValue, stringNew, tag_brace{});
    return stringNew;
 }
@@ -79,6 +80,7 @@ inline std::string replace_g(const std::string_view& stringSource, const gd::arg
 /// Replace values in string with values from arguments object, arguments replaced are in braces
 inline std::string replace_g(const std::string_view& stringSource, const gd::argument::shared::arguments& argumentsValue, tag_brace) {
    std::string stringNew;
+   stringNew.reserve( stringSource.size() ); 
    replace_g(stringSource, argumentsValue, stringNew, tag_brace{});
    return stringNew;
 }

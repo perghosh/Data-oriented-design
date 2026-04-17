@@ -83,6 +83,7 @@ public:
    // @API [tag: access, row] [description: Methods to return query row data]
    gd::types::uuid GetQueryId( uint64_t uRow );
    std::pair<bool, std::string> GetQuery( std::string_view stringName, std::string& stringQuery );
+   std::string GetQuery( std::string_view stringName ) const; ///< get query text for query at specified row index, returns empty string if not found
    int64_t GetQueryRow( std::string_view stringName ) const; ///< get row index for query with specified name, returns -1 if not found
    const gd::argument::shared::arguments* GetQueryArguments( uint64_t uRow ) const; ///< get arguments for query at specified row index, returns nullptr if not found
 
@@ -106,8 +107,6 @@ public:
 public:
    gd::argument::shared::arguments m_argumentProperty; ///< properties for session management
 
-   //gd::table::arguments::table m_tableQuery; ///< table holding active queries
-
    std::mutex m_mutexStatement;
    gd::modules::dbmeta::statement m_statement; ///< statement object holding list of statements, this is used to generate queries from templates
 
@@ -117,6 +116,14 @@ public:
 
 
 };
+
+/// @brief Retrieves the query text for a query with the specified name. If no query is found, an empty string is returned.
+inline std::string CQueries::GetQuery( std::string_view stringName ) const
+{
+   auto iIndex = m_statement.find( stringName );
+   if( iIndex != -1 ) { return std::string( m_statement.get_statement( iIndex ) ); }
+   return {};
+}
 
 /// @brief Retrieves the row index of a query based on its name.
 inline int64_t CQueries::GetQueryRow( std::string_view stringName ) const

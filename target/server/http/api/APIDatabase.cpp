@@ -427,6 +427,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
 
       // ## Process code if any
       META::CQueries* pqueries = pdocument->QUERIES_Get();
+      
       auto vectorCode = pqueries->GetArgumentsValues( stringQuery, "code" );  // get code for insert
       if( vectorCode.empty() == false )
       {
@@ -464,13 +465,14 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
       {
          std::array<std::byte, 128> buffer_;
          gd::argument::arguments argumentsOptions(buffer_);
+         argumentsOptions["query"] = stringQuery;
 
          std::string stringTable = GetParameterArguments()["table"].as_string();
          if( stringTable.empty() == false ) { argumentsOptions["table"] = stringTable; }
 
          argumentsOptions["form"] = "attribute";
          gd::argument::arguments argumentsReturn;
-         argumentsReturn.reserve( 64 );
+         argumentsReturn.reserve( 128 );
          pugi::xml_document* pxmldocument = GetParameterArguments()["xml"].get_pointer<pugi::xml_document>(); // get pointer to xml pointer that is prepared
          XML_BulkInsert( argumentsOptions, pxmldocument, pdocument, &argumentsReturn );
          Objects().Add( argumentsReturn );
@@ -777,6 +779,15 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
    std::array<char, 128> buffer_; // buffer to avoid allocate memory
    uint64_t uInsertCount = 0;
 
+   std::string stringInsertTemplate; // If insert template is set for query
+   std::string_view stringQuery = argumentsOptions["query"].as_string_view();
+   if( stringQuery.empty() == false ) 
+   { 
+      META::CQueries* pqueries = pdocument->QUERIES_Get();
+      pqueries->GetQuery( stringQuery, stringInsertTemplate );
+   }
+      
+
    META::CDatabase* pdatabase_ = pdocument->DATABASE_Get();
    auto uDialect = pdatabase_->GetDialect();
 
@@ -788,6 +799,7 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
 
 
    if( stringContainer.empty() == true ) { stringContainer = "//values"; }
+
 
    if( stringForm == "attribute" )
    {
@@ -819,7 +831,18 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
             queryInsert << field_g( stringName, buffer_ ).value( stringValue ).type( uType );
          }
 
-         std::string stringInsertSql = queryInsert.sql_get( eSqlInsert );
+         std::string stringInsertSql;
+
+         if( stringInsertTemplate.empty() == false )
+         {
+            const gd::argument::arguments* pargumentsGlobal = GetContext()->GetGlobalArguments();
+            stringInsertSql = queryInsert.sql_get_jinja( stringInsertTemplate, pargumentsGlobal );
+         }
+         else 
+         {
+            stringInsertSql = queryInsert.sql_get( eSqlInsert );
+         }
+
          auto result_ = pdatabase->execute( stringInsertSql );
          if( result_.first == false ) { return result_; }
          uInsertCount++;
