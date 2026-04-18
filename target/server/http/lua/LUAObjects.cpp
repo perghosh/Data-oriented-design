@@ -15,6 +15,10 @@
 #include "gd/gd_table_column-buffer.h"
 #include "gd/gd_variant.h"
 
+#include "gd/expression/gd_expression_token.h"
+#include "gd/expression/gd_expression_code.h"
+
+
 #include "lua/sol.hpp"
 
 #include "../Document.h"
@@ -687,7 +691,24 @@ std::string Table::Write(const sol::table& tableOption)
    return stringResult;
 }
 
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------- Expression
+// ----------------------------------------------------------------------------
 
+
+std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> Expression::Calculate( std::string_view stringExpression, std::optional<sol::table> table_ )
+{
+   gd::expression::value valueReturn;
+   gd::expression::runtime runtime_;
+
+   auto [bOk, stringError] = gd::expression::calculate_s( stringExpression, &valueReturn, runtime_ );
+   if( bOk == false ) throw sol::error( stringError );
+
+   valueExpression = valueReturn;
+}
+
+
+}
 
 // ----------------------------------------------------------------------------
 // ------------------------------------------------------------------- Database

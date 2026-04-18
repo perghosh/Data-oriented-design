@@ -109,6 +109,21 @@ public:
    gd::table::dto::table* m_ptable;
 };
 
+class Expression
+{
+// ## construction --------------------------------------------------------------
+public:
+   Expression() { }
+
+public:
+// @API [tag: operation]
+   std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> Calculate( std::string_view stringExpression, std::optional<sol::table> table_ );
+
+// ## attributes ----------------------------------------------------------------
+public:
+   gd::argument::arguments m_arguments;
+};
+
 /** @CLASS [tag: Database. lua, wrapper] [summary: Wrapper for gd::database::database_i class in lua]
  * \brief Database wrapper in lua
  */
@@ -131,9 +146,7 @@ private:
 
 // ## operator -----------------------------------------------------------------
 public:
-
-/** \name OPERATION
-*///@{
+// @API [tag: operation]   
    bool IsOpen() const { return (m_pdatabase != nullptr); }
    void Open( const std::variant<std::string_view,sol::table>& connect_ );
    void Execute( const std::string_view& stringSql );

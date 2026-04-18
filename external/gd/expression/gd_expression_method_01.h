@@ -123,6 +123,7 @@ const method pmethodString_g[] = {
    { (void*)&find_g, "find", 3, 1 },                 // find(text, word, offset) - find substring position
    { (void*)&has_g, "has", 1, 1, method::eFlagVarArgs },// has(haystack, needle, ...) - check if contains substring
    { (void*)&has_tag_g, "has_tag", 2, 1 },           // has_tag(text, tag) - check if text contains tag
+   { (void*)&ip_format_g, "ip_format", 3, 1 },       // is_format(ip, format, size) - format ip value to specified format
    { (void*)&is_alpha_g, "is_alpha", 1, 1 },         // is_alpha(text) - check if only alphabetic chars
    { (void*)&is_empty_g, "is_empty", 1, 1 },         // is_empty(text) - check if empty or whitespace
    { (void*)&left_g, "left", 2, 1 },                 // left(text, count) - get leftmost characters
