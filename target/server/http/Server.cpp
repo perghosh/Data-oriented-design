@@ -58,6 +58,7 @@ namespace
  *
  * @param stringRoot The root directory from which files should be served.
  * @param request_ The HTTP request to handle (moved in).
+ * @param psession_ A pointer to the session associated with the request (optional, can be used for session management).
  * @return boost::beast::http::message_generator The generated HTTP response.
  *
  * Steps performed:
@@ -73,53 +74,25 @@ namespace
  * 8. If the request is a HEAD, returns headers only.
  * 9. If the request is a GET, returns the file contents.
  */
-boost::beast::http::message_generator handle_request( boost::beast::string_view stringRoot, 
-                                                      boost::beast::http::request<boost::beast::http::string_body>&& request_)
+boost::beast::http::message_generator 
+   handle_request( boost::beast::string_view stringRoot,  boost::beast::http::request<boost::beast::http::string_body>&& request_, const session* psession_ )
 {
    // Returns a bad request response
-   auto const bad_request_ = [&request_](boost::beast::string_view stringWhy)
-      {
-         boost::beast::http::response<boost::beast::http::string_body> response{boost::beast::http::status::bad_request, request_.version()};
-         response.set(boost::beast::http::field::server, BOOST_BEAST_VERSION_STRING);
-         response.set(boost::beast::http::field::content_type, "text/html");
-         response.keep_alive(request_.keep_alive());
-         response.body() = std::string(stringWhy);
-         response.prepare_payload();
-         return response;
-      };
-
-   // Returns a not found response
-   auto const not_found_ = [&request_](boost::beast::string_view stringTarget)
-      {
-         boost::beast::http::response<boost::beast::http::string_body> response{boost::beast::http::status::not_found, request_.version()};
-         response.set(boost::beast::http::field::server, BOOST_BEAST_VERSION_STRING);
-         response.set(boost::beast::http::field::content_type, "text/html");
-         response.keep_alive(request_.keep_alive());
-         response.body() = "The resource '" + std::string(stringTarget) + "' was not found.";
-         response.prepare_payload();
-         return response;
-      };
-
-   // Returns a server error response
-   auto const server_error_ = [&request_](boost::beast::string_view stringWhat)
-      {
-         boost::beast::http::response<boost::beast::http::string_body> response{boost::beast::http::status::internal_server_error, request_.version()};
-         response.set(boost::beast::http::field::server, BOOST_BEAST_VERSION_STRING);
-         response.set(boost::beast::http::field::content_type, "text/html");
-         response.keep_alive(request_.keep_alive());
-         response.body() = "An error occurred: '" + std::string(stringWhat) + "'";
-         response.prepare_payload();
-         return response;
-      };
-
+   auto const error_ = [&request_]( boost::beast::string_view stringWhy )
+   {
+      boost::beast::http::response<boost::beast::http::string_body> response{boost::beast::http::status::bad_request, request_.version()};
+      response.set(boost::beast::http::field::server, BOOST_BEAST_VERSION_STRING);
+      response.set(boost::beast::http::field::content_type, "text/html");
+      response.keep_alive(request_.keep_alive());
+      response.body() = std::string(stringWhy);
+      response.prepare_payload();
+      return response;
+   };
 
    boost::beast::http::verb const eVerb = request_.method();
 
    // ## Make sure we can handle the method
-   if( eVerb > boost::beast::http::verb::trace  )
-   { 
-      return bad_request_("Unknown HTTP-method"); 
-   }
+   if( eVerb > boost::beast::http::verb::trace  ) { return error_("Unknown HTTP-method"); }
 
    if( eVerb == boost::beast::http::verb::options )
    {
@@ -136,10 +109,7 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
 
    std::string_view stringPage = request_.target();
    std::string_view stringTarget = stringPage;
-   if( stringTarget.empty() == true )
-   { 
-      return bad_request_("Empty request-target, server version: 0.9.0"); 
-   }
+   if( stringTarget.empty() == true ) {  return error_("Empty request-target, server version: 0.9.0"); }
    else if( stringTarget.size() > 0 && stringTarget[0] == '/' ) { stringTarget.remove_prefix(1); }
 
    std::string_view stringBody = request_.body();
@@ -149,14 +119,11 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
    if( stringTarget.empty() == false && stringTarget.front() == '!' )
    {
       CServer server_( papplication_g );
-      return server_.RouteCommand( stringTarget, stringBody, std::move( request_ ) );
+      return server_.RouteCommand( stringTarget, stringBody, std::move( request_ ), psession_ );
    }
 
    // ## Request path must be absolute and not contain "..".
-   if( stringPage.empty() || stringPage[0] != '/' || stringPage.find("..") != boost::beast::string_view::npos) 
-   { 
-      return bad_request_("Illegal request-target"); 
-   }
+   if( stringPage.empty() || stringPage[0] != '/' || stringPage.find("..") != boost::beast::string_view::npos) { return error_("Illegal request-target"); }
 
    // ## Build the path to the requested file
    std::string stringPath = path_cat_g(stringRoot, request_.target());
@@ -170,13 +137,13 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
    if( uPosition != std::string::npos ) { stringPath = stringPath.substr( 0, uPosition ); }
 
    // ## Attempt to open the file
-   boost::beast::error_code errorcode;
+   boost::beast::error_code errorcode_;
    boost::beast::http::file_body::value_type body_;
-   body_.open(stringPath.c_str(), boost::beast::file_mode::scan, errorcode);
-   if(errorcode == boost::beast::errc::no_such_file_or_directory) { return not_found_(request_.target()); }
-  
-   if(errorcode) { return server_error_(errorcode.message()); }
+   body_.open(stringPath.c_str(), boost::beast::file_mode::scan, errorcode_);
 
+
+   if(errorcode_ == boost::beast::errc::no_such_file_or_directory) { return error_(  std::format( "The resource '{}' was not found.", stringTarget ) ); }
+   if(errorcode_) { return error_( std::format( "An error occurred: {}", errorcode_.message()) ); }
    
    auto const uSize = body_.size();
 
@@ -222,9 +189,10 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
  * 
  * If any step fails, it returns an internal server error response with the error message.
  */
-boost::beast::http::message_generator CServer::RouteCommand( std::string_view stringTarget, std::string_view stringBody, boost::beast::http::request<boost::beast::http::string_body>&& request_ )
+boost::beast::http::message_generator CServer::RouteCommand( std::string_view stringTarget, std::string_view stringBody, boost::beast::http::request<boost::beast::http::string_body>&& request_, const session* psession_ )
 {
 	CRouter router_(papplication_g, stringTarget, stringBody);                 // create router for the target, router is a simple command router to handle commands
+   router_.SetSession( psession_ );
 
    if( stringBody.empty() == false )
    {
@@ -497,12 +465,12 @@ void listener::on_accept(boost::beast::error_code errorcode, boost::asio::ip::tc
 // ----------------------------------------------------------------------------
 
 session::session( boost::asio::ip::tcp::socket&& socket, std::shared_ptr<std::string const> const& pstringFolderRoot)
-   : m_tcpstream(std::move(socket))
-   , m_pstringFolderRoot(pstringFolderRoot)
-{
-   
-}
+   : m_tcpstream(std::move(socket)), m_pstringFolderRoot(pstringFolderRoot) {}
 
+/** ------------------------------------------------------------------------- read
+ * @brief Reads session information based on requested item flags.
+ * @param uRequestItems Bit mask specifying which session items to read (e.g., `Types::eRequestItemIp` for IP address).
+ */
 void session::read( uint64_t uRequestItems )
 {
    // ## Read IP address ?
@@ -551,7 +519,7 @@ void session::on_read( boost::beast::error_code errorcode, std::size_t uBytesTra
    if(errorcode) { return fail_g(errorcode, "read"); }
 
    // Send the response
-   auto message_ = handle_request(*m_pstringFolderRoot, std::move(m_request));
+   auto message_ = handle_request(*m_pstringFolderRoot, std::move(m_request), this);
    //auto u_ = std::distance( response.begin(), response.end() ); // suppress unused warning
    send_response( std::move( message_ ) );
 }

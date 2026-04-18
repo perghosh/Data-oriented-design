@@ -73,6 +73,7 @@ public:
    CRouter() {}
    CRouter(CApplication* pApplication): m_context(pApplication) {}
    CRouter(CApplication* pApplication, CDocument* pDocument): m_context(pApplication, pDocument) {}
+   CRouter(CApplication* pApplication, CDocument* pDocument, session* psession): m_context(pApplication, pDocument, psession) {}
    CRouter( const std::string_view& stringQueryString ) : m_stringQueryString( stringQueryString ) {}
    CRouter( CApplication* pApplication, const std::string_view& stringQueryString ): m_context(pApplication), m_stringQueryString(stringQueryString) {}
    CRouter( CApplication* pApplication, const std::string_view& stringQueryString, std::string_view stringBody ): m_context(pApplication), m_stringQueryString(stringQueryString), m_stringBody(stringBody) {}
@@ -114,13 +115,14 @@ public:
    bool IsMultipart() const { return ( m_uFlags & eResultFormatMultipart ) == eResultFormatMultipart; }
 
    void SetResponseData( unsigned uType, void* pData ) { m_pairRequestData = { uType, pData }; }
-   
+   void SetSession( const session* psession ) { m_context.SetSession( psession ); }
    // Convenience accessors that forward to m_context so existing call-sites
    // in Run() / Prepare() / PrintResponseXml() do not need to change.
    CApplication* GetApplication()             { return m_context.GetApplication(); }
    const CApplication* GetApplication() const { return m_context.GetApplication(); }   
    CDocument*    GetDocument()                { return m_context.GetDocument(); }
    const CDocument* GetDocument() const       { return m_context.GetDocument(); }
+   const session* GetSession() const          { return m_context.GetSession(); }
  
 
 // ## methods ------------------------------------------------------------------

@@ -76,7 +76,7 @@ void LuaStatePool::Add( std::string_view stringName, size_t uCount, std::functio
  * @return             `borrow` RAII token wrapping the acquired state.
  */
 LuaStatePool::borrow LuaStatePool::Acquire( std::string_view stringName )
-{
+{                                                                                                  assert( m_vectorStates.empty() == false );
    while( true )
    {
       {
@@ -179,15 +179,13 @@ bool LuaStatePool::Erase( uint64_t uId )
    }
 }
 
-size_t LuaStatePool::size() const
+size_t LuaStatePool::Size() const
 {
-   std::lock_guard<std::mutex> lockguardPool{ m_mutexPool };
    return m_vectorStates.size();
 }
 
-bool LuaStatePool::empty() const
+bool LuaStatePool::Empty() const
 {
-   std::lock_guard<std::mutex> lockguardPool{ m_mutexPool };
    return m_vectorStates.empty();
 }
 

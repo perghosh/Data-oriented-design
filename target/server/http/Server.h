@@ -43,6 +43,8 @@ boost::beast::string_view mime_type_g(boost::beast::string_view path);
 // The returned path is normalized for the platform.
 std::string path_cat_g( boost::beast::string_view base,  boost::beast::string_view path);
 
+class session; // Forward declaration of session class to avoid circular dependency
+
 /**
  * \brief
  *
@@ -88,7 +90,7 @@ public:
    std::pair<bool, std::string> Initialize();
 
    /// Route command
-   boost::beast::http::message_generator RouteCommand( std::string_view stringTarget, std::string_view stringBody, boost::beast::http::request<boost::beast::http::string_body>&& request_ );
+   boost::beast::http::message_generator RouteCommand( std::string_view stringTarget, std::string_view stringBody, boost::beast::http::request<boost::beast::http::string_body>&& request_, const session* psession_ );
 
    std::pair<bool, std::string> Execute( const std::vector<std::string_view>& vectorCommand, gd::com::server::command_i* pcommand );
 
@@ -134,7 +136,17 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
 
 //------------------------------------------------------------------------------
 
-// Handles an HTTP server connection
+/**  ======================================================================== session
+ * @brief **HTTP session** handling one TCP connection with asynchronous Beast operations.
+ *
+ * Lifecycle:
+ * 1. `run()` starts processing.
+ * 2. `do_read()` / `on_read(...)` receive and parse request data.
+ * 3. `send_response(...)` / `on_write(...)` send reply and evaluate keep-alive.
+ * 4. `do_close()` shuts down the socket when needed.
+ *
+ * `m_argument` is backed by `m_array_` to reduce dynamic allocations for per-request argument handling.
+ */
 class session : public std::enable_shared_from_this<session>
 {
 public:
@@ -160,7 +172,8 @@ public:
    boost::beast::flat_buffer m_flatbuffer;      ///< Buffer to store data used in request
    std::shared_ptr<std::string const> m_pstringFolderRoot;///< root folder on disk where to find files
    boost::beast::http::request<boost::beast::http::string_body> m_request;///< Handle parts in http message
-   gd::argument::shared::arguments m_argument; ///< shared arguments for all sessions
+   std::array<std::byte, 64> m_array_; ///< buffer to avoid dynamic memory allocation for arguments
+   gd::argument::arguments m_argument{m_array_}; ///< shared arguments for all sessions
 };
 
 //------------------------------------------------------------------------------

@@ -14,6 +14,8 @@
 
 #include "../Types.h"
 
+#include "../Server.h"
+
 
 // #include "APIContext.h"    // client/session context object
 
@@ -71,12 +73,13 @@ class CAPIContext
 public:
    CAPIContext() {}
 
-   explicit CAPIContext( CApplication* papplication )
-      : m_papplication( papplication ) {}
+   explicit CAPIContext( CApplication* papplication ): m_papplication( papplication ) {}
 
-   CAPIContext( CApplication* papplication, CDocument* pdocument )
-      : m_papplication( papplication ), m_pdocument( pdocument )
-   { if( papplication && pdocument ) { SetFlag( eFlagBound ); } }
+   CAPIContext( CApplication* papplication, CDocument* pdocument ): m_papplication( papplication ), m_pdocument( pdocument )
+   { if( papplication && pdocument ) { SetFlag( eFlagLinked ); } }
+
+   CAPIContext( CApplication* papplication, CDocument* pdocument, const session* psession ): m_papplication( papplication ), m_pdocument( pdocument ), m_psession( psession )
+   { if( papplication && pdocument ) { SetFlag( eFlagLinked ); } if( psession ) { SetFlag( eFlagSession ); } }
 
    // copy - deleted; context is move-only to prevent accidental aliasing of m_objects
    CAPIContext( const CAPIContext& ) = delete;
@@ -93,6 +96,7 @@ private:
    {
       m_papplication    = std::exchange( o.m_papplication, nullptr );
       m_pdocument       = std::exchange( o.m_pdocument,    nullptr );
+      m_psession        = std::exchange( o.m_psession,     nullptr );
       m_objects         = std::move( o.m_objects );
       m_argumentsGlobal = std::move( o.m_argumentsGlobal );
       m_stringLastError = std::move( o.m_stringLastError );
@@ -104,10 +108,11 @@ public:
    enum enumFlag : unsigned
    {
       eFlagNone            = 0x00000000,
-      eFlagBound           = 0x00000001,  ///< application and document pointers are valid
+      eFlagLinked          = 0x00000001,  ///< application and document pointers are linked (both valid); set by Bind() and SetDocument()
       eFlagHasError        = 0x00000002,  ///< an error has been stored via SetError()
       eFlagHasResult       = 0x00000004,  ///< at least one object was added to m_objects
       eFlagDatabaseOwner   = 0x00000008,  ///< Ownss the database, releases it on destruction (not yet implemented)
+      eFlagSession         = 0x00000010,  ///< Linked to a session (m_psession is valid); set by constructor that takes session pointer
    };
 
 // ## methods ----------------------------------------------------------------
@@ -123,12 +128,15 @@ public:
    gd::database::database_i* GetDatabase() { return m_pdatabase; }
    const gd::database::database_i* GetDatabase() const { return m_pdatabase; }
 
-   /// Bind a document pointer; also sets eFlagBound when application is already set
+   const session*      GetSession() const { return m_psession; }
+   void SetSession( const session* psession );
+
+   /// Bind a document pointer; also sets eFlagLinked when application is already set
    void SetDocument( CDocument* pdocument )
    {
       m_pdocument = pdocument;
-      if( m_papplication && m_pdocument ) { SetFlag( eFlagBound ); }
-      else                                { ClearFlag( eFlagBound ); }
+      if( m_papplication && m_pdocument ) { SetFlag( eFlagLinked ); }
+      else                                { ClearFlag( eFlagLinked ); }
    }
 
    /// Bind both pointers in one call
@@ -136,11 +144,12 @@ public:
    {
       m_papplication = papplication;
       m_pdocument    = pdocument;
-      if( m_papplication && m_pdocument ) { SetFlag( eFlagBound ); }
-      else                                { ClearFlag( eFlagBound ); }
+      if( m_papplication && m_pdocument ) { SetFlag( eFlagLinked ); }
+      else                                { ClearFlag( eFlagLinked ); }
    }
 
-   bool IsBound()    const { return ( m_uFlags & eFlagBound )     != 0; }
+   bool IsLinked()   const { return ( m_uFlags & eFlagLinked )    != 0; }
+   bool HasSession() const { return ( m_uFlags & eFlagSession )   != 0; }
    bool HasError()   const { return ( m_uFlags & eFlagHasError )  != 0; }
    bool HasResult()  const { return ( m_uFlags & eFlagHasResult ) != 0; }
    bool IsDatabaseOwner() const { return ( m_uFlags & eFlagDatabaseOwner ) != 0; }
@@ -208,6 +217,7 @@ private:
 public:
    CApplication*           m_papplication{};       ///< non-owning; lifetime managed by server layer
    CDocument*              m_pdocument{};          ///< non-owning; resolves to the calling user's document
+   const session*          m_psession{};           ///< non-owning; resolves to the calling user's session (optional, can be used for session-specific data or operations)
    gd::database::database_i* m_pdatabase{};        ///< database used for this request
    Types::Objects          m_objects;              ///< accumulates result objects across chained API sections
    gd::argument::arguments m_argumentsGlobal;      ///< global values shared across sections (e.g. insert key passed to next section)
@@ -215,6 +225,12 @@ public:
    unsigned                m_uFlags{ eFlagNone };  ///< state flags (bound, has-error, has-result)
 };
 
+/// Set or clear eFlagSession based on whether the session pointer is valid
+inline void CAPIContext::SetSession( const session* psession ) {
+   m_psession = psession;
+   if( psession ) { SetFlag( eFlagSession ); }
+   else { ClearFlag( eFlagSession ); }
+}
 
 
 /**

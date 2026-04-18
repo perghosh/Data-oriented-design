@@ -1,7 +1,7 @@
 // @PROJECT [tag: rights, user ] [name: users]
 // 
 
-/*
+/* ## USERS
 
 @PROJECT [name: users] [description: Manage user accounts,permissions, login etc ]
 
@@ -24,13 +24,13 @@
   
  */
 
-/*
+/* ## LOGGING
 @PROJECT [name: logging] [tag: log] [description: turn on/off different log types to make development simpler]
 
 @TASK [project: logging] [description: Log SQL to check queries, needed for development} [tag: log, sql] [status: open] [user: per]
 */
  
-/*
+/* ## SECURITY
 @PROJECT [name: security, functions] [tag: log] [summary: server methods that are usefull for security]
 
 @TASK [project: security] [description: Get user ip number, may be used to match so that user ip do not change or to generate session for user]
@@ -40,11 +40,17 @@
 [tag: post, size] [status: open] [user: per]
 */
  
-/*
+/* ## SCRIPTING
 @PROJECT [name: scripting] [tag: script, lua, python, gdscript] [description: Script logic inside web server]
 
-@TASK [project: scripting] [tag: lua, cli, configuration] [status: open] [user: per]
+@TASK [project: scripting] [tag: script, lua, python, gdscript] [status: open] [user: per]
+[summary: Ip logic in lua scripts]
+[description: Logic to get user ip and session information in lua scripts, this is needed for security and to make it possible to write scripts that can use this information]
+
+@TASK [project: scripting] [tag: lua, cli, configuration] [status: done] [user: per]
 [summary: initialize lua scripting for webserver]
 [description: lua engines are store in a lua pool and this pool has to be initialized at startup]
 [sample: http script-pool]
+
+
 */

@@ -240,13 +240,13 @@ public:
     * @brief Total number of states currently owned by the pool (idle + in use).
     * @return Snapshot count (approximate under concurrent load).
     */
-   size_t size() const;
+   size_t Size() const;
 
    /**  -------------------------------------------------------------------------- empty
     * @brief True when the pool owns no states at all.
     * @return `true` if the pool is empty.
     */
-   bool empty() const;
+   bool Empty() const;
 
    /**  -------------------------------------------------------------------------- set_reset_callback
     * @brief Override the default per-request reset logic with a custom function.
