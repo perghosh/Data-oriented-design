@@ -60,6 +60,7 @@ std::pair<bool, std::string> count_g(const std::vector< value >& vectorArgument,
 std::pair<bool, std::string> find_g(const std::vector< value >& vectorArgument, value* pvalueResult);
 std::pair<bool, std::string> has_g(const std::vector< value >& vectorArgument, value* pvalueResult);
 std::pair<bool, std::string> has_tag_g(const std::vector< value >& vectorArgument, value* pvalueResult);
+std::pair<bool, std::string> ip_format_g(const std::vector<value>& vectorArgument, value* pvalueResult);
 std::pair<bool, std::string> list_tags_g(const std::vector< value >& vectorArgument, value* pvalueResult);
 std::pair<bool, std::string> missing_g(const std::vector< value >& vectorArgument, value* pvalueResult);
 std::pair<bool, std::string> starts_with_g(const std::vector< value >& vectorArgument, value* pvalueResult);
