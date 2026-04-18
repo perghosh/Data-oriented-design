@@ -1060,10 +1060,26 @@ Document Request::GetDocument()
    return Document( m_pcontext->GetDocument(), m_pcontext->GetDatabase() );
 }
 
+/// Get database from request
 Database Request::GetDatabase()
 {
    return Database( (void*)m_pcontext->GetDatabase() );
 }
+
+/// Get IP address from request, if session is available
+std::string Request::GetIpAddress()
+{
+   if( m_pcontext->HasSession() == true ) { return m_pcontext->GetIpAddress(); }
+   return {};
+}
+
+/// Get session ID from request, if session is available
+std::string Request::GetSessionId()
+{
+   if( m_pcontext->HasSession() == true ) { return m_pcontext->GetSessionId(); }
+   return {};
+}
+
 
 /// @brief Get global variable from Request, these values can be used to fill in missing values
 std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> Request::GetGlobalVariable( std::string_view stringName, std::optional<std::string> type_ )

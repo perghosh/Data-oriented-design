@@ -442,7 +442,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
          std::unique_ptr<LUA::Document> pdocument = std::make_unique<LUA::Document>( GetDocument(), pdatabase ); // document information, note that the database isn't same as database inside document, this is the global database.
          state_["doc"] = std::move( pdocument );
          std::unique_ptr<LUA::Request> prequest = std::make_unique<LUA::Request>( GetContext() ); // request information, holds user data etc for current request to server.
-         state_["req"] = std::move( prequest );
+         state_["request"] = std::move( prequest );
 
          std::string stringError;
          for( auto& stringCode : vectorCode )
@@ -458,7 +458,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
             }
          }
 
-         lua_.reset( { "app", "doc"}, true );
+         lua_.reset( { "app", "doc", "request" }, true );
          if( stringError.empty() == false ) { return { false, stringError }; }
       }
 

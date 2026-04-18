@@ -154,7 +154,7 @@ public:
    bool HasResult()  const { return ( m_uFlags & eFlagHasResult ) != 0; }
    bool IsDatabaseOwner() const { return ( m_uFlags & eFlagDatabaseOwner ) != 0; }
 
-   // ## Error helpers .......................................................
+   // @API [tag: error] [description: Error handling]
 
    void SetError( std::string stringError )
    {
@@ -197,7 +197,12 @@ public:
 
    bool HasGlobal( std::string_view stringName ) const { return m_argumentsGlobal.exists( stringName ); }
 
-   // ## Reset ................................................................
+   // @API [tag: operation] [description: operations from users]
+
+   /// Get the caller's IP address from the session if available; returns empty string if not available
+   std::string GetIpAddress();
+   /// Get the caller's session ID if available; returns empty string if not available
+   std::string GetSessionId();
 
    /// Clear accumulated results and error state; keeps application/document binding intact.
    /// Useful when re-using a context across unrelated request cycles (e.g. keep-alive connections).

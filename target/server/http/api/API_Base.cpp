@@ -4,6 +4,23 @@
 
 #include "API_Base.h"
 
+std::string CAPIContext::GetIpAddress()
+{
+   if( ( m_uFlags & eFlagSession ) != 0 && m_psession != nullptr )
+   {
+      return m_psession->as_string("ip");
+   }
+   return {};
+}
+
+std::string CAPIContext::GetSessionId()
+{
+   if( ( m_uFlags & eFlagSession ) != 0 && m_psession != nullptr )
+   {
+      return m_psession->as_string("session");
+   }
+   return {};
+}
 
 void CAPIContext::ResetResults()
 {
@@ -31,6 +48,7 @@ void CAPIContext::Reset()
 {
    m_papplication = nullptr;
    m_pdocument    = nullptr;
+   m_psession     = nullptr;
    m_uFlags       = eFlagNone;
    ResetResults();
 }

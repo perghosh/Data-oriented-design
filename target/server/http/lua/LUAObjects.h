@@ -341,6 +341,9 @@ public:
    Document GetDocument(); ///< Returns document that is allways valid
    Database GetDatabase(); ///< Return database object for current request, if database connection is open
 
+   std::string GetIpAddress(); ///< Return IP address for current request
+   std::string GetSessionId(); ///< Return session ID for current request
+
    std::variant<int64_t, std::string, double, bool, sol::lua_nil_t>
       GetGlobalVariable( std::string_view stringName, std::optional<std::string> type_ = std::nullopt ); ///< Get global variable for current request, if variable does not exist it will return nil value
    void SetGlobalVariable( std::string_view stringName, std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> value_, std::optional<std::string> type_ = std::nullopt );

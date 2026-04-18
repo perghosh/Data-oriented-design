@@ -166,6 +166,9 @@ public:
    void on_write( bool bKeepAlive, boost::beast::error_code errorcode, std::size_t uBytesTransferred);
    void do_close();
 
+   bool exists( std::string_view stringName ) const { return m_argument.exists( stringName ); }
+   std::string as_string( std::string_view stringName ) const { return m_argument[stringName].as_string(); }
+
 // ## attributes --------------------------------------------------------------
 public:
    boost::beast::tcp_stream m_tcpstream;        ///< Stream data using socket
@@ -173,7 +176,7 @@ public:
    std::shared_ptr<std::string const> m_pstringFolderRoot;///< root folder on disk where to find files
    boost::beast::http::request<boost::beast::http::string_body> m_request;///< Handle parts in http message
    std::array<std::byte, 64> m_array_; ///< buffer to avoid dynamic memory allocation for arguments
-   gd::argument::arguments m_argument{m_array_}; ///< shared arguments for all sessions
+   gd::argument::arguments m_argument{m_array_}; ///< arguments for session, "ip", "session" are common
 };
 
 //------------------------------------------------------------------------------
