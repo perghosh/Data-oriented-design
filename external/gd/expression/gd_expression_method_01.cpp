@@ -2,6 +2,9 @@
 #include <cmath>
 
 #include "gd/gd_binary.h"
+
+#include "../math/gd_math_string.h"  //math related methods
+
 #include "gd_expression_method_01.h"
 
 _GD_EXPRESSION_BEGIN 
@@ -1105,143 +1108,7 @@ std::pair<bool, std::string> ip_format_g( const std::vector<value>& vectorArgume
       auto stringFormat = format_.as_string_view();
       auto iSize = size_.as_integer();
 
-      std::string stringResult;
-
-      if( stringFormat == "hex" || stringFormat == "uuid" )
-      {
-         uint8_t buffer_[16] = {}; // Buffer to hold raw bytes of IP address, large enough for IPv6
-         int iBytes = 0; // Number of bytes parsed into buffer_
-
-         // ## Try IPv4: segments separated by '.', exactly 4 parts, each 0-255
-         if( stringIP.find( '.' ) != std::string_view::npos )
-         {
-            std::string_view sv_ = stringIP;
-            int iParts = 0;     // Count of parsed parts, should be exactly 4 for valid IPv4
-            bool bValid = true; // Flag to track validity of parsing, set to false on any error
-
-            while( !sv_.empty() && iParts < 4 )                               // Loop until we have parsed 4 parts or run out of string
-            {
-               auto uPosition = sv_.find( '.' );
-               auto token_ = ( uPosition == std::string_view::npos ) ? sv_ : sv_.substr( 0, uPosition ); // Extract next segment, either up to next '.' or rest of string if no more '.'
-
-               if( token_.empty() || token_.size() > 3 ) { bValid = false; break; } // Each segment must be 1-3 characters long
-
-               uint32_t uValue = 0; // Parse segment as decimal number, must be 0-255
-               for( char iChar : token_ )
-               {
-                  if( iChar < '0' || iChar > '9' ) { bValid = false; break; }
-                  uValue = uValue * 10 + static_cast<uint32_t>( iChar - '0' ); // Accumulate numeric value, checking for non-digit characters
-               }
-               if( !bValid || uValue > 255 ) { bValid = false; break; }      // Valid segment must be numeric and in range 0-255
-
-               buffer_[iParts++] = static_cast<uint8_t>( uValue );
-               sv_ = (uPosition == std::string_view::npos) ? std::string_view{} : sv_.substr( uPosition + 1 );
-            }
-
-            if( bValid && iParts == 4 && sv_.empty() ) { iBytes = 4; }       // Successfully parsed 4 segments and no remaining string, valid IPv4 address
-            else { return { false, "ip_format - Invalid IPv4 address" }; }
-         }
-         // ## Try IPv6: contains ':', parse groups with '::' expansion
-         else if( stringIP.find( ':' ) != std::string_view::npos )
-         {
-            // Split on '::' to get left and right halves
-            auto dpos = stringIP.find( "::" );
-            std::string_view left  = (dpos != std::string_view::npos) ? stringIP.substr( 0, dpos ) : stringIP;
-            std::string_view right = (dpos != std::string_view::npos) ? stringIP.substr( dpos + 2 ) : std::string_view{};
-
-            // ## Parse one half into 16-bit groups, returns false on any invalid token
-            auto parse_ = []( std::string_view sv, uint16_t* pGroups, int& iCount ) -> bool
-            {
-               iCount = 0;
-               if( sv.empty() ) return true;
-               while( !sv.empty() )
-               {
-                  auto pos   = sv.find( ':' );
-                  auto token = (pos == std::string_view::npos) ? sv : sv.substr( 0, pos );
-
-                  if( token.empty() || token.size() > 4 ) return false;
-
-                  uint32_t uVal = 0;
-                  for( char c : token )
-                  {
-                     uint32_t uDigit;
-                     if     ( c >= '0' && c <= '9' ) uDigit = static_cast<uint32_t>( c - '0' );
-                     else if( c >= 'a' && c <= 'f' ) uDigit = static_cast<uint32_t>( c - 'a' + 10 );
-                     else if( c >= 'A' && c <= 'F' ) uDigit = static_cast<uint32_t>( c - 'A' + 10 );
-                     else return false;
-                     uVal = (uVal << 4) | uDigit;
-                  }
-                  if( iCount >= 8 ) return false;
-                  pGroups[iCount++] = static_cast<uint16_t>( uVal );
-                  sv = (pos == std::string_view::npos) ? std::string_view{} : sv.substr( pos + 1 );
-               }
-               return true;
-            };
-
-            uint16_t leftGroups_[8]  = {};
-            uint16_t rightGroups_[8] = {};
-            int iLeftCount  = 0;
-            int iRightCount = 0;
-
-            if( !parse_( left, leftGroups_, iLeftCount ) )   { return { false, "ip_format - Invalid IPv6 address" }; }
-            if( !parse_( right, rightGroups_, iRightCount ) ) { return { false, "ip_format - Invalid IPv6 address" }; }
-            if( dpos == std::string_view::npos && iLeftCount != 8 ) { return { false, "ip_format - Invalid IPv6 address" }; }
-            if( iLeftCount + iRightCount > 8 ) { return { false, "ip_format - Invalid IPv6 address" }; }
-
-            // ## Expand '::' zero gap into full 8-group array, big-endian byte order
-            uint16_t groups_[8] = {};
-            for( int i = 0; i < iLeftCount;  ++i ) groups_[i] = leftGroups_[i];
-            for( int i = 0; i < iRightCount; ++i ) groups_[8 - iRightCount + i] = rightGroups_[i];
-
-            for( int i = 0; i < 8; ++i )
-            {
-               buffer_[i * 2]     = static_cast<uint8_t>( groups_[i] >> 8 );
-               buffer_[i * 2 + 1] = static_cast<uint8_t>( groups_[i] & 0xFF );
-            }
-            iBytes = 16;
-         }
-         else { return { false, "ip_format - Invalid IP address" }; }
-
-         if( stringFormat == "hex" )
-         {
-            // ## Convert raw bytes to uppercase hex using gd_binary helper
-            stringResult = gd::binary_to_hex_g( buffer_, static_cast<size_t>( iBytes ), true );
-
-            // ## Pad with leading zeros to full hex width if no size constraint
-            // IPv4 = 8 hex chars, IPv6 = 32 hex chars
-            size_t uHexWidth = static_cast<size_t>( iBytes ) * 2;
-            if( stringResult.length() < uHexWidth ) { stringResult.insert( 0, uHexWidth - stringResult.length(), '0' ); }
-         }
-         else // "uuid"
-         {
-            // ## For IPv4, right-align 4 bytes into 16-byte UUID buffer (zero-prefixed)
-            uint8_t uuid_[16] = {};
-            if( iBytes == 4 ) std::memcpy( uuid_ + 12, buffer_, 4 );
-            else              std::memcpy( uuid_, buffer_, 16 );
-
-            char szUUID[37];
-            std::snprintf( szUUID, sizeof( szUUID ),
-               "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-               uuid_[0],  uuid_[1],  uuid_[2],  uuid_[3],
-               uuid_[4],  uuid_[5],  uuid_[6],  uuid_[7],
-               uuid_[8],  uuid_[9],  uuid_[10], uuid_[11],
-               uuid_[12], uuid_[13], uuid_[14], uuid_[15] );
-            stringResult = szUUID;
-         }
-      }
-      else { return { false, "ip_format - Invalid format argument" }; }       // invalid format, return error
-
-      // ## Pad with leading zeros if result is shorter than requested size
-      if( iSize > 0 && stringResult.length() < static_cast<size_t>( iSize ) )
-      {
-         stringResult.insert( 0, static_cast<size_t>( iSize ) - stringResult.length(), '0' );
-      }
-
-      // ## Truncate from the left if result is longer than requested size
-      else if( iSize > 0 && static_cast<size_t>( iSize ) < stringResult.length() )
-      {
-         stringResult = stringResult.substr( stringResult.length() - static_cast<size_t>( iSize ) );
-      }
+      std::string stringResult = gd::math::string::ip_format( stringIP, stringFormat, static_cast<unsigned>(iSize) );
 
       *pvalueResult = stringResult;
       return { true, "" };

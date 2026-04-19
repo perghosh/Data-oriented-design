@@ -99,6 +99,11 @@ _GD_BEGIN
 
 // @API [tag: binary, hex] [description: Hexadecimal related logic, convert from or to hexadecimal, validation etc]
 
+/// Lookup table used to convert hexadecimal value in text to value stored in byte.
+const uint8_t* binary_get_hex_table_g() noexcept;
+/// Lookup table containing hexadecimal string representations of all byte values (0x00-0xFF).
+const char* binary_get_hex_text_table_g() noexcept;
+
 /// Validate hex string, returns pair of ( is valid, error message )
 std::pair<bool, std::string> binary_validate_hex_g( std::string_view stringHex );
 /// Validate uuid string, returns pair of ( is valid, error message )

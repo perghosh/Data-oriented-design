@@ -99,7 +99,7 @@ std::string select_unwrap(const std::string_view& stringText, const std::string_
 /// Extracts all substrings between pairs of delimiters.
 std::vector<std::string> select_between_all(const std::string_view& stringText, const std::string_view& stringFrom, const std::string_view& stringTo);
 
-// ## Formatting methods ......................................................
+// ## Formatting methods .................................................... @API [tag: format]
 
 /// Indents text with specified number of spaces, with optional first line indentation.
 std::string format_indent(const std::string_view& stringText, size_t uIndentSpaces, bool bIndentFirstLine = true, char iNewLine = '\n');
@@ -112,19 +112,19 @@ std::string format_header_line(const std::string_view& stringHeaderName, enumAli
 /// Formats text to fit within a specified width, filling with a character if necessary.
 std::string format_text_width(std::string_view stringText, size_t uWidth, char iFillChar = ' ');
 
-// ## trim methods ............................................................
+// ## trim methods .......................................................... @API [tag: trim]
 
 /// Trims text by removing duplicate characters.
 std::string trim_repeated_chars(const std::string_view& stringText, size_t uMaxRepeated = 2);
-/// Trims text by removing character if string begins or ends with slected character
+/// Trims text by removing character if string begins or ends with selected character.
 std::string trim_first_and_last(const std::string_view& stringText, char iCharacter);
 
-// ## Conversion methods ......................................................
+// ## Conversion methods ..................................................... @API [tag: conversion]
 
 /// Converts a hexadecimal string to its ASCII representation.
 std::string convert_hex_to_ascii(const std::string_view& stringHex);
 
-// ## Merge methods ...........................................................
+// ## Merge methods ........................................................... @API [tag: merge]
 
 /// Merges two delimited strings, removing duplicates and preserving the separator.
 std::string merge_delimited(const std::string_view& stringFirst, const std::string_view& stringSecond, char iSeparator = ';');
@@ -134,6 +134,14 @@ std::string merge_delimited(const std::vector<std::string_view> vectorString, ch
 
 /// Checks if a position in the string is a word boundary.
 bool is_word_boundary(const std::string_view& stringText, size_t uPosition) noexcept;
+
+// ## Ip methods .............................................................. @API [tag: ip]
+
+
+/// Validates an IPv4 or IPv6 address string for correct format
+bool ip_validate( std::string_view stringIp ) noexcept;
+/// Converts an IPv4 or IPv6 address to selected format
+std::string ip_format( std::string_view stringIp, std::string_view stringFormat, unsigned uSize = 0u );
 
 /** ---------------------------------------------------------------------------
 * @brief Checks if a character is considered a word character.
