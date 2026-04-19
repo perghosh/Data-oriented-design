@@ -63,6 +63,8 @@ std::pair<bool, std::string> find_g(const std::vector< value >& vectorArgument, 
 std::pair<bool, std::string> has_g(const std::vector< value >& vectorArgument, value* pvalueResult);
 std::pair<bool, std::string> has_tag_g(const std::vector< value >& vectorArgument, value* pvalueResult);
 std::pair<bool, std::string> ip_format_g(const std::vector<value>& vectorArgument, value* pvalueResult);
+std::pair<bool, std::string> ip_validate_g(const std::vector<value>& vectorArgument, value* pvalueResult);
+std::pair<bool, std::string> join_g(const std::vector<value>& vectorArgument, value* pvalueResult);
 std::pair<bool, std::string> list_tags_g(const std::vector< value >& vectorArgument, value* pvalueResult);
 std::pair<bool, std::string> missing_g(const std::vector< value >& vectorArgument, value* pvalueResult);
 std::pair<bool, std::string> starts_with_g(const std::vector< value >& vectorArgument, value* pvalueResult);
@@ -125,9 +127,11 @@ const method pmethodString_g[] = {
    { (void*)&find_g, "find", 3, 1 },                 // find(text, word, offset) - find substring position
    { (void*)&has_g, "has", 1, 1, method::eFlagVarArgs },// has(haystack, needle, ...) - check if contains substring
    { (void*)&has_tag_g, "has_tag", 2, 1 },           // has_tag(text, tag) - check if text contains tag
-   { (void*)&ip_format_g, "ip_format", 3, 1 },       // is_format(ip, format, size) - format ip value to specified format
+   { (void*)&ip_format_g, "ip_format", 3, 1 },       // ip_format(ip, format, size) - format ip value to specified format
+   { (void*)&ip_validate_g, "ip_validate", 1, 1 },   // ip_validate(ip) - validate if string is a valid IP address
    { (void*)&is_alpha_g, "is_alpha", 1, 1 },         // is_alpha(text) - check if only alphabetic chars
    { (void*)&is_empty_g, "is_empty", 1, 1 },         // is_empty(text) - check if empty or whitespace
+   { (void*)&join_g, "join", 2, 1, method::eFlagVarArgs }, // join(value1, value2, ..., delimiter) - join values with delimiter
    { (void*)&left_g, "left", 2, 1 },                 // left(text, count) - get leftmost characters
    { (void*)&length_g, "length", 1, 1 },             // length(text) - get string length
    { (void*)&list_tags_g, "list_tags", 1, 1 },       // list_tags(text) - extract unique tags as CSV

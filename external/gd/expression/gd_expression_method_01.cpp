@@ -1117,6 +1117,53 @@ std::pair<bool, std::string> ip_format_g( const std::vector<value>& vectorArgume
    return { false, "ip_format - Invalid argument type" };
 }
 
+/// Validate if string is a valid IP address, returns formatted IP if valid, otherwise returns empty string
+std::pair<bool, std::string> ip_validate_g(const std::vector<value>& vectorArgument, value* pvalueResult)
+{                                                                                                  assert( vectorArgument.size() > 0 );
+   const auto& ip_ = vectorArgument[0];
+   if( ip_.is_string() )
+   {
+      auto stringIP = ip_.as_string_view();
+      *pvalueResult = gd::math::string::ip_validate( stringIP );
+      return { true, "" };
+   }
+   return { false, "ip_validate - Invalid argument type" }; 
+}
+
+/// Join multiple values into a single string with a specified delimiter (last argument is the delimiter)
+std::pair<bool, std::string> join_g( const std::vector<value>& vectorArgument, value* pvalueResult )
+{                                                                                                  assert( vectorArgument.size() > 0 );
+   if( vectorArgument.size() < 2 ) return { false, "join_g requires at least 2 arguments" };
+
+   const auto& delimiter_ = vectorArgument.back();
+   std::string stringDelimiter;
+
+   if( delimiter_.is_string() == true ) stringDelimiter = delimiter_.as_string();
+
+   std::string stringResult;
+
+   // ## arguments are reversed so go from last to first, skip last argument since it's the delimiter
+
+   for( size_t u = vectorArgument.size() - 1; u > 0; --u )
+   {
+      const auto& v_ = vectorArgument[u - 1];
+      std::string stringValue;
+      if( v_.is_string() ) { stringValue = v_.as_string(); }
+      else if( v_.is_integer() ) { stringValue = std::to_string( v_.as_integer() ); }
+      else if( v_.is_double() ) { stringValue = std::to_string( v_.as_double() ); }
+      else if( v_.is_bool() ) { stringValue = v_.as_bool() ? "true" : "false"; }
+      else if( v_.is_null() ) { stringValue = "null"; }
+      else { return { false, "join_g - Invalid argument type" }; }
+    
+      if( u < vectorArgument.size() - 1 ) { stringResult += stringDelimiter; }
+
+      stringResult += stringValue;
+   }
+
+   *pvalueResult = stringResult;
+   return { true, "" };
+}
+
 /// Returns a comma-separated list of unique tags from text.
 std::pair<bool, std::string> list_tags_g(const std::vector< value >& vectorArgument, value* pvalueResult)
 {                                                                                                  assert(vectorArgument.size() > 0);
