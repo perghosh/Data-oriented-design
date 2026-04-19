@@ -1116,29 +1116,29 @@ std::pair<bool, std::string> ip_format_g( const std::vector<value>& vectorArgume
          if( stringIP.find( '.' ) != std::string_view::npos )
          {
             std::string_view sv_ = stringIP;
-            int iParts = 0;
-            bool bValid = true;
+            int iParts = 0;     // Count of parsed parts, should be exactly 4 for valid IPv4
+            bool bValid = true; // Flag to track validity of parsing, set to false on any error
 
-            while( !sv_.empty() && iParts < 4 )
+            while( !sv_.empty() && iParts < 4 )                               // Loop until we have parsed 4 parts or run out of string
             {
-               auto pos = sv_.find( '.' );
-               auto token = (pos == std::string_view::npos) ? sv_ : sv_.substr( 0, pos );
+               auto uPosition = sv_.find( '.' );
+               auto token_ = ( uPosition == std::string_view::npos ) ? sv_ : sv_.substr( 0, uPosition ); // Extract next segment, either up to next '.' or rest of string if no more '.'
 
-               if( token.empty() || token.size() > 3 ) { bValid = false; break; }
+               if( token_.empty() || token_.size() > 3 ) { bValid = false; break; } // Each segment must be 1-3 characters long
 
-               uint32_t uValue = 0;
-               for( char c : token )
+               uint32_t uValue = 0; // Parse segment as decimal number, must be 0-255
+               for( char iChar : token_ )
                {
-                  if( c < '0' || c > '9' ) { bValid = false; break; }
-                  uValue = uValue * 10 + static_cast<uint32_t>( c - '0' );
+                  if( iChar < '0' || iChar > '9' ) { bValid = false; break; }
+                  uValue = uValue * 10 + static_cast<uint32_t>( iChar - '0' ); // Accumulate numeric value, checking for non-digit characters
                }
-               if( !bValid || uValue > 255 ) { bValid = false; break; }
+               if( !bValid || uValue > 255 ) { bValid = false; break; }      // Valid segment must be numeric and in range 0-255
 
                buffer_[iParts++] = static_cast<uint8_t>( uValue );
-               sv_ = (pos == std::string_view::npos) ? std::string_view{} : sv_.substr( pos + 1 );
+               sv_ = (uPosition == std::string_view::npos) ? std::string_view{} : sv_.substr( uPosition + 1 );
             }
 
-            if( bValid && iParts == 4 && sv_.empty() ) { iBytes = 4; }
+            if( bValid && iParts == 4 && sv_.empty() ) { iBytes = 4; }       // Successfully parsed 4 segments and no remaining string, valid IPv4 address
             else { return { false, "ip_format - Invalid IPv4 address" }; }
          }
          // ## Try IPv6: contains ':', parse groups with '::' expansion
@@ -1150,7 +1150,7 @@ std::pair<bool, std::string> ip_format_g( const std::vector<value>& vectorArgume
             std::string_view right = (dpos != std::string_view::npos) ? stringIP.substr( dpos + 2 ) : std::string_view{};
 
             // ## Parse one half into 16-bit groups, returns false on any invalid token
-            auto parseGroups = []( std::string_view sv, uint16_t* pGroups, int& iCount ) -> bool
+            auto parse_ = []( std::string_view sv, uint16_t* pGroups, int& iCount ) -> bool
             {
                iCount = 0;
                if( sv.empty() ) return true;
@@ -1183,8 +1183,8 @@ std::pair<bool, std::string> ip_format_g( const std::vector<value>& vectorArgume
             int iLeftCount  = 0;
             int iRightCount = 0;
 
-            if( !parseGroups( left, leftGroups_, iLeftCount ) )   { return { false, "ip_format - Invalid IPv6 address" }; }
-            if( !parseGroups( right, rightGroups_, iRightCount ) ) { return { false, "ip_format - Invalid IPv6 address" }; }
+            if( !parse_( left, leftGroups_, iLeftCount ) )   { return { false, "ip_format - Invalid IPv6 address" }; }
+            if( !parse_( right, rightGroups_, iRightCount ) ) { return { false, "ip_format - Invalid IPv6 address" }; }
             if( dpos == std::string_view::npos && iLeftCount != 8 ) { return { false, "ip_format - Invalid IPv6 address" }; }
             if( iLeftCount + iRightCount > 8 ) { return { false, "ip_format - Invalid IPv6 address" }; }
 

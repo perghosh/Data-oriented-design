@@ -71,6 +71,14 @@ void RegisterCursor( sol::state& stateLua )
    );
 }
 
+void RegisterExpression( sol::state& stateLua )
+{
+	stateLua.new_usertype<Expression>(
+      "Expression", sol::constructors<Expression()>(),
+      "Calculate", &Expression::Calculate
+   );
+}
+
 void RegisterTable( sol::state& stateLua )
 {
 	stateLua.new_usertype<Table>(

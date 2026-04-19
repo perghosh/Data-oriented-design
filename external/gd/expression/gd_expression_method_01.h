@@ -1,3 +1,5 @@
+// @FILE [tag: expression, method] [summary: Header file for expression methods] [description: This header file defines a set of functions that implement various expression methods for the GD expression engine.] [name: gd_expression_method_01.h] [type: header] 
+
 /**
 * @file gd_expression_method_01.h
 * 

@@ -16,6 +16,8 @@
 #include "gd/gd_variant.h"
 
 #include "gd/expression/gd_expression_token.h"
+#include "gd/expression/gd_expression_glue_to_gd.h"
+#include "gd/expression/gd_expression_method_01.h"
 #include "gd/expression/gd_expression_code.h"
 
 
@@ -106,6 +108,16 @@ std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> ConvertToAny_g(
    if( value_.is_integer() == true )      { return value_.as_int64(); }
    else if( value_.is_string() == true )  { return value_.as_string(); }
    else if( value_.is_decimal() == true ) { return value_.as_double(); }
+   else if( value_.is_bool() == true )    { return value_.as_bool(); }
+   return sol::lua_nil;
+}
+
+std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> ConvertToAny_g( const gd::expression::value& value_ )
+{
+   if( value_.is_integer() == true )      { return value_.is_integer(); }
+   else if( value_.is_string() == true )  { return value_.as_string(); }
+   else if( value_.is_double() == true )  { return value_.as_double(); }
+   else if( value_.is_bool() == true )    { return value_.as_bool(); }
    return sol::lua_nil;
 }
 
@@ -115,6 +127,7 @@ std::variant<int64_t, std::string, double, bool, sol::table, sol::lua_nil_t> Con
    else if( value_.is_string() == true )  { return value_.as_string(); }
    else if( value_.is_decimal() == true ) { return value_.as_double(); }
    else if( value_.is_binary() == true )  { return value_.as_string(); }
+   else if( value_.is_bool() == true )    { return value_.as_bool(); }
    return sol::lua_nil;
 }
 
@@ -698,17 +711,45 @@ std::string Table::Write(const sol::table& tableOption)
 
 std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> Expression::Calculate( std::string_view stringExpression, std::optional<sol::table> table_ )
 {
+   using namespace gd::expression;
    gd::expression::value valueReturn;
    gd::expression::runtime runtime_;
+   std::vector<token> vectorToken;
 
-   auto [bOk, stringError] = gd::expression::calculate_s( stringExpression, &valueReturn, runtime_ );
+   if( table_.has_value() == true )
+   {
+      gd::argument::arguments argumentsValue;
+      ConvertToArguments_g( table_.value(), argumentsValue );
+      auto values_ = to_named_values_g( argumentsValue );
+      runtime_.set_all_variables( std::move(values_) );
+   }
+   else if( m_arguments.empty() == false )
+   {
+      auto values_ = to_named_values_g( m_arguments );
+      runtime_.set_all_variables( std::move(values_) );
+   }
+
+   runtime_.add( { (unsigned)uMethodDefaultSize_g, pmethodDefault_g, ""});
+   runtime_.add( { (unsigned)uMethodStringSize_g, pmethodString_g, std::string("str")});
+
+
+   vectorToken.reserve( 12 );
+   std::pair<bool, std::string> result = token::parse_s(stringExpression, vectorToken, tag_formula{});
+   if( result.first == false ) { throw sol::error(result.second); }
+
+   std::vector<token> vectorPostfix;
+   vectorPostfix.reserve( vectorToken.size() );
+   result = token::compile_s(vectorToken, vectorPostfix, tag_postfix{});
+   if( result.first == false ) { throw sol::error(result.second); }
+
+
+
+   auto [bOk, stringError] = token::calculate_s( vectorPostfix, &valueReturn, runtime_ );
    if( bOk == false ) throw sol::error( stringError );
 
-   valueExpression = valueReturn;
+   return ConvertToAny_g( valueReturn );
 }
 
-
-}
 
 // ----------------------------------------------------------------------------
 // ------------------------------------------------------------------- Database

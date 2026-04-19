@@ -209,6 +209,8 @@ struct runtime
    void get_all_variables(std::vector<std::pair<std::string, value::variant_t>>& vectorVariable) const;
    void get_all_variables(std::vector<std::pair<std::string, value::variant_t>>&& vectorVariable) const;
    std::vector< std::pair<std::string, value::variant_t>> get_all_variables() const { return m_vectorVariable; }
+   void set_all_variables( const std::vector<std::pair<std::string, value::variant_t>>& vectorVariable ) { m_vectorVariable = vectorVariable; }
+   void set_all_variables( std::vector<std::pair<std::string, value::variant_t>>&& vectorVariable ) { m_vectorVariable = std::move( vectorVariable ); }
 
 
    /// @brief try to find variable value by name and use callback function to find it
