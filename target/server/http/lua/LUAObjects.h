@@ -14,6 +14,7 @@
 #include "gd/gd_database_sqlite.h"
 
 #include "../api/API_Base.h"
+#include "../render/RENDERSql.h"
 
 
 #ifndef LUA_BEGIN
@@ -124,6 +125,29 @@ public:
    gd::argument::arguments m_arguments;
 };
 
+/** @CLASS [tag: Sql. lua, wrapper] [summary: Wrapper for CRENDERSql class in lua]
+ * @brief Wrapper for CRENDERSql class in lua
+ */
+class Sql
+{
+   // ## construction --------------------------------------------------------------
+public:
+   Sql() {}
+   Sql( CRENDERSql* psql ) { m_psql = std::make_unique<CRENDERSql>( *psql ); }
+
+// @API [tag: operation]   
+   std::string GetValue( const std::string_view& stringName ) const;
+   void AddValues( const sol::table& tableValues );
+   void AddColumnValue( const sol::table& tableField );
+
+   std::string AsInsert( std::optional<sol::table> table_ ) const;
+
+   std::string Build() const;
+
+// ## attributes ----------------------------------------------------------------
+   std::unique_ptr<CRENDERSql> m_psql;
+};
+
 /** @CLASS [tag: Database. lua, wrapper] [summary: Wrapper for gd::database::database_i class in lua]
  * \brief Database wrapper in lua
  */
@@ -231,6 +255,9 @@ public:
    CAPIContext* m_papicontext = nullptr; ///< pointer to API context, used to access request and response objects, and other information about current request
 };
 
+// ----------------------------------------------------------------------------
+// ------------------------------------------------------------------- Document
+// ----------------------------------------------------------------------------
 
 /** @CLASS [tag: Document. lua, wrapper] [summary: Wrapper for CDocument class in lua]
  * \brief Document wrapper in lua
@@ -264,6 +291,9 @@ public:
    gd::database::database_i* m_pdatabase = nullptr;
 };
 
+// ----------------------------------------------------------------------------
+// ---------------------------------------------------------------- Application
+// ----------------------------------------------------------------------------
 
 /** @CLASS [tag: Application. lua, wrapper] [summary: Wrapper for CApplication class in lua]
  * \brief Application wrapper in lua
@@ -330,13 +360,15 @@ public:
 
 /** @CLASS [tag: Request. lua, wrapper] [summary: Wrapper for request object in lua]
  * \brief Request wrapper in lua
+ * 
+ * From the request you can also create Sql objects to generate sql.
  */
 class Request
 {
 // ## construction -------------------------------------------------------------
 public:
    Request() {}
-   Request( CAPIContext* pcontext ) { m_pcontext = pcontext; }
+   Request( CAPIContext* pcontext );
    // copy
    Request( const Request& o ) { common_construct( o ); }
    // assign
@@ -345,7 +377,7 @@ public:
    ~Request() {}
 private:
    // common copy
-   void common_construct( const Request& o ) { m_pcontext = o.m_pcontext; }
+   void common_construct( const Request& o ) { m_pcontext = o.m_pcontext; m_psql = o.m_psql ? std::move( std::make_unique<CRENDERSql>( *o.m_psql ) ) : nullptr; }
 
 // ## operator -----------------------------------------------------------------
 public:
@@ -361,10 +393,14 @@ public:
       GetGlobalVariable( std::string_view stringName, std::optional<std::string> type_ = std::nullopt ); ///< Get global variable for current request, if variable does not exist it will return nil value
    void SetGlobalVariable( std::string_view stringName, std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> value_, std::optional<std::string> type_ = std::nullopt );
 
+   Sql CreateSql(); ///< Create SQL object for current request, this can be used to build SQL queries
+
+   CRENDERSql* GetSql_() { return m_psql.get(); } ///< Get pointer to SQL object for current request
 
 // ## attributes ----------------------------------------------------------------
 public:
    CAPIContext* m_pcontext = nullptr; ///< pointer to API context, used to access request and response objects, and other information about current request
+   std::unique_ptr<CRENDERSql> m_psql;///< Base SQL object that can be used to build SQL queries
 };
 
 

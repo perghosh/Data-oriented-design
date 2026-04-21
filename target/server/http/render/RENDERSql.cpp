@@ -20,6 +20,26 @@
 
 #include "RENDERSql.h"
 
+CRENDERSql::CRENDERSql( const CDocument* pdocument ) : m_pdocument( pdocument ), m_tableField( 8, gd::table::tag_full_meta{} ) 
+{                                                                                                  assert( pdocument ); 
+   if( pdocument->DATABASE_Get() ) { m_eSqlDialect = gd::sql::enumSqlDialect( pdocument->DATABASE_Get()->GetDialect() ); }
+}
+
+void CRENDERSql::common_construct( const CRENDERSql& o ) 
+{
+   m_pdocument = o.m_pdocument;
+   m_eSqlDialect = o.m_eSqlDialect;
+   m_tableField = o.m_tableField;
+   m_argumentsProperty = o.m_argumentsProperty;
+}
+
+void CRENDERSql::common_construct( CRENDERSql&& o ) noexcept 
+{
+   m_pdocument = o.m_pdocument;
+   m_eSqlDialect = o.m_eSqlDialect;
+   m_tableField = std::move(o.m_tableField);
+   m_argumentsProperty = std::move(o.m_argumentsProperty);
+}
 
 
 /** --------------------------------------------------------------------------
@@ -41,7 +61,7 @@ void CRENDERSql::Initialize()
       m_pcolumnsField_s->add( "string", uSize, "alias" );                     // alias for column in table
       m_pcolumnsField_s->add( "string", uSize * 2, "value" );                 // value for column in table
       m_pcolumnsField_s->add( "uint32", 0, "type" );                          // type of value
-      m_pcolumnsField_s->add( "uint32", 0, "part_type" );                     // part type of value   
+      m_pcolumnsField_s->add( "uint32", 0, "part_type" );                     // part type of value, this same as sql part like select, where    
       m_pcolumnsField_s->add_reference();
                                                                                                    assert( m_pcolumnsField_s->find_index( "key"sv ) == eColumnFieldId );
                                                                                                    assert( m_pcolumnsField_s->find_index( "alias"sv ) == eColumnFieldAlias );
@@ -119,18 +139,27 @@ std::pair<bool, std::string> CRENDERSql::Add( const pugi::xml_node& xmlnodeValue
    return { true, "" };
 }
 
+void CRENDERSql::AddValue( std::string_view stringName, gd::variant_view variantviewValue )
+{
+   std::array<std::byte, 128> buffer_;
+   gd::argument::arguments argumentsField(buffer_);
+   argumentsField.append_argument( "column", stringName ); // column name
+   argumentsField.append_argument( "value", variantviewValue);
+   AddValue( argumentsField );
+}
+
 /** --------------------------------------------------------------------------
  * @brief Add new field to be used in  SQL query that is generated.
  *
  * @param argumentsField information about the field to add.
  */
-void CRENDERSql::AddValue( const gd::argument::arguments argumentsField )
+void CRENDERSql::AddValue( const gd::argument::arguments& argumentsField )
 {                                                                                                  assert( m_pcolumnsField_s != nullptr );
    auto uRow = m_tableField.row_add_one();
    m_tableField.cell_set( uRow, 0u, uint32_t(uRow + 1) );                     // set key value
 
    for( auto [key_, value_] : argumentsField.named() )
-   {
+   {                                                                                               assert( m_pcolumnsField_s->find_index( key_ ) != -1 );
       if( value_.is_string() == true ) { Add( key_, value_.as_string_view() ); }
       else
       { 
@@ -161,6 +190,52 @@ std::pair<bool,std::string> CRENDERSql::AddValue( std::string_view stringJson, g
    AddValue( arguments_ );
 
    return {true, ""};
+}
+
+/** -------------------------------------------------------------------------- FindColumnName
+ * @brief Finds the row index in table if information for column name is present.
+ *
+ * @param stringName The name of the column to find.
+ * @return int64_t The index of the column if found, or -1 if not found.
+ */
+int64_t CRENDERSql::FindRowForColumnName( std::string_view stringName ) const
+{
+   gd::variant_view name_( stringName );
+   for( std::size_t uRow = 0; uRow < m_tableField.get_row_count(); ++uRow )
+   {
+      auto column_ = m_tableField.cell_get_variant_view( uRow, eColumnFieldColumn, gd::table::tag_not_null{}); // get column name as variant view
+      if( column_.as_string_view() == name_.as_string_view() ) return uRow;
+   }
+   return -1;
+}
+
+void CRENDERSql::AddValues( const gd::argument::arguments& argumentsField )
+{
+   for( auto [key_, value_] : argumentsField.named() )
+   {
+      auto uRow = m_tableField.row_add_one();                                 // Add row to store field information
+      m_tableField.cell_set( uRow, eColumnFieldColumn, key_, gd::table::tag_spill{});
+
+      if( value_.is_text() == true ) 
+      { 
+         m_tableField.cell_set( uRow, eColumnFieldValue, value_.as_string_view(), gd::table::tag_spill{}); 
+      }
+      else
+      {
+         m_tableField.cell_set( uRow, eColumnFieldValue, value_.as_string_view(), gd::table::tag_spill{});
+      }
+   }
+}
+
+std::pair<bool, std::string> CRENDERSql::AddValues( std::string_view stringJson, gd::types::tag_json )
+{
+   std::array<std::byte, 256> buffer_;
+   gd::argument::arguments argumentsField( buffer_ );
+
+   auto result_ = gd::parse::json::parse_shallow_object_g( stringJson, argumentsField, false );
+   if( result_.first == false ) { return result_; }
+   AddValues( argumentsField );
+   return { true, "" };
 }
 
 /** -------------------------------------------------------------------------- AddRecord
@@ -343,8 +418,23 @@ std::size_t CRENDERSql::CountPartType( enumPartType ePartType ) const
 void CRENDERSql::SetColumnValue( std::string_view stringName, gd::variant_view variantviewValue )
 {
    auto iColumn = m_tableField.column_find_index( stringName );
-   if( iColumn < 0 ) return
+   if( iColumn < 0 ) return;
    m_tableField.column_fill( (unsigned)iColumn, variantviewValue, gd::table::tag_convert{} );
+}
+
+/** ------------------------------------------------------------------------- FillColumn
+ * Fill cells in table where there no value set
+ */
+void CRENDERSql::FillColumn( enumColumnField eColumnField, gd::variant_view variantviewValue )
+{
+   // ## Loop rows in table and fill cells in column with value if cell is empty
+   for( uint64_t uRow = 0u, uMax = m_tableField.size(); uRow < uMax; ++uRow )
+   {
+      auto v_ = m_tableField.cell_get_variant_view( uRow, (unsigned)eColumnField, gd::table::tag_not_null{} );
+      if( v_.is_null() == false ) continue;                                   // if cell is not empty skip it
+
+      m_tableField.cell_set( uRow, eColumnField, variantviewValue, gd::table::tag_spill{});
+   }
 }
 
 std::pair<bool,std::string> CRENDERSql::GetQuery( enumSqlQueryType eSqlQueryType, std::string& stringQuery )
@@ -518,6 +608,36 @@ std::pair<bool, std::string> CRENDERSql::ToSql( std::string_view stringType, std
    }
 
    return { false, "" };
+}
+
+std::pair<bool, std::string> CRENDERSql::Validate( gd::argument::arguments argumentsValue, unsigned* puFound ) const
+{  
+   unsigned uRequired = 0;
+      
+   // ## match values against columns in table ...............................
+   for( auto [key_, value_] : argumentsValue.named() )
+   {
+      bool bFound = m_tableField.column_exists( key_ );  // if column is found
+      if( bFound == true )
+      {
+         char iChar = key_[0];
+         switch( iChar )
+         {
+         case 'k': uRequired |= eColumnFlagKey; break;
+         case 's': uRequired |= eColumnFlagSchema; break;
+         case 't': { if( key_ == "table" ) uRequired |= eColumnFlagTable; else uRequired |= eColumnFlagType; } break;
+         case 'c': uRequired |= eColumnFlagColumn; break;
+         case 'a': uRequired |= eColumnFlagAlias; break;
+         case 'v': uRequired |= eColumnFlagValue; break;
+         case 'p': uRequired |= eColumnFlagPartType; break;
+         }
+      }
+      else { return { false, "Invalid column name: " + std::string( key_ ) }; }
+   };
+
+   if( puFound != nullptr ) { *puFound = uRequired; }
+
+   return { true, "" };
 }
 
 

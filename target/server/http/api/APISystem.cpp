@@ -32,7 +32,7 @@ std::pair<bool, std::string> CAPISystem::Execute()
 
    std::pair<bool, std::string> result_(true,"");
 
-   CRouter::Encode_s( m_argumentsParameter, { "query" } );
+   CRouter::Encode_s( m_argumentsQS, { "query" } );
 
    for( std::size_t uIndex = m_uCommandIndex; uIndex < m_vectorCommand.size(); ++uIndex )
    {
@@ -131,7 +131,7 @@ std::pair<bool, std::string> CAPISystem::Execute()
 std::pair<bool, std::string> CAPISystem::Execute_FileDelete()
 {
    std::string stringPathFound;
-   std::string stringPath = m_argumentsParameter["path"].as_string();
+   std::string stringPath = m_argumentsQS["path"].as_string();
    if(stringPath.empty() == false)
    {
       if( std::filesystem::exists(stringPath) && std::filesystem::is_regular_file(stringPath) )
@@ -162,11 +162,11 @@ std::pair<bool, std::string> CAPISystem::Execute_FileDirectory()
 {
    std::string stringAction;
 
-   if( m_argumentsParameter.exists( "action" ) == true ) { stringAction = m_argumentsParameter["action"].as_string(); }
+   if( m_argumentsQS.exists( "action" ) == true ) { stringAction = m_argumentsQS["action"].as_string(); }
 
    if( stringAction == "get" )
    {
-      std::string stringType = m_argumentsParameter["type"].as_string();      // type of folder, "root", "application" etc
+      std::string stringType = m_argumentsQS["type"].as_string();      // type of folder, "root", "application" etc
       std::string stringFolderType("folder-");
       stringFolderType += stringType;
 
@@ -177,11 +177,11 @@ std::pair<bool, std::string> CAPISystem::Execute_FileDirectory()
    }
    else if( stringAction == "set" )
    {
-      std::string stringType = m_argumentsParameter["type"].as_string();
+      std::string stringType = m_argumentsQS["type"].as_string();
       std::string stringFolderType("folder-");
       stringFolderType += stringType;
       
-      std::string stringValue = m_argumentsParameter.get_argument({"name", "value"}).as_string();
+      std::string stringValue = m_argumentsQS.get_argument({"name", "value"}).as_string();
       papplication_g->PROPERTY_Set( stringFolderType, stringValue );          // Note that setting folder is not thread safe and should only be done in development mode or local on prem solutions
    }
    else
@@ -198,7 +198,7 @@ std::pair<bool, std::string> CAPISystem::Execute_FileDirectory()
 std::pair<bool, std::string> CAPISystem::Execute_FileExists()
 {
    std::string stringPathFound;
-   std::string stringPath = m_argumentsParameter["path"].as_string();
+   std::string stringPath = m_argumentsQS["path"].as_string();
    if(stringPath.empty() == false)
    {
       if( std::filesystem::exists(stringPath) )
@@ -417,9 +417,9 @@ std::pair<bool, std::string> CAPISystem::Execute_SessionAdd()
    gd::types::uuid uuid; // uuid for session
    std::string stringSession; // session string read from request
 
-   if( m_argumentsParameter.exists("new") == false )
+   if( m_argumentsQS.exists("new") == false )
    {
-      stringSession = m_argumentsParameter["session"].as_string();    // get session to add
+      stringSession = m_argumentsQS["session"].as_string();    // get session to add
 
       if( stringSession.size() < 32 ) { stringSession.append( 32 - stringSession.size(), '0' ); } // Pad session if less than 32 bytes
    
@@ -442,7 +442,7 @@ std::pair<bool, std::string> CAPISystem::Execute_SessionAdd()
    // ## return response with index for session added
 
    gd::argument::arguments* parguments_ = new gd::argument::arguments( { { "index", uIndex } } );
-   if( m_argumentsParameter.exists("new") == true ) { parguments_->append("session", stringSession); }
+   if( m_argumentsQS.exists("new") == true ) { parguments_->append("session", stringSession); }
    Objects().Add( parguments_ );
    
    return { true, "" };
@@ -453,7 +453,7 @@ std::pair<bool, std::string> CAPISystem::Execute_SessionDelete()
 {
    if( Exists("session") == true )
    {
-      std::string stringSession = m_argumentsParameter["session"].as_string(); // get session to delete
+      std::string stringSession = m_argumentsQS["session"].as_string(); // get session to delete
       
       // ## Pad session if less than 32 bytes and validate ...................
       if( stringSession.size() < 32 ) { stringSession.append(32 - stringSession.size(), '0'); }
@@ -469,7 +469,7 @@ std::pair<bool, std::string> CAPISystem::Execute_SessionDelete()
    }
    else if( Exists("index") == true )
    {
-      uint64_t uIndex = m_argumentsParameter["index"].as_uint64();
+      uint64_t uIndex = m_argumentsQS["index"].as_uint64();
       
       CDocument* pdocument = GetDocument();
       
@@ -502,7 +502,7 @@ std::pair<bool, std::string> CAPISystem::Execute_SessionExists()
    CDocument* pdocument = GetDocument();
    auto* psessions = pdocument->SESSION_Get();
 
-   std::string stringSession = m_argumentsParameter["session"].as_string();   // session to check for
+   std::string stringSession = m_argumentsQS["session"].as_string();   // session to check for
 
    // ## Pad session if less than 32 bytes
    if( stringSession.size() < 32 ) { stringSession.append(32 - stringSession.size(), '0'); }

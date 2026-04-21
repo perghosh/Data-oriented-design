@@ -65,7 +65,7 @@ public:
    };
 
    
- enum enumColumnField
+   enum enumColumnField
    {
       eColumnFieldId,            ///< column id (key), used for internal purposes
       eColumnFieldSchema,        ///< schema for table field belongs to
@@ -78,10 +78,23 @@ public:
                                  ///< This is used to be able to filter out columns for different parts of query, for example when creating insert query we only need value part, when creating select query we only need select part, etc.     
       eColumnField_Max
    };
+
+   enum enumColumnFlag
+   {
+      eColumnFlagKey = 0x01,     ///< column is a key column, used for where part of query
+      eColumnFlagSchema = 0x02,  ///< column has schema specified
+      eColumnFlagTable = 0x04,   ///< column has table specified
+      eColumnFlagColumn = 0x08,  ///< column has column name specified
+      eColumnFlagAlias = 0x10,   ///< column has alias specified
+      eColumnFlagValue = 0x20,   ///< column has value specified
+      eColumnFlagType = 0x40,    ///< column has type specified
+      eColumnFlagPartType = 0x80,///< column has part type specified
+   };
    
 // @API [tag: construction]
 public:
    CRENDERSql(): m_tableField(8, gd::table::tag_full_meta{}) {}
+   CRENDERSql( const CDocument* pdocument );
    CRENDERSql( const CDocument* pdocument, gd::sql::enumSqlDialect eSqlDialect ): m_pdocument(pdocument), m_eSqlDialect(eSqlDialect), m_tableField(8, gd::table::tag_full_meta{}) {}
    CRENDERSql( const CDocument* pdocument, std::string_view stringDialect ): m_pdocument(pdocument), m_eSqlDialect( gd::sql::sql_get_dialect_g(stringDialect) ), m_tableField(8, gd::table::tag_full_meta{}) {}
    // copy
@@ -94,8 +107,8 @@ public:
    ~CRENDERSql() {}
 private:
    // common copy
-   void common_construct( const CRENDERSql& o ) {}
-   void common_construct( CRENDERSql&& o ) noexcept {}
+   void common_construct( const CRENDERSql& o );
+   void common_construct( CRENDERSql&& o ) noexcept;
 
 // @API [tag: operator]
    CRENDERSql& operator()( gd::sql::enumSqlDialect eSqlDialect ) { m_eSqlDialect = eSqlDialect; return *this; }
@@ -113,8 +126,21 @@ public:
 
    std::pair<bool,std::string> Add( const pugi::xml_node& xmlnodeValues );
 
-   void AddValue( const gd::argument::arguments argumentsField );
+   /// Simplest form, adds value with name
+   void AddValue( std::string_view stringName, gd::variant_view variantviewValue );
+   void AddValue( const gd::argument::arguments& argumentsField );
    std::pair<bool,std::string> AddValue( std::string_view stringJson, gd::types::tag_json );
+
+   /// Gets value for row, returns empty string view if value is not string or row is out of range
+   std::string_view GetValue( uint64_t uRow ) const;
+
+   /// Finds row for column name, returns -1 if not found
+   int64_t FindRowForColumnName( std::string_view stringName ) const;
+
+   /// Add multiple values for columns
+   void AddValues( const gd::argument::arguments& argumentsField );
+   std::pair<bool,std::string> AddValues( std::string_view stringJson, gd::types::tag_json );
+
    /// Adds data for a complete record for specified table
    std::pair<bool,std::string> AddRecord( std::string_view stringJson, gd::types::tag_json );
 
@@ -128,9 +154,13 @@ public:
    void Add( std::string_view stringName, gd::variant_view variantviewValue );
 
    /// Counts the number of columns for the specified part type in the query.
+   /// Useful to check if there is where values etc
    std::size_t CountPartType( enumPartType ePartType ) const;
 
    void SetColumnValue( std::string_view stringName, gd::variant_view variantviewValue );
+
+   /// Fill up values in internal table where they are empty
+   void FillColumn( enumColumnField eColumnField, gd::variant_view variantviewValue );
    
    std::pair<bool,std::string> GetQuery( enumSqlQueryType eSqlQueryType, std::string& stringQuery );
    std::pair<bool, std::string> GetQuery( std::string_view stringQueryType, std::string& stringQuery ) { return GetQuery( QueryType_s( stringQueryType ), stringQuery ); }
@@ -139,6 +169,9 @@ public:
    std::pair<bool, std::string> ToSqlUpdate( std::string& stringQuery );
    std::pair<bool, std::string> ToSqlDelete( std::string& stringQuery );
    std::pair<bool, std::string> ToSql( std::string_view stringType, std::string& stringQuery );
+
+   // @API [tag: validate]
+   std::pair<bool, std::string> Validate( gd::argument::arguments argumentsValue, unsigned* puFound = nullptr ) const;
 
    //std::string Dump() const;
 protected:
@@ -166,6 +199,13 @@ public:
    /// Destroy the static columns used by this class, note that you have to call this before the program exits
    static void Destroy_s();
 };
+
+/// return value for row, returns empty string view if value is not string or row is out of range
+inline std::string_view CRENDERSql::GetValue( uint64_t uRow ) const {
+   if( uRow >= m_tableField.size() ) return std::string_view{};
+   auto value_ = m_tableField.cell_get_variant_view( uRow, eColumnFieldValue, gd::table::tag_not_null{} );  assert( value_.is_string() == true );
+   return value_.as_string_view();
+}
 
 /// --------------------------------------------------------------------------
 /// Converts a string representation of a SQL query type to its corresponding enum value. The comparison is case-insensitive.

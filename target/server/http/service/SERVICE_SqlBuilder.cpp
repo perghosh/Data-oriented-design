@@ -14,6 +14,32 @@
 
 NAMESPACE_SERVICE_BEGIN
 
+
+/// @brief Get value for a given argument name
+bool CSqlBuilder::GetValue( const std::string_view& stringName, gd::variant_view& variantviewValue ) const
+{
+   auto it_ = m_argumentsValues.find( stringName );
+   if( it_ != nullptr )
+   {
+      variantviewValue = *it_;
+      return true;
+   }
+   return false;
+}
+
+/// @brief Get value for a given argument name
+bool CSqlBuilder::GetValue( const std::string_view& stringName, gd::variant& variantValue ) const
+{
+   auto it_ = m_argumentsValues.find( stringName );
+   if( it_ != nullptr )
+   {
+      variantValue = *it_;
+      return true;
+   }
+   return false;
+}
+
+
 std::pair<bool, std::string> CSqlBuilder::Initialize( gd::argument::shared::arguments arguments_ )
 {
    m_argumentsValues = arguments_;
@@ -27,6 +53,8 @@ std::pair<bool, std::string> CSqlBuilder::Initialize( gd::argument::shared::argu
 
    return { true, "" };
 }
+
+
 
 static std::pair<bool, std::string> EXPRESSION_GetArgument_s( const std::vector<gd::expression::value>& vectorArgument, gd::expression::value* pvalueReturn )
 {                                                                                                  assert(vectorArgument.size() > 1);

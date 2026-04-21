@@ -11,6 +11,7 @@
 #include "gd/gd_uuid.h"
 #include "gd/gd_log_logger.h"
 #include "gd/gd_table_arguments.h"
+#include "gd/gd_sql_query.h"
 
 class CApplication;
 class CDocument;
@@ -68,10 +69,15 @@ public:
    bool IsSqlReady() const; ///< check if query is ready to be built
    std::string& GetSql() { return m_stringSql; }
 
+   void SetValues( const gd::argument::shared::arguments& arguments_ ) { m_argumentsValues = arguments_; } ///< set values for query
+   bool GetValue( const std::string_view& stringName, gd::variant_view& variantviewValue ) const; ///< get value for query
+   bool GetValue( const std::string_view& stringName, gd::variant& variantValue ) const; ///< get value for query
+
+
 // @API [tag: operation]
    std::pair<bool, std::string> Initialize( gd::argument::shared::arguments arguments_ ); ///< initialize query manager
    std::pair<bool, std::string> Initialize( gd::argument::shared::arguments arguments_, std::string_view stringSql ); ///< initialize query manager
-   
+
    std::pair<bool, std::string> Build( std::string& stringSqlReady ); ///< build query
 
 protected:
@@ -87,6 +93,7 @@ public:
    enumType m_eType = eTypeUnknown; ///< type of query
    std::string m_stringSql;           ///< query template or raw query
    gd::argument::shared::arguments m_argumentsValues;
+   gd::sql::query m_query; ///< query object used to build query, it is set when Initialize is called
 
 // @API [tag: free-functions]
 public:

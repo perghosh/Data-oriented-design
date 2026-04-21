@@ -739,6 +739,9 @@ public:
    /// get cell value using name or column index, if name then column gets index to speed up the process next time value is returned
    gd::variant_view cell_get_variant_view( uint64_t uRow, std::variant< unsigned, std::string_view >* pvariantColumn ) const noexcept;
 
+   /// get cell value using column index, if value not found in column it tries to find it in arguments
+   gd::variant_view cell_get_variant_view( uint64_t uRow, unsigned uColumnIndex, tag_not_null ) const noexcept;
+   /// get cell value using name to column, if value not found in column or column do not exists it tries to find it in arguments
    gd::variant_view cell_get_variant_view( uint64_t uRow, const std::string_view& stringName, tag_not_null ) const noexcept;
 
    /// get cell value using column indexes in container, values are placed in argumentsValue with name and value
@@ -756,8 +759,9 @@ public:
    void cell_set( uint64_t uRow, unsigned uColumn, const gd::variant_view& variantviewValue, tag_convert );
    void cell_set( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_convert );
    void cell_set( uint64_t uRow, const std::string_view& stringAlias, const gd::variant_view& variantviewValue, tag_convert, tag_alias );
-   void cell_set( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_spill );
-   void cell_set( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_spill, tag_convert );
+   void cell_set( uint64_t uRow, unsigned uColumn, const gd::variant_view& variantviewValue, tag_spill );
+   void cell_set( uint64_t uRow, std::string_view stringName, const gd::variant_view& variantviewValue, tag_spill );
+   void cell_set( uint64_t uRow, std::string_view stringName, const gd::variant_view& variantviewValue, tag_spill, tag_convert );
    void cell_set( uint64_t uRow, unsigned uColumn, const std::vector<gd::variant_view>& vectorValue );
    void cell_set( uint64_t uRow, unsigned uColumn, const std::vector<gd::variant_view>& vectorValue, tag_convert );
    void cell_set( uint64_t uRow, const std::string_view& stringName, const std::vector<gd::variant_view>& vectorValue ) { cell_set( uRow, column_get_index(stringName), vectorValue ); }

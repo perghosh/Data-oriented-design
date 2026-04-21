@@ -47,6 +47,7 @@ void RegisterRequest( sol::state& stateLua )
 {
 	stateLua.new_usertype<Request>(
       "Request", sol::constructors<Request()>(),
+      "CreateSql", &Request::CreateSql,
       "GetApplication", &Request::GetApplication,
       "GetDocument", &Request::GetDocument,
       "GetDatabase", &Request::GetDatabase,
@@ -68,6 +69,17 @@ void RegisterCursor( sol::state& stateLua )
       "Close", &Cursor::Close,
       "GetValue", &Cursor::GetValue,
       "GetTable", &Cursor::GetTable
+   );
+}
+
+void RegisterSql( sol::state& stateLua )
+{
+   stateLua.new_usertype<Sql>(
+      "Sql", sol::constructors<Sql()>(),
+      "AddColumnValue", &Sql::AddColumnValue,
+      "AddValues", &Sql::AddValues,
+      "AsInsert", &Sql::AsInsert,
+      "GetValue", &Sql::GetValue
    );
 }
 

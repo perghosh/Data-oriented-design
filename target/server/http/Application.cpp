@@ -1027,6 +1027,7 @@ void CApplication::DOCUMENT_Clear()
    m_vectorDocument.clear();
 }
 
+/// @brief Initialize Lua pools from a JSON string configuration.
 std::pair<bool, std::string> CApplication::LUA_Initialize( std::string_view stringLuaPool )
 {
    std::array<std::byte, 128> buffer_; // Buffer for Lua initialization, adjust size as needed
@@ -1038,6 +1039,17 @@ std::pair<bool, std::string> CApplication::LUA_Initialize( std::string_view stri
    return LUA_Initialize( argumentsLuaPool );
 }
 
+/**  -------------------------------------------------------------------------- LUA_Initialize
+ * @brief Initialize Lua pools from `argumentsLuaPool`.
+ *
+ * Reads pool sizes from `argumentsLuaPool` and configures Lua state pools used by the HTTP application.
+ * Currently, this method initializes the **core** pool (`"core"`) and registers the standard
+ * application bindings for each state in that pool.
+ *
+ * @param argumentsLuaPool Parsed Lua pool configuration arguments.
+ * @return std::pair<bool, std::string> `{ true, "" }` if initialization succeeds; otherwise
+ *                                      `{ false, "<error message>" }` (reserved for future validation paths).
+ */
 std::pair<bool, std::string> CApplication::LUA_Initialize(const gd::argument::arguments& argumentsLuaPool)
 {
    // ## Initialize Lua script pool based on the provided arguments
@@ -1054,6 +1066,7 @@ std::pair<bool, std::string> CApplication::LUA_Initialize(const gd::argument::ar
          LUA::RegisterDatabase( state_ );
          LUA::RegisterRequest( state_ );
          LUA::RegisterCursor( state_ );
+         LUA::RegisterSql( state_ );
          LUA::RegisterExpression( state_ );
          LUA::RegisterTable( state_ );
       }, LUA::LuaStatePool::eLuaFeatureCore );

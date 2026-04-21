@@ -283,30 +283,28 @@ public:
    // -- shared-context constructors (preferred for chained endpoints) -------
 
    CAPI_Base( CAPIContext& context, const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsParameter )
-      : m_vectorCommand( vectorCommand ), m_argumentsParameter( argumentsParameter ), m_pcontext( &context ) {}
+      : m_vectorCommand( vectorCommand ), m_argumentsQS( argumentsParameter ), m_pcontext( &context ) {}
 
    CAPI_Base( CAPIContext& context, const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsParameter, unsigned uCommandIndex )
-      : m_vectorCommand( vectorCommand ), m_uCommandIndex( uCommandIndex ), m_argumentsParameter( argumentsParameter ), m_pcontext( &context ) { assert( uCommandIndex < vectorCommand.size() ); }
+      : m_vectorCommand( vectorCommand ), m_uCommandIndex( uCommandIndex ), m_argumentsQS( argumentsParameter ), m_pcontext( &context ) { assert( uCommandIndex < vectorCommand.size() ); }
 
    CAPI_Base( CAPIContext& context, std::vector<std::string_view>&& vectorCommand,gd::argument::arguments&& argumentsParameter )
-      : m_vectorCommand( std::move( vectorCommand ) ) , m_argumentsParameter( std::move( argumentsParameter ) ), m_pcontext( &context ) {}
-
-   // -- legacy / convenience constructors (local context owned by this object) --
+      : m_vectorCommand( std::move( vectorCommand ) ) , m_argumentsQS( std::move( argumentsParameter ) ), m_pcontext( &context ) {}
 
    CAPI_Base( const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsParameter )
-      : m_vectorCommand( vectorCommand ), m_argumentsParameter( argumentsParameter ), m_pcontext( &m_contextOwned ) {}
+      : m_vectorCommand( vectorCommand ), m_argumentsQS( argumentsParameter ), m_pcontext( &m_contextOwned ) {}
 
    CAPI_Base( const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsParameter,unsigned uCommandIndex )
-      : m_vectorCommand( vectorCommand ), m_uCommandIndex( uCommandIndex ), m_argumentsParameter( argumentsParameter ), m_pcontext( &m_contextOwned ) { assert( uCommandIndex < vectorCommand.size() ); }
+      : m_vectorCommand( vectorCommand ), m_uCommandIndex( uCommandIndex ), m_argumentsQS( argumentsParameter ), m_pcontext( &m_contextOwned ) { assert( uCommandIndex < vectorCommand.size() ); }
 
    CAPI_Base( std::vector<std::string_view>&& vectorCommand, gd::argument::arguments&& argumentsParameter )
-      : m_vectorCommand( std::move( vectorCommand ) ) , m_argumentsParameter( std::move( argumentsParameter ) ), m_pcontext( &m_contextOwned ) {}
+      : m_vectorCommand( std::move( vectorCommand ) ) , m_argumentsQS( std::move( argumentsParameter ) ), m_pcontext( &m_contextOwned ) {}
 
    CAPI_Base( CApplication* papplication, const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsParameter )
-      : m_vectorCommand( vectorCommand ), m_argumentsParameter( argumentsParameter ), m_contextOwned( papplication ), m_pcontext( &m_contextOwned ) {}
+      : m_vectorCommand( vectorCommand ), m_argumentsQS( argumentsParameter ), m_contextOwned( papplication ), m_pcontext( &m_contextOwned ) {}
 
    CAPI_Base( CApplication* papplication, const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsParameter, unsigned uCommandIndex )
-      : m_vectorCommand( vectorCommand ) , m_uCommandIndex( uCommandIndex ) , m_argumentsParameter( argumentsParameter ) , m_contextOwned( papplication ), m_pcontext( &m_contextOwned ) { assert( uCommandIndex < vectorCommand.size() ); }
+      : m_vectorCommand( vectorCommand ) , m_uCommandIndex( uCommandIndex ) , m_argumentsQS( argumentsParameter ) , m_contextOwned( papplication ), m_pcontext( &m_contextOwned ) { assert( uCommandIndex < vectorCommand.size() ); }
 
    // copy - explicitly deleted; class is move-only
    CAPI_Base( const CAPI_Base& ) = delete;
@@ -325,10 +323,10 @@ private:
 public:
    /// Get argument by name (first value for that name from URI parameters)
    gd::variant_view operator[]( const char* piName ) { 
-      return m_argumentsParameter.get_argument( std::string_view( piName ) ).as_variant_view(); }
+      return m_argumentsQS.get_argument( std::string_view( piName ) ).as_variant_view(); }
 
    gd::variant_view operator[]( std::tuple<std::string_view, size_t> index_ ) { 
-      return m_argumentsParameter.find_argument( std::get<0>( index_ ), (unsigned)std::get<1>( index_ ) ).as_variant_view(); }
+      return m_argumentsQS.find_argument( std::get<0>( index_ ), (unsigned)std::get<1>( index_ ) ).as_variant_view(); }
 
 // ## methods ----------------------------------------------------------------
 public:
@@ -374,9 +372,9 @@ public:
 
    // -- parameter helpers ---------------------------------------------------
 
-   gd::variant_view Get( std::string_view stringName ) const { return m_argumentsParameter.get_argument( stringName ); }
+   gd::variant_view Get( std::string_view stringName ) const { return m_argumentsQS.get_argument( stringName ); }
 
-   gd::variant_view GetArgument( std::string_view stringName ) const { return m_argumentsParameter.get_argument( stringName ); }
+   gd::variant_view GetArgument( std::string_view stringName ) const { return m_argumentsQS.get_argument( stringName ); }
    gd::variant_view GetNextArgument( std::string_view stringName );
 
    /// Count the uses of a keyed argument based on current command index
@@ -388,9 +386,9 @@ public:
    /// occurrences of the same key across chained operations)
    void IncrementArgumentCounter( std::string_view stringName );
 
-   /// True if the named argument exists in m_argumentsParameter
+   /// True if the named argument exists in m_argumentsQS
    bool Exists( const std::string_view& stringName ) const;
-   const gd::argument::arguments& GetParameterArguments() const { return m_argumentsParameter; }
+   const gd::argument::arguments& GetQSArguments() const { return m_argumentsQS; }
 
    // -- global argument helpers (forwarded to context) ----------------------
 
@@ -412,7 +410,7 @@ public:
    std::string_view               m_stringCommand;        ///< active command segment (set by Execute loop)
    std::vector<std::string_view>  m_vectorCommand;        ///< full command path segments parsed from URL
    unsigned                       m_uCommandIndex{};      ///< index into m_vectorCommand currently being dispatched
-   gd::argument::arguments        m_argumentsParameter;   ///< per-request URL parameters
+   gd::argument::arguments        m_argumentsQS;          ///< per-request URL parameters @NOTE [tag: url] [description: QS = query string; these are not shared across chained sections, but each section can read them as needed]
    std::string_view               m_stringBody;           ///< raw request body (XML/JSON forwarded from router)
 
    // Argument counter – small stack buffer avoids heap for typical use

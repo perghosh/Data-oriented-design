@@ -79,6 +79,21 @@ gd::argument::arguments ConvertToArguments_g( const sol::table& tableValue )
    return argumentsValue; 
 }
 
+gd::argument::shared::arguments ConvertToSharedArguments_g( const sol::table& tableValue )
+{
+   gd::argument::shared::arguments argumentsValue;
+   for( auto& it : tableValue )
+   {
+      const auto& value_ = it.second;
+      sol::type type_ = value_.get_type();
+      if( type_ == sol::type::number ) { argumentsValue.append( it.first.as<std::string_view>(), value_.as<int64_t>()); }
+      else if( type_ == sol::type::string ) { argumentsValue.append( it.first.as<std::string_view>(), value_.as<std::string_view>()); }
+   }
+
+   return argumentsValue; 
+}
+
+
 void ConvertToArguments_g( const sol::table& tableValue, gd::argument::arguments& argumentsValue )
 {
    for( const auto& it : tableValue )
@@ -750,6 +765,75 @@ std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> Expression::Cal
    return ConvertToAny_g( valueReturn );
 }
 
+// ----------------------------------------------------------------------------
+// ------------------------------------------------------------------------ Sql
+// ----------------------------------------------------------------------------
+
+/// Get value for name
+std::string Sql::GetValue( const std::string_view& stringName ) const
+{
+   auto iRow = m_psql->FindRowForColumnName( stringName ); // check if column name exists, if not exception is thrown
+   if( iRow < 0 ) { throw sol::error( std::format( "column name not found: {}", stringName ) ); }
+
+   auto stringValue = m_psql->GetValue( iRow );
+   return std::string( stringValue );
+}
+
+/// Set all key value pairs. -------------------------------------------------
+void Sql::AddValues( const sol::table& tableValues )
+{
+   auto argumentsValue = ConvertToArguments_g( tableValues );
+   m_psql->AddValue( argumentsValue );
+}
+
+void Sql::AddColumnValue( const sol::table& tableField )
+{
+   auto argumentsValue = ConvertToArguments_g( tableField );
+
+   unsigned uFlags = 0;
+   auto result_ = m_psql->Validate( argumentsValue, &uFlags );                // validate that column names (keys)
+   if( result_.first == false ) { throw sol::error( result_.second ); }
+   if( (uFlags & CRENDERSql::eColumnFlagColumn) != CRENDERSql::eColumnFlagColumn ) { throw sol::error( "column name not found" ); }
+
+   m_psql->AddValue( argumentsValue );
+}
+
+/// @brief Build sql insert string -------------------------------------------
+std::string Sql::AsInsert( std::optional<sol::table> table_ ) const
+{
+   std::array<std::byte, 128> buffer_;
+   gd::argument::arguments argumentsValue( buffer_ );
+
+   if( table_.has_value() == true )
+   {
+      ConvertToArguments_g( table_.value(), argumentsValue );
+      if( argumentsValue.exists("returning") == true ) { m_psql->AddProperty( "returning", argumentsValue["returning"].as_string() ); }
+
+      if( argumentsValue.exists( "table" ) == true )
+      {
+         std::string stringTable = argumentsValue["table"].as_string();
+         m_psql->FillColumn( CRENDERSql::eColumnFieldTable, stringTable );
+      }
+   }
+
+   std::string stringInsert;
+   auto result_ = m_psql->ToSqlInsert( stringInsert );
+   if( result_.first == false ) { throw sol::error( result_.second ); }
+   return stringInsert;
+}
+
+/// Build sql string, this will return built sql string, if there is error then exception is thrown with error message.
+std::string Sql::Build() const
+{
+   std::string stringResult;
+   /*
+   auto result_ = m_psqlbuilder->Build( stringResult );
+   if( result_.first == false ) { throw sol::error( result_.second ); }
+   */
+   return stringResult;
+}
+
+
 
 // ----------------------------------------------------------------------------
 // ------------------------------------------------------------------- Database
@@ -1111,6 +1195,16 @@ void Application::Message(const std::string_view & stringTypeOrMessage, std::opt
 // -------------------------------------------------------------------- Request
 // ----------------------------------------------------------------------------
 
+Request::Request( CAPIContext* pcontext ) 
+{ 
+   m_pcontext = pcontext; 
+   auto* pdocument = m_pcontext->GetDocument();
+   if( pdocument != nullptr )
+   {
+      m_psql = std::move( std::make_unique<CRENDERSql>( pdocument ) );
+      m_psql->Initialize();
+   }
+}
 
 Application Request::GetApplication()
 {
@@ -1168,6 +1262,12 @@ void Request::SetGlobalVariable( std::string_view stringName, std::variant<int64
    }
 
    m_pcontext->SetGlobal( stringName, variantValue.as_variant_view() );
+}
+
+/// @brief Create SQL object that can be used to build sql string
+Sql Request::CreateSql()
+{
+   return Sql( m_psql.get() );
 }
 
 LUA_END

@@ -124,19 +124,19 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Execute()
    std::array<std::byte, 128> buffer_;
    gd::argument::arguments argumentsOptions(buffer_);
 
-   std::string stringName = GetParameterArguments()["name"].as_string();
-   std::string stringFormat = GetParameterArguments()["format"].as_string();
+   std::string stringName = GetQSArguments()["name"].as_string();
+   std::string stringFormat = GetQSArguments()["format"].as_string();
    CDocument* pdocument = GetDocument();
 
    if( Exists( "xml" ) )
    {
-      std::string stringTable = GetParameterArguments()["table"].as_string();
+      std::string stringTable = GetQSArguments()["table"].as_string();
       if( stringTable.empty() == false ) { argumentsOptions["table"] = stringTable; }
 
       argumentsOptions["form"] = "attribute";
       gd::argument::arguments argumentsReturn;
       argumentsReturn.reserve( 64 );
-      pugi::xml_document* pxmldocument = GetParameterArguments()["xml"].get_pointer<pugi::xml_document>(); // get pointer to xml pointer that is prepared
+      pugi::xml_document* pxmldocument = GetQSArguments()["xml"].get_pointer<pugi::xml_document>(); // get pointer to xml pointer that is prepared
       XML_BulkInsert( argumentsOptions, pxmldocument, pdocument, &argumentsReturn );
       Objects().Add( argumentsReturn );
    }
@@ -173,8 +173,8 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Execute()
  */
 std::pair<bool, std::string> CAPIDatabase::Execute_Create()
 {
-   std::string stringType = m_argumentsParameter["type"].as_string();
-   std::string stringName = m_argumentsParameter["name"].as_string();
+   std::string stringType = m_argumentsQS["type"].as_string();
+   std::string stringName = m_argumentsQS["name"].as_string();
 
    if( stringType.empty() == true || stringType == "sqlite" )
    {
@@ -216,10 +216,10 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Create()
 std::pair<bool, std::string> CAPIDatabase::Execute_Open()
 {
    gd::database::database_i* pdatabaseOpen = nullptr;
-   std::string stringType = m_argumentsParameter["type"].as_string();
-   std::string stringName = m_argumentsParameter["name"].as_string();
+   std::string stringType = m_argumentsQS["type"].as_string();
+   std::string stringName = m_argumentsQS["name"].as_string();
 
-   std::string stringDocument = m_argumentsParameter[{ {"document"}, {"doc"} }].as_string();
+   std::string stringDocument = m_argumentsQS[{ {"document"}, {"doc"} }].as_string();
 
 	if(stringDocument.empty() == true) stringDocument = "default";
 
@@ -278,7 +278,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Query()
    auto* pdatabase = pdocument->GetDatabase();                                // get database from document, this connection has to be opened before
    if( pdatabase == nullptr ) return { false, "no database connection in document: " + std::string( pdocument->GetName() ) };
 
-   std::string stringQuery = m_argumentsParameter["query"].as_string();       // get query to execute
+   std::string stringQuery = m_argumentsQS["query"].as_string();       // get query to execute
    if( stringQuery.empty() == true ) { return { false, "no query specified to execute" }; }
 
    auto result_ = pdatabase->execute( stringQuery );                          // execute query on database
@@ -427,7 +427,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
 
       // ## Process code if any
       META::CQueries* pqueries = pdocument->QUERIES_Get();
-      
+
       auto vectorCode = pqueries->GetArgumentsValues( stringQuery, "code" );  // get code for insert
       if( vectorCode.empty() == false )
       {
@@ -442,6 +442,17 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
          std::unique_ptr<LUA::Document> pdocument = std::make_unique<LUA::Document>( GetDocument(), pdatabase ); // document information, note that the database isn't same as database inside document, this is the global database.
          state_["doc"] = std::move( pdocument );
          std::unique_ptr<LUA::Request> prequest = std::make_unique<LUA::Request>( GetContext() ); // request information, holds user data etc for current request to server.
+
+         if( Exists( "values" ) == true )
+         {
+            std::array<std::byte, 128> buffer_;
+            gd::argument::arguments argumentsValues(buffer_);
+            std::string stringValues = GetArgument("values").as_string();
+            auto psql_ = prequest->GetSql_();
+            auto result_ = psql_->AddValues( stringValues, gd::types::tag_json{} );
+            if( result_.first == false ) { return { false, "failed to add values for code execution: " + result_.second }; }
+         }
+
          state_["request"] = std::move( prequest );
 
          std::string stringError;
@@ -468,13 +479,13 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
          gd::argument::arguments argumentsOptions(buffer_);
          argumentsOptions["query"] = stringQuery;
 
-         std::string stringTable = GetParameterArguments()["table"].as_string();
+         std::string stringTable = GetQSArguments()["table"].as_string(); // get table from query string
          if( stringTable.empty() == false ) { argumentsOptions["table"] = stringTable; }
 
          argumentsOptions["form"] = "attribute";
          gd::argument::arguments argumentsReturn;
          argumentsReturn.reserve( 128 );
-         pugi::xml_document* pxmldocument = GetParameterArguments()["xml"].get_pointer<pugi::xml_document>(); // get pointer to xml pointer that is prepared
+         pugi::xml_document* pxmldocument = GetQSArguments()["xml"].get_pointer<pugi::xml_document>(); // get pointer to xml pointer that is prepared
          XML_BulkInsert( argumentsOptions, pxmldocument, pdocument, &argumentsReturn );
          Objects().Add( argumentsReturn );
       }

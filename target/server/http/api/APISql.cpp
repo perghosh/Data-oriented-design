@@ -33,7 +33,7 @@ std::pair<bool, std::string> CAPISql::Execute()
 
    std::pair<bool, std::string> result_(true,"");
 
-   CRouter::Encode_s( m_argumentsParameter, { "query" } );
+   CRouter::Encode_s( m_argumentsQS, { "query" } );
 
    for( std::size_t uIndex = 0; uIndex < m_vectorCommand.size(); ++uIndex )
    {
@@ -80,7 +80,7 @@ std::pair<bool, std::string> CAPISql::Execute_Add()
    // TODO: Implement SQL query execution logic
    
    // Get query from parameters
-   std::string stringQuery = m_argumentsParameter["query"].as_string();
+   std::string stringQuery = m_argumentsQS["query"].as_string();
 
    CDocument* pdocument = GetDocument();
 

@@ -1956,6 +1956,35 @@ gd::variant_view table::cell_get_variant_view(uint64_t uRow, std::variant<unsign
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief get first non null value for column index
+ * 
+ * This tries to find value among fixed columns first, if not found there or if
+ * value is null (not set) it tries to find the value in arguments. It takes the name
+ * for column and searches inside arguments for that name.
+ * 
+ * @param uRow index to row where cell value is found
+ * @param uColumnIndex column index for column where cell value is found
+ * @return variant_view value is returned in variant view
+ */
+gd::variant_view table::cell_get_variant_view( uint64_t uRow, unsigned uColumnIndex, tag_not_null ) const noexcept
+{                                                                                                  assert( uRow < m_uReservedRowCount ); assert( uColumnIndex < m_pcolumns->size() );
+   if( cell_is_null( uRow, uColumnIndex ) == false )
+   {
+      return cell_get_variant_view( uRow, uColumnIndex );
+   }
+
+   gd::argument::shared::arguments* pargumentsRow = (gd::argument::shared::arguments*)row_get_arguments_meta(uRow);
+   if( *(intptr_t*)pargumentsRow != 0 )
+   {
+      auto stringName = column_get_name( uColumnIndex );
+      return (*pargumentsRow)[stringName].as_variant_view();
+   }
+
+   return gd::variant_view();
+}
+
+
+/** ---------------------------------------------------------------------------
  * @brief get first non null value for name
  * 
  * This tries to find value among fixed columns first, if not found there or if
@@ -2135,7 +2164,29 @@ void table::cell_set( uint64_t uRow, const std::string_view& stringAlias, const 
  * @param stringName column name (column has to have a name)
  * @param variantviewValue value set to cell and cell type need to match
  */
-void table::cell_set( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_spill )
+void table::cell_set( uint64_t uRow, unsigned uColumnIndex, const gd::variant_view& variantviewValue, tag_spill )
+{                                                                                                  assert( uRow < m_uReservedRowCount ); 
+                                                                                                   assert( column_validate_type( uColumnIndex, variantviewValue ) == true );
+   if( variantviewValue.is_primitive() == true || column_validate_size( uColumnIndex, variantviewValue ) == true )
+   {
+      cell_set(uRow, uColumnIndex, variantviewValue);
+   }
+   else
+   {
+      std::string_view stringName = column_get_name( uColumnIndex );
+      cell_set_argument( uRow, stringName, variantviewValue );
+   }
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Set cell value and if value is too large it "spills" into a new value in arguments for row
+ * 
+ * @param uRow row index for cell
+ * @param stringName column name (column has to have a name)
+ * @param variantviewValue value set to cell and cell type need to match
+ */
+void table::cell_set( uint64_t uRow, std::string_view stringName, const gd::variant_view& variantviewValue, tag_spill )
 {                                                                                                  assert( uRow < m_uReservedRowCount ); 
    int iColumnIndex = column_find_index( stringName );
    if( iColumnIndex != -1 )
@@ -2162,7 +2213,7 @@ void table::cell_set( uint64_t uRow, const std::string_view& stringName, const g
  * @param stringName column name (column has to have a name)
  * @param variantviewValue value set to cell and cell type need to match
  */
-void table::cell_set( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_spill, tag_convert )
+void table::cell_set( uint64_t uRow, std::string_view stringName, const gd::variant_view& variantviewValue, tag_spill, tag_convert )
 {                                                                                                  assert( uRow < m_uReservedRowCount ); 
    int iColumnIndex = column_find_index( stringName );
    if( iColumnIndex != -1 )

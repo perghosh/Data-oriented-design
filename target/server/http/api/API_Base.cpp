@@ -72,7 +72,7 @@ void CAPI_Base::common_construct( CAPI_Base&& o ) noexcept
    m_stringCommand          = o.m_stringCommand;
    m_vectorCommand          = std::move( o.m_vectorCommand );
    m_uCommandIndex          = std::exchange( o.m_uCommandIndex, 0 );
-   m_argumentsParameter     = std::move( o.m_argumentsParameter );
+   m_argumentsQS            = std::move( o.m_argumentsQS );
    m_stringBody             = o.m_stringBody;
    m_arrayBufferCounter     = std::move( o.m_arrayBufferCounter );    // NOTE: was self-moving in original — fixed
    m_argumentsArgumentCount = std::move( o.m_argumentsArgumentCount );
@@ -112,7 +112,7 @@ CDocument* CAPI_Base::GetDocument()
 
    CApplication* papplication = m_pcontext->GetApplication();
 
-   std::string stringDocument = m_argumentsParameter[{ {"document"}, {"doc"} }].as_string();
+   std::string stringDocument = m_argumentsQS[{ {"document"}, {"doc"} }].as_string();
    if( stringDocument.empty() == true ) stringDocument = "default";
 
    CDocument* pdocument = papplication->DOCUMENT_Get( stringDocument );
@@ -226,12 +226,12 @@ void CAPI_Base::IncrementArgumentCounter( std::string_view stringName )
 }
 
 /** -------------------------------------------------------------------------- CAPI_Base::Exists
- * @brief Check whether a named argument exists in the per-request parameters.
+ * @brief Check whether a named argument exists in the per-request query string.
  *
  * @param stringName  Argument name to test.
- * @return            True if present in m_argumentsParameter.
+ * @return            True if present in m_argumentsQS.
  */
 bool CAPI_Base::Exists( const std::string_view& stringName ) const
 {
-   return m_argumentsParameter.exists( stringName );
+   return m_argumentsQS.exists( stringName );
 }
