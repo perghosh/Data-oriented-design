@@ -769,13 +769,13 @@ std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> Expression::Cal
 // ------------------------------------------------------------------------ Sql
 // ----------------------------------------------------------------------------
 
-/// Get value for name
+/// Get value for name ------------------------------------------------------
 std::string Sql::GetValue( const std::string_view& stringName ) const
 {
    auto iRow = m_psql->FindRowForColumnName( stringName ); // check if column name exists, if not exception is thrown
    if( iRow < 0 ) { throw sol::error( std::format( "column name not found: {}", stringName ) ); }
 
-   auto stringValue = m_psql->GetValue( iRow );
+   std::string_view stringValue = m_psql->GetValue( (uint64_t)iRow );
    return std::string( stringValue );
 }
 
@@ -786,16 +786,42 @@ void Sql::AddValues( const sol::table& tableValues )
    m_psql->AddValue( argumentsValue );
 }
 
-void Sql::AddColumnValue( const sol::table& tableField )
+void Sql::AddColumn( const sol::table& tableField )
 {
    auto argumentsValue = ConvertToArguments_g( tableField );
 
+   // ## Verify column information and that name for column is found, this is needed because column name is used to know what column to set value for
    unsigned uFlags = 0;
-   auto result_ = m_psql->Validate( argumentsValue, &uFlags );                // validate that column names (keys)
+   auto result_ = m_psql->Validate( argumentsValue, &uFlags );  // validate that column names (keys)
    if( result_.first == false ) { throw sol::error( result_.second ); }
    if( (uFlags & CRENDERSql::eColumnFlagColumn) != CRENDERSql::eColumnFlagColumn ) { throw sol::error( "column name not found" ); }
 
    m_psql->AddValue( argumentsValue );
+}
+
+void Sql::SetColumn( std::variant<uint64_t, std::string_view> column_, const sol::table& tableField )
+{
+   auto argumentsValue = ConvertToArguments_g( tableField );
+
+   uint64_t uRow = 0;
+
+   // ## Verify column information and that name for column is found, this is needed because column name is used to know what column to set value for
+   auto result_ = m_psql->Validate( argumentsValue );                         // validate that column names (keys)
+   if( result_.first == false ) { throw sol::error( result_.second ); }
+
+   if( column_.index() == 1 )
+   {
+      auto iRow = m_psql->FindRowForColumnName( std::get<1>( column_ ) ); // check if column name exists, if not exception is thrown
+      if( iRow == (unsigned)-1 ) { throw sol::error( std::format( "not found: {}", std::get<1>( column_ ) ) ); }
+      uRow = (uint64_t)iRow;
+   }
+   else
+   {
+      uRow = std::get<0>( column_ );
+      if( uRow >= m_psql->Size() ) { throw sol::error( std::format( "index out of range: {}, max: {}", uRow, m_psql->Size() - 1 ) ); }
+   }
+
+   m_psql->SetValue( uRow, argumentsValue );
 }
 
 /// @brief Build sql insert string -------------------------------------------
@@ -906,7 +932,7 @@ void Database::Execute( const std::string_view& stringSql )
 
 /// Execute sql statement and return value, this is for sql statements that return value or values, using `returns`
 std::variant<int64_t, std::string, double, bool, sol::table, sol::lua_nil_t> Database::ExecuteReturn( const std::string_view& stringSql )
-{
+{                                                                                                  assert( m_pdatabase != nullptr );
    std::array<std::byte, 128> buffer_;
    gd::argument::arguments argumentsKey( buffer_ );
 

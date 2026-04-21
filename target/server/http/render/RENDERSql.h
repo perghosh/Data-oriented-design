@@ -122,20 +122,28 @@ public:
 
 // @API [tag: operation]
 
+   /// Initializes the internal state, you have to call this before using the object
    void Initialize();
 
    std::pair<bool,std::string> Add( const pugi::xml_node& xmlnodeValues );
 
    /// Simplest form, adds value with name
    void AddValue( std::string_view stringName, gd::variant_view variantviewValue );
+   /// Add single column to internal table with columns, keys are matched against column names
    void AddValue( const gd::argument::arguments& argumentsField );
+   /// Add json formated object column to internal table with columns, keys are matched against column names
    std::pair<bool,std::string> AddValue( std::string_view stringJson, gd::types::tag_json );
+
+   std::pair<bool, std::string> SetValue( std::string_view stringColumn, const gd::argument::arguments& argumentsColumn );
+   void SetValue( uint64_t uRow, const gd::argument::arguments& argumentsColumn );
 
    /// Gets value for row, returns empty string view if value is not string or row is out of range
    std::string_view GetValue( uint64_t uRow ) const;
 
    /// Finds row for column name, returns -1 if not found
    int64_t FindRowForColumnName( std::string_view stringName ) const;
+
+   // @API [tag: add, simple] [description: Add values for columns, simple and only use key value to identify column value is added for]
 
    /// Add multiple values for columns
    void AddValues( const gd::argument::arguments& argumentsField );
@@ -161,6 +169,13 @@ public:
 
    /// Fill up values in internal table where they are empty
    void FillColumn( enumColumnField eColumnField, gd::variant_view variantviewValue );
+
+   // @API [tag: utility] [description: Various utility functions]
+
+   size_t Size() const { return m_tableField.size(); }
+   bool Empty() const { return m_tableField.get_row_count() == 0u; }
+
+   // @API [tag: sql] [description: Generate SQL queries]
    
    std::pair<bool,std::string> GetQuery( enumSqlQueryType eSqlQueryType, std::string& stringQuery );
    std::pair<bool, std::string> GetQuery( std::string_view stringQueryType, std::string& stringQuery ) { return GetQuery( QueryType_s( stringQueryType ), stringQuery ); }
@@ -183,10 +198,9 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
-   const CDocument* m_pdocument = nullptr;
-   gd::sql::enumSqlDialect m_eSqlDialect = gd::sql::eSqlDialectUnknown;
+   const CDocument* m_pdocument = nullptr; ///< pointer to document, used to get arguments for query, acces internal data in web server
+   gd::sql::enumSqlDialect m_eSqlDialect = gd::sql::eSqlDialectUnknown; /// database dialect, used to determine how the syntax of sql statements should be
    gd::table::arguments::table m_tableField;   ///< Values or Names used to produce query
-
    gd::argument::shared::arguments m_argumentsProperty; ///< arguments used for specific properties of query, this is used for example to store table name, where conditions, etc. as arguments instead of columns in table
 
    inline static gd::table::detail::columns* m_pcolumnsField_s = nullptr; ///< static columns for body
@@ -203,7 +217,7 @@ public:
 /// return value for row, returns empty string view if value is not string or row is out of range
 inline std::string_view CRENDERSql::GetValue( uint64_t uRow ) const {
    if( uRow >= m_tableField.size() ) return std::string_view{};
-   auto value_ = m_tableField.cell_get_variant_view( uRow, eColumnFieldValue, gd::table::tag_not_null{} );  assert( value_.is_string() == true );
+   gd::variant_view value_ = m_tableField.cell_get_variant_view( uRow, eColumnFieldValue, gd::table::tag_not_null{} );  assert( value_.is_string() == true );
    return value_.as_string_view();
 }
 

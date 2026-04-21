@@ -41,7 +41,7 @@ _GD_TABLE_DETAIL_BEGIN
 // ===================================================================== column
 // ============================================================================
 
-/**
+/** @CLASS [tag: table] [name: column] [description: descript column for table classes]
  * \brief column is used to transfer column information between objects
  *
  * With `column` it is possible to collect information from one type of table
@@ -183,13 +183,15 @@ public:
 // ==================================================================== columns
 // ============================================================================
 
-/**                                                                                                @API [tag: class, class, table] [description: columns class holding column information]
+/**                                                                                                @API [tag: table] [description: columns class holding column information]
  * \brief Store information about columns in table
  *
  * This class holds all information about columns used a table. The reason behind
  * storing columns in a separate class is that it is possible to create tables without
  * the overhead of also create information about columns for each table. Columns
  * are shared between tables and can be used to create similar tables with.
+ * 
+ * @NOTE [tag: internal, locked] [description: columns do have refrence counter but can be locked by setting reference to -2, -2 disables counting]
  *
  \code
  \endcode

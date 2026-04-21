@@ -97,7 +97,7 @@ CApplication::~CApplication()
    plogger->clear();
 
    // ## Clean up static items
-   CDocument::Destroy_s();
+   CDocument::Destroy_s();                                                    // @CRITICAL [title: destroy document] [description: destroy static objects that are reused]
 }
 
 

@@ -76,10 +76,11 @@ void RegisterSql( sol::state& stateLua )
 {
    stateLua.new_usertype<Sql>(
       "Sql", sol::constructors<Sql()>(),
-      "AddColumnValue", &Sql::AddColumnValue,
+      "AddColumn", &Sql::AddColumn,
       "AddValues", &Sql::AddValues,
       "AsInsert", &Sql::AsInsert,
-      "GetValue", &Sql::GetValue
+      "GetValue", &Sql::GetValue,
+      "SetColumn", &Sql::SetColumn
    );
 }
 

@@ -436,6 +436,8 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
          auto lua_ = ppool_->Acquire( "core" );                              // acquire lua state from pool to execute code, relased in destructor
          auto& state_ = lua_.get_luastate();
 
+         if( GetContext()->GetDatabase() == nullptr ) { GetContext()->SetDatabase(pdatabase); }
+
          // ## Prepare objects for code execution, these are added to state as global variables
          std::unique_ptr<LUA::Application> papplication = std::make_unique<LUA::Application>( GetApplication(), pdatabase ); // applicaiton information
          state_["app"] = std::move( papplication );    

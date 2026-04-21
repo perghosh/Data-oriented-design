@@ -127,6 +127,7 @@ public:
 
    gd::database::database_i* GetDatabase() { return m_pdatabase; }
    const gd::database::database_i* GetDatabase() const { return m_pdatabase; }
+   void SetDatabase( gd::database::database_i* pdatabase ) { m_pdatabase = pdatabase; }
 
    const session*      GetSession() const { return m_psession; }
    void SetSession( const session* psession );

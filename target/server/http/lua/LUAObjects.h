@@ -138,7 +138,8 @@ public:
 // @API [tag: operation]   
    std::string GetValue( const std::string_view& stringName ) const;
    void AddValues( const sol::table& tableValues );
-   void AddColumnValue( const sol::table& tableField );
+   void AddColumn( const sol::table& tableField );
+   void SetColumn( std::variant<uint64_t, std::string_view> column_, const sol::table& tableField );
 
    std::string AsInsert( std::optional<sol::table> table_ ) const;
 
