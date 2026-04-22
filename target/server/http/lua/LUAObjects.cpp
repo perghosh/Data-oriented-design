@@ -783,7 +783,7 @@ std::string Sql::GetValue( const std::string_view& stringName ) const
 void Sql::AddValues( const sol::table& tableValues )
 {
    auto argumentsValue = ConvertToArguments_g( tableValues );
-   m_psql->AddValue( argumentsValue );
+   m_psql->AddColumn( argumentsValue );
 }
 
 void Sql::AddColumn( const sol::table& tableField )
@@ -796,7 +796,7 @@ void Sql::AddColumn( const sol::table& tableField )
    if( result_.first == false ) { throw sol::error( result_.second ); }
    if( (uFlags & CRENDERSql::eColumnFlagColumn) != CRENDERSql::eColumnFlagColumn ) { throw sol::error( "column name not found" ); }
 
-   m_psql->AddValue( argumentsValue );
+   m_psql->AddColumn( argumentsValue );
 }
 
 void Sql::SetColumn( std::variant<uint64_t, std::string_view> column_, const sol::table& tableField )
@@ -821,7 +821,31 @@ void Sql::SetColumn( std::variant<uint64_t, std::string_view> column_, const sol
       if( uRow >= m_psql->Size() ) { throw sol::error( std::format( "index out of range: {}, max: {}", uRow, m_psql->Size() - 1 ) ); }
    }
 
-   m_psql->SetValue( uRow, argumentsValue );
+   m_psql->SetColumn( uRow, argumentsValue );
+}
+
+/// Remove column by index or name, return index of removed column, if column is not found then return -1
+int64_t Sql::RemoveColumn( std::variant<uint64_t, std::string_view, sol::table> column_ )
+{
+   int64_t iRow = -1;
+   if( column_.index() == 2 )
+   {
+      auto argumentsValue = ConvertToArguments_g( std::get<2>( column_ ) );
+      iRow = m_psql->Find( argumentsValue ); 
+   }
+   else if( column_.index() == 1 )
+   {
+      iRow = m_psql->FindRowForColumnName( std::get<1>( column_ ) ); // check if column name exists, if not exception is thrown
+   }
+   else
+   {
+      uint64_t uRow = std::get<0>( column_ );
+      if( uRow >= m_psql->Size() ) { throw sol::error( std::format( "index out of range: {}, max: {}", uRow, m_psql->Size() - 1 ) ); }
+      iRow = (int64_t)uRow;
+   }
+
+   if( iRow >= 0 ) { m_psql->Remove( (uint64_t)iRow ); }
+   return iRow;
 }
 
 /// @brief Build sql insert string -------------------------------------------
@@ -846,6 +870,25 @@ std::string Sql::AsInsert( std::optional<sol::table> table_ ) const
    auto result_ = m_psql->ToSqlInsert( stringInsert );
    if( result_.first == false ) { throw sol::error( result_.second ); }
    return stringInsert;
+}
+
+std::string Sql::AsSelect( std::optional<sol::table> table_ ) const
+{
+   std::array<std::byte, 128> buffer_;
+   gd::argument::arguments argumentsValue( buffer_ );
+   if( table_.has_value() == true )
+   {
+      ConvertToArguments_g( table_.value(), argumentsValue );
+      if( argumentsValue.exists( "table" ) == true )
+      {
+         std::string stringTable = argumentsValue["table"].as_string();
+         m_psql->FillColumn( CRENDERSql::eColumnFieldTable, stringTable );
+      }
+   }
+   std::string stringSelect;
+   auto result_ = m_psql->ToSqlSelect( stringSelect );
+   if( result_.first == false ) { throw sol::error( result_.second ); }
+   return stringSelect;
 }
 
 /// Build sql string, this will return built sql string, if there is error then exception is thrown with error message.
@@ -1101,6 +1144,11 @@ Table Cursor::GetTable()
 Database Document::GetDatabase()
 {                                                                                                  assert( m_pdatabase != nullptr );
    return Database( (void*)m_pdatabase );
+}
+
+Sql Document::CreateSql()
+{
+   return Sql( m_pdocument );
 }
 
 

@@ -75,7 +75,8 @@ public:
       eColumnFieldValue,         ///< value for column in table
       eColumnFieldType,          ///< gd type value for column value
       eColumnFieldPartType,      ///< sql part type for column, used to separate columns for select, value and where parts of query
-                                 ///< This is used to be able to filter out columns for different parts of query, for example when creating insert query we only need value part, when creating select query we only need select part, etc.     
+                                 ///< This is used to be able to filter out columns for different parts of query, for example when creating insert query we only need value part, when creating select query we only need select part, etc.
+      eColumnFieldRaw,           ///< raw sql statement for column, used when column value is not enough to specify what we want to do with column, for example when we want to specify that column should be used in group by or order by part of query, etc.
       eColumnField_Max
    };
 
@@ -89,6 +90,7 @@ public:
       eColumnFlagValue = 0x20,   ///< column has value specified
       eColumnFlagType = 0x40,    ///< column has type specified
       eColumnFlagPartType = 0x80,///< column has part type specified
+      eColumnFlagRaw = 0x100,    ///< column has raw sql statement specified
    };
    
 // @API [tag: construction]
@@ -128,20 +130,24 @@ public:
    std::pair<bool,std::string> Add( const pugi::xml_node& xmlnodeValues );
 
    /// Simplest form, adds value with name
-   void AddValue( std::string_view stringName, gd::variant_view variantviewValue );
+   void AddColumn( std::string_view stringName, gd::variant_view variantviewValue );
    /// Add single column to internal table with columns, keys are matched against column names
-   void AddValue( const gd::argument::arguments& argumentsField );
+   void AddColumn( const gd::argument::arguments& argumentsField );
    /// Add json formated object column to internal table with columns, keys are matched against column names
-   std::pair<bool,std::string> AddValue( std::string_view stringJson, gd::types::tag_json );
+   std::pair<bool,std::string> AddColumn( std::string_view stringJson, gd::types::tag_json );
 
-   std::pair<bool, std::string> SetValue( std::string_view stringColumn, const gd::argument::arguments& argumentsColumn );
-   void SetValue( uint64_t uRow, const gd::argument::arguments& argumentsColumn );
+   std::pair<bool, std::string> SetColumn( std::string_view stringColumn, const gd::argument::arguments& argumentsColumn );
+   void SetColumn( uint64_t uRow, const gd::argument::arguments& argumentsColumn );
 
    /// Gets value for row, returns empty string view if value is not string or row is out of range
    std::string_view GetValue( uint64_t uRow ) const;
 
    /// Finds row for column name, returns -1 if not found
    int64_t FindRowForColumnName( std::string_view stringName ) const;
+   /// Finds row for column name and part type, returns -1 if not found
+   int64_t Find( const gd::argument::arguments& argumentsColumn ) const;
+   /// Remove row from internal table
+   void Remove( uint64_t uRow ) { assert( uRow < m_tableField.size() ); m_tableField.erase( uRow ); }
 
    // @API [tag: add, simple] [description: Add values for columns, simple and only use key value to identify column value is added for]
 
@@ -180,6 +186,7 @@ public:
    std::pair<bool,std::string> GetQuery( enumSqlQueryType eSqlQueryType, std::string& stringQuery );
    std::pair<bool, std::string> GetQuery( std::string_view stringQueryType, std::string& stringQuery ) { return GetQuery( QueryType_s( stringQueryType ), stringQuery ); }
    
+   std::pair<bool, std::string> ToSqlSelect( std::string& stringQuery );
    std::pair<bool, std::string> ToSqlInsert( std::string& stringQuery );
    std::pair<bool, std::string> ToSqlUpdate( std::string& stringQuery );
    std::pair<bool, std::string> ToSqlDelete( std::string& stringQuery );

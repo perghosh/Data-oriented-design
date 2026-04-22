@@ -424,6 +424,8 @@ public:
 
    bool compare( const variant_view& v ) const;
    bool compare( const std::string_view& string_, variant_type::tag_explicit ) const noexcept { assert(is_char_string()); return (string_.length() == length() && memcmp( m_V.p, string_.data(), length() ) == 0); }
+   /// compare with conversion, this is more expensive than compare without conversion, but it will try to convert values to same type before comparing, so you can compare int with string for example
+   bool compare_convert( const variant_view& v ) const { return compare_convert_s( *this, v ); }
 
    bool less( const variant_view& v ) const;
    uint32_t length() const { return m_uSize; }
@@ -540,7 +542,8 @@ public:
       return format_s( list_ );
    }
 
-   static variant_view parse_to_primitive_s( const std::string_view& stringValue );
+   /// Compare two variants, if type differns it tries to convert them to best value and then compares
+   static bool compare_convert_s( variant_view v1_, variant_view v2_ );
 };
 
 /**

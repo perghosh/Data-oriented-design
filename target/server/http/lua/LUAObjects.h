@@ -133,7 +133,8 @@ class Sql
    // ## construction --------------------------------------------------------------
 public:
    Sql() {}
-   Sql( CRENDERSql* psql ) { m_psql = std::make_unique<CRENDERSql>( *psql ); }
+   Sql( CRENDERSql* psql ) { m_psql = std::make_unique<CRENDERSql>( *psql ); } // creates a copy of internal sql object (already initialized)
+   Sql( CDocument* pdocument ) { m_psql = std::make_unique<CRENDERSql>( pdocument ); m_psql->Initialize(); }
 
 // @API [tag: operation]   
    std::string GetValue( const std::string_view& stringName ) const;
@@ -141,12 +142,18 @@ public:
    void AddColumn( const sol::table& tableField );
    void SetColumn( std::variant<uint64_t, std::string_view> column_, const sol::table& tableField );
 
+   int64_t RemoveColumn( std::variant<uint64_t, std::string_view, sol::table> column_ );
+
    std::string AsInsert( std::optional<sol::table> table_ ) const;
+   std::string AsSelect( std::optional<sol::table> table_ ) const;
 
    std::string Build() const;
 
 // ## attributes ----------------------------------------------------------------
    std::unique_ptr<CRENDERSql> m_psql;
+
+private:
+   void Initialize() { m_psql->Initialize(); }
 };
 
 /** @CLASS [tag: Database. lua, wrapper] [summary: Wrapper for gd::database::database_i class in lua]
@@ -285,6 +292,7 @@ public:
 
 // @API [tag: operation]
    Database GetDatabase();
+   Sql CreateSql();
 
 // ## attributes ----------------------------------------------------------------
 public:

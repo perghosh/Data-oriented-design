@@ -243,6 +243,7 @@ public:
 
       gd::variant_view cell_get_variant_view( unsigned uIndex ) const { return m_ptable->cell_get_variant_view( m_uRow, uIndex ); }
       gd::variant_view cell_get_variant_view( std::string_view stringName ) const { return m_ptable->cell_get_variant_view( m_uRow, stringName ); }
+      gd::variant_view cell_get_variant_view( unsigned uIndex, tag_not_null ) const { return m_ptable->cell_get_variant_view( m_uRow, uIndex, tag_not_null{} ); }
       gd::variant_view cell_get_variant_view( std::string_view stringName, tag_not_null ) const { return m_ptable->cell_get_variant_view( m_uRow, stringName, tag_not_null{} ); }
       std::vector< gd::variant_view > cell_get_variant_view() const { return m_ptable->cell_get_variant_view( m_uRow ); }
 

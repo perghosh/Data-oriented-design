@@ -1883,67 +1883,6 @@ void query::returning_get_s( const gd::borrow::vector< std::pair< std::string_vi
    }
 }
 
-/**
- * @brief Constructs a RETURNING clause string for a query based on the specified column and dialect.
- * 
- * Constructs gd::borrow::vector< std::pair< std::string_view, std::string_view > > from stringColumn and 
- * calls the other overload of returning_get_s to generate the RETURNING clause string.
- * 
- * It splits the stringColumn using the specified delimiters for columns and aliases, and creates
- * pairs of column names and aliases to be used in the RETURNING clause. The generated clause is stored in stringReturning.
- * 
- * ```cpp
- * // Example usage:
- * using namespace gd::sql;
- * std::string stringColumn = "FId;FName,Name;FAge";
- * std::string stringReturning;
- * query::returning_get_s(stringColumn, stringReturning, eSqlDialectPostgreSQL, ';', ',');
- * ```
- * 
- * @param stringColumn The column specification to include in the RETURNING clause.
- * @param stringReturning The output string where the RETURNING clause will be stored or appended.
- * @param uDialect The SQL dialect identifier used to format the clause appropriately.
- * @param iSplitColumn The delimiter character used to split column names.
- * @param iSplitAlias The delimiter character used to split column aliases.
- */
-void query::returning_get_s( std::string_view stringColumn, std::string& stringReturning, unsigned uDialect, char iSplitColumn, char iSplitAlias )
-{
-   std::array< std::pair< std::string_view, std::string_view >, 32 > arrayColumn; // used as buffer to gd::borrow::vector
-   gd::borrow::vector< std::pair< std::string_view, std::string_view > > vectorValue( arrayColumn );
-
-   if( stringColumn.find( iSplitColumn ) != std::string_view::npos )
-   {   
-      auto vectorColumn = gd::utf8::split( stringColumn, iSplitColumn );
-      for( auto it : vectorColumn )
-      {
-         std::string_view stringAlias;
-         std::string_view stringName;
-         if( it.find( iSplitAlias ) != std::string_view::npos )
-         {
-            auto vectorColumnAlias = gd::utf8::split( it, iSplitAlias );
-            if( vectorColumnAlias.size() == 2 )
-            {
-               stringName = vectorColumnAlias[0];
-               stringAlias = vectorColumnAlias[1];
-            }
-            else { stringName = it; }
-         }
-         else
-         {
-            stringName = it;
-         }
-         vectorValue.push_back( { stringName, stringAlias } );
-      }
-   }
-   else
-   {
-      vectorValue.push_back( { stringColumn, std::string_view() } );
-   }
-
-   returning_get_s( vectorValue, stringReturning, uDialect );
-}
-
-
 /** ---------------------------------------------------------------------------
  * @brief Variant Values in vector is converted to string in a format that works for sql 
  * @param vectorValue values converted to string
@@ -2070,6 +2009,109 @@ std::pair<bool, std::string> query::add_s( query& queryTo, const query& queryFro
 
    return { true, "" };
 }
+
+/** -------------------------------------------------------------------------- returning_get_s
+ * @brief Constructs a RETURNING clause string for a query based on the specified column and dialect.
+ * 
+ * Constructs gd::borrow::vector< std::pair< std::string_view, std::string_view > > from stringColumn and 
+ * calls the other overload of returning_get_s to generate the RETURNING clause string.
+ * 
+ * It splits the stringColumn using the specified delimiters for columns and aliases, and creates
+ * pairs of column names and aliases to be used in the RETURNING clause. The generated clause is stored in stringReturning.
+ * 
+ * ```cpp
+ * // Example usage:
+ * using namespace gd::sql;
+ * std::string stringColumn = "FId;FName,Name;FAge";
+ * std::string stringReturning;
+ * query::returning_get_s(stringColumn, stringReturning, eSqlDialectPostgreSQL, ';', ',');
+ * ```
+ * 
+ * @param stringColumn The column specification to include in the RETURNING clause.
+ * @param stringReturning The output string where the RETURNING clause will be stored or appended.
+ * @param uDialect The SQL dialect identifier used to format the clause appropriately.
+ * @param iSplitColumn The delimiter character used to split column names.
+ * @param iSplitAlias The delimiter character used to split column aliases.
+ */
+void query::returning_get_s( std::string_view stringColumn, std::string& stringReturning, unsigned uDialect, char iSplitColumn, char iSplitAlias )
+{
+   std::array< std::pair< std::string_view, std::string_view >, 32 > arrayColumn; // used as buffer to gd::borrow::vector
+   gd::borrow::vector< std::pair< std::string_view, std::string_view > > vectorValue( arrayColumn );
+
+   if( stringColumn.find( iSplitColumn ) != std::string_view::npos )
+   {   
+      auto vectorColumn = gd::utf8::split( stringColumn, iSplitColumn );
+      for( auto it : vectorColumn )
+      {
+         std::string_view stringAlias;
+         std::string_view stringName;
+         if( it.find( iSplitAlias ) != std::string_view::npos )
+         {
+            auto vectorColumnAlias = gd::utf8::split( it, iSplitAlias );
+            if( vectorColumnAlias.size() == 2 )
+            {
+               stringName = vectorColumnAlias[0];
+               stringAlias = vectorColumnAlias[1];
+            }
+            else { stringName = it; }
+         }
+         else
+         {
+            stringName = it;
+         }
+         vectorValue.push_back( { stringName, stringAlias } );
+      }
+   }
+   else
+   {
+      vectorValue.push_back( { stringColumn, std::string_view() } );
+   }
+
+   returning_get_s( vectorValue, stringReturning, uDialect );
+}
+
+/// validate keys used in table, "name", "alias", "parent", "schema", "owner", "join", "key", "fk"
+std::pair<bool, std::string> query::validate_table_s( const gd::argument::arguments& argumentsTable )
+{
+   static constexpr std::array<std::string_view, 8> arrayValid = { "name", "alias", "parent", "schema", "owner", "join", "key", "fk" };   
+   std::vector<std::string_view> keys_ = argumentsTable.get_keys();
+
+   // ## validate table keys
+   for( const auto& it : keys_ )
+   {
+      if( std::find( std::begin( arrayValid ), std::end( arrayValid ), it ) == std::end( arrayValid ) ) { return { false, std::string( it ) };      }
+   }
+   return { true, "" };
+}
+
+/// validate keys used in field, "name", "alias", "raw", "type", "value", "from", "join", "where", "order"
+std::pair<bool, std::string> query::validate_field_s( const gd::argument::arguments& argumentsField )
+{
+   static constexpr std::array<std::string_view, 9> arrayValid = { "name", "alias", "raw", "type", "value", "from", "join", "where", "order"};
+   std::vector<std::string_view> keys_ = argumentsField.get_keys();
+
+   // ## validate field keys
+   for( const auto& it : keys_ )
+   {
+      if( std::find( std::begin( arrayValid ), std::end( arrayValid ), it ) == std::end( arrayValid ) ) { return { false, std::string( it ) }; }
+   }
+   return { true, "" }; 
+}
+
+/// validate keys used in condition, "name", "value", "value_hi", "raw", "join", "type", "operator", "group", "sql"
+std::pair<bool, std::string> query::validate_condition_s( const gd::argument::arguments& argumentsCondition )
+{
+   static constexpr std::array<std::string_view, 9> arrayValid = { "name", "value", "value_hi", "raw", "join", "type", "operator", "group", "sql" };
+   std::vector<std::string_view> keys_ = argumentsCondition.get_keys();
+
+   // ## validate condition keys
+   for( const auto& it : keys_ )
+   {
+      if( std::find( std::begin( arrayValid ), std::end( arrayValid ), it ) == std::end( arrayValid ) ) { return { false, std::string( it ) }; }
+   }
+   return { true, "" };
+}
+
 
 
 _GD_SQL_QUERY_END

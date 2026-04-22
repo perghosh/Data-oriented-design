@@ -1192,7 +1192,8 @@ public:
    */
 
    arguments& append_argument(const std::string_view& stringName, const gd::variant_view& variantValue);
-   arguments& append_argument(const std::string_view& stringName, const gd::variant_view& variantValue, tag_view) { return append_argument( stringName, variantValue ); }
+   arguments& append_argument(std::string_view stringName, const gd::variant_view& variantValue, tag_view) { return append_argument( stringName, variantValue ); }
+   arguments& append_argument(const char* piszName, const gd::variant_view& variantValue, tag_view) { return append_argument( std::string_view(piszName), variantValue ); }
    arguments& append_argument(const std::string& stringName, const gd::variant_view& variantValue, tag_view);
 
    arguments& append_argument(const std::pair<std::string_view, gd::variant>& pairArgument) {
@@ -1460,6 +1461,16 @@ public:
    std::optional<gd::variant_view> get_variant_view(size_t uIndex, gd::types::tag_optional) const;
    /// return first value for name as optional
    std::optional<gd::variant_view> get_variant_view( const std::string_view& stringName, gd::types::tag_optional ) const;
+
+   /// Returns all keys as a vector of string_views. Unnamed arguments are skipped.
+   [[nodiscard]] std::vector<std::string_view> get_keys() const;
+   void keys( std::vector<std::string_view>& vectorKey ) const;
+
+   /// Returns all values as a vector of variant_views.
+   void values( std::vector<gd::variant_view>& vectorValue ) const;
+
+
+
                                                                                                    // @CODE [tag: object, glue] [description: Methods to get and set objects into arguments object, add the `get_object` method as free function]
    template<typename OBJECT>
    void get_object( const std::string_view& stringPrefixFind, OBJECT& object_ );
@@ -1691,11 +1702,14 @@ public:
    /// Check if any of the name values are found in arguments
    static std::pair<bool, std::string> exists_any_of_s( const arguments& argumentsValidate, const std::initializer_list<std::string_view>& listName, tag_name );
 
+   // ## memory related methods
+
    /// copy name into buffer `pCopyTo` points to
    static unsigned memcpy_s( pointer pCopyTo, const char* pbszName, unsigned uLength );
    /// copy value into buffer `pCopyTo` points to
    static uint64_t memcpy_s( pointer pCopyTo, argument_type uType, const_pointer pBuffer, unsigned int uLength );
-   //@}
+
+   static constexpr size_t estimate_count_s( size_t uSize ) { return std::min<size_t>( uSize / 24, 16u ); } 
 
 
 // ##

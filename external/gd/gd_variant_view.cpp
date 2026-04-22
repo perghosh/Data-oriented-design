@@ -904,11 +904,47 @@ void variant_view::format_s(const std::initializer_list<variant_view>& listValue
    }
 }
 
-variant_view variant_view::parse_to_primitive_s( const std::string_view& stringValue ) 
+/** --------------------------------------------------------------------------- compare_convert_s
+ * @brief Compare two `variant_view` values, converting one side when needed to enable a safe comparison.
+ *
+ * ### Comparison flow
+ * 1. If both values already share the same type number, compare directly.
+ * 2. If both values are character-string based, compare as `std::string_view`.
+ * 3. Otherwise, convert the lower type-number side into the higher type-number side.
+ * 4. If conversion succeeds, compare converted value against the other input.
+ *
+ * @param v1_ First value to compare.
+ * @param v2_ Second value to compare.
+ * @return bool `true` when values are equal after direct compare or conversion-based compare; otherwise `false`.
+ *
+ * @note Conversion target selection is based on `type_number()` ordering between `v1_` and `v2_`.
+ * @note If no valid conversion exists, the method returns `false`.
+ */
+bool variant_view::compare_convert_s( variant_view v1_, variant_view v2_ )
 {
-   variant_view v_;
+   auto uType1 = v1_.type_number();
+   auto uType2 = v2_.type_number();
 
-   return v_;
+   if( uType1 == uType2 ) return v1_.compare( v2_ );
+
+   // ## first check for string
+   if( v1_.is_char_string() && v2_.is_char_string() )
+   {
+      return v1_.as_string_view() == v2_.as_string_view();
+   }
+
+   // ## convert to higher type and compare
+   variant variantConverted;
+   if( uType1 > uType2 )
+   {
+      if( v2_.convert_to( uType1, variantConverted ) == true ) return v1_.compare( variantConverted.as_variant_view() );
+   }
+   else
+   {
+      if( v1_.convert_to( uType2, variantConverted ) == true ) return variantConverted.as_variant_view().compare( v2_ );
+   }
+
+   return false;
 }
 
 namespace debug {

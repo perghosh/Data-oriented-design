@@ -2757,6 +2757,33 @@ std::optional<gd::variant_view> arguments::get_variant_view( const std::string_v
    return std::nullopt;
 }
 
+/// @brief Get all keys in vector ------------------------------------------- keys
+std::vector<std::string_view> arguments::get_keys() const
+{
+   std::vector<std::string_view> vectorKey;
+   vectorKey.reserve( estimate_count_s( buffer_size() ) );
+   keys(vectorKey);
+   return vectorKey;
+}
+
+/// @brief Adds all keys to vector ------------------------------------------ keys
+void arguments::keys( std::vector<std::string_view>& vectorKey ) const
+{
+   for( auto pPosition = next(); pPosition != nullptr; pPosition = next( pPosition ) )
+   {
+      if( arguments::is_name_s( pPosition ) == true ) { vectorKey.push_back( arguments::get_name_s( pPosition ) ); }
+   }
+}
+
+/// @brief Adds all values to vector ---------------------------------------- values
+void arguments::values( std::vector<gd::variant_view>& vectorValue ) const
+{
+   for( auto pPosition = next(); pPosition != nullptr; pPosition = next( pPosition ) )
+   {
+      vectorValue.push_back( arguments::get_argument_s( pPosition ).get_variant_view() );
+   }
+}
+
 
 // ================================================================================================
 // ================================================================================= FREE FUNCTIONS

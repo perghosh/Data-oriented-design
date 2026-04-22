@@ -653,6 +653,10 @@ public:
    static void returning_get_s( const gd::borrow::vector< std::pair< std::string_view, std::string_view > >& vectorValue, std::string& stringReturning, unsigned uDialect );
    static void returning_get_s( std::string_view stringColumn, std::string& stringReturning, unsigned uDialect, char iSplitColumn = ';', char iSplitAlias = ',');
 
+   static std::pair<bool, std::string> validate_table_s( const gd::argument::arguments& argumentsTable );
+   static std::pair<bool, std::string> validate_field_s( const gd::argument::arguments& argumentsField );
+   static std::pair<bool, std::string> validate_condition_s( const gd::argument::arguments& argumentsCondition );
+
    static constexpr unsigned part_s(std::string_view stringPart) {
       if (stringPart == "select") return eSqlPartSelect;
       if (stringPart == "insert") return eSqlPartInsert;

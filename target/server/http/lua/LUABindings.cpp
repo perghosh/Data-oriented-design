@@ -26,6 +26,7 @@ void RegisterDocument( sol::state& stateLua )
 {
 	stateLua.new_usertype<Document>(
       "Document", sol::constructors<Document()>(),
+      "CreateSql", &Document::CreateSql,
       "GetDatabase", &Document::GetDatabase
    ); 
 }
@@ -79,7 +80,9 @@ void RegisterSql( sol::state& stateLua )
       "AddColumn", &Sql::AddColumn,
       "AddValues", &Sql::AddValues,
       "AsInsert", &Sql::AsInsert,
+      "AsSelect", &Sql::AsSelect,
       "GetValue", &Sql::GetValue,
+      "RemoveColumn", &Sql::RemoveColumn,
       "SetColumn", &Sql::SetColumn
    );
 }

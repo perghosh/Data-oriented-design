@@ -20,6 +20,21 @@
 
 #include "RENDERSql.h"
 
+namespace utility
+{
+   // @brief Converts a string representation of a SQL part type to its corresponding enum value.
+   unsigned get_part_type_from_string( std::string_view stringPartType )
+   {
+      using namespace gd::types::detail;
+      unsigned uPartType = 0;
+      if( gd::types::detail::hash_match_g( stringPartType, "select" ) == true ) { uPartType = CRENDERSql::ePartTypeSelect; }
+      else if( gd::types::detail::hash_match_g( stringPartType, "value" ) == true ) { uPartType = CRENDERSql::ePartTypeValue; }
+      else if( gd::types::detail::hash_match_g( stringPartType, "where" ) == true ) { uPartType = CRENDERSql::ePartTypeWhere; }
+      else if( gd::types::detail::hash_match_g( stringPartType, "returning" ) == true ) { uPartType = CRENDERSql::ePartTypeReturning; }
+      return uPartType;
+   }
+}
+
 CRENDERSql::CRENDERSql( const CDocument* pdocument ) : m_pdocument( pdocument ), m_tableField( 8, gd::table::tag_full_meta{} ) 
 {                                                                                                  assert( pdocument ); 
    if( pdocument->DATABASE_Get() ) { m_eSqlDialect = gd::sql::enumSqlDialect( pdocument->DATABASE_Get()->GetDialect() ); }
@@ -46,7 +61,7 @@ void CRENDERSql::common_construct( CRENDERSql&& o ) noexcept
  * @brief Initializes the static data table structure used to hold response body parts for SQL field information.
  */
 void CRENDERSql::Initialize()
-{
+{                                                                                                  assert( m_tableField.empty() == true && "Table field must be empty before initialization" );
    using namespace std::literals::string_view_literals;
    // Initialize datable that will hold response body parts
 
@@ -65,6 +80,7 @@ void CRENDERSql::Initialize()
       p->add( "string", uSize * 2, "value" );                                 // value for column in table
       p->add( "uint32", 0, "type" );                                          // type of value
       p->add( "uint32", 0, "type_part" );                                     // part type of value, this same as sql part like select, where    
+      p->add( "rstring", 0, "raw" );                                          // raw sql stamement for column
       p->add_reference();
 
       CRENDERSql::m_pcolumnsField_s = p; // assign to static member for use in other instances of CRENDERSql
@@ -93,11 +109,8 @@ std::pair<bool, std::string> CRENDERSql::Add( const pugi::xml_node& xmlnodeValue
       std::string_view stringNodeName = node_.name();
       if( stringNodeName.length() > 4 )
       {
-         if( hash_match_g( stringNodeName, "value" ) == true ) { ePartType = ePartTypeValue; }
-         else if( hash_match_g( stringNodeName, "where" ) == true ) { ePartType = ePartTypeWhere; }
-         else if( hash_match_g( stringNodeName, "select" ) == true ) { ePartType = ePartTypeSelect; }
-         else if( hash_match_g( stringNodeName, "returning" ) == true ) { ePartType = ePartTypeReturning; }
-         else { continue; } // if node name is not value, where or select skip it
+         ePartType = static_cast<enumPartType>(utility::get_part_type_from_string( stringNodeName ));
+         if( ePartType == ePartTypeUnknown ) { continue; }                    // if node name is not recognized as part type skip it )
       }
       else { continue; }                                                      // if node name is too short to be value, where or select skip it
 
@@ -140,19 +153,19 @@ std::pair<bool, std::string> CRENDERSql::Add( const pugi::xml_node& xmlnodeValue
       if( string_.empty() == false ) { argumentsField["table"] = string_; }
       else if( stringTable.empty() == false ) { argumentsField["table"] = stringTable; } // if table name is not in attribute try to get it from parent node attribute
 
-      AddValue( argumentsField );
+      AddColumn( argumentsField );
    }
 
    return { true, "" };
 }
 
-void CRENDERSql::AddValue( std::string_view stringName, gd::variant_view variantviewValue )
+void CRENDERSql::AddColumn( std::string_view stringName, gd::variant_view variantviewValue )
 {
    std::array<std::byte, 128> buffer_;
    gd::argument::arguments argumentsField(buffer_);
    argumentsField.append_argument( "column", stringName ); // column name
    argumentsField.append_argument( "value", variantviewValue);
-   AddValue( argumentsField );
+   AddColumn( argumentsField );
 }
 
 /** --------------------------------------------------------------------------
@@ -160,7 +173,7 @@ void CRENDERSql::AddValue( std::string_view stringName, gd::variant_view variant
  *
  * @param argumentsField information about the field to add.
  */
-void CRENDERSql::AddValue( const gd::argument::arguments& argumentsField )
+void CRENDERSql::AddColumn( const gd::argument::arguments& argumentsField )
 {                                                                                                  assert( m_pcolumnsField_s != nullptr );
    auto uRow = m_tableField.row_add_one();
    m_tableField.cell_set( uRow, 0u, uint32_t(uRow + 1) );                     // set key value
@@ -213,7 +226,7 @@ void CRENDERSql::AddValue( const gd::argument::arguments& argumentsField )
  * @param tag_json The tag_json type.
  * @return std::pair<bool,std::string> A pair containing a boolean indicating success and a string containing an error message.
  */
-std::pair<bool,std::string> CRENDERSql::AddValue( std::string_view stringJson, gd::types::tag_json )
+std::pair<bool,std::string> CRENDERSql::AddColumn( std::string_view stringJson, gd::types::tag_json )
 {
    std::array<std::byte, 256> buffer_;
    gd::argument::arguments arguments_(buffer_);
@@ -224,19 +237,19 @@ std::pair<bool,std::string> CRENDERSql::AddValue( std::string_view stringJson, g
    // check for value
    if( arguments_.exists("value") == false ) { return {false, "missing value"}; }
 
-   AddValue( arguments_ );
+   AddColumn( arguments_ );
 
    return {true, ""};
 }
 
-std::pair<bool, std::string> CRENDERSql::SetValue( std::string_view stringColumn, const gd::argument::arguments& argumentsColumn )
+std::pair<bool, std::string> CRENDERSql::SetColumn( std::string_view stringColumn, const gd::argument::arguments& argumentsColumn )
 {
    auto uRow = FindRowForColumnName( stringColumn );
-   if( uRow != -1 ) { SetValue( uRow, argumentsColumn ); return {true, ""}; }
+   if( uRow != -1 ) { SetColumn( uRow, argumentsColumn ); return {true, ""}; }
    return {false, std::format("column '{}' not found", stringColumn) };
 }
 
-void CRENDERSql::SetValue( uint64_t uRow, const gd::argument::arguments& argumentsColumn )
+void CRENDERSql::SetColumn( uint64_t uRow, const gd::argument::arguments& argumentsColumn )
 {                                                                                                  assert( uRow < m_tableField.get_row_count() );
    for( auto [key_, value_] : argumentsColumn.named()  )
    {                                                                                               assert( m_pcolumnsField_s->find_index( key_ ) != -1 );
@@ -265,11 +278,7 @@ void CRENDERSql::SetValue( uint64_t uRow, const gd::argument::arguments& argumen
             // ## translate part type name to part type number .....................
             auto stringPartType = value_.as_string_view();
             if( stringPartType.length() <= 4 ) { continue; }
-            uint32_t uPartType = 0;
-            if( gd::types::detail::hash_match_g( stringPartType, "select" ) == true ) { uPartType = ePartTypeSelect; }
-            else if( gd::types::detail::hash_match_g( stringPartType, "value" ) == true ) { uPartType = ePartTypeValue; }
-            else if( gd::types::detail::hash_match_g( stringPartType, "where" ) == true ) { uPartType = ePartTypeWhere; }
-            else if( gd::types::detail::hash_match_g( stringPartType, "returning" ) == true ) { uPartType = ePartTypeReturning; }
+            uint32_t uPartType = utility::get_part_type_from_string( stringPartType );
             m_tableField.cell_set( uRow, eColumnFieldPartType, uPartType, gd::table::tag_spill{} );
          }
          else { m_tableField.cell_set( uRow, eColumnFieldPartType, value_, gd::table::tag_spill{} ); }
@@ -293,6 +302,49 @@ int64_t CRENDERSql::FindRowForColumnName( std::string_view stringName ) const
    }
    return -1;
 }
+
+/** -------------------------------------------------------------------------- Find
+ * @brief Find the first row that matches all named column/value filters in `argumentsColumn`.
+ *
+ * Matching strategy:
+ * 1. Uses the first named pair in `argumentsColumn` as an initial pre-filter.
+ * 2. For each candidate row, verifies all remaining named pairs.
+ * 3. Returns immediately on the first full match.
+ *
+ * **important**: If the first filter column cannot be resolved in `m_tableField`,
+ * the method returns `-1`.
+ *
+ * @param argumentsColumn Named filters where key = column name and value = expected value.
+ * @return int64_t Matching row index, or `-1` when no row satisfies all filters.
+ */
+int64_t CRENDERSql::Find( const gd::argument::arguments& argumentsColumn ) const
+{                                                                                                  assert( argumentsColumn.empty() == false ); 
+   // ## Get first value and column to have a match for row
+   auto [key_, compare_] = *argumentsColumn.named().begin();
+   int32_t iColumnIndex = m_tableField.column_find_index( key_ );                                  assert( iColumnIndex != -1 ); // column must be found to have a match for row)
+   if( iColumnIndex == -1 ) { return -1; } // if column is not found return -1
+
+   for( std::size_t uRow = 0; uRow < m_tableField.get_row_count(); ++uRow )
+   {
+      bool bMatch = true;
+
+      gd::variant_view cell_ = m_tableField.cell_get_variant_view( uRow, iColumnIndex, gd::table::tag_not_null{} ); // get value
+      if( cell_.compare_convert( compare_ ) == false ) { continue; } // if first value does not match skip to next row )
+
+
+      //for( auto [key_, value_] : argumentsColumn.named() + 1 )
+      for( auto it = argumentsColumn.named_begin() + 1; it != argumentsColumn.named_end(); ++it )
+      {
+         auto [key_, value_] = *it;                                                                assert( m_tableField.column_find_index( key_ ) != -1 ); // column must be found to have a match for row)
+         auto cellValue_ = m_tableField.cell_get_variant_view( uRow, key_, gd::table::tag_not_null{} ); // get column name as variant view
+         if( cellValue_.compare_convert( value_ ) == false ) { bMatch = false; break; }
+      }
+      
+      if( bMatch == true ) { return uRow; }
+   }
+   return -1; 
+}
+
 
 void CRENDERSql::AddValues( const gd::argument::arguments& argumentsField )
 {
@@ -379,7 +431,7 @@ std::pair<bool,std::string> CRENDERSql::AddRecord( std::string_view stringJson, 
          arguments_.append( "column", itValue.key() );
          arguments_.append_argument( "value", CONVERT::AsVariant( itValue.value() ) );
          arguments_.append( "type_part", uint32_t( ePartTypeValue ) ); // value part of query (insert and update queries)
-         AddValue( arguments_ );
+         AddColumn( arguments_ );
       }
 
       auto jsonWhere = jsonRecord["where"];
@@ -397,7 +449,7 @@ std::pair<bool,std::string> CRENDERSql::AddRecord( std::string_view stringJson, 
             arguments_.append_argument( "value", CONVERT::AsVariant( itValue.value() ) );
             arguments_.append( "type_part", uint32_t( ePartTypeWhere ) ); // where part of query (select, update and delete queries)
          }
-         AddValue( arguments_ );
+         AddColumn( arguments_ );
       }
 
       auto jsonReturning = jsonRecord["returning"];
@@ -435,8 +487,6 @@ std::pair<bool, std::string> CRENDERSql::Prepare()
 
    for( auto itRow = m_tableField.row_begin(); itRow != m_tableField.row_end(); ++itRow )
    {
-      //uint32_t uType = itRow.cell_get_variant_view( "part_type" );
-
       std::string stringTable = itRow.cell_get_variant_view( "table", gd::table::tag_not_null{}).as_string();
       std::string stringColumn = itRow.cell_get_variant_view( "column", gd::table::tag_not_null{}).as_string();
 
@@ -535,6 +585,7 @@ std::pair<bool,std::string> CRENDERSql::GetQuery( enumSqlQueryType eSqlQueryType
       case eSqlQueryTypeDelete:
          break;
       case eSqlQueryTypeSelect:
+         result_ = ToSqlSelect( stringQuery );
          break;
       case eSqlQueryTypeCount:
          break;
@@ -542,6 +593,70 @@ std::pair<bool,std::string> CRENDERSql::GetQuery( enumSqlQueryType eSqlQueryType
          return {false, "Invalid query type"};
    }
    return result_;
+}
+
+std::pair<bool, std::string> CRENDERSql::ToSqlSelect( std::string& stringQuery )
+{
+   std::array<std::byte, 256> buffer_;
+   gd::argument::arguments arguments_( buffer_ );
+
+   std::string stringTable = m_tableField.cell_get_variant_view(0u, "table", gd::table::tag_not_null{}).as_string();
+   gd::sql::query querySelect( m_eSqlDialect );
+
+   querySelect.table_add( stringTable );
+
+   for( auto itRow = m_tableField.row_begin(); itRow != m_tableField.row_end(); ++itRow )
+   { 
+      arguments_.clear();
+      uint32_t uTableKey = querySelect.table_get_key(); // get the key for the table field or conditions is added for
+
+      gd::variant_view variantviewTable = itRow.cell_get_variant_view( eColumnFieldTable, gd::table::tag_not_null{});
+      if( variantviewTable.is_char_string() == true ) 
+      { 
+         // ## check if table is added to query, if not add it with alias if alias is present
+         int32_t iTableKey = querySelect.table_get_key( variantviewTable.as_string_view() ); 
+         if( iTableKey == -1 )
+         {
+            auto ptable_ = querySelect.table_add( variantviewTable.as_string_view() );
+            uTableKey = ptable_->get_key();                                   // get the key for the table to use in field and condition parts
+         }
+         else { uTableKey = static_cast<uint32_t>( iTableKey ); }               // set the key for the table to use in field and condition parts
+      }
+         
+         
+
+      std::string_view stringColumn = itRow.cell_get_variant_view( eColumnFieldColumn, gd::table::tag_not_null{}).as_string_view();
+      arguments_.append( "name", stringColumn );
+
+      uint32_t uPartType = itRow.cell_get_variant_view( eColumnFieldPartType ).as_uint();
+      if( uPartType == uint32_t( ePartTypeWhere ) )
+      {
+         auto v_ = itRow.cell_get_variant_view( eColumnFieldRaw );
+         if( v_.is_char_string() == true ) arguments_.append( "raw", v_.as_string_view() );
+         v_ = itRow.cell_get_variant_view( eColumnFieldValue, gd::table::tag_not_null{} );
+         if( v_.is_null() == false ) arguments_.append_argument( std::string_view("value"), v_, gd::types::tag_view{} );
+
+         querySelect.condition_add( uTableKey, arguments_, gd::sql::tag_arguments{} );   // add condition to query
+         continue;
+      }
+      else
+      {
+         auto v_ = itRow.cell_get_variant_view( eColumnFieldAlias, gd::table::tag_not_null{});
+         if( v_.is_char_string() == true ) arguments_.append( "alias", v_.as_string_view() );
+         v_ = itRow.cell_get_variant_view( eColumnFieldRaw );
+         if( v_.is_char_string() == true ) arguments_.append( "raw", v_.as_string_view() );
+
+         querySelect.field_add( uTableKey, arguments_, gd::sql::tag_arguments{} );       // add column to query
+      }
+   }
+
+   std::string stringSelectSql;
+   stringSelectSql += querySelect.sql_get( gd::sql::eSqlSelect );
+
+   if( stringQuery.empty() == true ) stringQuery = std::move( stringSelectSql );
+   else stringQuery += "\n\n" + stringSelectSql;
+
+   return { true, "" };
 }
 
 /** --------------------------------------------------------------------------
