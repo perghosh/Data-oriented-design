@@ -324,8 +324,16 @@ gd::sql::query::condition* query::condition_add( const gd::argument::arguments& 
 
       if( stringName[0] == 'o' && stringName == "operator" )
       {
-         enumOperator eOperator = get_where_operator_number_s(it.second);                          assert( eOperator != eOperatorError ); // note that operator should be checked before calling this method
-         conditionAdd.append("operator", eOperator);
+         if( it.second.is_text() == false )
+         {
+            enumOperator eOperator = static_cast<enumOperator>(it.second.as_variant_view().cast_as_int32());
+            conditionAdd.append("operator", eOperator);
+         }
+         else
+         {
+            enumOperator eOperator = get_where_operator_number_s(it.second);                       assert( eOperator != eOperatorError ); // note that operator should be checked before calling this method
+            conditionAdd.append("operator", eOperator);
+         }
       }
       else 
       { 

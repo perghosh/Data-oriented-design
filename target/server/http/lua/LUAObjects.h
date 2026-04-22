@@ -144,6 +144,8 @@ public:
 
    int64_t RemoveColumn( std::variant<uint64_t, std::string_view, sol::table> column_ );
 
+   void AddCondition( const sol::table& tableField );
+
    std::string AsInsert( std::optional<sol::table> table_ ) const;
    std::string AsSelect( std::optional<sol::table> table_ ) const;
 

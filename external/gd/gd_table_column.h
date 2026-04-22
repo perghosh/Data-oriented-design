@@ -291,6 +291,7 @@ public:
    std::string_view alias( unsigned uIndex ) const { return get( uIndex )->alias(); }
    
    bool is_primitive( unsigned uIndex ) const { return get( uIndex )->is_primitive(); }
+   bool is_reference( unsigned uIndex ) const { return get( uIndex )->is_reference(); }
 
    iterator begin() { return m_vectorColumn.begin(); }
    iterator end() { return m_vectorColumn.end(); }

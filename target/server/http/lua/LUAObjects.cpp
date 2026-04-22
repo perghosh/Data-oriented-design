@@ -794,7 +794,7 @@ void Sql::AddColumn( const sol::table& tableField )
    unsigned uFlags = 0;
    auto result_ = m_psql->Validate( argumentsValue, &uFlags );  // validate that column names (keys)
    if( result_.first == false ) { throw sol::error( result_.second ); }
-   if( (uFlags & CRENDERSql::eColumnFlagColumn) != CRENDERSql::eColumnFlagColumn ) { throw sol::error( "column name not found" ); }
+   if( (uFlags & CRENDERSql::eColumnFlagName) != CRENDERSql::eColumnFlagName ) { throw sol::error( "column name not found" ); }
 
    m_psql->AddColumn( argumentsValue );
 }
@@ -847,6 +847,19 @@ int64_t Sql::RemoveColumn( std::variant<uint64_t, std::string_view, sol::table> 
    if( iRow >= 0 ) { m_psql->Remove( (uint64_t)iRow ); }
    return iRow;
 }
+
+/// Add condition to sql, this is used to add where condition to sql, for example "id = 1", "name = 'John'", etc.
+void Sql::AddCondition( const sol::table& tableField )
+{
+   auto argumentsCondition = ConvertToArguments_g( tableField );
+
+   // ## Verify column information and that name for column is found, this is needed because column name is used to know what column to set value for
+   auto result_ = m_psql->ValidateCondition( argumentsCondition );  // validate that column names (keys)
+   if( result_.first == false ) { throw sol::error( result_.second ); }
+
+   m_psql->AddCondition( argumentsCondition );
+}
+
 
 /// @brief Build sql insert string -------------------------------------------
 std::string Sql::AsInsert( std::optional<sol::table> table_ ) const

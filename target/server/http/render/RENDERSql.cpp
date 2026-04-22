@@ -33,6 +33,31 @@ namespace utility
       else if( gd::types::detail::hash_match_g( stringPartType, "returning" ) == true ) { uPartType = CRENDERSql::ePartTypeReturning; }
       return uPartType;
    }
+
+   // AddConditionToQuery
+   std::pair<bool, std::string> add_condition_to_query( std::vector<gd::argument::arguments>& vectorCondition, gd::sql::query& queryAddTo  )
+   {
+      for( auto& argumentsCondition : vectorCondition )
+      {                                                                                            assert( gd::sql::query::validate_condition_s( argumentsCondition ).first == true );
+         // ## check for operator
+         if( argumentsCondition.exists( "operator" ) == false ) { argumentsCondition.append( "operator", uint32_t( gd::sql::eOperatorEqual ) ); }
+         else
+         {
+            auto v_ = argumentsCondition["operator"].as_variant_view();
+            if( v_.is_string() == true )
+            {
+               auto eOperator = gd::sql::query::get_where_operator_number_s(v_.as_string_view());
+               if( eOperator == gd::sql::eOperatorError ) { return { false, std::format( "Invalid operator: {}", v_.as_string_view() ) }; }
+
+               argumentsCondition.set( "operator", eOperator );
+            }
+         }
+
+         queryAddTo.condition_add( argumentsCondition, gd::sql::tag_arguments{} );
+      }  
+
+      return { true, "" };
+   }
 }
 
 CRENDERSql::CRENDERSql( const CDocument* pdocument ) : m_pdocument( pdocument ), m_tableField( 8, gd::table::tag_full_meta{} ) 
@@ -75,7 +100,7 @@ void CRENDERSql::Initialize()
       p->add( "uint32", 0, "key" );
       p->add( "string", uSize, "schema" );                                    // schema for table field belongs to
       p->add( "string", uSize, "table" );                                     // name for table field belongs to
-      p->add( "string", uSize, "column" );                                    // name for column in table
+      p->add( "string", uSize, "name" );                                      // name for column in table
       p->add( "string", uSize, "alias" );                                     // alias for column in table
       p->add( "string", uSize * 2, "value" );                                 // value for column in table
       p->add( "uint32", 0, "type" );                                          // type of value
@@ -132,8 +157,8 @@ std::pair<bool, std::string> CRENDERSql::Add( const pugi::xml_node& xmlnodeValue
 
       // get name attribute
       std::string string_ = node_.attribute( "name" ).as_string();            // Field name 
-      if( string_.empty() == true ) { string_ = node_.attribute( "column" ).as_string(); }// try to get column name as fallback
-      if( string_.empty() == false ) { argumentsField["column"] = string_; }
+      if( string_.empty() == true ) { string_ = node_.attribute( "name" ).as_string(); }// try to get column name as fallback
+      if( string_.empty() == false ) { argumentsField["name"] = string_; }
 
       string_ = node_.attribute( "alias" ).as_string();                       // Field alias
       if( string_.empty() == false ) { argumentsField["alias"] = string_; }
@@ -163,7 +188,7 @@ void CRENDERSql::AddColumn( std::string_view stringName, gd::variant_view varian
 {
    std::array<std::byte, 128> buffer_;
    gd::argument::arguments argumentsField(buffer_);
-   argumentsField.append_argument( "column", stringName ); // column name
+   argumentsField.append_argument( "name", stringName ); // column name
    argumentsField.append_argument( "value", variantviewValue);
    AddColumn( argumentsField );
 }
@@ -301,7 +326,7 @@ int64_t CRENDERSql::FindRowForColumnName( std::string_view stringName ) const
    gd::variant_view name_( stringName );
    for( std::size_t uRow = 0; uRow < m_tableField.get_row_count(); ++uRow )
    {
-      auto column_ = m_tableField.cell_get_variant_view( uRow, eColumnFieldColumn, gd::table::tag_not_null{}); // get column name as variant view
+      auto column_ = m_tableField.cell_get_variant_view( uRow, eColumnFieldName, gd::table::tag_not_null{}); // get column name as variant view
       if( column_.as_string_view() == name_.as_string_view() ) return uRow;
    }
    return -1;
@@ -355,7 +380,7 @@ void CRENDERSql::AddValues( const gd::argument::arguments& argumentsField )
    for( auto [key_, value_] : argumentsField.named() )
    {
       auto uRow = m_tableField.row_add_one();                                 // Add row to store field information
-      m_tableField.cell_set( uRow, eColumnFieldColumn, key_, gd::table::tag_spill{});
+      m_tableField.cell_set( uRow, eColumnFieldName, key_, gd::table::tag_spill{});
 
       if( value_.is_text() == true ) 
       { 
@@ -378,6 +403,19 @@ std::pair<bool, std::string> CRENDERSql::AddValues( std::string_view stringJson,
    AddValues( argumentsField );
    return { true, "" };
 }
+
+/// @brief Adds a condition to the internal list of conditions for SQL query generation.
+void CRENDERSql::AddCondition( const gd::argument::arguments& argumentsCondition )
+{                                                                                                  assert( gd::sql::query::validate_condition_s( argumentsCondition ).first == true );
+   m_vectorCondition.push_back( argumentsCondition );
+}
+
+/// @brief Adds a condition to the internal list of conditions for SQL query generation using move semantics.
+void CRENDERSql::AddCondition( gd::argument::arguments&& argumentsCondition )
+{                                                                                                  assert( gd::sql::query::validate_condition_s( argumentsCondition ).first == true );
+   m_vectorCondition.push_back( std::move(argumentsCondition) );
+}
+
 
 /** -------------------------------------------------------------------------- AddRecord
  * @brief Parses a JSON record and adds its fields to the internal table for SQL query generation.
@@ -432,7 +470,7 @@ std::pair<bool,std::string> CRENDERSql::AddRecord( std::string_view stringJson, 
       {
          arguments_.clear();
          arguments_.append( "table", stringTable );
-         arguments_.append( "column", itValue.key() );
+         arguments_.append( "name", itValue.key() );
          arguments_.append_argument( "value", CONVERT::AsVariant( itValue.value() ) );
          arguments_.append( "type_part", uint32_t( ePartTypeValue ) ); // value part of query (insert and update queries)
          AddColumn( arguments_ );
@@ -449,7 +487,7 @@ std::pair<bool,std::string> CRENDERSql::AddRecord( std::string_view stringJson, 
          else
          {
             arguments_.append( "table", stringTable );
-            arguments_.append( "column", itValue.key() );
+            arguments_.append( "name", itValue.key() );
             arguments_.append_argument( "value", CONVERT::AsVariant( itValue.value() ) );
             arguments_.append( "type_part", uint32_t( ePartTypeWhere ) ); // where part of query (select, update and delete queries)
          }
@@ -492,10 +530,10 @@ std::pair<bool, std::string> CRENDERSql::Prepare()
    for( auto itRow = m_tableField.row_begin(); itRow != m_tableField.row_end(); ++itRow )
    {
       std::string stringTable = itRow.cell_get_variant_view( "table", gd::table::tag_not_null{}).as_string();
-      std::string stringColumn = itRow.cell_get_variant_view( "column", gd::table::tag_not_null{}).as_string();
+      std::string stringName = itRow.cell_get_variant_view( "name", gd::table::tag_not_null{}).as_string();
 
       gd::argument::arguments argumentsFind( buffer_ );
-      argumentsFind.append( { {"table", stringTable}, {"column", stringColumn} });
+      argumentsFind.append( { {"table", stringTable}, {"name", stringName} });
       int64_t iRow = pdatabase_->Column_FindRow( argumentsFind );                                  assert( iRow >= 0 && "Developer error because this should not assert");
 
       if( iRow > 0 )
@@ -629,7 +667,7 @@ std::pair<bool, std::string> CRENDERSql::ToSqlSelect( std::string& stringQuery )
          
          
 
-      std::string_view stringColumn = itRow.cell_get_variant_view( eColumnFieldColumn, gd::table::tag_not_null{}).as_string_view();
+      std::string_view stringColumn = itRow.cell_get_variant_view( eColumnFieldName, gd::table::tag_not_null{}).as_string_view();
       arguments_.append( "name", stringColumn );
 
       uint32_t uPartType = itRow.cell_get_variant_view( eColumnFieldPartType ).as_uint();
@@ -652,6 +690,13 @@ std::pair<bool, std::string> CRENDERSql::ToSqlSelect( std::string& stringQuery )
 
          querySelect.field_add( uTableKey, arguments_, gd::sql::tag_arguments{} );       // add column to query
       }
+   }
+
+   // ## Add conditions to query if there are any ............................
+   if( m_vectorCondition.empty() == false )
+   {
+      auto [success, error] = utility::add_condition_to_query( m_vectorCondition, querySelect );
+      if( success == false ) return { false, error };
    }
 
    std::string stringSelectSql;
@@ -684,11 +729,11 @@ std::pair<bool,std::string> CRENDERSql::ToSqlInsert( std::string& stringQuery )
    {
       arguments_.clear();
 
-      std::string stringColumn = itRow.cell_get_variant_view( "column", gd::table::tag_not_null{}).as_string();
-      //queryInsert.field_add( stringColumn );                                  // add column to query
+      std::string stringName = itRow.cell_get_variant_view( "name", gd::table::tag_not_null{}).as_string();
+      //queryInsert.field_add( stringName );                                  // add column to query
       uint32_t uType = itRow.cell_get_variant_view("type").as_uint();
       auto value_ = itRow.cell_get_variant_view("value", gd::table::tag_not_null{});
-      arguments_.append( { { "name", stringColumn }, { "value", value_ }, { "type", uType } }, gd::types::tag_view{});
+      arguments_.append( { { "name", stringName }, { "value", value_ }, { "type", uType } }, gd::types::tag_view{});
       queryInsert.field_add( arguments_, gd::sql::tag_arguments{} );       // add column to query
    }
 
@@ -728,26 +773,34 @@ std::pair<bool, std::string> CRENDERSql::ToSqlUpdate( std::string& stringQuery )
       uint32_t uType = itRow.cell_get_variant_view( "type_part" );
       if( uType == uint32_t( ePartTypeValue ) )
       {
-         std::string stringColumn = itRow.cell_get_variant_view( "column", gd::table::tag_not_null{}).as_string();
+         std::string stringName = itRow.cell_get_variant_view( "name", gd::table::tag_not_null{}).as_string();
          uint32_t uType = itRow.cell_get_variant_view("type").as_uint();
          auto value_ = itRow.cell_get_variant_view("value", gd::table::tag_not_null{});
-         arguments_.append( { { "name", stringColumn }, { "value", value_ }, { "type", uType } }, gd::types::tag_view{});
+         arguments_.append( { { "name", stringName }, { "value", value_ }, { "type", uType } }, gd::types::tag_view{});
          queryUpdate.field_add( arguments_, gd::sql::tag_arguments{} );       // add column to query
       }
       else if( uType == uint32_t( ePartTypeWhere ) )
       {
-         std::string stringColumn = itRow.cell_get_variant_view( "column", gd::table::tag_not_null{}).as_string();
+         std::string stringName = itRow.cell_get_variant_view( "name", gd::table::tag_not_null{}).as_string();
          uint32_t uType = itRow.cell_get_variant_view("type").as_uint();
          auto value_ = itRow.cell_get_variant_view("value", gd::table::tag_not_null{});
          uint32_t uOperator = itRow.cell_get_variant_view("operator").as_uint();
          // ## Generate condition, name, value, type and operator are needed to generate condition for where part of query
-         arguments_.append( { { "name", stringColumn }, { "value", value_ }, { "type", uType }, { "operator", uOperator } }, gd::types::tag_view{});
+         arguments_.append( { { "name", stringName }, { "value", value_ }, { "type", uType }, { "operator", uOperator } }, gd::types::tag_view{});
          queryUpdate.condition_add( arguments_, gd::sql::tag_arguments{} );   // add condition to query
       }
    }
 
+   // ## Add conditions to query if there are any ............................
+   if( m_vectorCondition.empty() == false )
+   {
+      auto [success, error] = utility::add_condition_to_query( m_vectorCondition, queryUpdate );
+      if( success == false ) return { false, error };
+   }
 
-   // ## Generate insert query ..............................................
+
+
+   // ## Generate update query ..............................................
 
    std::string stringUpdateSql;
 	stringUpdateSql += queryUpdate.sql_get( gd::sql::eSqlUpdate );
@@ -775,17 +828,24 @@ std::pair<bool, std::string> CRENDERSql::ToSqlDelete( std::string& stringQuery )
       uint32_t uType = itRow.cell_get_variant_view( "type_part" );
       if( uType == uint32_t( ePartTypeWhere ) )
       {
-         std::string stringColumn = itRow.cell_get_variant_view( "column", gd::table::tag_not_null{}).as_string();
+         std::string stringName = itRow.cell_get_variant_view( "name", gd::table::tag_not_null{}).as_string();
          uint32_t uType = itRow.cell_get_variant_view("type").as_uint();
          auto value_ = itRow.cell_get_variant_view("value", gd::table::tag_not_null{});
          uint32_t uOperator = itRow.cell_get_variant_view("operator").as_uint();
          // ## Generate condition, name, value, type and operator are needed to generate condition for where part of query
-         arguments_.append( { { "name", stringColumn }, { "value", value_ }, { "type", uType }, { "operator", uOperator } }, gd::types::tag_view{});
+         arguments_.append( { { "name", stringName }, { "value", value_ }, { "type", uType }, { "operator", uOperator } }, gd::types::tag_view{});
          queryDelete.condition_add( arguments_, gd::sql::tag_arguments{} );   // add condition to query
       }
    }
 
-   // ## Generate insert query ..............................................
+   // ## Add conditions to query if there are any ............................
+   if( m_vectorCondition.empty() == false )
+   {
+      auto [success, error] = utility::add_condition_to_query( m_vectorCondition, queryDelete );
+      if( success == false ) return { false, error };
+   }
+
+   // ## Generate delete query ..............................................
 
    std::string stringDeleteSql;
 	stringDeleteSql += queryDelete.sql_get( gd::sql::eSqlDelete );
@@ -813,6 +873,32 @@ std::pair<bool, std::string> CRENDERSql::ToSql( std::string_view stringType, std
 
    return { false, "" };
 }
+
+/*
+std::pair<bool, std::string> CRENDERSql::AddConditionToQuery( gd::sql::query& queryAddTo  )
+{
+   for( auto& argumentsCondition : m_argumentsCondition )
+   {                                                                                               assert( gd::sql::query::validate_condition_s( argumentsCondition ).first == true );
+      // ## check for operator
+      if( argumentsCondition.exists( "operator" ) == false ) { argumentsCondition.append( "operator", uint32_t( gd::sql::eOperatorEqual ) ); }
+      else
+      {
+         auto v_ = argumentsCondition["operator"].as_variant_view();
+         if( v_.is_string() == true )
+         {
+            auto eOperator = gd::sql::query::get_where_operator_number_s(v_.as_string_view());
+            if( eOperator == gd::sql::eOperatorError ) { return { false, std::format( "Invalid operator: {}", v_.as_string_view() ) }; }
+
+            argumentsCondition.set( "operator", eOperator );
+         }
+      }
+
+      queryAddTo.condition_add( argumentsCondition, gd::sql::tag_arguments{} );
+   }  
+
+   return { true, "" };
+}
+*/
 
 /**  -------------------------------------------------------------------------- Validate
  * @brief Validate named SQL render attributes against known field columns.
@@ -844,7 +930,7 @@ std::pair<bool, std::string> CRENDERSql::Validate( gd::argument::arguments argum
          case 'k': uRequired |= eColumnFlagKey; break;
          case 's': uRequired |= eColumnFlagSchema; break;
          case 't': { if( key_ == "table" ) uRequired |= eColumnFlagTable; else uRequired |= eColumnFlagType; } break;
-         case 'c': uRequired |= eColumnFlagColumn; break;
+         case 'n': uRequired |= eColumnFlagName; break;
          case 'a': uRequired |= eColumnFlagAlias; break;
          case 'v': uRequired |= eColumnFlagValue; break;
          case 'p': uRequired |= eColumnFlagPartType; break;
@@ -854,6 +940,16 @@ std::pair<bool, std::string> CRENDERSql::Validate( gd::argument::arguments argum
    };
 
    if( puFound != nullptr ) { *puFound = uRequired; }
+
+   return { true, "" };
+}
+
+/// Validate condition arguments against known field columns, ensuring all keys are valid for condition construction.
+std::pair<bool, std::string> CRENDERSql::ValidateCondition( gd::argument::arguments argumentsValue ) const
+{
+   auto [bOk, stringField] = gd::sql::query::validate_condition_s(argumentsValue);
+
+   if( bOk == false ) { return { false, std::format( "Invalid condition field: {}", stringField ) }; }
 
    return { true, "" };
 }

@@ -70,7 +70,7 @@ public:
       eColumnFieldId,            ///< column id (key), used for internal purposes
       eColumnFieldSchema,        ///< schema for table field belongs to
       eColumnFieldTable,         ///< name for table field belongs to
-      eColumnFieldColumn,        ///< name for column in table
+      eColumnFieldName,        ///< name for column in table
       eColumnFieldAlias,         ///< alias for column in table
       eColumnFieldValue,         ///< value for column in table
       eColumnFieldType,          ///< gd type value for column value
@@ -85,7 +85,7 @@ public:
       eColumnFlagKey = 0x01,     ///< column is a key column, used for where part of query
       eColumnFlagSchema = 0x02,  ///< column has schema specified
       eColumnFlagTable = 0x04,   ///< column has table specified
-      eColumnFlagColumn = 0x08,  ///< column has column name specified
+      eColumnFlagName = 0x08,    ///< column has name specified
       eColumnFlagAlias = 0x10,   ///< column has alias specified
       eColumnFlagValue = 0x20,   ///< column has value specified
       eColumnFlagType = 0x40,    ///< column has type specified
@@ -155,6 +155,11 @@ public:
    void AddValues( const gd::argument::arguments& argumentsField );
    std::pair<bool,std::string> AddValues( std::string_view stringJson, gd::types::tag_json );
 
+
+   void AddCondition( const gd::argument::arguments& argumentsCondition );
+   void AddCondition( gd::argument::arguments&& argumentsCondition );
+
+
    /// Adds data for a complete record for specified table
    std::pair<bool,std::string> AddRecord( std::string_view stringJson, gd::types::tag_json );
 
@@ -194,6 +199,7 @@ public:
 
    // @API [tag: validate]
    std::pair<bool, std::string> Validate( gd::argument::arguments argumentsValue, unsigned* puFound = nullptr ) const;
+   std::pair<bool, std::string> ValidateCondition( gd::argument::arguments argumentsValue ) const;
 
    //std::string Dump() const;
 protected:
@@ -208,6 +214,7 @@ public:
    const CDocument* m_pdocument = nullptr; ///< pointer to document, used to get arguments for query, acces internal data in web server
    gd::sql::enumSqlDialect m_eSqlDialect = gd::sql::eSqlDialectUnknown; /// database dialect, used to determine how the syntax of sql statements should be
    gd::table::arguments::table m_tableField;   ///< Values or Names used to produce query
+   std::vector<gd::argument::arguments> m_vectorCondition; ///< arguments used for condition fields
    gd::argument::shared::arguments m_argumentsProperty; ///< arguments used for specific properties of query, this is used for example to store table name, where conditions, etc. as arguments instead of columns in table
 
    inline static gd::table::detail::columns* m_pcolumnsField_s = nullptr; ///< static columns for body

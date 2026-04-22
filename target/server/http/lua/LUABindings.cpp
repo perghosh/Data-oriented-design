@@ -78,6 +78,7 @@ void RegisterSql( sol::state& stateLua )
    stateLua.new_usertype<Sql>(
       "Sql", sol::constructors<Sql()>(),
       "AddColumn", &Sql::AddColumn,
+      "AddCondition", &Sql::AddCondition,
       "AddValues", &Sql::AddValues,
       "AsInsert", &Sql::AsInsert,
       "AsSelect", &Sql::AsSelect,

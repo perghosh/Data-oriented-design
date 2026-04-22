@@ -2224,11 +2224,15 @@ void table::cell_set( uint64_t uRow, std::string_view stringName, const gd::vari
       }
       else
       {
-         cell_set_argument( uRow, stringName, variantviewValue );
+         if( column_is_reference( iColumnIndex ) == true )
+         {
+            cell_set(uRow, (unsigned)iColumnIndex, variantviewValue, tag_convert{});
+         }
+         else { cell_set_argument( uRow, stringName, variantviewValue ); }
       }
    }
    else
-   {
+   {                                                                          // column not found, set as argument
       cell_set_argument( uRow, stringName, variantviewValue );
    }
 }
