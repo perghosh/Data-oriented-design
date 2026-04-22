@@ -215,7 +215,11 @@ void CRENDERSql::AddColumn( const gd::argument::arguments& argumentsField )
          }
          else { m_tableField.cell_set( uRow, eColumnFieldPartType, value_ ); }
       }
-
+      else
+      {
+         if( value_.is_string() == true ) { Add( key_, value_.as_string_view() ); }
+         else { Add( key_, value_ ); }
+      }
    }
 }
 
