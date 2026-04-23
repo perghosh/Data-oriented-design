@@ -533,7 +533,7 @@ std::pair<bool, std::string> CRENDERSql::Prepare()
       std::string stringName = itRow.cell_get_variant_view( "name", gd::table::tag_not_null{}).as_string();
 
       gd::argument::arguments argumentsFind( buffer_ );
-      argumentsFind.append( { {"table", stringTable}, {"name", stringName} });
+      argumentsFind.append( { {"table", stringTable}, {"column", stringName} });
       int64_t iRow = pdatabase_->Column_FindRow( argumentsFind );                                  assert( iRow >= 0 && "Developer error because this should not assert");
 
       if( iRow > 0 )

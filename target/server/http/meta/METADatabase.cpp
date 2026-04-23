@@ -275,6 +275,18 @@ std::pair<bool, std::string> CDatabase::ReadColumnMetadata( std::string_view str
  */
 int64_t CDatabase::Column_FindRow( const gd::argument::arguments& argumentsFind ) const noexcept
 {
+#ifndef NDEBUG
+   // ## Validate keys
+   auto vectorKey = argumentsFind.get_keys();
+   for( const auto& key_ : vectorKey )
+   {
+      if( key_ != "schema" && key_ != "table" && key_ != "column" )
+      {                                                                                            assert( false && "Invalid key in argumentsFind, expected keys are 'schema', 'table', 'column'" );
+         return -1; // Invalid key found
+      }
+   };
+#endif // NDEBUG
+
    int64_t iRow = 0;
    std::string_view stringSchema = argumentsFind["schema"].as_string_view();  // Get schema name from arguments
    std::string_view stringTable = argumentsFind["table"].as_string_view();    // Get table name from arguments

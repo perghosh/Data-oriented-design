@@ -571,6 +571,10 @@ void append_g( const gd::variant_view& variantValue, std::string& stringSql, tag
 void append_g( std::string_view stringValue, unsigned uType, unsigned uDialect, std::string& stringSql )
 {
    using namespace gd::types;
+
+#ifndef NDEBUG
+   [[maybe_unused]] auto stringTypeName_d = type_name_g( uType ); // for debugging, what type is it
+#endif // NDEBUG
    
    // Handle numbers and booleans - append directly without quotes
    // Numbers: integers, floats, decimals

@@ -35,6 +35,7 @@ void RegisterDatabase( sol::state& stateLua )
 {
 	stateLua.new_usertype<Database>(
       "Database", sol::constructors<Database(), Database( void* ), Database( sol::table )>(),
+      "Ask", &Database::Ask,
       "IsOpen", &Database::IsOpen,
       "Open", &Database::Open,
 		"Execute", &Database::Execute,
