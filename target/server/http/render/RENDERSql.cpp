@@ -522,7 +522,7 @@ std::pair<bool,std::string> CRENDERSql::AddRecord( std::string_view stringJson, 
  * @return std::pair<bool, std::string> A pair containing a boolean indicating success and a string containing an error message if preparation fails.
  */
 std::pair<bool, std::string> CRENDERSql::Prepare()                                                // @CRITICAL [tag: type, column, sql] [description: update types for each field from metadata about fileds]
-{                                                                                                  assert( m_pdocument != nullptr ); assert( m_tableField.size() > 0 ); // at least one field should be added before preparing query
+{                                                                                                  assert( m_pdocument != nullptr ); // at least one field should be added before preparing query
    std::array<std::byte, 256> buffer_;
    gd::argument::arguments argumentsFind( buffer_ );
    const META::CDatabase* pdatabase_ = m_pdocument->DATABASE_Get();
@@ -836,7 +836,13 @@ std::pair<bool, std::string> CRENDERSql::ToSqlDelete( std::string& stringQuery )
    std::array<std::byte, 256> buffer_;
    gd::argument::arguments arguments_( buffer_ );
 
-   std::string stringTable = m_tableField.cell_get_variant_view(0u, "table", gd::table::tag_not_null{}).as_string();
+   std::string stringTable;
+
+   // ## Extract table name ..................................................   
+   if( m_tableField.get_row_count() > 0 ) stringTable = m_tableField.cell_get_variant_view(0u, "table", gd::table::tag_not_null{}).as_string();
+   if( stringTable.empty() == true && m_vectorCondition.empty() == false ) { stringTable = m_vectorCondition[0]["table"].as_string(); }
+
+   if( stringTable.empty() == true ) { return { false, "Table name not found" }; }
 
    gd::sql::query queryDelete( m_eSqlDialect, gd::sql::eSqlDelete, stringTable, gd::sql::tag_table{});
 

@@ -19,6 +19,7 @@
 #include "gd/gd_types.h"
 #include "gd/gd_uuid.h"
 #include "gd/gd_log_logger.h"
+#include "gd/gd_table_index.h"
 #include "gd/gd_table_arguments.h"
 
 
@@ -94,6 +95,7 @@ public:
 
    [[nodiscard]] int64_t Column_FindRow( const gd::argument::arguments& argumentsFind ) const noexcept;
    [[nodiscard]] uint32_t Column_GetType( uint64_t iRow ) const noexcept;
+   void Column_CreateIndex();
 
 
 protected:
@@ -110,6 +112,7 @@ public:
    std::unique_ptr<gd::table::arguments::table> m_ptableJoin;  ///< table with connections between tables
    std::unique_ptr<gd::table::arguments::table> m_ptableComputed;  ///< table with computed columns
 
+   gd::table::index_string m_indexstringColumn;
 
 
 // @API [tag: free-functions]

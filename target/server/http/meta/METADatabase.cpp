@@ -322,6 +322,15 @@ uint32_t CDatabase::Column_GetType( uint64_t uRow ) const noexcept
    return uType;
 }
 
+// @TODO: Implement a more efficient index for column metadata, and use that finding column information
+void CDatabase::Column_CreateIndex() 
+{
+   // ## Create index for column metadata table, this is used to quickly find column information by schema, table and column name
+   //    The index is created by concatenating schema, table and column name into a single string and using that as key for the index.
+   //    This allows for fast lookup of column information based on the combination of schema, table and column name.
+   // ## Note that this is a simple implementation of an index, in a real implementation you would want to use a more efficient data structure for the index, like a hash map or a trie.
+}
+
 
 void CDatabase::CreateTable_s( gd::table::arguments::table& tableTable )
 {
