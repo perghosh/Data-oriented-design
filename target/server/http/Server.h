@@ -44,6 +44,7 @@ boost::beast::string_view mime_type_g(boost::beast::string_view path);
 std::string path_cat_g( boost::beast::string_view base,  boost::beast::string_view path);
 
 class session; // Forward declaration of session class to avoid circular dependency
+class listener;
 
 /**
  * \brief
@@ -80,10 +81,13 @@ public:
 
 // ## methods ------------------------------------------------------------------
 public:
-/** \name GET/SET
-*///@{
+   // @API [tag: get, set]
+      /// Get application pointer
+   CApplication* GetApplication() const { return m_ppapplication; }
+   void SetApplication( CApplication* ppapplication ) { m_ppapplication = ppapplication; }
 
-//@}
+   std::shared_ptr<listener> GetListener() const;
+   void SetListener( std::shared_ptr<listener> plistener );
 
 /** \name OPERATION
 *///@{
@@ -119,8 +123,7 @@ public:
 // ## attributes ----------------------------------------------------------------
 public:
    CApplication* m_ppapplication{}; ///< application pointer, access application that is used as object root for server
-   //CRouter m_router;                ///< command router
-
+   std::shared_ptr<listener> m_plistener; ///< listener object that accepts incoming connections and launches sessions to handle them
 
 // ## free functions ------------------------------------------------------------
 public:

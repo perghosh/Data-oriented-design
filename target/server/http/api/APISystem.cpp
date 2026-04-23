@@ -90,6 +90,7 @@ std::pair<bool, std::string> CAPISystem::Execute()
                if( Objects().Empty() == false ) { Objects()["command"] = stringCommand; }
             }
          }
+         else if( stringCommand == "quit" ) { result_ = Execute_Quit(); }
       }
       else if( stringCommand == "session" )
       {
@@ -536,6 +537,12 @@ std::pair<bool, std::string> CAPISystem::Execute_SessionList()
    return { true, "" };
 }
 
+std::pair<bool, std::string> CAPISystem::Execute_Quit()
+{
+   CDocument* pdocument = GetDocument();
+   //pdocument->QUIT();
+   return { true, "" };
+}
 
 /// Validate session string
 std::pair<bool, std::string> ValidateSession_s(const std::string& stringSession) 

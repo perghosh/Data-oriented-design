@@ -15,8 +15,6 @@
 #include "gd/gd_log_logger_printer.h"
 #include "gd/gd_log_logger_define.h"
 
-#include "HttpServer.h"
-
 #include "application/ApplicationBasic.h"
 
 #include "lua/LUAStatePool.h"
@@ -43,7 +41,8 @@ namespace gd { namespace cli { class options; } }
 */
 class CApplication : public application::basic::CApplication
 {
-   // ## construction -------------------------------------------------------------
+
+// @API [tag: construct, application] [description: Main application class, entry point for server application]
 public:
    CApplication() {}
    // copy
@@ -71,8 +70,6 @@ public:
    const CDocument* GetDocument() const { return m_pdocumentActive; }
    /// Get server pointer
    CServer* GetServer() const { return m_pserverBoost; }
-   CHttpServer* GetHttpServer() { return m_phttpserver; }
-   const CHttpServer* GetHttpServer() const { return m_phttpserver; }
 //@}
 
 /** \name OPERATION
@@ -225,8 +222,6 @@ public:
    // ## attributes ----------------------------------------------------------------
 public:
    CServer* m_pserverBoost{};       ///< server object , used to handle incoming data and send response, holds boost objects
-   CHttpServer* m_phttpserver{};    ///< http server object, used to handle http requests
-   gd::com::server::server_i* m_pserver{}; ///< active server
 
    std::mutex m_mutex;              ///< general mutex for application
 

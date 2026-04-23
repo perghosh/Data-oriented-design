@@ -72,19 +72,6 @@ std::string FOLDER_GetRoot_g( const std::string_view& stringSubfolder );
 
 CApplication::~CApplication() 
 {
-   // ## release server if it is set
-   if( m_pserver )
-   {
-      m_pserver->release();
-      m_pserver = nullptr;
-   }
-
-   if( m_phttpserver != nullptr )
-   {
-      m_phttpserver->release();
-      m_phttpserver = nullptr;
-   }
-
    for( auto it : m_vectorDatabase )
    {
       it->release();
@@ -129,30 +116,42 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 
    papplication_g->PROPERTY_Add("folder-application", stringApplicationFolder);
 
-   gd::cli::options optionsApplication;
-   PrepareOption_s(optionsApplication);
-
-   // ## Initialize application
-   auto result_ = Initialize();                                                                    assert( result_.first );
-
-   // ## Parse arguments if sent
-   if( iArgumentCount > 1 )											           // do we have arguments ? (first is application)
+   std::string stringApplicationCommand; 
+   
    {
-      auto result_ = optionsApplication.parse(iArgumentCount, ppbszArgument); // @CORE [title: options] [description: parse command line arguments] 
-      if( result_.first == false ) { return result_; }
+      gd::cli::options optionsApplication;
+      PrepareOption_s(optionsApplication);
 
-      result_ = Read_s( this, optionsApplication );                           // @CRITICAL [title: read global options] [description: read global arguments from options, settings for complete application]
-      if( result_.first == false ) { return result_; }
+      // ## Initialize application
+      auto result_ = Initialize();                                                                 assert( result_.first );
 
-      // ## Check active command and execute
-      auto poptionsActive = optionsApplication.sub_find_active();
-      if( poptionsActive != nullptr )                                        
+
+      // ## Parse arguments if sent
+      if( iArgumentCount > 1 )											           // do we have arguments ? (first is application)
       {
-         result_ = Configure( *poptionsActive );                                                   if( result_.first == false ) { return result_; }
-
-         result_ = Execute( *poptionsActive);
+         auto result_ = optionsApplication.parse(iArgumentCount, ppbszArgument); // @CORE [title: options] [description: parse command line arguments] 
          if( result_.first == false ) { return result_; }
+
+         result_ = Read_s( this, optionsApplication );                        // @CRITICAL [title: read global options] [description: read global arguments from options, settings for complete application]
+         if( result_.first == false ) { return result_; }
+
+         // ## Check active command and execute
+         auto poptionsActive = optionsApplication.sub_find_active();
+         if( poptionsActive != nullptr )                                        
+         {
+            stringApplicationCommand = poptionsActive->name();                                     assert( stringApplicationCommand.empty() == false && "Developer error because command should not be empty if options is active" );
+            result_ = Configure( *poptionsActive );                                                if( result_.first == false ) { return result_; }
+
+            result_ = Execute( *poptionsActive);
+            if( result_.first == false ) { return result_; }
+         }
       }
+   }
+
+   if( stringApplicationCommand == "http" )
+   {
+      auto result_ = SERVER_Start( 0 );
+      if( result_.first == false ) { return result_; }
    }
 
    return application::basic::CApplication::Main( iArgumentCount, ppbszArgument, nullptr );
@@ -404,17 +403,6 @@ std::pair< bool, std::string > CApplication::Execute( gd::cli::options& optionsC
 
 
       SITE_Add( stringIp, uPort, stringSite );
-      
-      // ## add site
-      /*
-      std::string stringRoot = papplication_g->PROPERTY_Get("folder-root").as_string();
-      if( stringRoot.empty() == false )
-      {
-         SITE_Add( stringIp, uPort, stringRoot );
-      }
-      */
-
-      return SERVER_Start( 0 );
    }
 
    return std::pair<bool, std::string>( true, "" );
@@ -465,7 +453,14 @@ std::pair<bool, std::string> CApplication::SERVER_Start(unsigned uIndex)
    auto const doc_root = std::make_shared<std::string>(stringRootFolder);
                                                                                                    LOG_DEBUG_RAW("Starting server on http://" & stringIp + ":" & uPort & " with root folder '" & stringRootFolder & "'");
    // Create and launch a listening port
-   std::make_shared<listener>( iocontext_,  tcp::endpoint{addressIP, uPort}, doc_root)->run();
+   auto plistener = std::make_shared<listener>( iocontext_,  tcp::endpoint{addressIP, uPort}, doc_root);
+   plistener->run();
+
+   if( m_pserverBoost != nullptr )
+   {
+      m_pserverBoost->SetApplication( this );
+      m_pserverBoost->SetListener( plistener );
+   }
 
    std::vector<std::thread> vectorThread;
    vectorThread.reserve(uThreadCount - 1);

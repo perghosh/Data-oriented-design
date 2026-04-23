@@ -86,6 +86,17 @@ function( set_compiler_options )
    endif()
 endfunction()
 
+# Add near other helper functions
+option( bEnableWindowsLeakCheck "Enable Windows CRT leak check in Debug" on )
+
+function( enable_windows_leak_check stringTargetName )
+   if( WIN32 AND MSVC AND bEnableWindowsLeakCheck )
+      target_compile_definitions( ${stringTargetName} PRIVATE
+         $<$<CONFIG:Debug>:_CRTDBG_MAP_ALLOC>
+      )
+   endif()
+endfunction()
+
 
 set( USE_TARGET_ ON ) # ========================================================= ${http}
 if( USE_TARGET_ )
@@ -109,8 +120,12 @@ if( USE_TARGET_ )
    target_include_directories(${TARGET_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
    target_include_directories(${TARGET_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/source)
    target_compile_definitions(${TARGET_NAME_} PRIVATE _CRT_SECURE_NO_WARNINGS GD_LOG_SIMPLE GD_DATABASE_SQLITE_USE GD_DATABASE_ODBC_USE)
+   
    set_compiler_options()
    setup_compile_flags(${TARGET_NAME_} "DEVELOPER,VERBOSE")                   # Possible values: DEVELOPER, VERBOSE, MEMORY, SAFE (comma-separated list)
+
+   target_compile_definitions(${TARGET_NAME_} PRIVATE TARGET_COMPILER__LEAKS_CHECK)
+   enable_windows_leak_check( ${TARGET_NAME_} )
 
 #   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 #      target_link_libraries(${TARGET_NAME_} ${CMAKE_DL_LIBS})
@@ -163,8 +178,7 @@ if( USE_TARGET_ )
       
       # Linux ODBC
       if(GD_DATABASE_ODBC_USE)
-         # Try to find ODBC
-         find_package(ODBC QUIET)
+         find_package(ODBC QUIET)                                             # Try to find ODBC via CMake's find_package
          if(ODBC_FOUND)
             target_link_libraries(${TARGET_NAME_} PRIVATE ${ODBC_LIBRARIES})
          else()
@@ -181,10 +195,10 @@ if( USE_TARGET_ )
                else()
                   message(WARNING "ODBC libraries not found on Linux. Install via: sudo apt-get install unixodbc-dev")
                endif()
-            endif()
-         endif()
+            endif() # if(ODBC_LIB AND ODBCINST_LIB)
+         endif() # if(ODBC_FOUND)
       endif()
-   endif()
+   endif() # elseif(UNIX AND NOT APPLE)
 
 
 endif()

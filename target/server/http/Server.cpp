@@ -26,6 +26,14 @@ CServer::~CServer()
 void CServer::common_construct(const CServer& o) {}
 void CServer::common_construct(CServer&& o) noexcept {}
 
+/// @brief Get the listener for the server ----------------------------------
+std::shared_ptr<listener> CServer::GetListener() const { return m_plistener; }
+
+/// @brief Set the listener for the server ----------------------------------
+void CServer::SetListener( std::shared_ptr<listener> plistener )
+{
+   m_plistener = plistener;
+}
 
 std::pair<bool, std::string> CServer::Initialize()
 {
