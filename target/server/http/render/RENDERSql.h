@@ -158,6 +158,7 @@ public:
 
    void AddCondition( const gd::argument::arguments& argumentsCondition );
    void AddCondition( gd::argument::arguments&& argumentsCondition );
+   size_t GetConditionCount() const { return m_vectorCondition.size(); }
 
 
    /// Adds data for a complete record for specified table

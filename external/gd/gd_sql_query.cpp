@@ -317,6 +317,11 @@ gd::sql::query::condition* query::condition_add(const gd::variant_view& variantT
 gd::sql::query::condition* query::condition_add( const gd::argument::arguments& argumentsCondition, tag_arguments )
 {                                                                                                  assert( m_vectorTable.empty() == false );
    const auto* ptable = &m_vectorTable[0];
+   if( argumentsCondition.exists( "table" ) == true )
+   {
+      auto variantviewTable = argumentsCondition["table"].as_variant_view();
+      ptable = table_get( variantviewTable );                                                      assert( ptable != nullptr );
+   }
    condition conditionAdd( *ptable ); // create condition object that is added to query
    for( const auto& it : argumentsCondition.named() )
    {  // append values for field added to query
@@ -2109,7 +2114,7 @@ std::pair<bool, std::string> query::validate_field_s( const gd::argument::argume
 /// validate keys used in condition, "name", "value", "value_hi", "raw", "join", "type", "operator", "group", "sql"
 std::pair<bool, std::string> query::validate_condition_s( const gd::argument::arguments& argumentsCondition )
 {
-   static constexpr std::array<std::string_view, 9> arrayValid = { "name", "value", "value_hi", "raw", "join", "type", "operator", "group", "sql" };
+   static constexpr std::array<std::string_view, 10> arrayValid = { "table", "name", "value", "value_hi", "raw", "join", "type", "operator", "group", "sql" };
    std::vector<std::string_view> keys_ = argumentsCondition.get_keys();
 
    // ## validate condition keys

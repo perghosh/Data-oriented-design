@@ -704,7 +704,7 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql, g
          result_ = sql_.AddRecord( stringRecord, gd::types::tag_json{} );     // add record formated as json
          if( result_.first == false ) { return result_; }
 
-         if( sql_.CountPartType( CRENDERSql::ePartTypeWhere ) == 0 ) { return { false, "Invalid update: missing WHERE clause" }; }
+         if( sql_.GetConditionCount() == 0 && sql_.CountPartType( CRENDERSql::ePartTypeWhere ) == 0 ) { return { false, "Invalid update: missing WHERE clause" }; }
 
          result_ = sql_.Prepare();
 
@@ -722,7 +722,7 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql, g
          result_ = sql_.AddRecord( stringRecord, gd::types::tag_json{} );     // add record formated as json
          if( result_.first == false ) { return result_; }
 
-         if( sql_.CountPartType( CRENDERSql::ePartTypeWhere ) == 0 ) { return { false, "Invalid update: missing WHERE clause" }; }
+         if( sql_.GetConditionCount() == 0 && sql_.CountPartType( CRENDERSql::ePartTypeWhere ) == 0 ) { return { false, "Invalid delete: missing WHERE clause" }; }
 
          result_ = sql_.Prepare();
 

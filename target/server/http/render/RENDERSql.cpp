@@ -489,9 +489,8 @@ std::pair<bool,std::string> CRENDERSql::AddRecord( std::string_view stringJson, 
             arguments_.append( "table", stringTable );
             arguments_.append( "name", itValue.key() );
             arguments_.append_argument( "value", CONVERT::AsVariant( itValue.value() ) );
-            arguments_.append( "type_part", uint32_t( ePartTypeWhere ) ); // where part of query (select, update and delete queries)
          }
-         AddColumn( arguments_ );
+         AddCondition( arguments_ );
       }
 
       auto jsonReturning = jsonRecord["returning"];
@@ -794,8 +793,8 @@ std::pair<bool, std::string> CRENDERSql::ToSqlUpdate( std::string& stringQuery )
    // ## Add conditions to query if there are any ............................
    if( m_vectorCondition.empty() == false )
    {
-      auto [success, error] = utility::add_condition_to_query( m_vectorCondition, queryUpdate );
-      if( success == false ) return { false, error };
+      auto [bOk, stringError] = utility::add_condition_to_query( m_vectorCondition, queryUpdate );
+      if( bOk == false ) return { false, stringError };
    }
 
 
