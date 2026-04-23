@@ -521,17 +521,20 @@ std::pair<bool,std::string> CRENDERSql::AddRecord( std::string_view stringJson, 
  * 
  * @return std::pair<bool, std::string> A pair containing a boolean indicating success and a string containing an error message if preparation fails.
  */
-std::pair<bool, std::string> CRENDERSql::Prepare()
+std::pair<bool, std::string> CRENDERSql::Prepare()                                                // @CRITICAL [tag: type, column, sql] [description: update types for each field from metadata about fileds]
 {                                                                                                  assert( m_pdocument != nullptr ); assert( m_tableField.size() > 0 ); // at least one field should be added before preparing query
    std::array<std::byte, 256> buffer_;
+   gd::argument::arguments argumentsFind( buffer_ );
    const META::CDatabase* pdatabase_ = m_pdocument->DATABASE_Get();
 
+   // ## Loop through rows fields and get type for field to set type.
    for( auto itRow = m_tableField.row_begin(); itRow != m_tableField.row_end(); ++itRow )
    {
+      argumentsFind.clear();
       std::string stringTable = itRow.cell_get_variant_view( "table", gd::table::tag_not_null{}).as_string();
       std::string stringName = itRow.cell_get_variant_view( "name", gd::table::tag_not_null{}).as_string();
 
-      gd::argument::arguments argumentsFind( buffer_ );
+      
       argumentsFind.append( { {"table", stringTable}, {"column", stringName} });
       int64_t iRow = pdatabase_->Column_FindRow( argumentsFind );                                  assert( iRow >= 0 && "Developer error because this should not assert");
 
@@ -541,6 +544,23 @@ std::pair<bool, std::string> CRENDERSql::Prepare()
          itRow.cell_set( "type", uType ); // set type for column in table field
       }
    }
+
+   // ## Loop conditions and update type
+   for( auto& argumentsCondition : m_vectorCondition )
+   {
+      argumentsFind.clear();
+      std::string stringTable = argumentsCondition["table"].as_string();
+      std::string stringColumn = argumentsCondition["name"].as_string();
+      argumentsFind.append( { {"table", stringTable}, {"column", stringColumn} } );
+      int64_t iRow = pdatabase_->Column_FindRow( argumentsFind );                                  assert( iRow >= 0 && "Developer error because this should not assert" );
+      if( iRow > 0 )
+      {
+         uint32_t uType = pdatabase_->Column_GetType( iRow );
+         argumentsCondition.set( "type", uType ); // set type for column in condition
+      }
+   }
+
+
 
 
    // ## Prepare the query, this can include validation and transformation of the data in the table field before generating the final SQL query.
