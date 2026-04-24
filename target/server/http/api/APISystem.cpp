@@ -90,7 +90,7 @@ std::pair<bool, std::string> CAPISystem::Execute()
                if( Objects().Empty() == false ) { Objects()["command"] = stringCommand; }
             }
          }
-         else if( stringCommand == "quit" ) { result_ = Execute_Quit(); }
+         
       }
       else if( stringCommand == "session" )
       {
@@ -108,6 +108,19 @@ std::pair<bool, std::string> CAPISystem::Execute()
             else if( stringCommand == "list" )     { result_ = Execute_SessionList(); }
             else break;
 
+            if( Objects().Empty() == false ) { Objects()["command"] = stringCommand; }
+         }
+      }
+      else if( stringCommand == "application" )
+      {
+         uIndex++;
+         for( ; uIndex < m_vectorCommand.size(); uIndex++ && result_.first == true )
+         {
+            stringCommand = m_vectorCommand[uIndex];
+            if( stringCommand.empty() == true ) { break; }
+
+            if( stringCommand == "quit" ) { result_ = Execute_ApplicationQuit(); }
+            else break;
             if( Objects().Empty() == false ) { Objects()["command"] = stringCommand; }
          }
       }
@@ -537,10 +550,9 @@ std::pair<bool, std::string> CAPISystem::Execute_SessionList()
    return { true, "" };
 }
 
-std::pair<bool, std::string> CAPISystem::Execute_Quit()
+std::pair<bool, std::string> CAPISystem::Execute_ApplicationQuit()
 {
-   CDocument* pdocument = GetDocument();
-   //pdocument->QUIT();
+   papplication_g->SERVER_Stop();
    return { true, "" };
 }
 

@@ -91,15 +91,13 @@ public:
 
 //@}
 
-/** \name SERVER
-*///@{
+// @API [tag: server] [summary: start and stop server] [description: Start and stop the web server]
+
    std::pair<bool, std::string> SERVER_Start( unsigned uIndex = 0 );
-//@}
+   std::pair<bool, std::string> SERVER_Stop();
 
+// @API [tag: database] [description: manage database connections in application]
 
-/** \name DATABASE
- * Manage database connections stored in application
- *///@{
    void DATABASE_SetActive( const std::variant<std::size_t, std::string_view>& index_ );
    void DATABASE_SetNull();
    /// Add database connection to list of connected databases
@@ -112,7 +110,6 @@ public:
    bool DATABASE_Empty() const { return m_vectorDatabase.empty(); }
    ///
    std::pair<bool, std::string> DATABASE_Connect( const gd::argument::arguments& argumentsConnect );
-//@}
 
 /** \name CONFIGURATION
 *///@{

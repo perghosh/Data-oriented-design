@@ -77,8 +77,6 @@ CApplication::~CApplication()
       it->release();
    }
 
-   if( m_pserverBoost ) delete m_pserverBoost;
-
    gd::log::logger<0>* plogger = gd::log::get_s();
    // Call logger destructor
    plogger->clear();
@@ -464,14 +462,40 @@ std::pair<bool, std::string> CApplication::SERVER_Start(unsigned uIndex)
 
    std::vector<std::thread> vectorThread;
    vectorThread.reserve(uThreadCount - 1);
-   for(auto i = uThreadCount - 1; i > 0; --i)
-      vectorThread.emplace_back(
-         [&iocontext_]
-         {
-            iocontext_.run();
-         });
+   for(auto u = uThreadCount - 1; u > 0; --u)
+   {
+      vectorThread.emplace_back( [&iocontext_] { iocontext_.run(); });
+   }
    iocontext_.run();
 
+   for( auto& itThread : vectorThread )
+   {
+      if( itThread.joinable() ) { itThread.join(); }
+   }
+
+   if( m_pserverBoost != nullptr )
+   {
+      auto plistener = m_pserverBoost->GetListener();
+      if( plistener != nullptr ) { plistener->stop(); }
+
+      delete m_pserverBoost;
+      m_pserverBoost = nullptr;
+   }
+
+   return { true, "" };
+}
+
+/** ------------------------------------------------------------------------- SERVER_Stop 
+ * @brief Stops the Boost server instance.
+ * @return A pair containing a success status boolean and an error message string (empty on success).
+ */
+std::pair<bool, std::string> CApplication::SERVER_Stop()
+{
+   if( m_pserverBoost != nullptr )
+   {
+      auto plistener = m_pserverBoost->GetListener();
+      if(plistener != nullptr) { plistener->stop(); }
+   }
    return { true, "" };
 }
 

@@ -2,8 +2,36 @@
 
 #include "Application.h"
 
-/// Global pointer to application object
-//CApplication* papplication_g = nullptr;
+#ifdef TARGET_COMPILER__LEAKS_CHECK
+#if defined(_WIN32) && defined(_MSC_VER) && defined(_DEBUG)
+#include <crtdbg.h>
+
+namespace
+{
+   class windows_leak_check_
+   {
+   public:
+      windows_leak_check_()
+      {
+         const int iDebugFlags = _CrtSetDbgFlag( _CRTDBG_REPORT_FLAG );
+         _CrtSetDbgFlag( iDebugFlags | _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
+      }
+   };
+
+   windows_leak_check_ windowsleakcheck_g;
+
+   static int AllocHook_s(int iAllocType, void* /*pUserData*/, size_t uSize, int /*iBlockType*/, long lRequestNumber, const unsigned char* /*pFilename*/, int /*iLineNumber*/)
+   {
+       if( iAllocType == _HOOK_ALLOC && uSize == 320 )
+       {
+          std::cout << "## AllocHook: alloc# " << lRequestNumber << ", size " << uSize << std::endl;
+           //__debugbreak();                                                         // attach debugger and inspect call stack here
+       }
+       return TRUE;
+   }
+}
+#endif // defined(_WIN32) && defined(_MSC_VER) && defined(_DEBUG)
+#endif // TARGET_COMPILER__LEAKS_CHECK
 
 
 /** --------------------------------------------------------------------------- @API [tag: main] [description: start application] [type: method]
@@ -11,6 +39,13 @@
  */
 int main( int iArgumentCount, char* ppbszArgument[] )
 {
+// At the top of main(), before anything else
+#if defined(_MSC_VER) && defined(_DEBUG)
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+    _CrtSetAllocHook(AllocHook_s);
+    //_CrtSetBreakAlloc(12500);   // lowest alloc# from the leak dump — first occurrence
+#endif
+
    // ## Initialize application and configure to get the server running
    std::unique_ptr< CApplication > papplication_ = std::make_unique<CApplication>();
    papplication_g = papplication_.get();
@@ -23,29 +58,7 @@ int main( int iArgumentCount, char* ppbszArgument[] )
    {
       std::cout << "## Server exit with error: "  << result_.second << std::endl;
    }
-   
-   //result_ = papplication_->SERVER_Start();
 
    return 0;
 }
 
-#ifdef TARGET_COMPILER__LEAKS_CHECK
-#if defined(_WIN32) && defined(_MSC_VER) && defined(_DEBUG)
-#include <crtdbg.h>
-
-namespace
-{
-class windows_leak_check_
-{
-public:
-   windows_leak_check_()
-   {
-      const int iDebugFlags = _CrtSetDbgFlag( _CRTDBG_REPORT_FLAG );
-      _CrtSetDbgFlag( iDebugFlags | _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
-   }
-};
-
-windows_leak_check_ windowsleakcheck_g;
-}
-#endif // defined(_WIN32) && defined(_MSC_VER) && defined(_DEBUG)
-#endif // TARGET_COMPILER__LEAKS_CHECK

@@ -193,6 +193,7 @@ public:
 // ## methods -----------------------------------------------------------------
    // Start accepting incoming connections
    void run() { do_accept(); }
+   void stop(); ///< Stop accepting incoming connections and close acceptor
 
 private:
    void do_accept();

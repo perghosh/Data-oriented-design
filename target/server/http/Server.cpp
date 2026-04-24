@@ -434,6 +434,17 @@ listener::listener( boost::asio::io_context& iocontext_, boost::asio::ip::tcp::e
    }
 }
 
+void listener::stop()
+{
+   boost::beast::error_code errorcodeCancel;
+   m_acceptor.cancel( errorcodeCancel );
+
+   boost::beast::error_code errorcodeClose;
+   m_acceptor.close( errorcodeClose );
+
+   m_iocontext.stop();
+}
+
 void listener::do_accept()
 {
    // The new connection gets its own strand
@@ -443,28 +454,25 @@ void listener::do_accept()
 
 void listener::on_accept(boost::beast::error_code errorcode, boost::asio::ip::tcp::socket socket)
 {
+   if( errorcode == boost::asio::error::operation_aborted ) { return; }       // stopped intentionally
+
    if(errorcode)
    {
       fail_g(errorcode, "accept");
-      return;                                                                  // To avoid infinite loop
-   }
-   else
-   {
-      // ## Create the session and run it
-      auto psession = std::make_shared<session>( std::move(socket), m_pstringFolderRoot);
-
-      // ## Check for what type of information that is read from all incoming connections
-      const auto* pdocument = papplication_g->GetDocument();
-      if( pdocument != nullptr )
-      {
-         psession->read( pdocument->GetRequestFlags() );
-      }
-
-
-      psession->run();
+      return;                                                                 // To avoid infinite loop
    }
 
-   do_accept();                                                                // Accept another connection
+   // ## Create the session and run it
+   auto psession = std::make_shared<session>( std::move(socket), m_pstringFolderRoot);
+
+   // ## Check for what type of information that is read from all incoming connections
+   const auto* pdocument = papplication_g->GetDocument();
+   if( pdocument != nullptr ) { psession->read( pdocument->GetRequestFlags() ); } // read session information based on requested item flags
+
+
+   psession->run();
+
+   do_accept();                                                               // Accept another connection
 }
 
 
@@ -524,7 +532,7 @@ void session::on_read( boost::beast::error_code errorcode, std::size_t uBytesTra
    // This means they closed the connection
    if(errorcode == boost::beast::http::error::end_of_stream) { return do_close(); }
 
-   if(errorcode) { return fail_g(errorcode, "read"); }
+   if(errorcode) { fail_g(errorcode, "read"); return do_close(); }
 
    // Send the response
    auto message_ = handle_request(*m_pstringFolderRoot, std::move(m_request), this);
@@ -542,7 +550,7 @@ void session::send_response(boost::beast::http::message_generator&& messagegener
 
 void session::on_write( bool bKeepAlive, boost::beast::error_code errorcode, std::size_t uBytesTransferred)
 {                                                                                                  boost::ignore_unused(uBytesTransferred);
-   if(errorcode) { return fail_g(errorcode, "write"); }
+   if(errorcode) { fail_g(errorcode, "write"); return do_close(); }
 
    if(bKeepAlive == false)
    {
