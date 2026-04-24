@@ -411,8 +411,7 @@ std::pair< bool, std::string > CApplication::Execute( gd::cli::options& optionsC
  * @return true if ok, false and error information on error
  */
 std::pair<bool, std::string> CApplication::SERVER_Start(unsigned uIndex)
-{
-   assert(uIndex < m_ptableSite->size() && "You need at least one site to start server");
+{                                                                                                  assert(uIndex < m_ptableSite->size() && "You need at least one site to start server");
    unsigned short uPort = 80;
    std::string stringDefaultIp("127.0.0.1");
    std::string stringIp;

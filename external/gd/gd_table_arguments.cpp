@@ -228,10 +228,13 @@ table::~table()
    // ## release arguments if set
    if( empty() == false && is_rowarguments() == true && get_row_count() > 0 )
    {
-      auto* puPosition = m_puMetaData; 
+      //auto* puPosition = m_puMetaData; 
       // Calculate offset to arguments object in metadata for each row
-      auto* puArguments = row_get_arguments_meta( 0 );
-      size_t uOffset = puArguments - puPosition;                                                   assert( uOffset <= (m_uRowMetaSize - sizeof(gd::argument::shared::arguments)) );
+      //auto* puArguments = row_get_arguments_meta( 0 );
+      //size_t uOffset = puArguments - puPosition;                                                   assert( uOffset <= (m_uRowMetaSize - sizeof(gd::argument::shared::arguments)) );
+
+      erase_arguments_s( *this, false );
+      /*
       for ( uint64_t uRow = 0; uRow < get_row_count(); uRow++ )
       {
          auto* puRow = row_get_arguments_meta(uRow);
@@ -241,6 +244,7 @@ table::~table()
             pArguments->release();
          }
       }
+      */
    }
 
 
@@ -3475,6 +3479,12 @@ void table::append( const gd::table::dto::table& tableFrom, uint64_t uFrom, uint
 */
 void table::clear()
 {
+   // ## release arguments if set
+   if( empty() == false && is_rowarguments() == true && get_row_count() > 0 )
+   {
+      erase_arguments_s( *this, true );
+   }
+
    if( m_pcolumns != nullptr && is_static_columns() == false ) m_pcolumns->release(); // release columns information
    m_pcolumns = nullptr;
 
@@ -4303,6 +4313,25 @@ void table::column_match_s( const table& t1_, const table& t2_, std::vector<unsi
    }
 }
 
+/// @brief clear arguments objects from rows in table, this is used when rows are removed from table to release reference to arguments objects that are stored in row meta data
+void table::erase_arguments_s( table& tableErase, bool bSetNull )
+{                                                                                                  assert( tableErase.empty() == false );
+   // ## if table has arguments meta data then release reference to arguments objects for rows that are erased
+   if( tableErase.is_rowarguments() == true )
+   {
+      for( uint64_t u = 0; u < tableErase.get_row_count(); u++ )
+      {
+         gd::argument::shared::arguments* pargumentsRow = (gd::argument::shared::arguments*)tableErase.row_get_arguments_pointer( u );
+         if( pargumentsRow != nullptr ) pargumentsRow->buffer_delete(); // release reference to arguments object
+      }
+   }
+
+   // ## if bSetNull is true then set all arguments meta data for rows to null
+   if( bSetNull == true )
+   {
+      for( uint64_t u = 0; u < tableErase.get_row_count(); u++ ) { tableErase.row_set_arguments_meta_null( u );  }
+   }
+}
 
 
 

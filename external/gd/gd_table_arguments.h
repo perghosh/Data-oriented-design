@@ -548,6 +548,8 @@ public:
    uint32_t* row_get_state( uint64_t uRow ) const noexcept;
    /// Get pointer to row arguments part
    uint8_t* row_get_arguments_meta( uint64_t uRow ) const noexcept;
+   /// Set row arguments part to null (if arguments meta is used for row)
+   void row_set_arguments_meta_null( uint64_t uRow ) noexcept;
    /// if row is in used (when state information is used for row)
    bool row_is_use( uint64_t uRow ) const noexcept;
    /// if row holds arguments object
@@ -1025,6 +1027,11 @@ public:
    /// fill vectors with indexes to columns that have same names
    static void column_match_s( const table& t1_, const table& t2_, std::vector<unsigned>* pvector1, std::vector<unsigned>* pvector2, tag_name );
 
+   // ## erase logic
+
+   /// Erase arguments connected to rows
+   static void erase_arguments_s( table& tableErase, bool bSetNull );
+
 
 };
 
@@ -1195,7 +1202,7 @@ inline std::string_view table::column_get_alias( unsigned uIndex ) const {      
    return m_pcolumns->alias( uIndex );
 }
 
-/** ---------------------------------------------------------------------------
+/** ------------------------------------------------------------------------- column_get
  * @brief get column information and place it in `argument::column` object
  * @param uIndex index to column reading information about
  * @param column_ reference to column where information is placed
@@ -1204,7 +1211,7 @@ inline void table::column_get(unsigned uIndex, argument::column& column_) const 
    m_pcolumns->get( uIndex )->get( column_ );
 }
 
-/** ---------------------------------------------------------------------------
+/** ------------------------------------------------------------------------- column_fill
 * @brief Fill column with value
 * @param stringName column name to fill with value
 * @param variantviewValue value to fill
@@ -1216,7 +1223,7 @@ void table::column_fill( const std::string_view& stringName, const gd::variant_v
    column_fill( uColumnIndex, variantviewValue, std::forward< Arguments >(arguments)... );         // select proper method to fill column with value
 }
 
-/** ---------------------------------------------------------------------------
+/** ------------------------------------------------------------------------- column_fill
 * @brief Fill column with value
 * @param stringName column name to fill with value
 * @param vectorValue values to add to column
@@ -1228,7 +1235,7 @@ void table::column_fill( const std::string_view& stringName, const std::vector< 
    column_fill( uColumnIndex, vectorValue, std::forward< Arguments >(arguments)... );              // select proper method to fill column with values from vector
 }
 
-/** ---------------------------------------------------------------------------
+/** ------------------------------------------------------------------------- row_get_null
  * @brief Return pointer to row null value section (flags in metadata marking cell null values)
  * This is the first part of meta data for each row, if table is created to store null values for each column
  * @param uRow index for row null value is returned for
@@ -1238,7 +1245,7 @@ inline uint8_t* table::row_get_null( uint64_t uRow ) const noexcept { assert( uR
    return reinterpret_cast<uint8_t*>( m_puMetaData + (uRow * m_uRowMetaSize) );
 }
 
-/** ---------------------------------------------------------------------------
+/** ------------------------------------------------------------------------- row_get_state
  * @brief get position in buffer to row state information for row at index
  * @param uRow index to row where state is located
  * @return uint32_t* pointer to position in internal buffer for row state
@@ -1252,7 +1259,7 @@ inline uint32_t* table::row_get_state( uint64_t uRow ) const noexcept { assert( 
    return reinterpret_cast<uint32_t*>( m_puMetaData + (uRow * m_uRowMetaSize) + uNullSize ); // return pointer to state value
 }
 
-/** ---------------------------------------------------------------------------
+/** ------------------------------------------------------------------------- row_get_arguments_meta
  * @brief get position in buffer to row arguments object for row at index
  * @param uRow index to row where state is located
  * @return uint8_t* pointer to position in internal buffer for row state
@@ -1265,6 +1272,19 @@ inline uint8_t* table::row_get_arguments_meta( uint64_t uRow ) const noexcept { 
    uArgumentsOffset = uArgumentsOffset * sizeof(uint32_t);                                         assert( uArgumentsOffset <= (sizeof(uint32_t) * 2) );
    uArgumentsOffset += ( m_uFlags & eTableFlagRowStatus ) ? eSpaceRowState : 0;// add row state size if used
    return reinterpret_cast<uint8_t*>( m_puMetaData + (uRow * m_uRowMetaSize) + uArgumentsOffset ); // return pointer to arguments value
+}
+
+/** --------------------------------------------------------------------------- row_set_arguments_meta_null
+ * @brief Set row arguments metadata pointer to `nullptr` for the specified row.
+ * 
+ * Clears the pointer-sized metadata slot used for row arguments, marking that
+ * row as having no attached arguments object.
+ * 
+ * @param uRow Index to the row whose arguments metadata is cleared.
+ */
+inline void table::row_set_arguments_meta_null( uint64_t uRow ) noexcept {                                assert( uRow < m_uReservedRowCount ); assert( is_rowarguments() == true );
+   gd::argument::shared::arguments* parguments_ = row_get_arguments_pointer( uRow );
+   *(intptr_t*)parguments_= 0; // set arguments pointer to null
 }
 
 
@@ -1307,8 +1327,8 @@ inline bool table::row_is_arguments(uint64_t uRow) const noexcept { assert(uRow 
 inline void table::row_set_null( uint64_t uRow ) { assert( uRow < m_uReservedRowCount ); assert( is_null() == true );
    auto puRow = row_get_null( uRow );
 
-   if( is_null32() ) *(uint32_t*)puRow =((uint32_t)-1);
-   else              *(uint64_t*)puRow =((uint64_t)-1);
+   if( is_null32() ) { *(uint32_t*)puRow = ( (uint32_t)-1 ); }
+   else              { *(uint64_t*)puRow =((uint64_t)-1); }
 }
 
 /** ---------------------------------------------------------------------------

@@ -1,3 +1,5 @@
+// @FILE [tag: main] [description: main entry point for the server application] [type: source] [name: main.cpp]
+
 #include <iostream>
 
 #include "Application.h"
@@ -8,24 +10,24 @@
 
 namespace
 {
-   class windows_leak_check_
+   struct win32_leak_check_
    {
-   public:
-      windows_leak_check_()
+      win32_leak_check_()
       {
          const int iDebugFlags = _CrtSetDbgFlag( _CRTDBG_REPORT_FLAG );
          _CrtSetDbgFlag( iDebugFlags | _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
       }
    };
 
-   windows_leak_check_ windowsleakcheck_g;
+   win32_leak_check_ win32leakcheck_g;
 
-   static int AllocHook_s(int iAllocType, void* /*pUserData*/, size_t uSize, int /*iBlockType*/, long lRequestNumber, const unsigned char* /*pFilename*/, int /*iLineNumber*/)
+   /// @brief AllocHook_d is called for each allocation and deallocation, you can set break point here and inspect call stack to find where allocation is happening, you can also check size of allocation and only break when specific size is allocated, this is useful when you have memory leak dump and you want to find where specific allocation is happening
+   static int AllocHook_d(int iAllocType, void* /*pUserData*/, size_t uSize, int /*iBlockType*/, long iRequestNumber, const unsigned char* /*pFilename*/, int /*iLineNumber*/)
    {
        if( iAllocType == _HOOK_ALLOC && uSize == 320 )
        {
-          std::cout << "## AllocHook: alloc# " << lRequestNumber << ", size " << uSize << std::endl;
-           //__debugbreak();                                                         // attach debugger and inspect call stack here
+          std::cout << "## AllocHook: alloc# " << iRequestNumber << ", size " << uSize << std::endl;
+           //__debugbreak();                                                    // attach debugger and inspect call stack here
        }
        return TRUE;
    }
@@ -42,8 +44,8 @@ int main( int iArgumentCount, char* ppbszArgument[] )
 // At the top of main(), before anything else
 #if defined(_MSC_VER) && defined(_DEBUG)
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-    _CrtSetAllocHook(AllocHook_s);
-    //_CrtSetBreakAlloc(12500);   // lowest alloc# from the leak dump — first occurrence
+    _CrtSetAllocHook(AllocHook_d);
+    //_CrtSetBreakAlloc(12500);   // lowest alloc# set break att specific allocation number, you can find this number in memory leak dump
 #endif
 
    // ## Initialize application and configure to get the server running
