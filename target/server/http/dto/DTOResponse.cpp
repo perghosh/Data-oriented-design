@@ -167,6 +167,11 @@ std::pair<bool, std::string> CDTOResponse::PrintXml( std::string& stringXml, con
             // #### add json as xml node as cdata
             xmlnodeResult.append_child(node_cdata).set_value(stringJson);
          }
+         else if( Types::TypeNumber_g("text/plain") == uType )
+         {
+            std::string* pstring = (std::string*)pobject;                     //  cast to string object
+            xmlnodeResult.append_child(node_cdata).set_value(pstring->c_str());
+         }
          else
          {
             return { false, "unsupported type for xml serialization" };

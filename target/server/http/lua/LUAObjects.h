@@ -417,7 +417,7 @@ private:
 
 public:
 // @API [tag: operation]
-   void Message( const std::string_view& stringTypeOrMessage, std::optional<std::string> message_ ); ///< Adds message to response body 
+   void Message( std::variant<std::string_view, sol::table> message_, std::optional<std::string> type_ = std::nullopt ); ///< Adds message to response body 
 
 // ## attributes ----------------------------------------------------------------
 public:

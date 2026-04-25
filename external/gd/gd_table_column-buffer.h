@@ -366,8 +366,9 @@ public:
       iterator_row& operator--() { m_uRow--; return *this; }
       iterator_row operator--(int) { iterator_row it_ = *this; --(*this); return it_; }
 
-      auto operator+( std::ptrdiff_t iDistance ) { return iterator_row( (std::ptrdiff_t)m_uRow + iDistance, m_ptablecolumnbuffer ); }
-      auto operator-( std::ptrdiff_t iDistance ) { return iterator_row( (std::ptrdiff_t)m_uRow - iDistance, m_ptablecolumnbuffer ); }
+      auto operator+( std::ptrdiff_t iDistance ) const { return iterator_row( (std::ptrdiff_t)m_uRow + iDistance, m_ptablecolumnbuffer ); }
+      auto operator-( std::ptrdiff_t iDistance ) const { return iterator_row( (std::ptrdiff_t)m_uRow - iDistance, m_ptablecolumnbuffer ); }
+      std::ptrdiff_t operator-( const iterator_row& o ) const { return (std::ptrdiff_t)m_uRow - (std::ptrdiff_t)o.m_uRow; }
 
       const uint8_t* get( tag_raw ) const { return m_ptablecolumnbuffer->row_get(m_uRow); }
 

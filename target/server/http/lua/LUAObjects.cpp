@@ -11,6 +11,7 @@
 #include "gd/gd_table_io.h"
 #include "gd/gd_sql_value.h"
 #include "gd/gd_arguments.h"
+#include "gd/gd_arguments_io.h"
 #include "gd/gd_table_table.h"
 #include "gd/gd_table_column-buffer.h"
 #include "gd/gd_variant.h"
@@ -1413,12 +1414,25 @@ void Request::SetStatus( std::variant<int64_t, std::string_view> status_ )
 // ----------------------------------------------------------------------------
 
 
-void Response::Message( const std::string_view& stringTypeOrMessage, std::optional<std::string> message_ )
+void Response::Message( std::variant<std::string_view, sol::table> message_, std::optional<std::string> type_ )
 {
-   std::string_view stringType = message_.has_value() ? "" : stringTypeOrMessage;
-   std::string_view stringMessage = message_.has_value() ? message_.value() : stringTypeOrMessage;
-   
-   m_papicontext->GetObjects()->Add( stringMessage );
+   std::string_view stringType = type_.has_value() ? type_.value() : "";
+
+   if( message_.index() == 0 )
+   {
+      std::string_view stringMessage = std::get<0>( message_ );
+      m_papicontext->GetObjects()->Add( stringMessage );
+   }
+   else if( message_.index() == 1 )
+   {
+      sol::table tableMessage = std::get<1>( message_ );
+      // ## convert to json with arguments ..................................
+      gd::argument::arguments argumentsMessage;
+      ConvertToArguments_g( tableMessage, argumentsMessage );
+      std::string stringJsonMessage;
+      gd::argument::to_string( argumentsMessage, stringJsonMessage, gd::argument::tag_io_json{}); // convert to json string
+      m_papicontext->GetObjects()->Add( stringJsonMessage );
+   }
 }
 
 LUA_END
