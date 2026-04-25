@@ -1324,8 +1324,8 @@ std::string Request::GetSessionId()
 }
 
 
-/// @brief Get global variable from Request, these values can be used to fill in missing values
-std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> Request::GetGlobalVariable( std::string_view stringName, std::optional<std::string> type_ )
+/// @brief Get script value from Request, these values can be used to fill in missing values
+std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> Request::GetScriptValue( std::string_view stringName, std::optional<std::string> type_ )
 {
    gd::variant_view variantValue = m_pcontext->GetGlobal( stringName );
    if( type_.has_value() == true )
@@ -1339,7 +1339,7 @@ std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> Request::GetGlo
 }
 
 /// @brief Set global variable to Request, these values can be used to fill in missing values
-void Request::SetGlobalVariable( std::string_view stringName, std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> value_, std::optional<std::string> type_ )
+void Request::SetScriptValue( std::string_view stringName, std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> value_, std::optional<std::string> type_ )
 {
    gd::variant variantValue = ConvertFromAny_g( value_ );
    if( type_.has_value() == true )
@@ -1357,7 +1357,7 @@ Sql Request::CreateSql()
    return Sql( m_psql.get() );
 }
 
-std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> Request::GetSqlValue( std::string_view stringName, std::optional<std::string> type_)
+std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> Request::GetClientValue( std::string_view stringName, std::optional<std::string> type_)
 {
    if( m_psql == nullptr ) { throw sol::error( "SQL object not initialized" ); }
    auto iRow = m_psql->FindRowForColumnName( stringName );                    // check if column name exists, if not exception is thrown

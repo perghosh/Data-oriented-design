@@ -401,12 +401,12 @@ public:
    std::string GetSessionId(); ///< Return session ID for current request
 
    std::variant<int64_t, std::string, double, bool, sol::lua_nil_t>
-      GetGlobalVariable( std::string_view stringName, std::optional<std::string> type_ = std::nullopt ); ///< Get global variable for current request, if variable does not exist it will return nil value
-   void SetGlobalVariable( std::string_view stringName, std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> value_, std::optional<std::string> type_ = std::nullopt );
+      GetScriptValue( std::string_view stringName, std::optional<std::string> type_ = std::nullopt ); ///< Get global variable for current request, if variable does not exist it will return nil value
+   void SetScriptValue( std::string_view stringName, std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> value_, std::optional<std::string> type_ = std::nullopt );
 
    Sql CreateSql(); ///< Create SQL object for current request, this can be used to build SQL queries
    std::variant<int64_t, std::string, double, bool, sol::lua_nil_t>
-      GetSqlValue( std::string_view stringName, std::optional<std::string> type_ = std::nullopt ); ///< Get value from SQL object for current request
+      GetClientValue( std::string_view stringName, std::optional<std::string> type_ = std::nullopt ); ///< Get value from SQL object for current request
 
    CRENDERSql* GetSql_() { return m_psql.get(); } ///< Get pointer to SQL object for current request
 

@@ -48,16 +48,16 @@ void RegisterDatabase( sol::state& stateLua )
 void RegisterRequest( sol::state& stateLua )
 {
 	stateLua.new_usertype<Request>(
-      "Request", sol::constructors<Request()>(),
-      "CreateSql", &Request::CreateSql,
-      "GetApplication", &Request::GetApplication,
-      "GetDocument", &Request::GetDocument,
-      "GetDatabase", &Request::GetDatabase,
-      "GetGlobalVariable", &Request::GetGlobalVariable,
-      "GetIpAddress", &Request::GetIpAddress,
-      "GetSessionId", &Request::GetSessionId,
-      "GetSqlValue", &Request::GetSqlValue,
-      "SetGlobalVariable", &Request::SetGlobalVariable
+      "Request", sol::constructors<Request()>(),                              // constructor
+      "CreateSql", &Request::CreateSql,                                       // Create SQL object, will add sql values if request has them
+      "GetApplication", &Request::GetApplication,                             // Get the application object associated with this request
+      "GetClientValue", &Request::GetClientValue,                             // Get a client value by name, client values are passed from client
+      "GetDocument", &Request::GetDocument,                                   // Get the document object associated with this request
+      "GetDatabase", &Request::GetDatabase,                                   // Get the database object associated with this request
+      "GetIpAddress", &Request::GetIpAddress,                                 // Get the IP address of the client making the request
+      "GetScriptValue", &Request::GetScriptValue,                             // Get script value, variables that is not transfered to created SQL object but may be used in this request
+      "GetSessionId", &Request::GetSessionId,                                 // Get the session ID associated with this request
+      "SetScriptValue", &Request::SetScriptValue                              // Set a script value by name. Script values are added in script and is used there
    );
 }
 
