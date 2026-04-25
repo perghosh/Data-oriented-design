@@ -57,6 +57,9 @@ public:
    std::pair<bool, std::string> Execute_SessionExists();
    std::pair<bool, std::string> Execute_SessionList();
 
+   std::pair<bool, std::string> Execute_ClientIP();
+
    std::pair<bool, std::string> Execute_ApplicationQuit();
+
        
 };

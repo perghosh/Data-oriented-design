@@ -90,7 +90,6 @@ std::pair<bool, std::string> CAPISystem::Execute()
                if( Objects().Empty() == false ) { Objects()["command"] = stringCommand; }
             }
          }
-         
       }
       else if( stringCommand == "session" )
       {
@@ -108,6 +107,19 @@ std::pair<bool, std::string> CAPISystem::Execute()
             else if( stringCommand == "list" )     { result_ = Execute_SessionList(); }
             else break;
 
+            if( Objects().Empty() == false ) { Objects()["command"] = stringCommand; }
+         }
+      }
+      else if( stringCommand == "client" )
+      {
+         uIndex++;
+         for( ; uIndex < m_vectorCommand.size(); uIndex++ && result_.first == true )
+         {
+            stringCommand = m_vectorCommand[uIndex];
+            if( stringCommand.empty() == true ) { break; }
+
+            if( stringCommand == "ip" ) { result_ = Execute_ClientIP(); }
+            else break;
             if( Objects().Empty() == false ) { Objects()["command"] = stringCommand; }
          }
       }
@@ -550,11 +562,28 @@ std::pair<bool, std::string> CAPISystem::Execute_SessionList()
    return { true, "" };
 }
 
+/** ------------------------------------------------------------------------- Execute_ClientIP
+ * @brief Retrieves the client's IP address and stores it in the objects collection.
+ * @return A pair containing a success flag (true if successful) and an error message (empty on success).
+ */
+std::pair<bool, std::string> CAPISystem::Execute_ClientIP()
+{
+   CAPIContext* pcontext = GetContext();
+
+   std::string stringIp = pcontext->GetIpAddress();
+
+   gd::argument::arguments* parguments_ = new gd::argument::arguments( { { "ip", stringIp } } );
+   Objects().Add( parguments_ );
+
+   return { true, "" };
+}
+
 std::pair<bool, std::string> CAPISystem::Execute_ApplicationQuit()
 {
    papplication_g->SERVER_Stop();
    return { true, "" };
 }
+
 
 /// Validate session string
 std::pair<bool, std::string> ValidateSession_s(const std::string& stringSession) 
