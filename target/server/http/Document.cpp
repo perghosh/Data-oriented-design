@@ -476,6 +476,21 @@ std::pair<bool, std::string> CDocument::QUERIES_Initialize( const gd::argument::
    return {false, "Queries already initialized"};
 }
 
+std::pair<bool, std::string> CDocument::DATABASE_PrepareConnection( const gd::argument::arguments& arguments_ )
+{                                                                                                  assert( m_pdatabase != nullptr && "Database should be initialized before preparing connection" ); 
+   auto stringDatabaseType = arguments_["type"].as_string_view();
+   if( stringDatabaseType == "sqlite" )
+   {
+      std::pair<bool, std::string> result_;      
+      result_ = m_pdatabase->execute("PRAGMA encoding = 'UTF-8'");
+      if( result_.first == false ) { return result_; }
+      result_ = m_pdatabase->execute("PRAGMA foreign_keys = ON;");
+      if( result_.first == false ) { return result_; }
+   }
+   
+   return { true, "" };
+}
+
 std::pair<bool, std::string> CDocument::DATABASE_Initialize( const gd::argument::arguments& arguments_ )
 {
    if( m_pMDatabase == nullptr )
@@ -484,7 +499,7 @@ std::pair<bool, std::string> CDocument::DATABASE_Initialize( const gd::argument:
       return m_pMDatabase->Initialize();
    }
  
-   return {false, "Queries already initialized"};
+   return {false, "Database already initialized"};
 }
 
 

@@ -54,9 +54,10 @@ void RegisterRequest( sol::state& stateLua )
       "GetDocument", &Request::GetDocument,
       "GetDatabase", &Request::GetDatabase,
       "GetGlobalVariable", &Request::GetGlobalVariable,
-      "SetGlobalVariable", &Request::SetGlobalVariable,
       "GetIpAddress", &Request::GetIpAddress,
-      "GetSessionId", &Request::GetSessionId
+      "GetSessionId", &Request::GetSessionId,
+      "GetSqlValue", &Request::GetSqlValue,
+      "SetGlobalVariable", &Request::SetGlobalVariable
    );
 }
 

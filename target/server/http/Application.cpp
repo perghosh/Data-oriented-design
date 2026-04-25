@@ -650,6 +650,9 @@ std::pair<bool, std::string> CApplication::DATABASE_Connect( const gd::argument:
       auto result_ = OpenDatabase_s( argumentsOpen, pdatabaseOpen );                              assert( m_pdocumentActive != nullptr );
       if( result_.first == false ) return result_;
       m_pdocumentActive->SetDatabase(pdatabaseOpen);
+
+      result_ = m_pdocumentActive->DATABASE_PrepareConnection( argumentsConnect );  // prepare database connection, this is needed to be able to set connection specific settings like dialect and metadata
+
       if( pdatabaseOpen != nullptr ) pdatabaseOpen->release();
 
       if( argumentsConnect.exists( "database-dialect" ) == true )
@@ -679,6 +682,11 @@ std::pair<bool, std::string> CApplication::DATABASE_Connect( const gd::argument:
          result_ = m_pdocumentActive->DATABASE_Prepare( arguments_ );
          if( result_.first == false ) return result_;
       }
+
+      // ## configure database connection based on arguments
+
+
+
    }
 
    return { true, "" };

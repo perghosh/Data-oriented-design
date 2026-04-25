@@ -837,7 +837,7 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
             std::string_view stringValue = xmlattribute_.value();
 
             gd::argument::arguments argumentsFind( buffer_ );
-            argumentsFind.append( { {std::string_view("table"), gd::variant_view(stringTable)}, {std::string_view("name"), gd::variant_view(stringName)} }, gd::types::tag_view{});
+            argumentsFind.append( { {std::string_view("table"), gd::variant_view(stringTable)}, {std::string_view("column"), gd::variant_view(stringName)} }, gd::types::tag_view{});
             int64_t iRow = pdatabase_->Column_FindRow( argumentsFind ); 
             if( iRow == -1 ) { return { false, "column not found in database: " + std::string(stringName) }; }
 

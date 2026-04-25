@@ -1357,4 +1357,23 @@ Sql Request::CreateSql()
    return Sql( m_psql.get() );
 }
 
+std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> Request::GetSqlValue( std::string_view stringName, std::optional<std::string> type_)
+{
+   if( m_psql == nullptr ) { throw sol::error( "SQL object not initialized" ); }
+   auto iRow = m_psql->FindRowForColumnName( stringName );                    // check if column name exists, if not exception is thrown
+   if( iRow < 0 ) { throw sol::error( std::format( "column name not found: {}", stringName ) ); }
+
+   std::string_view stringValue = m_psql->GetValue( iRow );
+   if( type_.has_value() == true )
+   {
+      gd::variant variantValue( stringValue );
+      bool bOk = variantValue.convert( type_.value() );
+      if( bOk == false ) { throw sol::error( std::format( "Failed to convert value to type: {}", type_.value() ) ); }
+      return ConvertToAny_g( variantValue );
+   }
+  
+   return ConvertToAny_g( gd::variant( stringValue ) );
+}
+
+
 LUA_END
