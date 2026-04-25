@@ -61,6 +61,15 @@ void RegisterRequest( sol::state& stateLua )
    );
 }
 
+void RegisterResponse( sol::state& stateLua )
+{
+	stateLua.new_usertype<Response>(
+      "Request", sol::constructors<Response(), Response( Request* )>(),                              // constructor
+      "Message", &Response::Message                                           // Create SQL object, will add sql values if request has them
+   );
+}
+
+
 void RegisterCursor( sol::state& stateLua )
 {
 	stateLua.new_usertype<Cursor>(

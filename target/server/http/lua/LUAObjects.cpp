@@ -1375,5 +1375,17 @@ std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> Request::GetCli
    return ConvertToAny_g( gd::variant( stringValue ) );
 }
 
+// ----------------------------------------------------------------------------
+// ------------------------------------------------------------------- Response
+// ----------------------------------------------------------------------------
+
+
+void Response::Message( const std::string_view& stringTypeOrMessage, std::optional<std::string> message_ )
+{
+   std::string_view stringType = message_.has_value() ? "" : stringTypeOrMessage;
+   std::string_view stringMessage = message_.has_value() ? message_.value() : stringTypeOrMessage;
+   
+   m_papicontext->GetObjects()->Add( stringMessage );
+}
 
 LUA_END

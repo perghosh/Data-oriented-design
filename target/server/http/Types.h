@@ -163,6 +163,7 @@ struct Objects
       return object_.arguments()[stringName];
    }
 
+   void Add( std::string_view stringText ) { m_vectorObjects.emplace_back( Object{ eTypePlain, new std::string(stringText) } ); }
    void Add( gd::table::dto::table* p_ ) { m_vectorObjects.emplace_back( Object{ eTypeDtoTable, p_ } ); }
    void Add( gd::argument::arguments* p_ ) { m_vectorObjects.emplace_back( Object{ eTypeArguments, p_ } ); }
    void Add( const gd::argument::arguments& arguments_ ) { m_vectorObjects.emplace_back( Object{ eTypeArguments, new gd::argument::arguments(arguments_) } ); }

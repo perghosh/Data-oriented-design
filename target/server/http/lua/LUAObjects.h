@@ -240,32 +240,6 @@ public:
 };
 
 // ----------------------------------------------------------------------------
-// ------------------------------------------------------------------- Response
-// ----------------------------------------------------------------------------
-
-/** @CLASS [tag: Response. lua, wrapper] [summary: Wrapper for response object in lua]
- * \brief Response wrapper in lua
- */
-class Response
-{
-// ## construction -------------------------------------------------------------
-public:
-   Response() {}
-   Response( CAPIContext* papicontext ) { m_papicontext = papicontext; }
-
-   ~Response() {}
-private:
-   // common copy
-
-// ## operator -----------------------------------------------------------------
-public:
-
-// ## attributes ----------------------------------------------------------------
-public:
-   CAPIContext* m_papicontext = nullptr; ///< pointer to API context, used to access request and response objects, and other information about current request
-};
-
-// ----------------------------------------------------------------------------
 // ------------------------------------------------------------------- Document
 // ----------------------------------------------------------------------------
 
@@ -390,7 +364,6 @@ private:
    // common copy
    void common_construct( const Request& o ) { m_pcontext = o.m_pcontext; m_psql = o.m_psql ? std::move( std::make_unique<CRENDERSql>( *o.m_psql ) ) : nullptr; }
 
-// ## operator -----------------------------------------------------------------
 public:
 // @API [tag: operation]
    Application GetApplication(); ///< Return application, application is allways valid
@@ -408,6 +381,7 @@ public:
    std::variant<int64_t, std::string, double, bool, sol::lua_nil_t>
       GetClientValue( std::string_view stringName, std::optional<std::string> type_ = std::nullopt ); ///< Get value from SQL object for current request
 
+   CAPIContext* GetContext() { return m_pcontext; } ///< Get pointer to API context for current request
    CRENDERSql* GetSql_() { return m_psql.get(); } ///< Get pointer to SQL object for current request
 
 // ## attributes ----------------------------------------------------------------
@@ -416,5 +390,32 @@ public:
    std::unique_ptr<CRENDERSql> m_psql;///< Base SQL object that can be used to build SQL queries
 };
 
+// ----------------------------------------------------------------------------
+// ------------------------------------------------------------------- Response
+// ----------------------------------------------------------------------------
+
+/** @CLASS [tag: Response. lua, wrapper] [summary: Wrapper for response object in lua]
+ * \brief Response wrapper in lua
+ */
+class Response
+{
+// ## construction -------------------------------------------------------------
+public:
+   Response() {}
+   Response( CAPIContext* papicontext ) { m_papicontext = papicontext; }
+   Response( Request* prequest_ ) { m_papicontext = prequest_->GetContext(); } 
+
+   ~Response() {}
+private:
+   // common copy
+
+public:
+// @API [tag: operation]
+   void Message( const std::string_view& stringTypeOrMessage, std::optional<std::string> message_ ); ///< Adds message to response body 
+
+// ## attributes ----------------------------------------------------------------
+public:
+   CAPIContext* m_papicontext = nullptr; ///< pointer to API context, used to access request and response objects, and other information about current request
+};
 
 LUA_END

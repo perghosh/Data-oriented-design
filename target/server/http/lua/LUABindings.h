@@ -16,6 +16,7 @@ void RegisterApplication( sol::state& stateLua );
 void RegisterDocument( sol::state& stateLua );
 void RegisterDatabase( sol::state& stateLua );
 void RegisterRequest( sol::state& stateLua );
+void RegisterResponse( sol::state& stateLua );
 void RegisterCursor( sol::state& stateLua );
 void RegisterSql( sol::state& stateLua );
 void RegisterExpression( sol::state& stateLua );
