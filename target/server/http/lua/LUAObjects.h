@@ -343,6 +343,8 @@ public:
 // -------------------------------------------------------------------- Request
 // ----------------------------------------------------------------------------
 
+class Response;
+
 /** @CLASS [tag: Request. lua, wrapper] [summary: Wrapper for request object in lua]
  * \brief Request wrapper in lua
  * 
@@ -369,6 +371,7 @@ public:
    Application GetApplication(); ///< Return application, application is allways valid
    Document GetDocument(); ///< Returns document that is allways valid
    Database GetDatabase(); ///< Return database object for current request, if database connection is open
+   Response GetResponse(); ///< Return response object for current request, this can be used to build response body
 
    std::string GetIpAddress(); ///< Return IP address for current request
    std::string GetSessionId(); ///< Return session ID for current request
@@ -377,9 +380,12 @@ public:
       GetScriptValue( std::string_view stringName, std::optional<std::string> type_ = std::nullopt ); ///< Get global variable for current request, if variable does not exist it will return nil value
    void SetScriptValue( std::string_view stringName, std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> value_, std::optional<std::string> type_ = std::nullopt );
 
+
    Sql CreateSql(); ///< Create SQL object for current request, this can be used to build SQL queries
    std::variant<int64_t, std::string, double, bool, sol::lua_nil_t>
       GetClientValue( std::string_view stringName, std::optional<std::string> type_ = std::nullopt ); ///< Get value from SQL object for current request
+
+   void SetStatus( std::variant<int64_t, std::string_view> status_ ); ///< Set status for current request, based on status the server know how to proceede with request,
 
    CAPIContext* GetContext() { return m_pcontext; } ///< Get pointer to API context for current request
    CRENDERSql* GetSql_() { return m_psql.get(); } ///< Get pointer to SQL object for current request

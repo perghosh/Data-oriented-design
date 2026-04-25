@@ -1309,6 +1309,12 @@ Database Request::GetDatabase()
    return Database( (void*)m_pcontext->GetDatabase() );
 }
 
+/// Get response from request
+Response Request::GetResponse()
+{
+   return Response( GetContext() );
+}
+
 /// Get IP address from request, if session is available
 std::string Request::GetIpAddress()
 {
@@ -1373,6 +1379,33 @@ std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> Request::GetCli
    }
   
    return ConvertToAny_g( gd::variant( stringValue ) );
+}
+
+/// @brief Set request status that decides how to proceede
+void Request::SetStatus( std::variant<int64_t, std::string_view> status_ )
+{
+   if( status_.index() == 0 )
+   {
+      int64_t iStatus = std::get<0>( status_ );
+      m_pcontext->SetFlags( static_cast<unsigned>( iStatus ), 0 );
+   }
+   else
+   {
+      std::string_view stringStatus = std::get<1>( status_ );
+      
+      // ## compare first character with aA = abort, cC = continue, rR = retry
+      if( stringStatus.empty() == false )
+      {
+         char c = stringStatus[0];
+         if( c == 'a' || c == 'A' ) { m_pcontext->SetFlags( CAPIContext::eFlagStatusAbort, 0 ); }
+         else if( c == 'c' || c == 'C' ) { m_pcontext->SetFlags( CAPIContext::eFlagStatusContinue, 0 ); }
+         else if( c == 'r' || c == 'R' ) { m_pcontext->SetFlags( CAPIContext::eFlagStatusRetry, 0 ); }
+      }
+      else
+      {
+         throw sol::error( "Invalid status value" );
+      }
+   }
 }
 
 // ----------------------------------------------------------------------------

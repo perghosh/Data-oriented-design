@@ -113,6 +113,10 @@ public:
       eFlagHasResult       = 0x00000004,  ///< at least one object was added to m_objects
       eFlagDatabaseOwner   = 0x00000008,  ///< Ownss the database, releases it on destruction (not yet implemented)
       eFlagSession         = 0x00000010,  ///< Linked to a session (m_psession is valid); set by constructor that takes session pointer
+
+      eFlagStatusAbort     = 0x00010000,  ///< API execution should be aborted
+      eFlagStatusContinue  = 0x00020000,  ///< API execution should continue to the next section
+      eFlagStatusRetry     = 0x00040000,  ///< API execution should be retried
    };
 
 // ## methods ----------------------------------------------------------------
@@ -154,6 +158,14 @@ public:
    bool HasError()   const { return ( m_uFlags & eFlagHasError )  != 0; }
    bool HasResult()  const { return ( m_uFlags & eFlagHasResult ) != 0; }
    bool IsDatabaseOwner() const { return ( m_uFlags & eFlagDatabaseOwner ) != 0; }
+
+   // ## Status flags that can be set by API sections to control execution flow across chained sections
+
+   bool IsStatusAbort()    const { return ( m_uFlags & eFlagStatusAbort ) != 0; }
+   bool IsStatusContinue() const { return ( m_uFlags & eFlagStatusContinue ) != 0; }
+   bool IsStatusRetry()    const { return ( m_uFlags & eFlagStatusRetry ) != 0; }
+
+   void SetFlags( unsigned uSet, unsigned uClear = 0 ) { m_uFlags |= uSet; m_uFlags &= ~uClear;  }
 
    // @API [tag: error] [description: Error handling]
 

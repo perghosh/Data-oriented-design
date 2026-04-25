@@ -55,16 +55,18 @@ void RegisterRequest( sol::state& stateLua )
       "GetDocument", &Request::GetDocument,                                   // Get the document object associated with this request
       "GetDatabase", &Request::GetDatabase,                                   // Get the database object associated with this request
       "GetIpAddress", &Request::GetIpAddress,                                 // Get the IP address of the client making the request
+      "GetResponse", &Request::GetResponse,                                   // Get the response object associated with this request
       "GetScriptValue", &Request::GetScriptValue,                             // Get script value, variables that is not transfered to created SQL object but may be used in this request
       "GetSessionId", &Request::GetSessionId,                                 // Get the session ID associated with this request
-      "SetScriptValue", &Request::SetScriptValue                              // Set a script value by name. Script values are added in script and is used there
+      "SetScriptValue", &Request::SetScriptValue,                             // Set a script value by name. Script values are added in script and is used there
+      "SetStatus", &Request::SetStatus                                        // Set http status for currect request
    );
 }
 
 void RegisterResponse( sol::state& stateLua )
 {
 	stateLua.new_usertype<Response>(
-      "Request", sol::constructors<Response(), Response( Request* )>(),                              // constructor
+      "Response", sol::constructors<Response(), Response( Request* )>(),                              // constructor
       "Message", &Response::Message                                           // Create SQL object, will add sql values if request has them
    );
 }

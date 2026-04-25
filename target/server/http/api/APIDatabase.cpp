@@ -106,6 +106,8 @@ std::pair<bool, std::string> CAPIDatabase::Execute()
          return result_; 
       }
 
+      if( GetContext()->IsStatusAbort() == true ) { return { true, "abort" }; } // check for aborting ?
+
 #ifndef NDEBUG
       [[maybe_unused]] auto uObjectCount_d = Objects().Size();
 #endif // NDEBUG
@@ -475,6 +477,8 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
          if( stringError.empty() == false ) { return { false, stringError }; }
       }
 
+      if( GetContext()->IsStatusAbort() == true ) { return { true, "abort" }; } // check for aborting ?
+
       if( Exists( "xml" ) )
       {
          std::array<std::byte, 128> buffer_;
@@ -492,9 +496,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
          Objects().Add( argumentsReturn );
       }
 
-
       return { true, "" }; 
-
    }
 
 

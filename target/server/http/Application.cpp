@@ -1091,6 +1091,7 @@ std::pair<bool, std::string> CApplication::LUA_Initialize(const gd::argument::ar
          LUA::RegisterDocument( state_ );
          LUA::RegisterDatabase( state_ );
          LUA::RegisterRequest( state_ );
+         LUA::RegisterResponse( state_ );
          LUA::RegisterCursor( state_ );
          LUA::RegisterSql( state_ );
          LUA::RegisterExpression( state_ );
