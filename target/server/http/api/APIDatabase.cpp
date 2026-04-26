@@ -25,6 +25,8 @@
 #include "../Document.h"
 #include "../Application.h"
 
+#include "API_Scripting.h"
+
 #include "APIDatabase.h"
 
 using namespace SERVICE;
@@ -433,51 +435,28 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
       auto vectorCode = pqueries->GetArgumentsValues( stringQuery, "code" );  // get code for insert
       if( vectorCode.empty() == false )
       {
-         auto* ppool_ = GetApplication()->LUA_GetPool();
-         if( ppool_->Empty() ) return { false, "no lua states available in pool" };
-         auto lua_ = ppool_->Acquire( "core" );                              // acquire lua state from pool to execute code, relased in destructor
-         auto& state_ = lua_.get_luastate();
-
          if( GetContext()->GetDatabase() == nullptr ) { GetContext()->SetDatabase(pdatabase); }
 
-         // ## Prepare objects for code execution, these are added to state as global variables
-         std::unique_ptr<LUA::Application> papplication = std::make_unique<LUA::Application>( GetApplication(), pdatabase ); // applicaiton information
-         state_["app"] = std::move( papplication );    
-         std::unique_ptr<LUA::Document> pdocument = std::make_unique<LUA::Document>( GetDocument(), pdatabase ); // document information, note that the database isn't same as database inside document, this is the global database.
-         state_["doc"] = std::move( pdocument );
-         std::unique_ptr<LUA::Request> prequest = std::make_unique<LUA::Request>( GetContext() ); // request information, holds user data etc for current request to server.
-
-         if( Exists( "values" ) == true )
-         {
-            std::array<std::byte, 128> buffer_;
-            gd::argument::arguments argumentsValues(buffer_);
-            std::string stringValues = GetArgument("values").as_string();
-            auto psql_ = prequest->GetSql_();
-            auto result_ = psql_->AddValues( stringValues, gd::types::tag_json{} );
-            if( result_.first == false ) { return { false, "failed to add values for code execution: " + result_.second }; }
-         }
-
-         state_["request"] = std::move( prequest );
-
-         std::string stringError;
-         for( auto& stringCode : vectorCode )
-         {
-            try 
+         auto result_ = SCRIPT::LuaRequestExecute( vectorCode, GetContext(), [&](sol::state* pstateLua, CAPIContext* pcontext_) -> std::pair<bool, std::string> {
+            if( Exists( "values" ) == true )
             {
-               state_.safe_script( stringCode );
+               auto* prequest_ = (*pstateLua)["request"].get<LUA::Request*>();
+               auto* psql_ = prequest_->GetRenderSql();
+               std::array<std::byte, 128> buffer_;
+               gd::argument::arguments argumentsValues(buffer_);
+               std::string stringValues = GetArgument("values").as_string();
+               auto result_ = psql_->AddValues( stringValues, gd::types::tag_json{} );
+               if( result_.first == false ) { return { false, "failed to add values for code execution: " + result_.second }; }
             }
-            catch(const sol::error& e) 
-            {                                                                                      LOG_ERROR( "Lua Error: " << e.what() );
-               stringError = std::format( "Lua Error: {}", e.what() );
-               break;
-            }
-         }
+            return { true, "" };
+         });
 
-         lua_.reset( { "app", "doc", "request" }, true );
-         if( stringError.empty() == false ) { return { false, stringError }; }
+         if( result_.first == false ) { return result_; }
       }
 
       if( GetContext()->IsStatusAbort() == true ) { return { true, "abort" }; } // check for aborting ?
+
+      // ## if xml argument is prepared then do bulk insert with xml data
 
       if( Exists( "xml" ) )
       {

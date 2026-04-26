@@ -389,6 +389,7 @@ public:
 
    CAPIContext* GetContext() { return m_pcontext; } ///< Get pointer to API context for current request
    CRENDERSql* GetSql_() { return m_psql.get(); } ///< Get pointer to SQL object for current request
+   CRENDERSql* GetRenderSql() { return m_psql.get(); } ///< Get pointer to SQL object for current request
 
 // ## attributes ----------------------------------------------------------------
 public:
