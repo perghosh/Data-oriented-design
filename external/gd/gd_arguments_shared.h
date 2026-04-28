@@ -1512,7 +1512,7 @@ public:
 
    static bool is_name_s( uint8_t uType ) { return (uType & ~eType_MASK) == eType_ParameterName; }
    static bool is_name_s( char iType ) { return is_name_s( uint8_t(iType) ); }
-   static bool is_name_s(const_pointer pPosition) {                                                assert(*pPosition != 0);
+   static bool is_name_s(const_pointer pPosition) {                                                assert( pPosition != nullptr );
       uint32_t uType = *(uint32_t*)pPosition;
       uType = uType >> 24;
       return uType == arguments::eType_ParameterName;

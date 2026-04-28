@@ -11,6 +11,7 @@
 #include "gd/gd_sql_types.h"
 #include "gd/gd_arguments.h"
 #include "gd/gd_table_arguments.h"
+#include "gd/gd_sql_query.h"
 
 #include "../Types.h"
 
@@ -97,6 +98,7 @@ public:
 public:
    CRENDERSql(): m_tableField(8, gd::table::tag_full_meta{}) {}
    CRENDERSql( const CDocument* pdocument );
+   CRENDERSql( const CDocument* pdocument, uint64_t uStatementRow );
    CRENDERSql( const CDocument* pdocument, gd::sql::enumSqlDialect eSqlDialect ): m_pdocument(pdocument), m_eSqlDialect(eSqlDialect), m_tableField(8, gd::table::tag_full_meta{}) {}
    CRENDERSql( const CDocument* pdocument, std::string_view stringDialect ): m_pdocument(pdocument), m_eSqlDialect( gd::sql::sql_get_dialect_g(stringDialect) ), m_tableField(8, gd::table::tag_full_meta{}) {}
    // copy
@@ -121,6 +123,8 @@ public:
 public:
 // @API [tag: get, set]
    void SetDialect( gd::sql::enumSqlDialect dialect ) noexcept { m_eSqlDialect = dialect; }
+   void SetRowStatement( int64_t iRowStatement ) noexcept { m_iRowStatement = iRowStatement; } 
+   int64_t GetRowStatement() const noexcept { return m_iRowStatement; }
 
 // @API [tag: operation]
 
@@ -187,6 +191,10 @@ public:
    size_t Size() const { return m_tableField.size(); }
    bool Empty() const { return m_tableField.get_row_count() == 0u; }
 
+   // @API [tag: query] [description: prepare query object]
+
+   std::pair<bool, std::string> Query_AddFields( gd::sql::query* pquery );
+
    // @API [tag: sql] [description: Generate SQL queries]
    
    std::pair<bool,std::string> GetQuery( enumSqlQueryType eSqlQueryType, std::string& stringQuery );
@@ -197,9 +205,13 @@ public:
    std::pair<bool, std::string> ToSqlUpdate( std::string& stringQuery );
    std::pair<bool, std::string> ToSqlDelete( std::string& stringQuery );
    std::pair<bool, std::string> ToSql( std::string_view stringType, std::string& stringQuery );
+   std::pair<bool, std::string> ToSqlFromTemplate( std::string_view stringTemplate, std::string& stringQuery );
 
    // @API [tag: validate]
+
+   /// Validates if the provided arguments are valid adding value to renderer
    std::pair<bool, std::string> Validate( gd::argument::arguments argumentsValue, unsigned* puFound = nullptr ) const;
+   /// Validates if the provided arguments are valid for condition fields in renderer
    std::pair<bool, std::string> ValidateCondition( gd::argument::arguments argumentsValue ) const;
 
    //std::string Dump() const;
@@ -213,7 +225,8 @@ public:
 // ## attributes ----------------------------------------------------------------
 public:
    const CDocument* m_pdocument = nullptr; ///< pointer to document, used to get arguments for query, acces internal data in web server
-   gd::sql::enumSqlDialect m_eSqlDialect = gd::sql::eSqlDialectUnknown; /// database dialect, used to determine how the syntax of sql statements should be
+   gd::sql::enumSqlDialect m_eSqlDialect{ gd::sql::eSqlDialectUnknown }; /// database dialect, used to determine how the syntax of sql statements should be
+   int64_t m_iRowStatement{ -1 };         ///< current row used active stament if this is connected.
    gd::table::arguments::table m_tableField;   ///< Values or Names used to produce query
    std::vector<gd::argument::arguments> m_vectorCondition; ///< arguments used for condition fields
    gd::argument::shared::arguments m_argumentsProperty; ///< arguments used for specific properties of query, this is used for example to store table name, where conditions, etc. as arguments instead of columns in table

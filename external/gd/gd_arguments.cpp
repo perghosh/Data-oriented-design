@@ -1970,6 +1970,16 @@ arguments::const_pointer arguments::find(std::string_view stringName, const_poin
    return nullptr;
 }
 
+/*----------------------------------------------------------------------------- find 
+ * @brief Find first argument matching both key and value.
+ *
+ * The search first resolves the key from `pairMatch.first` using `find(...)`.
+ * If a key match is found, its argument value is compared with `pairMatch.second`.
+ * Only the first key occurrence is evaluated.
+ *
+ * @param pairMatch Pair where `.first` is the key name and `.second` is the expected value.
+ * @return gd::argument::arguments::const_pointer Pointer to the matching argument, or `nullptr` if not found.
+ */
 arguments::const_pointer arguments::find(const std::pair<std::string_view, gd::variant_view>& pairMatch) const
 {
    const_pointer pPosition = find(pairMatch.first);

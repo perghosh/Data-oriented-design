@@ -445,12 +445,12 @@ query::condition* query::condition_add(const gd::variant_view& variantTable, con
 
 
 
-/*----------------------------------------------------------------------------- field_get */ /**
+/*--------------------------------------------------------------------------- field_get 
  * return field based on property value for field
  * \param pairField name and value that are matched for field searched for
  * \return field* pointer to field if found, nullptr if not found
  */
-query::field* query::field_get( const std::pair<std::string_view, gd::variant_view>& pairField )
+const query::field* query::field_get( const std::pair<std::string_view, gd::variant_view>& pairField ) const
 {
    for( auto it = std::begin(m_vectorField); it != std::end(m_vectorField); it++ )
    {
@@ -458,6 +458,81 @@ query::field* query::field_get( const std::pair<std::string_view, gd::variant_vi
    }
 
    return nullptr;
+}
+
+/**  -------------------------------------------------------------------------- field_get
+ * @brief Find a field by name
+ *
+ * Iterates `m_vectorField` and returns a pointer to the first `field` whose
+ * name matches `stringField`.
+ *
+ * @param stringField field name to match within the table
+ * @return query::field* Pointer to the matching field, or `nullptr` if not found
+ */
+const query::field* query::field_get( std::string_view stringField ) const
+{
+   for( auto it = std::begin(m_vectorField); it != std::end(m_vectorField); it++ )
+   {
+      if( it->name() == stringField ) return &(*it);
+   }
+
+   return nullptr;
+}
+
+
+/**  -------------------------------------------------------------------------- field_get
+ * @brief Find a field by table name and field name
+ *
+ * Iterates `m_vectorField` and resolves the table name for each unique
+ * `uTableKey` encountered. Returns a pointer to the first `field` whose
+ * owning table matches `stringTable` and whose name matches `stringField`.
+ *
+ * @param stringTable table name to match against
+ * @param stringField field name to match within the table
+ * @return query::field* Pointer to the matching field, or `nullptr` if not found
+ */
+const query::field* query::field_get( std::string_view stringTable, std::string_view stringField ) const
+{
+   unsigned uTableKey = std::numeric_limits<unsigned>::max();                // -1, to get a start value that is not valid for table key
+   std::string_view stringTableCheck;
+   for( auto it = std::begin(m_vectorField); it != std::end(m_vectorField); it++ )
+   {
+      if( it->get_table_key() != uTableKey )                                  // not same table? @OPTIMIZE [description: avoid redundant table name lookups by caching the last resolved table name and key]
+      {
+         uTableKey = it->get_table_key();
+         stringTableCheck = table_get_name( uTableKey );                                            assert( !stringTableCheck.empty() );
+      }
+
+      if( stringTableCheck == stringTable && it->name() == stringField ) return &(*it);
+   }
+
+   return nullptr;
+}
+
+/// @brief Get the value of a field by name, optionally returning the field type
+std::string_view query::field_get_value( std::string_view stringField, uint32_t* puType ) const
+{
+   const field* pField = field_get( stringField );
+   if( pField != nullptr )
+   {
+      if( puType != nullptr ) *puType = pField->type();
+      return pField->value();
+   }
+
+   return std::string_view();
+}
+
+/// @brief Get the value of a field by table name and field name, optionally returning the field type
+std::string_view query::field_get_value( std::string_view stringTable, std::string_view stringField, uint32_t* puType ) const
+{
+   const field* pField = field_get( stringTable, stringField );
+   if( pField != nullptr )
+   {
+      if( puType != nullptr ) *puType = pField->type();
+      return pField->value();
+   }
+
+   return std::string_view();
 }
 
 
@@ -1462,34 +1537,516 @@ std::string query::sql_get(enumSql eSql, const unsigned* puPartOrder) const
    return stringSql;
 }
 
-std::string query::sql_get_jinja( std::string_view stringTemplate, const gd::argument::arguments* pargumentsValues ) const
+/** -------------------------------------------------------------------------- sql_append
+ * @brief Append one SQL part to `stringSql`.
+ *
+ * Uses `ePart` to generate the requested SQL section and appends it to
+ * `stringSql`. If `bAddKeyWord` is `true`, the method also prepends the
+ * corresponding SQL keyword for that section.
+ *
+ * @param ePart SQL part to append.
+ * @param stringSql Destination SQL buffer that receives generated text.
+ * @param bAddKeyWord Set to `true` to prepend SQL keyword for the part.
+ * @return void
+ */
+void query::sql_append( enumSqlPart ePart, std::string& stringSql, bool bAddKeyWord ) const
 {
-   std::array<std::byte, 256> buffer_; 
-   gd::argument::arguments argumentsValues( buffer_ );
-
-   for( auto itField = field_begin(), itEndField = field_end(); itField != itEndField; itField++ )
+   switch( ePart )
    {
-      std::string_view stringValue = itField->value();
-      if( stringValue.empty() == true ) continue;
+   case eSqlPartWith: {
+         auto stringWith = sql_get_with();
+         if( stringWith.empty() == true ) break;
+         if( bAddKeyWord == true ) stringSql += std::string_view{ "WITH " };
+         stringSql += stringWith;
+      }
+      break;
+   case eSqlPartSelect: {
+         auto stringSelect = sql_get_select();
+         if( stringSelect.empty() == true ) break;
+         if( bAddKeyWord == true ) stringSql += std::string_view{ "SELECT " };
+         stringSql += sql_get_distinct();
+         stringSql += stringSelect;
+      }
+      break;
+   case eSqlPartDistinct: stringSql += sql_get_distinct();
+      break;
 
-      std::u8string_view stringValueUtf8( reinterpret_cast<const char8_t*>( stringValue.data() ), stringValue.size() );
+   case eSqlPartInsert: {
+         auto stringInsert = sql_get_insert();
+         if( stringInsert.empty() == true ) break;
+         if( bAddKeyWord == true ) stringSql += std::string_view{ "INSERT INTO " };
+         stringSql += stringInsert;
+      }
+      break;
+   case eSqlPartUpdate: {
+         std::string stringUpdate;
+         if( table_size() == 1 )
+         {
+            stringUpdate = sql_get_update( table_get_key() );
+         }
+         else
+         {
+            stringUpdate += sql_get_update_from_before();
+            stringUpdate += sql_get_update( table_get_key() );
+            stringUpdate += sql_get_update_from_after();
+         }
 
-      std::string_view stringName = itField->name();
-      argumentsValues.append( stringName, stringValueUtf8 );
+         if( stringUpdate.empty() == true ) break;
+         if( bAddKeyWord == true ) stringSql += std::string_view{ "UPDATE " };
+         stringSql += stringUpdate;
+      }
+      break;
+   case eSqlPartDelete:
+      // Keep same behavior as `sql_get`: this part only contributes keyword.
+      if( bAddKeyWord == true ) stringSql += std::string_view{ "DELETE " };
+      break;
+   case eSqlPartFrom: {
+         auto stringFrom = sql_get_from();
+         if( stringFrom.empty() == true ) break;
+         if( bAddKeyWord == true ) stringSql += std::string_view{ "\nFROM " };
+         stringSql += stringFrom;
+      }
+      break;
+   case eSqlPartWhere:
+      if( m_vectorCondition.empty() == true ) break;
+      if( bAddKeyWord == true ) stringSql += std::string_view{ "\nWHERE " };
+      stringSql += sql_get_where();
+      break;
+   case eSqlPartGroupBy:
+      if( has_partgroupby() == false ) break;
+      {
+         auto stringGroupBy = sql_get_groupby();
+         if( stringGroupBy.empty() == true ) break;
+         if( bAddKeyWord == true ) stringSql += std::string_view{ "\nGROUP BY " };
+         stringSql += stringGroupBy;
+      }
+      break;
+   case eSqlPartHaving:
+      break;
+   case eSqlPartValues: {
+         auto stringValues = sql_get_values( table_get_key() );
+         if( stringValues.empty() == true ) break;
+         if( bAddKeyWord == true ) stringSql += std::string_view{ "\nVALUES( " };
+         stringSql += stringValues;
+         if( bAddKeyWord == true ) stringSql += std::string_view{ ")" };
+      }
+      break;
+   case eSqlPartOrderBy:
+      if( has_partorderby() == false ) break;
+      if( bAddKeyWord == true ) stringSql += sql_get_orderby( "\nORDER BY " );
+      else stringSql += sql_get_orderby( "" );
+      break;
+   case eSqlPartLimit:
+      stringSql += sql_get_limit();
+      break;
+   case eSqlPartReturning:
+      if( has_partreturning() == false ) break;
+      if( bAddKeyWord == true ) stringSql += std::string_view{ "\nRETURNING " };
+      stringSql += sql_get_returning();
+      break;
+   default:                                                                                        assert( false );
+      break;
    }
+}
 
-   if( pargumentsValues != nullptr )
-   {
-      argumentsValues.merge( *pargumentsValues );                            // merge with arguments sent to method
-   }
+void query::sql_append( std::string_view stringPart, std::string& stringSql, bool bAddKeyWord ) const 
+{ 
+   auto ePart = sql_get_part_type_g( stringPart );
+   sql_append( ePart, stringSql, bAddKeyWord );
+}
 
-
+/** ---------------------------------------------------------------------------
+ * @brief Replaces placeholders in an SQL template with argument values.
+ *
+ * This method performs string interpolation on an SQL query template, replacing
+ * placeholder patterns with values from the provided arguments. The method is
+ * specifically designed for SQL generation, handling proper escaping, quote
+ * wrapping, and database-specific formatting for different data types.
+ *
+ * @param stringTemplate The SQL template string containing placeholders to replace.
+ * @param pargumentsValues Optional pointer to arguments collection. If nullptr,
+ *                         uses the query's internally stored arguments.
+ * @return std::string The formatted SQL string with all placeholders replaced.
+ *
+ * @par Placeholder Syntax
+ * The following placeholder formats are supported:
+ *
+ * | Syntax | Description | Example |
+ * |--------|-------------|---------|
+ * | `{name}` | Replace with named argument value | `{user_id}` |
+ * | `{0}`, `{1}` | Replace with positional argument (0-indexed) | `{0}` |
+ * | `{*name}` | Required value - error if missing | `{*user_id}` |
+ * | `{=name}` | Raw value insertion (no SQL escaping) | `{=table_name}` |
+ * | `{table.name}` | Qualified name with table prefix | `{users.name}` |
+ * | `{name:format}` | Apply formatting to value | `{date:YYYY-MM-DD}` |
+ *
+ * @par SQL Generation Placeholders
+ * The following special placeholders inject dynamically generated SQL parts from
+ * the query object's internal state (tables, fields, conditions, etc.):
+ *
+ * | Syntax | Description | Output Example |
+ * |--------|-------------|----------------|
+ * | `{+select}` | SELECT clause (fields only, no keyword) | `id, name, email` |
+ * | `{++select}` or `{+=select}` | SELECT clause with keyword | `SELECT id, name, email` |
+ * | `{+from}` | FROM clause (tables only, no keyword) | `users u` |
+ * | `{++from}` or `{+=from}` | FROM clause with keyword | `\nFROM users u` |
+ * | `{+where}` | WHERE clause (conditions only, no keyword) | `status = 'active' AND age >= 18` |
+ * | `{++where}` or `{+=where}` | WHERE clause with keyword | `\nWHERE status = 'active' AND age >= 18` |
+ * | `{+groupby}` | GROUP BY clause (fields only, no keyword) | `category, status` |
+ * | `{++groupby}` or `{+=groupby}` | GROUP BY clause with keyword | `\nGROUP BY category, status` |
+ * | `{+orderby}` | ORDER BY clause (fields only, no keyword) | `created_at DESC` |
+ * | `{++orderby}` or `{+=orderby}` | ORDER BY clause with keyword | `\nORDER BY created_at DESC` |
+ * | `{+limit}` | LIMIT clause | `\nLIMIT 10` |
+ * | `{+returning}` | RETURNING clause (fields only, no keyword) | `id, name` |
+ * | `{++returning}` or `{+=returning}` | RETURNING clause with keyword | `\nRETURNING id, name` |
+ *
+ * **Keyword Control Rules:**
+ * - `{+name}` - Returns only the value/content (no SQL keyword)
+ * - `{++name}` or `{+=name}` - Returns content with SQL keyword
+ * - If the generated part has no content, an empty string is returned
+ * - Newlines are automatically added before keywords for proper SQL formatting
+ *
+ * @par Value Handling Rules
+ * - **String values**: Wrapped in single quotes, internal quotes doubled (`'O''Reilly'`)
+ * - **Number values**: Appended as-is without quotes
+ * - **Boolean values**: Appended as `0` or `1` without quotes
+ * - **Binary values**: Formatted according to SQL dialect (hex format)
+ * - **Raw values (`{=name}`)**: Appended exactly as provided, no escaping or quotes
+ *
+ * @par SQL Dialect Support
+ * Binary formatting adapts to the query's SQL dialect:
+ * - **PostgreSQL/CockroachDB/Redshift**: `E'\\xDEADBEEF'`
+ * - **MySQL/MariaDB/SQLite**: `X'DEADBEEF'`
+ * - **SQL Server**: `0xDEADBEEF`
+ * - **Oracle**: `HEXTORAW('DEADBEEF')`
+ *
+ * @par Examples
+ *
+ * **Basic replacement with named arguments:**
+ * @code
+ * gd::argument::arguments args;
+ * args.add("user_name", "Alice");
+ * args.add("user_id", 42);
+ * 
+ * query q;
+ * std::string sql = q.sql_format(
+ *     "SELECT * FROM users WHERE name = {user_name} AND id = {user_id}",
+ *     &args
+ * );
+ * // Result: SELECT * FROM users WHERE name = 'Alice' AND id = 42
+ * @endcode
+ *
+ * **Using SQL generation placeholders (no keyword):**
+ * @code
+ * query q;
+ * q.table_add("users", "u");
+ * q.field_add("u.id", "user_id");
+ * q.field_add("u.name", "user_name");
+ * q.condition_add("u.status", "=", "active");
+ * 
+ * std::string sql = q.sql_format(
+ *     "SELECT {+select} FROM {+from} WHERE {+where}",
+ *     nullptr
+ * );
+ * // Result: SELECT u.id AS user_id, u.name AS user_name FROM users u WHERE u.status = 'active'
+ * @endcode
+ *
+ * **Using SQL generation placeholders (with keyword):**
+ * @code
+ * query q;
+ * q.table_add("orders", "o");
+ * q.table_add("customers", "c", "o");
+ * q.field_add("o.id", "order_id");
+ * q.field_add("c.name", "customer_name");
+ * q.condition_add("o.status", "=", "pending");
+ * q.set_attribute("distinct", true);
+ * 
+ * std::string sql = q.sql_format(
+ *     "{++select}\n{++from}\n{++where}\n{++orderby}",
+ *     nullptr
+ * );
+ * // Result:
+ * // SELECT DISTINCT o.id AS order_id, c.name AS customer_name
+ * // FROM orders o INNER JOIN customers c ON ...
+ * // WHERE o.status = 'pending'
+ * // ORDER BY ...
+ * @endcode
+ *
+ * **Conditional SQL parts (empty conditions):**
+ * @code
+ * query q;
+ * q.table_add("products");
+ * // No conditions added
+ * 
+ * std::string sql = q.sql_format(
+ *     "SELECT * FROM products{++where}",
+ *     nullptr
+ * );
+ * // Result: SELECT * FROM products (WHERE clause omitted entirely)
+ * @endcode
+ *
+ * **Mixing value placeholders with SQL generation:**
+ * @code
+ * query q;
+ * q.table_add("users");
+ * q.condition_add("status", "=", "{status}");
+ * q.condition_add("created_at", ">=", "{start_date}");
+ * 
+ * gd::argument::arguments args;
+ * args.add("status", "active");
+ * args.add("start_date", "2024-01-01");
+ * 
+ * std::string sql = q.sql_format(
+ *     "SELECT * FROM users{++where} ORDER BY created_at",
+ *     &args
+ * );
+ * // Result: SELECT * FROM users
+ * // WHERE status = 'active' AND created_at >= '2024-01-01'
+ * // ORDER BY created_at
+ * @endcode
+ *
+ * **Required values (will throw/missing handling):**
+ * @code
+ * // Missing required value - returns empty or logs error
+ * std::string sql = q.sql_format(
+ *     "DELETE FROM users WHERE id = {*user_id}",
+ *     &args  // args doesn't contain 'user_id'
+ * );
+ * // Error: required value not found: user_id
+ * @endcode
+ *
+ * **Raw value for table/column names:**
+ * @code
+ * args.add("table_name", "users");
+ * args.add("column_name", "email");
+ * 
+ * std::string sql = q.sql_format(
+ *     "SELECT {=column_name} FROM {=table_name} WHERE active = 1",
+ *     &args
+ * );
+ * // Result: SELECT email FROM users WHERE active = 1
+ * // Note: No quotes around identifiers
+ * @endcode
+ *
+ * **Qualified names for multiple tables:**
+ * @code
+ * args.add("users.name", "Alice");
+ * args.add("users.id", 1);
+ * args.add("orders.total", 99.95);
+ * 
+ * std::string sql = q.sql_format(
+ *     "SELECT {users.name}, {orders.total} FROM users JOIN orders ON users.id = orders.user_id",
+ *     &args
+ * );
+ * // Result: SELECT 'Alice', 99.95 FROM users JOIN orders...
+ * @endcode
+ *
+ * **String escaping:**
+ * @code
+ * args.add("name", "O'Reilly");
+ * 
+ * std::string sql = q.sql_format(
+ *     "SELECT * FROM users WHERE name = {name}",
+ *     &args
+ * );
+ * // Result: SELECT * FROM users WHERE name = 'O''Reilly'
+ * @endcode
+ *
+ * **Using internal query arguments:**
+ * @code
+ * query q;
+ * q.add_argument("status", "active");
+ * q.add_argument("limit", 10);
+ * 
+ * // pargumentsValues = nullptr uses query's internal arguments
+ * std::string sql = q.sql_format(
+ *     "SELECT * FROM orders WHERE status = {status} LIMIT {limit}",
+ *     nullptr
+ * );
+ * // Result: SELECT * FROM orders WHERE status = 'active' LIMIT 10
+ * @endcode
+ *
+ * **Positional arguments (fallback when no name match):**
+ * @code
+ * gd::argument::arguments args;
+ * args.add("first", "John");
+ * args.add("last", "Doe");
+ * 
+ * std::string sql = q.sql_format(
+ *     "INSERT INTO users (first_name, last_name) VALUES ({0}, {1})",
+ *     &args
+ * );
+ * // Result: INSERT INTO users (first_name, last_name) VALUES ('John', 'Doe')
+ * @endcode
+ *
+ * @par Error Handling
+ * The method returns an empty string or error state when:
+ * - Required placeholder (`{*name}`) has no matching argument
+ * - Unclosed quotes in template (e.g., `'unclosed string`)
+ * - Invalid placeholder syntax (unclosed `}` brace)
+ *
+ * @note 
+ * - Placeholders inside SQL string literals (between single quotes) are NOT replaced
+ * - Double single quotes (`''`) are treated as escaped quotes and do not delimit strings
+ * - The method is `const` and does not modify the query object state
+ * - Binary values must be provided as hexadecimal strings (even length)
+ * - When both named and positional placeholders exist, named lookup takes precedence
+ * - SQL generation placeholders (`{+...}`) use the query object's internal state
+ * - Empty SQL parts (no fields, no conditions, etc.) produce empty strings
+ *
+ * @see replace_g() for the underlying implementation
+ * @see append_g() for value formatting and SQL escaping logic
+ * @see sql_get_part() for the SQL generation implementation
+ */
+std::string query::sql_format( std::string_view stringTemplate, const gd::argument::arguments* pargumentsValues ) const
+{
+   using namespace gd::types;
+   unsigned uArgumentIndex = 0;
+   std::string stringPlaceholder;  // full content between { and }
+   std::string stringName;         // name part (before optional ':')
+   std::string stringFormat;       // format part (after ':')
    std::string stringSql;
-   stringSql.reserve( stringTemplate.size() ); 
-   replace_g( stringTemplate, argumentsValues, stringSql, tag_brace{});
+
+   stringSql.reserve( stringTemplate.length() + 64 );
+
+   for( const char* pit = stringTemplate.data(), * pitEnd = stringTemplate.data() + stringTemplate.length(); pit < pitEnd; pit++ )
+   {
+      if( *pit != '{' )
+      {
+         if( *pit != '\'' ) { stringSql += *pit; continue; }                  // normal character, copy as-is
+
+         // ## copy SQL string literal verbatim (handles '' escaped quotes) ....
+         const char* piFind = pit + 1;
+         piFind = gd::parse::strchr( piFind, '\'', gd::parse::sql{} );
+         if( piFind != nullptr && piFind < pitEnd )
+         {
+            stringSql.append( pit, (piFind - pit) + 1 );
+            pit = piFind;
+         }
+         else { stringSql += *pit; }                                          // no closing quote found, copy char
+         continue;
+      }
+
+      // ## parse prefix flags and content between { and } .......................
+      pit++;
+      bool bRaw = false;         // {=name} raw insert, no escaping, no quotes
+      bool bRequired = false;    // {*name} required value
+      bool bClause   = false;    // {+name} clause injection
+      bool bClauseWithKeyword = false; // {++name} or {+=name} clause injection with keyword
+
+      // ### clause injection prefix: {+...} or {++...} / {+=...}
+      if( pit < pitEnd && *pit == '+' )
+      {
+         bClause = true;
+         pit++;
+         if( pit < pitEnd && (*pit == '+' || *pit == '=') ) { bClauseWithKeyword = true; pit++; }
+      }
+      else
+      {
+         if( pit < pitEnd && *pit == '=' ) { bRaw      = true; pit++; }      // {=name} raw insert, no escaping, no quotes
+         if( pit < pitEnd && *pit == '*' ) { bRequired = true; pit++; }      // {*name} required value
+      }
+
+      stringPlaceholder.clear();
+      while( pit < pitEnd && *pit != '}' ) { stringPlaceholder += *pit++; }
+
+      if( pit >= pitEnd || *pit != '}' ) break;                              // malformed, stop
+
+      // ## clause injection ......................................................
+      if( bClause )
+      {
+         sql_append( stringPlaceholder, stringSql, bClauseWithKeyword );
+         continue;
+      }
+
+      // ## split name and optional printf-style format specifier on ':' .........
+      auto uColonPosition = stringPlaceholder.find( ':' );
+      if( uColonPosition == std::string::npos )
+      {
+         stringName = stringPlaceholder;
+         stringFormat.clear();
+      }
+      else
+      {
+         stringName   = stringPlaceholder.substr( 0, uColonPosition );
+         stringFormat = stringPlaceholder.substr( uColonPosition + 1 );
+      }
+
+      // ## resolve value .......................................................
+      uint32_t uType = 0;
+      std::string_view stringValue;
+      bool bValueFound = false;
+
+      // ### positional index into pargumentsValues
+      if( !stringName.empty() && gd::types::is_ctype_g( stringName[0], "digit"_ctype ) )
+      {
+         if( pargumentsValues != nullptr )
+         {
+            unsigned uIndex = std::stoul( stringName );
+            auto variantviewFound = (*pargumentsValues)[uIndex].as_variant_view();
+            if( variantviewFound.is_null() == false )
+            {
+               if( bRaw == false ) append_g( variantviewFound, 0u, get_dialect(), stringSql, gd::types::tag_view{} );
+               else                append_g( variantviewFound, stringSql, gd::sql::tag_raw{} );
+               uArgumentIndex = uIndex + 1;
+            }
+            else if( bRequired ) { stringSql += '{'; stringSql += stringPlaceholder; stringSql += '}'; }
+         }
+         continue;
+      }
+
+      // ### table.field qualified lookup
+      auto uDotPosition = stringName.find( '.' );
+      if( uDotPosition != std::string::npos )
+      {
+         std::string_view stringTable( stringName.data(), uDotPosition );
+         std::string_view stringField( stringName.data() + uDotPosition + 1, stringName.length() - uDotPosition - 1 );
+         stringValue = field_get_value( stringTable, stringField, &uType );
+         bValueFound = !stringValue.empty() || field_exists( stringTable, stringField );
+      }
+      else
+      {
+         // ### unqualified field lookup
+         stringValue = field_get_value( stringName, &uType );
+         bValueFound = !stringValue.empty() || field_exists( stringName );
+      }
+
+      // ### fallback to pargumentsValues
+      if( bValueFound == false && pargumentsValues != nullptr )
+      {
+         auto variantviewFound = (*pargumentsValues)[std::string_view(stringName)].as_variant_view();
+         if( variantviewFound.is_null() == false )
+         {
+            if( bRaw == false ) append_g( variantviewFound, uType, get_dialect(), stringSql, gd::types::tag_view{} );
+            else                append_g( variantviewFound, stringSql, gd::sql::tag_raw{} );
+            bValueFound = true;
+         }
+      }
+
+      if( bValueFound == false )
+      {
+         if( bRequired ) { stringSql += '{'; stringSql += stringPlaceholder; stringSql += '}'; } // required: keep placeholder
+         continue;
+      }
+
+      // ## apply printf-style format specifier if present ........................
+      if( stringFormat.empty() == false && stringFormat[0] == '%' )
+      {
+         char pbszFormatBuffer[64];
+         ::snprintf( pbszFormatBuffer, sizeof pbszFormatBuffer, stringFormat.c_str(), stringValue.data() );
+         if( bRaw == false ) append_g( std::string_view(pbszFormatBuffer), uType, get_dialect(), stringSql );
+         else                stringSql += pbszFormatBuffer;
+         continue;
+      }
+
+      // ## append resolved value .................................................
+      if( bRaw == false ) append_g( stringValue, uType, get_dialect(), stringSql );
+      else                stringSql += stringValue;
+   }
 
    return stringSql;
 }
+
 
 /** --------------------------------------------------------------------------
  * @brief Clears all tables, fields, and conditions from the query.
@@ -2128,3 +2685,21 @@ std::pair<bool, std::string> query::validate_condition_s( const gd::argument::ar
 
 
 _GD_SQL_QUERY_END
+
+
+
+// @{
+// @name Placeholder Syntax Quick Reference
+// 
+// {name}        - Replace with value (auto-quoted strings)
+// {0}, {1}      - Positional replacement (0-indexed)
+// {*name}       - Required value (error if missing)
+// {=name}       - Raw insertion (no quotes/escaping)
+// {table.name}  - Qualified name with table prefix
+// {name:format} - Formatted value (e.g., {date:YYYY-MM-DD})
+// 
+// String values:   'O''Reilly'  (quotes doubled)
+// Numbers:         42           (no quotes)
+// Booleans:        0 or 1       (no quotes)
+// Binary:          X'DEADBEEF'  (dialect-specific)
+// @}

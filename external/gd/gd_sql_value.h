@@ -38,10 +38,11 @@ extern char iEndBrace_g;
 extern char iQuestion_g;
 extern char iSemicolon_g;
 
-struct tag_raw {};                                                             // tag dispatcher setting data without internal logic
-struct tag_brace {};                                                           // tag dispatcher setting data without internal logic
-struct tag_keep_not_found{};                                                   // tag for methods to keep something if not found/missing
-struct tag_preprocess{};                                                       // tag to preprocess text before inserting values, using this with replacement adds flexibility 
+using tag_raw = gd::types::tag_raw;                                           // tag dispatcher setting data without internal logic
+using tag_view = gd::types::tag_view;                                         // tag dispatcher setting data as view
+struct tag_brace {};                                                          // tag dispatcher setting data without internal logic
+struct tag_keep_not_found{};                                                  // tag for methods to keep something if not found/missing
+struct tag_preprocess{};                                                      // tag to preprocess text before inserting values, using this with replacement adds flexibility 
 
 /// Append ascii text as utf8 to string
 void append_ascii( const uint8_t* pbszAscii, std::string& stringSql );
@@ -57,6 +58,10 @@ void append_g( const gd::variant_view& variantValue, std::string& stringSql, tag
 
 /// Append value to string, value is converted to string depending on type and dialect             @CRITICAL [tag: sql, format] [description: Append value to string, value is converted to string depending on type and dialect] [type: function] [name: append_g]
 void append_g( std::string_view stringValue, unsigned uType, unsigned uDialect, std::string& stringSql );
+
+/// Appends value to string using dialect, if type is set then value is converted to that type and formated based on dialect, no type then tries to use the type in variantviewValue 
+/// @NOTE [tag: sql, format] [summary: advanced, need to know what values and how the conversion is done]
+void append_g( gd::variant_view variantviewValue, unsigned uType, unsigned uDialect, std::string& stringSql, gd::types::tag_view );
 
 /// Append identifier to string, that is the name of a column or table, it is escaped if needed and depending on dialect
 void append_identifier_g( std::string_view stringColumn, unsigned uDialect, std::string& stringSql );

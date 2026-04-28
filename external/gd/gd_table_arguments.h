@@ -681,7 +681,10 @@ public:
    gd::argument::shared::arguments* row_get_arguments_pointer( uint64_t uRow ) const noexcept;
    gd::argument::shared::arguments* row_get_arguments_pointer( uint64_t uRow );
 
-   bool row_arguments_exists( uint64_t uRow ) const noexcept { return row_get_arguments_pointer( uRow ) != nullptr; }
+   const gd::argument::shared::arguments* row_find_arguments_pointer( uint64_t uRow ) const;
+   gd::argument::shared::arguments* row_find_arguments_pointer( uint64_t uRow );
+
+   bool row_arguments_exists( uint64_t uRow ) const noexcept { return row_find_arguments_pointer( uRow ) != nullptr; }
 
    /// delete arguments object for selected row
    void row_arguments_delete( uint64_t uRow );
@@ -1282,8 +1285,8 @@ inline uint8_t* table::row_get_arguments_meta( uint64_t uRow ) const noexcept { 
  * 
  * @param uRow Index to the row whose arguments metadata is cleared.
  */
-inline void table::row_set_arguments_meta_null( uint64_t uRow ) noexcept {                                assert( uRow < m_uReservedRowCount ); assert( is_rowarguments() == true );
-   gd::argument::shared::arguments* parguments_ = row_get_arguments_pointer( uRow );
+inline void table::row_set_arguments_meta_null( uint64_t uRow ) noexcept {                         assert( uRow < m_uReservedRowCount ); assert( is_rowarguments() == true );
+   gd::argument::shared::arguments* parguments_ = row_find_arguments_pointer( uRow );
    *(intptr_t*)parguments_= 0; // set arguments pointer to null
 }
 
@@ -1327,8 +1330,15 @@ inline bool table::row_is_arguments(uint64_t uRow) const noexcept { assert(uRow 
 inline void table::row_set_null( uint64_t uRow ) { assert( uRow < m_uReservedRowCount ); assert( is_null() == true );
    auto puRow = row_get_null( uRow );
 
-   if( is_null32() ) { *(uint32_t*)puRow = ( (uint32_t)-1 ); }
-   else              { *(uint64_t*)puRow =((uint64_t)-1); }
+   if( is_null32() ) { *(uint32_t*)puRow = ( (uint32_t)-1 ); puRow += eSpaceNull32Columns; }
+   else              { *(uint64_t*)puRow =((uint64_t)-1); puRow += eSpaceNull64Columns; }
+
+   // ## if arguments then clearn the pointer to arguments object in row meta data
+   if( is_rowarguments() == true ) 
+   {
+      puRow += ( m_uFlags & eTableFlagRowStatus ) ? eSpaceRowState : 0;// add row state size if used
+      *(intptr_t*)puRow = 0;                                                  // set arguments pointer to null
+   } 
 }
 
 /** ---------------------------------------------------------------------------

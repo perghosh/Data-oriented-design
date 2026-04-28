@@ -74,6 +74,11 @@ std::pair<bool, std::string> statement::add( const gd::argument::arguments& argu
 {                                                                                                  assert( m_ptableStatement != nullptr );
    std::pair<bool, std::string> result_;
    auto uRow = m_ptableStatement->row_add_one();
+
+#ifndef NDEBUG
+   auto p_ = m_ptableStatement->row_find_arguments_pointer( uRow );                                 assert( p_ == nullptr );
+#endif
+
    uint32_t uKey = (uint32_t)uRow;
    m_ptableStatement->cell_set( uRow, eColumnKey, (uint32_t)uKey );
 
@@ -150,6 +155,9 @@ std::pair<bool, std::string> statement::add( const gd::argument::arguments& argu
    auto description_ = argumentsStatement["description"];
    if( description_.is_string() == true && description_.is_true() ) m_ptableStatement->cell_set( uRow, eColumnDescription, description_.as_string_view() );
 
+   auto table_ = argumentsStatement["table"];                                 // "table" value
+   if( table_.is_string() == true && table_.is_true() ) m_ptableStatement->cell_set( uRow, eColumnTable, table_.as_string_view() );
+
    return { true, "" };
 }
 
@@ -174,6 +182,14 @@ gd::types::uuid statement::get_id( uint64_t uRow ) const
 {                                                                                                  assert( m_ptableStatement != nullptr ); assert( uRow < m_ptableStatement->size() );
    gd::types::uuid uuid_ = m_ptableStatement->cell_get_variant_view( uRow, eColumnUuid ).as_binary_view();
    return uuid_; 
+}
+
+
+/// @brief Retrieves the SQL statement for a given row index. ---------------- get_statement
+std::string_view statement::get_table( uint64_t uRow ) const
+{                                                                                                  assert( m_ptableStatement != nullptr ); assert( uRow < m_ptableStatement->size() );
+   std::string_view stringTable = m_ptableStatement->cell_get_variant_view( uRow, eColumnTable ).as_string_view();
+   return stringTable; 
 }
 
 
@@ -239,6 +255,7 @@ void statement::create_statement_s( gd::table::arguments::table& tableStatement 
       { "uint32",   0, "format"      }, // statement format, this is used to determine how to generate sql statement, and how to parse arguments for statement
       { "uint32",   0, "rule"        }, // statement rule, this is used to determine how to use statement, and what is allowed for statement
       { "rstring",  0, "statement"   }, // raw data for statement, this is used to store the actual sql statement template, this can also be used to store other types of statements if needed
+      { "rstring",  0, "table"   }, //  // involved tables in statement if needed, description for how to use this column is not defined yet, for now single table name works
       { "rstring",  0, "description" }, // optional description for statement, this can be used to provide additional information about statement, like what it does, or how to use it
    }, gd::table::tag_type_name{});
    tableStatement.prepare();

@@ -297,7 +297,7 @@ constexpr char upper_g( char i )
  * @param stringPartName Part name as string_view
  * @return {enumSqlPart} Corresponding SQL part
 */
-constexpr enumSqlPart sql_get_part_type_g( const std::string_view& stringPartName )
+constexpr enumSqlPart sql_get_part_type_g( std::string_view stringPartName )
 {
    assert( !stringPartName.empty() );
 

@@ -84,6 +84,9 @@ public:
    gd::types::uuid GetQueryId( uint64_t uRow );
    std::pair<bool, std::string> GetQuery( std::string_view stringName, std::string& stringQuery );
    std::string GetQuery( std::string_view stringName ) const; ///< get query text for query at specified row index, returns empty string if not found
+   std::string_view GetQuery( uint64_t uRow ) const; ///< get query text for query at specified row index, returns empty string if not found
+   std::string_view GetTable( uint64_t uRow ) const; ///< get table name for query at specified row index, returns empty string if not found
+
    int64_t GetQueryRow( std::string_view stringName ) const; ///< get row index for query with specified name, returns -1 if not found
    const gd::argument::shared::arguments* GetQueryArguments( uint64_t uRow ) const; ///< get arguments for query at specified row index, returns nullptr if not found
 
@@ -125,6 +128,17 @@ inline std::string CQueries::GetQuery( std::string_view stringName ) const
    return {};
 }
 
+/// @brief Retrieves the query text for a query at the specified row index
+inline std::string_view CQueries::GetQuery( uint64_t uRow ) const
+{                                                                                                  assert( uRow < m_statement.size() );
+   return m_statement.get_statement( uRow );
+}
+
+inline std::string_view CQueries::GetTable( uint64_t uRow ) const
+{                                                                                                  assert( uRow < m_statement.size() );
+   return m_statement.get_table( uRow );
+}
+
 /// @brief Retrieves the row index of a query based on its name.
 inline int64_t CQueries::GetQueryRow( std::string_view stringName ) const
 {
@@ -135,7 +149,7 @@ inline int64_t CQueries::GetQueryRow( std::string_view stringName ) const
 /// @brief Retrieves the arguments associated with a query at the specified row index.
 inline const gd::argument::shared::arguments* CQueries::GetQueryArguments( uint64_t uRow ) const
 {
-   return m_statement.get_arguments( uRow );
+   return m_statement.find_arguments( uRow );
 }
 
 /// @brief Retrieves the values of arguments associated with a query based on its name.

@@ -10,7 +10,7 @@
 
 #include "gd/gd_arguments_io.h"
 #include "gd/gd_table_io.h"
-#include "gd/gd_sql_query.h"
+
 
 #include "gd/parse/gd_parse_json.h"
 
@@ -62,6 +62,12 @@ namespace utility
 
 CRENDERSql::CRENDERSql( const CDocument* pdocument ) : m_pdocument( pdocument ), m_tableField( 8, gd::table::tag_full_meta{} ) 
 {                                                                                                  assert( pdocument ); 
+   if( pdocument->DATABASE_Get() ) { m_eSqlDialect = gd::sql::enumSqlDialect( pdocument->DATABASE_Get()->GetDialect() ); }
+}
+
+CRENDERSql::CRENDERSql( const CDocument* pdocument, uint64_t uStatementRow ): 
+   m_pdocument( pdocument ), m_iRowStatement( int64_t(uStatementRow) ), m_tableField( 8, gd::table::tag_full_meta{} )
+{                                                                                                  assert( pdocument );
    if( pdocument->DATABASE_Get() ) { m_eSqlDialect = gd::sql::enumSqlDialect( pdocument->DATABASE_Get()->GetDialect() ); }
 }
 
@@ -257,6 +263,7 @@ void CRENDERSql::AddColumn( const gd::argument::arguments& argumentsField )
  */
 std::pair<bool,std::string> CRENDERSql::AddColumn( std::string_view stringJson, gd::types::tag_json )
 {
+   if( stringJson.empty() == true ) { return { true, "empty json" }; }
    std::array<std::byte, 256> buffer_;
    gd::argument::arguments arguments_(buffer_);
    
@@ -527,11 +534,29 @@ std::pair<bool, std::string> CRENDERSql::Prepare()                              
    gd::argument::arguments argumentsFind( buffer_ );
    const META::CDatabase* pdatabase_ = m_pdocument->DATABASE_Get();
 
+   if( m_iRowStatement >= 0 )
+   {
+      const uint64_t uRowStatement = uint64_t( m_iRowStatement );
+      // ## Prepare table information for fields where this is not done ......
+
+      const META::CQueries* pqueries = m_pdocument->QUERIES_Get();                                 assert( pqueries != nullptr );
+      auto stringTable = pqueries->GetTable( uRowStatement );
+      if( stringTable.empty() == false )
+      {
+         FillColumn( eColumnFieldTable, stringTable );                       // fill table name for fields where this is not set @TODO [summary: need more flexibility, now only one table]
+      }
+   }
+
    // ## Loop through rows fields and get type for field to set type.
    for( auto itRow = m_tableField.row_begin(); itRow != m_tableField.row_end(); ++itRow )
    {
       argumentsFind.clear();
       std::string stringTable = itRow.cell_get_variant_view( "table", gd::table::tag_not_null{}).as_string();
+      if( stringTable.empty() == true )                                       // No table defaults to type 0, no formating is done, just a value
+      { 
+         itRow.cell_set( "type", 0, gd::table::tag_convert{} ); 
+         continue; 
+      } 
       std::string stringName = itRow.cell_get_variant_view( "name", gd::table::tag_not_null{}).as_string();
 
       
@@ -631,6 +656,29 @@ void CRENDERSql::FillColumn( enumColumnField eColumnField, gd::variant_view vari
 
       m_tableField.cell_set( uRow, eColumnField, variantviewValue, gd::table::tag_spill{});
    }
+}
+
+std::pair<bool, std::string> CRENDERSql::Query_AddFields( gd::sql::query* pquery )
+{
+   std::array<std::byte, 256> buffer_;
+   gd::argument::arguments arguments_( buffer_ );
+
+   if( pquery->table_size() == 0 ) { pquery->table_add( "default_table" ); }
+
+   std::vector< std::pair<uint32_t, gd::variant_view> > vectorValue;
+   for( auto itRow = m_tableField.row_begin(); itRow != m_tableField.row_end(); ++itRow )
+   {
+      arguments_.clear();
+
+      std::string stringName = itRow.cell_get_variant_view( "name", gd::table::tag_not_null{}).as_string();
+      //queryInsert.field_add( stringName );                                  // add column to query
+      uint32_t uType = itRow.cell_get_variant_view("type").as_uint();
+      auto value_ = itRow.cell_get_variant_view("value", gd::table::tag_not_null{});
+      arguments_.append( { { "name", stringName }, { "value", value_ }, { "type", uType } }, gd::types::tag_view{});
+      pquery->field_add( arguments_, gd::sql::tag_arguments{} );       // add column to query
+   }
+
+   return { true, "" };
 }
 
 std::pair<bool,std::string> CRENDERSql::GetQuery( enumSqlQueryType eSqlQueryType, std::string& stringQuery )
@@ -897,6 +945,17 @@ std::pair<bool, std::string> CRENDERSql::ToSql( std::string_view stringType, std
    }
 
    return { false, "" };
+}
+
+std::pair<bool, std::string> CRENDERSql::ToSqlFromTemplate( std::string_view stringTemplate, std::string& stringQuery )
+{
+   gd::sql::query query_(m_eSqlDialect);
+   Query_AddFields(&query_);
+
+   auto stringSql = query_.sql_format( stringTemplate );
+   if( stringSql.empty() == true ) { return { false, "Failed to generate SQL from template" }; }
+   
+   return { true, "" };
 }
 
 /*

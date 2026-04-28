@@ -2387,7 +2387,7 @@ void table::cell_set( const range& rangeSet, const gd::variant_view& variantview
  */
 void table::cell_set_argument( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue ) 
 {                                                                                                  assert(uRow < m_uReservedRowCount);
-   gd::argument::shared::arguments* parguments = row_get_arguments_pointer(uRow);
+   gd::argument::shared::arguments* parguments = row_find_arguments_pointer(uRow);
    // ## Check if row hold any arguments object, if not then create one
    if( parguments == nullptr )
    {                                                                                               assert( is_rowarguments() == true ); // need flag that row arguments are used
@@ -2408,7 +2408,7 @@ void table::cell_set_argument( uint64_t uRow, const std::string_view& stringName
  */
 void table::cell_add_argument( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue ) 
 {                                                                                                  assert(uRow < m_uReservedRowCount);
-   gd::argument::shared::arguments* parguments = row_get_arguments_pointer(uRow);
+   gd::argument::shared::arguments* parguments = row_find_arguments_pointer(uRow);
    // ## Check if row hold any arguments object, if not then create one
    if( parguments == nullptr )
    {                                                                                               assert( is_rowarguments() == true ); // need flag that row arguments are used
@@ -2463,7 +2463,7 @@ std::vector<gd::variant_view> table::row_get_variant_view( uint64_t uRow ) const
       // ## if row arguments object for row then get those values
 
       using namespace gd::argument::shared;
-      const gd::argument::shared::arguments* parguments_ = row_get_arguments_pointer(uRow);
+      const gd::argument::shared::arguments* parguments_ = row_find_arguments_pointer(uRow);
       if( parguments_!= nullptr )
       {
          // ## append arguments from row arguments object
@@ -2587,9 +2587,8 @@ void table::row_get_arguments( uint64_t uRow, gd::argument::arguments& arguments
    // ## if row arguments object for row then get those values
    if( is_rowarguments() == true )
    {
-      using namespace gd::argument::shared;
-      gd::argument::shared::arguments* parguments_ = row_get_arguments_pointer(uRow);
-      if( parguments_!= nullptr )
+      const gd::argument::shared::arguments* parguments_ = row_find_arguments_pointer(uRow);
+      if( parguments_ != nullptr )
       {
          // ## append arguments from row arguments object
          auto& arguments_ = *parguments_;
@@ -2671,14 +2670,31 @@ gd::argument::shared::arguments* table::row_get_arguments_pointer(uint64_t uRow)
    return row_create_arguments( uRow );
 }
 
+/// Return raw pointer to row arguments object, if not found then return nullptr
+const gd::argument::shared::arguments* table::row_find_arguments_pointer( uint64_t uRow ) const
+{
+   gd::argument::shared::arguments* pargumentsRow = (gd::argument::shared::arguments*)row_get_arguments_meta(uRow);
+   if( *(intptr_t*)pargumentsRow != 0 ) return pargumentsRow;
+   return nullptr;
+}
+
+
+/// Return raw pointer to row arguments object, if not found then return nullptr
+gd::argument::shared::arguments* table::row_find_arguments_pointer( uint64_t uRow )
+{
+   gd::argument::shared::arguments* pargumentsRow = (gd::argument::shared::arguments*)row_get_arguments_meta(uRow);
+   if( *(intptr_t*)pargumentsRow != 0 ) return pargumentsRow;
+   return nullptr;
+}
+
 /** ---------------------------------------------------------------------------
  * @brief delete row arguments object for row
  * @param uRow index to row where arguments object is deleted
 */
 void table::row_arguments_delete( uint64_t uRow )
 {                                                                                                  assert( row_is_arguments( uRow ) == true );
-   gd::argument::shared::arguments* pargumentsRow = (gd::argument::shared::arguments*)row_get_arguments_meta(uRow);
-   if( *(intptr_t*)pargumentsRow != 0 )
+   gd::argument::shared::arguments* pargumentsRow = row_find_arguments_pointer( uRow );
+   if( pargumentsRow != nullptr )
    {
       pargumentsRow->~arguments();                                            // call destructor
       *(intptr_t*)pargumentsRow = 0;                                          // clear pointer at position in row meta data
@@ -4321,7 +4337,7 @@ void table::erase_arguments_s( table& tableErase, bool bSetNull )
    {
       for( uint64_t u = 0; u < tableErase.get_row_count(); u++ )
       {
-         gd::argument::shared::arguments* pargumentsRow = (gd::argument::shared::arguments*)tableErase.row_get_arguments_pointer( u );
+         gd::argument::shared::arguments* pargumentsRow = (gd::argument::shared::arguments*)tableErase.row_find_arguments_pointer( u );
          if( pargumentsRow != nullptr ) pargumentsRow->buffer_delete(); // release reference to arguments object
       }
    }

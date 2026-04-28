@@ -8,6 +8,7 @@
 
 #include <stdlib.h>
 
+#include "gd_binary.h"
 #include "gd_utf8.h"
 #include "gd_parse.h"
 
@@ -680,6 +681,52 @@ void append_g( std::string_view stringValue, unsigned uType, unsigned uDialect, 
    stringSql += '\'';
 }
 
+/**  -------------------------------------------------------------------------- append_g
+ * @brief Append a `variant_view` value to a SQL string with optional type coercion and dialect handling.
+ *
+ * Dispatches appending logic based on whether an explicit `uType` override is provided.
+ * - If `uType` is **0**, the variant's own type is used. Binary values are converted to a
+ *   hex string before appending; all other types are appended directly.
+ * - If `uType` is **non-zero**, the variant is treated as a string. A `std::string_view`
+ *   is used when available, otherwise the variant is materialized to a `std::string` first.
+ *
+ * @param variantviewValue  The value to append, expressed as a non-owning variant view.
+ * @param uType             Target SQL type override. Pass `0` to use the variant's intrinsic type.
+ * @param uDialect          SQL dialect identifier that controls dialect-specific formatting.
+ * @param stringSql         Output SQL string that the formatted value is appended to.
+ * @param tag_view          Tag dispatch parameter selecting the `variant_view` overload.
+ */
+void append_g( gd::variant_view variantviewValue, unsigned uType, unsigned uDialect, std::string& stringSql, gd::types::tag_view )
+{
+   using namespace gd::types;
+   if( uType == 0 )                                                           // Use variant type
+   { 
+      if( variantviewValue.is_binary() == true )
+      {
+         std::string stringBinary;
+         const auto uLength = variantviewValue.length();
+         gd::binary_to_hex_g( (const uint8_t*)variantviewValue.data(), uLength, stringBinary ); // Convert binary to hex string
+         append_g( stringBinary, gd::types::type_g("binary"), uDialect, stringSql); // Delegate to raw append_g for binary data
+      }
+      else 
+      {
+         append_g( variantviewValue, stringSql );                             // Delegate to main append_g for non-binary data
+      }
+   }
+   else 
+   {                                                                          // Here we have type and that converts string to the correct format
+      if( variantviewValue.is_string() )
+      {
+         append_g( variantviewValue.as_string_view(), uType, uDialect, stringSql ); // Delegate to main append_g for string data
+      }
+      else
+      {
+         std::string stringValue = variantviewValue.as_string();              // Convert variant to string
+         append_g( stringValue, uType, uDialect, stringSql );                 // Delegate to main append_g for string data
+      }
+   }
+}
+
 /**  ---------------------------------------------------------------- append_identifier_g
  * @brief Append a dialect-quoted SQL identifier to `stringSql`
  * 
@@ -1236,7 +1283,7 @@ std::string replace_g(const std::string_view& stringSource, std::function<gd::va
                if( pi_[0] == iQuestion_g && pi_[1] == iQuestion_g && pi_[2] == iEndBrace_g ) { piClose = pi_; break; } // found closing "??}"
             }
  
-            if( piClose == nullptr )
+            if( piClose == nullptr )                                         // If null, closing "??}" was not found, this is a malformed custom block.
             {                                                                // Missing closing "??}" for custom block
                if( pbError != nullptr ) *pbError = true;                     // malformed: closing "??}" not found
                return std::string();
@@ -1258,12 +1305,11 @@ std::string replace_g(const std::string_view& stringSource, std::function<gd::va
          const char* piBegin = pit;
          const char* piEnd = gd::parse::strchr( piBegin, stringSource.data() + stringSource.length(), '}', '{', gd::parse::tag_scope{});
  
-         // ## parse first part to found out what to do
-         const char* piSemicolon = gd::parse::strchr( piBegin, piEnd, iSemicolon_g );
+         // ## parse first part to found out what to do, sample format is: {?name;true_value;false_value}
+         const char* piSemicolon = gd::parse::strchr( piBegin, piEnd, iSemicolon_g ); // find first semicolon, this is separator between name and true/false values
          if(*piSemicolon != iSemicolon_g)
          {
             if( pbError != nullptr ) *pbError = true;
-            // ERROR: TODO fix code for error
             return std::string();
          }
  

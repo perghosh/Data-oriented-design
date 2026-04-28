@@ -211,6 +211,7 @@ std::pair<bool, std::string> CQueries::Load_s( std::string_view stringFilename, 
          argumentsStatement["name"] = xmlnodeStatement.attribute( "name" ).value();
          argumentsStatement["type"] = xmlnodeStatement.attribute( "type" ).value();
          argumentsStatement["format"] = xmlnodeStatement.attribute( "format" ).value();
+         argumentsStatement["table"] = xmlnodeStatement.attribute( "table" ).value();
          argumentsStatement["description"] = xmlnodeStatement.attribute( "description" ).value();
 
          // ## Handle 'ui' attribute or child element (optional) .............
@@ -251,6 +252,16 @@ std::pair<bool, std::string> CQueries::Load_s( std::string_view stringFilename, 
 
          auto result_ = statement_.add( argumentsStatement, { "ui", "code"});
          if( result_.first == false ) { return { false, "Error adding statement: " + result_.second }; }
+
+#ifndef NDEBUG
+         auto uLastRow_d = statement_.size() - 1;
+         auto parguments_d = statement_.get_arguments( uLastRow_d );
+         if( parguments_d != nullptr ) { 
+            [[maybe_unused]] auto uCount_d = parguments_d->count();
+         }
+   
+#endif // NDEBUG
+
       }
    }
    return { true, "" };

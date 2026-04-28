@@ -312,16 +312,58 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
 {
    std::array<std::byte, 128> buffer_;
    gd::argument::arguments argumentsOptional( buffer_ );
+   std::string stringSelect;
 
    CDocument* pdocument = GetDocument();                                                           if( pdocument == nullptr ) { return { false, GetLastError() }; }
 
    auto* pdatabase = pdocument->GetDatabase();
    if( pdatabase == nullptr ) return { false, "no database connection in document: " + std::string( pdocument->GetName() ) };
+   
+   if( GetContext()->GetDatabase() == nullptr ) { GetContext()->SetDatabase(pdatabase); }
 
-   // ## Prepare SQL statement ................................................
-   std::string stringSelect;
-   auto result_ = Sql_Prepare(stringSelect, argumentsOptional);
-   if( result_.first == false ) { return result_; }
+   std::string stringQuery = GetNextArgument( "query" ).as_string();          // get query to execute
+
+   if( stringQuery.empty() == false )
+   {
+      int64_t iRow = Statement_Find( stringQuery );
+      if( iRow == -1 ) { return { false, "query statement not found for: " + stringQuery }; }
+
+      uint64_t uStatementRow = static_cast<uint64_t>( iRow );
+      auto result_ = Lua_Execute( uStatementRow, pdocument );
+      if( result_.first == false ) { return result_; }
+
+      std::string_view stringSelectTemplate = Statement_GetQuery( uStatementRow );
+      if( stringSelectTemplate.empty() == true ) { return { false, "query statement is empty for: " + stringQuery }; }
+
+      CRENDERSql sql_( pdocument, uStatementRow );
+      sql_.Initialize();
+      if( Exists( "values" ) == true ) 
+      {
+         auto stringValues = GetNextArgument( "values" ).as_string();
+         if( stringValues.empty() == false ) { sql_.AddValues( stringValues, gd::types::tag_json{}); }
+      }
+
+      result_ = sql_.Prepare();
+      if( result_.first == false ) { return result_; }
+
+      std::string stringSelect;
+      sql_.ToSqlFromTemplate( stringSelectTemplate, stringSelect );
+
+      // ## Process SQL statement template with jinja if any
+      //    Use class query to generate query
+      // std::string query::sql_get_jinja( std::string_view stringTemplate, const gd::argument::arguments* pargumentsValues ) const
+
+      /*
+      result_ = Sql_Prepare(uStatementRow, stringSelect, argumentsOptional);
+      if( result_.first == false ) { return result_; }
+      */
+   }
+   else
+   {
+      // ## Prepare SQL statement ................................................
+      auto result_ = Sql_Prepare(stringSelect, argumentsOptional);
+      if( result_.first == false ) { return result_; }
+   }
 
    gd::com::pointer<gd::database::cursor_i> pcursor;
    pdatabase->get_cursor( &pcursor );
@@ -573,6 +615,60 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Delete()
    return { true, "" };
 }
 
+int64_t CAPIDatabase::Statement_Find( std::string_view stringQuery ) const
+{                                                                                                  assert( stringQuery.empty() == false );
+   const CDocument* pdocument = GetDocument();
+   if( pdocument == nullptr ) { return -1; }
+
+   if( stringQuery[0u] == '#' ) { stringQuery.remove_prefix(1); }             // remove leading #
+   else { return -1; }                                                        // query id must start with #
+
+   const META::CQueries* pqueries = pdocument->QUERIES_Get();
+   int64_t iRow = pqueries->GetQueryRow( stringQuery );
+
+   if( iRow != -1 ) { return static_cast<int64_t>( iRow ); }
+   return -1;
+}
+
+std::string_view CAPIDatabase::Statement_GetQuery( uint64_t uStatementRow ) const
+{
+   const CDocument* pdocument = GetDocument();
+   if( pdocument == nullptr ) { return {}; }
+
+   const META::CQueries* pqueries = pdocument->QUERIES_Get();
+   return pqueries->GetQuery( uStatementRow );
+}
+
+std::pair<bool, std::string> CAPIDatabase::Sql_Prepare( uint64_t uStatementRow, std::string& stringSql, gd::argument::arguments& argumentsData )
+{
+   std::pair<bool, std::string> result_( true, "" );
+   CDocument* pdocument = GetDocument();                                                           assert( pdocument != nullptr );
+   CSqlBuilder sqlbuilder;
+   std::string stringQueryTemplate;
+   auto uDialect = pdocument->DATABASE_Get()->GetDialect(); // get database dialect to use for sql building
+
+   if( Exists("values") == true )
+   {
+      std::string stringValues = GetArgument("values").as_string();
+      gd::argument::shared::arguments argumentsValues;
+      argumentsValues.reserve( 128 );
+      auto result_ = gd::parse::json::parse_shallow_object_g( stringValues, argumentsValues, false );
+      if( result_.first == false ) return result_;
+
+      if( IsGlobalEmpty() == false )
+      {
+         for( const auto [key_, value_] : GetGlobalArguments().named() )
+         {
+            std::string stringKey("::");
+            stringKey += key_;
+            argumentsValues.append_argument( stringKey, value_, gd::types::tag_view{});
+         }
+      }
+
+      sqlbuilder = argumentsValues;
+   }
+}
+
 /** --------------------------------------------------------------------------
  * Prepare SQL statement for execution.
  * @param stringSql SQL statement to prepare.
@@ -767,6 +863,37 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql, g
    return { true, "" };
 }
 
+std::pair<bool, std::string> CAPIDatabase::Lua_Execute( uint64_t uStatementRow, CDocument* pdocument )
+{
+   // ## Process code if any
+   META::CQueries* pqueries = pdocument->QUERIES_Get();
+
+   auto vectorCode = pqueries->GetArgumentsValues( uStatementRow, "code" );  // get code for insert
+   if( vectorCode.empty() == true ) return { true, "" };
+
+   // ## Execute lua code to prepare sql statement, this allows to use code to prepare complex sql statements that can not be prepared with the current sql builder
+
+   auto result_ = SCRIPT::LuaRequestExecute( vectorCode, GetContext(), [&](sol::state* pstateLua, CAPIContext* pcontext_) -> std::pair<bool, std::string> {
+      if( Exists( "values" ) == true )
+      {
+         auto* prequest_ = (*pstateLua)["request"].get<LUA::Request*>();
+         auto* psql_ = prequest_->GetRenderSql();
+         std::array<std::byte, 128> buffer_;
+         gd::argument::arguments argumentsValues(buffer_);
+         std::string stringValues = GetArgument("values").as_string();
+         auto result_ = psql_->AddValues( stringValues, gd::types::tag_json{} );
+         if( result_.first == false ) { return { false, "failed to add values for code execution: " + result_.second }; }
+      }
+      return { true, "" };
+   });
+
+   if( result_.first == false ) { return result_; }
+
+   if( GetContext()->IsStatusAbort() == true ) { return { true, "abort" }; } // check for aborting ?
+
+   return { true, "" };
+}
+
 
 std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::arguments& argumentsOptions, pugi::xml_document* pxmldocument, CDocument* pdocument, gd::argument::arguments* pargumentsReturn )
 {
@@ -831,7 +958,7 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
          if( stringInsertTemplate.empty() == false )
          {
             const gd::argument::arguments* pargumentsGlobal = GetContext()->GetGlobalArguments();
-            stringInsertSql = queryInsert.sql_get_jinja( stringInsertTemplate, pargumentsGlobal );
+            //stringInsertSql = queryInsert.sql_get_jinja( stringInsertTemplate, pargumentsGlobal );
          }
          else 
          {

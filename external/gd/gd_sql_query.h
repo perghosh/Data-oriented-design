@@ -425,6 +425,7 @@ public:
    bool table_empty() const { return m_vectorTable.empty(); }
    uint32_t table_get_key() const { auto pTable = table_get(); return pTable ? (uint32_t)pTable->get_key() : 0; }
    int32_t table_get_key( std::string_view stringTable ) const { auto pTable = table_get( stringTable ); return pTable ? (int32_t)pTable->get_key() : -1; }
+   std::string_view table_get_name( unsigned uTableKey ) const { auto pTable = table_get_for_key( uTableKey ); return pTable ? pTable->name() : std::string_view(); }
 
    std::vector<table>::iterator table_begin() { return m_vectorTable.begin(); }
    std::vector<table>::const_iterator table_begin() const { return m_vectorTable.cbegin(); }
@@ -464,22 +465,37 @@ public:
    field* field_add_as_orderby(const gd::variant_view& variantviewField ) { return field_add_as_orderby( gd::variant_view(0u), variantviewField ); }
    field* field_add_as_orderby(const gd::variant_view& variantTable, const gd::variant_view& variantviewField );
 
-   // ## get field in query
+   // @API [tag: field, get] [summary: get field information] [description: methods to get field or information for field]
+
    const field* field_get(unsigned uIndex) const { assert(uIndex < m_vectorField.size()); return &m_vectorField[uIndex]; }
    field* field_get(unsigned uIndex) { assert(uIndex < m_vectorField.size()); return &m_vectorField[uIndex]; }
-   field* field_get( const std::pair<std::string_view, gd::variant_view>& pairField );
+   /// Return pointer to field for name and value
+   const field* field_get( const std::pair<std::string_view, gd::variant_view>& pairField ) const;
+   /// Return pointer to field for name
+   const field* field_get( std::string_view stringField ) const;
+   /// Return pointer to field for table and field name
+   const field* field_get( std::string_view stringTable, std::string_view stringField ) const;
 
-   // ## various field operations and iterator
+   std::string_view field_get_value( std::string_view stringField, uint32_t* puType = nullptr ) const;
+   std::string_view field_get_value( std::string_view stringTable, std::string_view stringField, uint32_t* puType = nullptr ) const;
+
+   bool field_exists( const std::pair<std::string_view, gd::variant_view>& pairField ) const { return field_get( pairField ) != nullptr; }
+   bool field_exists( std::string_view stringField ) const { return field_get( stringField ) != nullptr; }
+   bool field_exists( std::string_view stringTable, std::string_view stringField ) const { return field_get( stringTable, stringField ) != nullptr; } 
+
+   // ## @API [tag: field, utility] [summary: field information] [description: methods to get field information such as size and if empty]
 
    std::size_t field_size() const { return m_vectorField.size(); }
    bool field_empty() const { return m_vectorField.empty(); }
+
+   // ## @API [tag: field, iterator] [summary: field iterator] [description: methods to get iterators for fields in query]
 
    std::vector<field>::iterator field_begin() { return m_vectorField.begin();  }
    std::vector<field>::const_iterator field_begin() const { return m_vectorField.cbegin();  }
    std::vector<field>::iterator field_end() { return m_vectorField.end(); }
    std::vector<field>::const_iterator field_end() const { return m_vectorField.cend(); }
 
-// ## @API [tag: condition] [summary: condition management] [description: methods to add and manage conditions in query]
+   // ## @API [tag: condition] [summary: condition management] [description: methods to add and manage conditions in query]
 
    condition* condition_add(std::string_view stringName, const gd::variant_view& variantValue) { return condition_add( stringName, gd::variant_view(), variantValue ); }
    condition* condition_add(std::string_view stringName, const gd::variant_view& variantOperator, const gd::variant_view& variantValue);
@@ -570,12 +586,19 @@ public:
    [[nodiscard]] std::string sql_get( enumSql eSql ) const;
    [[nodiscard]] std::string sql_get( enumSql eSql, const unsigned* puPartOrder ) const;
 
-   [[nodiscard]] std::string sql_get_jinja( std::string_view stringTemplate, const gd::argument::arguments* pargumentsValues = nullptr ) const;
 
    [[nodiscard]] std::string get_select() const { return sql_get( eSqlSelect ); }
    [[nodiscard]] std::string get_insert() const { return sql_get( eSqlInsert ); }
    [[nodiscard]] std::string get_update() const { return sql_get( eSqlUpdate ); }
    [[nodiscard]] std::string get_delete() const { return sql_get( eSqlDelete ); }
+
+   void sql_append( enumSqlPart ePart, std::string& stringSql, bool bAddKeyWord ) const;
+   void sql_append( std::string_view stringPart, std::string& stringSql, bool bAddKeyWord ) const;
+
+   /// Format replaces {0}, {name} and {name:format} in string template in query or from passed argument.
+   [[nodiscard]] std::string sql_format( std::string_view stringTemplate, const gd::argument::arguments* pargumentsValues = nullptr ) const;
+
+
 
 /// ## @API [tag: modifiers]
 

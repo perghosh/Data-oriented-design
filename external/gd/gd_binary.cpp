@@ -247,28 +247,52 @@ size_t binary_copy_hex_g( uint8_t* puBuffer, size_t uBufferSize, std::string_vie
 }
 
 /** -------------------------------------------------------------------------- binary_to_hex_g
- * @brief Convert binary data to hexadecimal string
+ * @brief Convert binary data to hexadecimal string and append it to `stringHex`
  * 
- * @param puBuffer Input buffer containing binary data
+ * The existing content of `stringHex` is preserved. The hexadecimal representation 
+ * of the input buffer is appended to the string.
+ *
+ * @param puBuffer    Input buffer containing binary data
  * @param uBufferSize Size of the input buffer
- * @param bUppercase Use uppercase hex letters (default: false)
- * @return std::string Hexadecimal representation
+ * @param stringHex   Output string (existing content is kept, hex is appended)
+ * @param bUppercase  Use uppercase hex letters (A-F) if true
  */
 void binary_to_hex_g( const uint8_t* puBuffer, size_t uBufferSize, std::string& stringHex, bool bUppercase )
 {
-   static const char* piHexLower = "0123456789abcdef";
-   static const char* piHexUpper = "0123456789ABCDEF";
-   const char* piHex = bUppercase ? piHexUpper : piHexLower;
+   const size_t uOldSize = stringHex.size();
+   const size_t uOutSize = uOldSize + uBufferSize * 2;
    
-   stringHex.clear();
-   stringHex.reserve(uBufferSize * 2);  // Pre-allocate memory for better performance
-   
-   for( size_t u = 0; u < uBufferSize; ++u )
+   stringHex.resize( uOutSize );                                              // append space + exact final size and set ending null terminator (if needed)
+
+   char* piHex = stringHex.data() + uOldSize;                                 // start writing at the end
+   if( bUppercase == false )
    {
-      stringHex += piHex[puBuffer[u] >> 4];
-      stringHex += piHex[puBuffer[u] & 0x0F];
+      // ## lowercase using small 16-byte table + arithmetic (faster & better for compiler)
+      static const char* piHexLower = "0123456789abcdef";
+
+      for( size_t u = 0; u < uBufferSize; ++u )
+      {
+         const uint8_t uByte = puBuffer[u];
+         piHex[0] = piHexLower[uByte >> 4];
+         piHex[1] = piHexLower[uByte & 0x0F];
+         piHex += 2;
+      }
+   }
+   else
+   {
+      // ## Uppercase path using small 16-byte table + arithmetic (faster & better for compiler)
+      static const char* piHexUpper = "0123456789ABCDEF";
+
+      for( size_t u = 0; u < uBufferSize; ++u )
+      {
+         const uint8_t uByte = puBuffer[u];
+         piHex[0] = piHexUpper[uByte >> 4];
+         piHex[1] = piHexUpper[uByte & 0x0F];
+         piHex += 2;
+      }
    }
 }
+
 
 /// @overload binary_to_hex_g
 std::string binary_to_hex_g( const uint8_t* puBuffer, size_t uBufferSize, bool bUppercase )

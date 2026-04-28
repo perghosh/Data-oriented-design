@@ -96,7 +96,7 @@ enum enumFormat {
 enum enumType { eTypeUnknown = 0, eTypeSelect = 1, eTypeInsert = 2, eTypeUpdate = 3, eTypeDelete = 4, eTypeAsk = 5, eTypeBatch = 6, eTypeMAX = 7 };
 
 /// Column indexes for fixed columns in statement table
-enum enumColumn { eColumnKey, eColumnUuid, eColumnName, eColumnType, eColumnFormat, eColumnRule, eColumnStatement, eColumnDescription };
+enum enumColumn { eColumnKey, eColumnUuid, eColumnName, eColumnType, eColumnFormat, eColumnRule, eColumnStatement, eColumnTable, eColumnDescription };
 
 // @API [tag: construction]
 public:
@@ -132,8 +132,10 @@ public:
 
    gd::types::uuid get_id( uint64_t uRow ) const; ///< get statement uuid by row index
    std::string_view get_name( uint64_t uRow ) const; ///< get statement name by row index
+   std::string_view get_table( uint64_t uRow ) const; ///< get statement table by row index, table holds information to know what tables are involved
    std::string_view get_statement( uint64_t uRow ) const; ///< get statement by row index
-   const gd::argument::shared::arguments* get_arguments( uint64_t uRow ) const; ///< get arguments by row index
+   const gd::argument::shared::arguments* find_arguments( uint64_t uRow ) const; ///< find arguments by row index
+   gd::argument::shared::arguments* get_arguments( uint64_t uRow ); ///< get arguments by row index
 
 
    int64_t find( const gd::types::uuid* puuid ) const; ///< find statement by uuid, returns row index or -1 if not found
@@ -205,8 +207,16 @@ constexpr statement::enumFormat statement::to_format_s( std::string_view stringN
         : eFormatUnknown; ///< error, unknown format
 }
 
+/// find arguments for statement by row index, returns pointer to arguments object or nullptr if not found
+inline const gd::argument::shared::arguments* statement::find_arguments( uint64_t uRow ) const 
+{
+   if( m_ptableStatement == nullptr || uRow >= m_ptableStatement->size() ) { return nullptr; }
+   return m_ptableStatement->row_find_arguments_pointer( uRow );
+}
+
+
 /// Get arguments for statement by row index, returns pointer to arguments object or nullptr if not found
-inline const gd::argument::shared::arguments* statement::get_arguments( uint64_t uRow ) const 
+inline gd::argument::shared::arguments* statement::get_arguments( uint64_t uRow ) 
 {
    if( m_ptableStatement == nullptr || uRow >= m_ptableStatement->size() ) { return nullptr; }
    return m_ptableStatement->row_get_arguments_pointer( uRow );
