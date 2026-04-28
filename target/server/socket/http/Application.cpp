@@ -241,7 +241,7 @@ std::pair<bool, std::string> CApplication::SERVER_Start()
    if( PROPERTY_Get("folder-root").empty() == false ) stringRootFolder = papplication_g->PROPERTY_Get("folder-root").as_string();
 
    unsigned uThreadCount = 4;
-   if( PROPERTY_Get("system-treadcount").empty() == false ) uThreadCount = papplication_g->PROPERTY_Get("system-treadcount").as_uint();
+   if( PROPERTY_Get("system-threadcount").empty() == false ) uThreadCount = papplication_g->PROPERTY_Get("system-threadcount").as_uint();
 
    int iVersion = 11;
    boost::asio::io_context iocontext_( uThreadCount );

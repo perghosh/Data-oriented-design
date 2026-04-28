@@ -433,7 +433,7 @@ std::pair<bool, std::string> CApplication::SERVER_Start(unsigned uIndex)
    if( PROPERTY_Get("folder-root").empty() == false ) stringRootFolder = papplication_g->PROPERTY_Get("folder-root").as_string();
 
    unsigned uThreadCount = 4;
-   if( PROPERTY_Get("system-treadcount").empty() == false ) uThreadCount = papplication_g->PROPERTY_Get("system-treadcount").as_uint();
+   if( PROPERTY_Get("system-threadcount").empty() == false ) uThreadCount = papplication_g->PROPERTY_Get("system-threadcount").as_uint();
 
 #ifndef NDEBUG
    LOG_INFORMATION_RAW("== Starting server in DEBUG mode ==");

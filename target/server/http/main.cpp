@@ -20,6 +20,7 @@ namespace
          // ## Use "_CrtSetDbgFlag" - Windows C Runtime (CRT) method, acts as a master control switch for the debug heap manager
          const int iDebugFlags = _CrtSetDbgFlag( _CRTDBG_REPORT_FLAG );       // get current debug flags
          _CrtSetDbgFlag( iDebugFlags | _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF ); // enable debug heap allocations and automatic leak check at program exit
+         //_CrtSetBreakAlloc(12500);   // lowest alloc# set break att specific allocation number you can find this number in memory leak dump
       }
    };
 
@@ -47,9 +48,9 @@ int main( int iArgumentCount, char* ppbszArgument[] )
 {
 // At the top of main(), before anything else
 #if defined(_MSC_VER) && defined(_DEBUG)
-    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-    _CrtSetAllocHook(AllocHook_d);
-    //_CrtSetBreakAlloc(12500);   // lowest alloc# set break att specific allocation number you can find this number in memory leak dump
+#  ifdef TARGET_COMPILER__LEAKS_CHECK
+   _CrtSetAllocHook(AllocHook_d);
+#  endif
 #endif
 
    // ## Initialize application and configure to get the server running
@@ -63,6 +64,7 @@ int main( int iArgumentCount, char* ppbszArgument[] )
    if( result_.first == false )
    {
       std::cout << "## Server exit with error: "  << result_.second << std::endl;
+      return 1;
    }
 
    return 0;

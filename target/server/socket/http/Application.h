@@ -26,7 +26,7 @@ namespace gd { namespace cli { class options; } }
 * - log-console : log console severity
 * - log-level : log severity level
 * - folder-root : root folder for site
-* - system-treadcount : number of threads to use
+* - system-threadcount : number of threads to use
 * - ip : ip address to bind to
 *
 \code
