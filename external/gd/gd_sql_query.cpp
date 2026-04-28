@@ -1649,8 +1649,10 @@ void query::sql_append( enumSqlPart ePart, std::string& stringSql, bool bAddKeyW
    }
 }
 
+/// @brief Append SQL part to `stringSql` by determining part type from `stringPart`.
 void query::sql_append( std::string_view stringPart, std::string& stringSql, bool bAddKeyWord ) const 
 { 
+   if( stringPart.empty() == true ) return;
    auto ePart = sql_get_part_type_g( stringPart );
    sql_append( ePart, stringSql, bAddKeyWord );
 }
@@ -1664,9 +1666,10 @@ void query::sql_append( std::string_view stringPart, std::string& stringSql, boo
  * wrapping, and database-specific formatting for different data types.
  *
  * @param stringTemplate The SQL template string containing placeholders to replace.
+ * @param stringSqlAddTo The string to which the formatted SQL will be appended.
  * @param pargumentsValues Optional pointer to arguments collection. If nullptr,
  *                         uses the query's internally stored arguments.
- * @return std::string The formatted SQL string with all placeholders replaced.
+ * @return std::pair<bool, std::string> A pair containing a boolean indicating success and the formatted SQL string with all placeholders replaced.
  *
  * @par Placeholder Syntax
  * The following placeholder formats are supported:
@@ -1898,10 +1901,10 @@ void query::sql_append( std::string_view stringPart, std::string& stringSql, boo
  * @see append_g() for value formatting and SQL escaping logic
  * @see sql_get_part() for the SQL generation implementation
  */
-std::string query::sql_format( std::string_view stringTemplate, const gd::argument::arguments* pargumentsValues ) const
+std::pair<bool, std::string> query::sql_format( std::string_view stringTemplate, std::string& stringSqlAddTo, const gd::argument::arguments* pargumentsValues ) const
 {
    using namespace gd::types;
-   unsigned uArgumentIndex = 0;
+   unsigned uArgumentIndex = 0;    // Used to count index in positional arguments when placeholder is numeric and no named argument is found
    std::string stringPlaceholder;  // full content between { and }
    std::string stringName;         // name part (before optional ':')
    std::string stringFormat;       // format part (after ':')
@@ -1916,7 +1919,13 @@ std::string query::sql_format( std::string_view stringTemplate, const gd::argume
          if( *pit != '\'' ) { stringSql += *pit; continue; }                  // normal character, copy as-is
 
          // ## copy SQL string literal verbatim (handles '' escaped quotes) ....
-         const char* piFind = pit + 1;
+         const char* piFind = pit + 1; // next character
+         if( *piFind == '\'' )                                                // handle double quote, this is added as single quote
+         {
+            stringSql += *pit; 
+            pit++;
+            continue;
+         }
          piFind = gd::parse::strchr( piFind, '\'', gd::parse::sql{} );
          if( piFind != nullptr && piFind < pitEnd )
          {
@@ -1931,7 +1940,7 @@ std::string query::sql_format( std::string_view stringTemplate, const gd::argume
       pit++;
       bool bRaw = false;         // {=name} raw insert, no escaping, no quotes
       bool bRequired = false;    // {*name} required value
-      bool bClause   = false;    // {+name} clause injection
+      bool bClause   = false;    // {+name} clause injection, clause means complete sql parts like, select, where etc
       bool bClauseWithKeyword = false; // {++name} or {+=name} clause injection with keyword
 
       // ### clause injection prefix: {+...} or {++...} / {+=...}
@@ -1950,16 +1959,12 @@ std::string query::sql_format( std::string_view stringTemplate, const gd::argume
       stringPlaceholder.clear();
       while( pit < pitEnd && *pit != '}' ) { stringPlaceholder += *pit++; }
 
-      if( pit >= pitEnd || *pit != '}' ) break;                              // malformed, stop
+      if( pit >= pitEnd || *pit != '}' ) { return { false, "Missing closing brace }" }; } // malformed, stop
 
-      // ## clause injection ......................................................
-      if( bClause )
-      {
-         sql_append( stringPlaceholder, stringSql, bClauseWithKeyword );
-         continue;
-      }
+      // ## clause injection .................................................
+      if( bClause == true ) { sql_append( stringPlaceholder, stringSql, bClauseWithKeyword ); continue; } // Insert complete sql part clauses like select, where, from etc
 
-      // ## split name and optional printf-style format specifier on ':' .........
+      // ## split name and optional printf-style format specifier on ':' .....
       auto uColonPosition = stringPlaceholder.find( ':' );
       if( uColonPosition == std::string::npos )
       {
@@ -1972,13 +1977,13 @@ std::string query::sql_format( std::string_view stringTemplate, const gd::argume
          stringFormat = stringPlaceholder.substr( uColonPosition + 1 );
       }
 
-      // ## resolve value .......................................................
+      // ## resolve value ....................................................
       uint32_t uType = 0;
       std::string_view stringValue;
       bool bValueFound = false;
 
       // ### positional index into pargumentsValues
-      if( !stringName.empty() && gd::types::is_ctype_g( stringName[0], "digit"_ctype ) )
+      if( stringName.empty() == false && gd::types::is_ctype_g( stringName[0], "digit"_ctype ) ) // check for number
       {
          if( pargumentsValues != nullptr )
          {
@@ -1990,25 +1995,25 @@ std::string query::sql_format( std::string_view stringTemplate, const gd::argume
                else                append_g( variantviewFound, stringSql, gd::sql::tag_raw{} );
                uArgumentIndex = uIndex + 1;
             }
-            else if( bRequired ) { stringSql += '{'; stringSql += stringPlaceholder; stringSql += '}'; }
+            else if( bRequired == true ) { stringSql += '{'; stringSql += stringPlaceholder; stringSql += '}'; }
          }
          continue;
       }
 
       // ### table.field qualified lookup
-      auto uDotPosition = stringName.find( '.' );
+      auto uDotPosition = stringName.find( '.' );                            // if name contains a dot, treat as table.field for lookup in query fields first, then fallback to arguments
       if( uDotPosition != std::string::npos )
       {
          std::string_view stringTable( stringName.data(), uDotPosition );
          std::string_view stringField( stringName.data() + uDotPosition + 1, stringName.length() - uDotPosition - 1 );
          stringValue = field_get_value( stringTable, stringField, &uType );
-         bValueFound = !stringValue.empty() || field_exists( stringTable, stringField );
+         bValueFound = stringValue.empty() == true || field_exists( stringTable, stringField ); // value is empty, extra check if field exists to distinguish between empty value and not found
       }
       else
       {
          // ### unqualified field lookup
          stringValue = field_get_value( stringName, &uType );
-         bValueFound = !stringValue.empty() || field_exists( stringName );
+         bValueFound = stringValue.empty() == false || field_exists( stringName );
       }
 
       // ### fallback to pargumentsValues
@@ -2044,7 +2049,10 @@ std::string query::sql_format( std::string_view stringTemplate, const gd::argume
       else                stringSql += stringValue;
    }
 
-   return stringSql;
+   if( stringSqlAddTo.empty() == true ) stringSqlAddTo = std::move( stringSql );
+   else stringSqlAddTo += stringSql;
+
+   return { true, "" };
 }
 
 

@@ -346,17 +346,8 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
       result_ = sql_.Prepare();
       if( result_.first == false ) { return result_; }
 
-      std::string stringSelect;
+      stringSelect.clear();
       sql_.ToSqlFromTemplate( stringSelectTemplate, stringSelect );
-
-      // ## Process SQL statement template with jinja if any
-      //    Use class query to generate query
-      // std::string query::sql_get_jinja( std::string_view stringTemplate, const gd::argument::arguments* pargumentsValues ) const
-
-      /*
-      result_ = Sql_Prepare(uStatementRow, stringSelect, argumentsOptional);
-      if( result_.first == false ) { return result_; }
-      */
    }
    else
    {
@@ -639,6 +630,7 @@ std::string_view CAPIDatabase::Statement_GetQuery( uint64_t uStatementRow ) cons
    return pqueries->GetQuery( uStatementRow );
 }
 
+/*
 std::pair<bool, std::string> CAPIDatabase::Sql_Prepare( uint64_t uStatementRow, std::string& stringSql, gd::argument::arguments& argumentsData )
 {
    std::pair<bool, std::string> result_( true, "" );
@@ -668,6 +660,7 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare( uint64_t uStatementRow, 
       sqlbuilder = argumentsValues;
    }
 }
+*/
 
 /** --------------------------------------------------------------------------
  * Prepare SQL statement for execution.

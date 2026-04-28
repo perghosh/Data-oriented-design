@@ -597,6 +597,7 @@ public:
 
    /// Format replaces {0}, {name} and {name:format} in string template in query or from passed argument.
    [[nodiscard]] std::string sql_format( std::string_view stringTemplate, const gd::argument::arguments* pargumentsValues = nullptr ) const;
+   std::pair<bool, std::string> sql_format( std::string_view stringTemplate, std::string& stringSqlAddTo, const gd::argument::arguments* pargumentsValues = nullptr ) const;
 
 
 
@@ -832,12 +833,16 @@ inline query& query::add( const gd::variant_view& variantTable, const std::vecto
    return *this;
 }
 
-
-
-
 inline query& query::add( const gd::variant_view& variantTable, const std::string_view& stringCondition, tag_condition ) {
    condition_add_raw( variantTable, stringCondition );  return *this;
 }
+
+/// Process sql template and replace parts to generate final query
+inline std::string query::sql_format( std::string_view stringTemplate, const gd::argument::arguments* pargumentsValues ) const {
+   std::string stringSql;
+   sql_format( stringTemplate, stringSql, pargumentsValues );
+   return stringSql;
+}  
 
 
 

@@ -952,9 +952,9 @@ std::pair<bool, std::string> CRENDERSql::ToSqlFromTemplate( std::string_view str
    gd::sql::query query_(m_eSqlDialect);
    Query_AddFields(&query_);
 
-   auto stringSql = query_.sql_format( stringTemplate );
-   if( stringSql.empty() == true ) { return { false, "Failed to generate SQL from template" }; }
-   
+   auto [bSuccess, stringError] = query_.sql_format( stringTemplate, stringQuery );
+   if( bSuccess == false ) { return { false, "Failed to generate SQL from template: " + stringError }; }
+
    return { true, "" };
 }
 

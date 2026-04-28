@@ -289,7 +289,7 @@ constexpr char upper_g( char i )
    return ( i >= 'a' && i <= 'z' ) ? static_cast<char>( i - ( 'a' - 'A' ) ) : i;
 }
 
-/** ---------------------------------------------------------------------------
+/** -------------------------------------------------------------------------- sql_get_part_type_g
  * @brief Return SQL part enum for given keyword.
  * Flexible + fast: uses first character, optional next chars,
  * allows extended words starting with valid keyword (prefix matching).
@@ -298,13 +298,12 @@ constexpr char upper_g( char i )
  * @return {enumSqlPart} Corresponding SQL part
 */
 constexpr enumSqlPart sql_get_part_type_g( std::string_view stringPartName )
-{
-   assert( !stringPartName.empty() );
+{                                                                                                  assert( !stringPartName.empty() );
 
    const size_t uSize = stringPartName.size();
-   const char i0 = upper_g( stringPartName[0] );
+   const char iFirstChar = upper_g( stringPartName[0] );
 
-   switch( i0 )
+   switch( iFirstChar )
    {
    case 'F': return eSqlPartFrom;                                             // FROM (any prefix is fine)
    case 'J': return eSqlPartJoin;                                             // JOIN
@@ -341,7 +340,7 @@ constexpr enumSqlPart sql_get_part_type_g( std::string_view stringPartName )
 
 
 
-/** ---------------------------------------------------------------------------
+/** --------------------------------------------------------------------------- sql_get_dialect_g
  * @brief Convert dialect name string to enumSqlDialect (case-insensitive, constexpr)
  *
  * Parses a SQL dialect name and returns the corresponding enumSqlDialect value.
