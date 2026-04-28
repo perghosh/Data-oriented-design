@@ -29,8 +29,8 @@
 
 NAMESPACE_META_BEGIN
 
-/** @CLASS [name: CQueries] [description:  ]
- * \brief
+/** @CLASS [name: CQueries] [description: facade for gd::modules::dbmeta::statement]
+ * \brief Wrapper for query statements, core logic is in gd::modules::dbmeta::statement class
  *
  *
  *

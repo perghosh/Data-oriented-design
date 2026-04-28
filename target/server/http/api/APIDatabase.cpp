@@ -343,11 +343,22 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
          if( stringValues.empty() == false ) { sql_.AddValues( stringValues, gd::types::tag_json{}); }
       }
 
+      std::string stringTemporary; // If preprocessing and it have modified query then we need to store it.
+
+      result_ = sql_.Preprocess( stringSelectTemplate );
+      if( result_.first == false ) { return result_; }
+      else if( result_.second.empty() == false ) 
+      { 
+         stringTemporary = std::move( result_.second ); 
+         stringSelectTemplate = stringTemporary;                              // set to preprocessed query
+      }
+
       result_ = sql_.Prepare();
       if( result_.first == false ) { return result_; }
 
       stringSelect.clear();
-      sql_.ToSqlFromTemplate( stringSelectTemplate, stringSelect );
+      result_ = sql_.ToSqlFromTemplate( stringSelectTemplate, stringSelect );
+      if( result_.first == false ) { return result_; }
    }
    else
    {
@@ -606,6 +617,19 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Delete()
    return { true, "" };
 }
 
+/**  ---------------------------------------------------------------------- Statement_Find
+ * @brief Find the row index for a named statement query.
+ * 
+ * Expects `stringQuery` to reference a query identifier prefixed with `#`.
+ * The prefix is stripped before the lookup is forwarded to the document query
+ * metadata.
+ * 
+ * @param stringQuery Query identifier to resolve, for example `#SelectUsers`.
+ * @return int64_t Zero-based query row index, or `-1` if the document is
+ *         missing, the identifier format is invalid, or the query is not found.
+ * 
+ * @TODO [tag: statement] [description: add logic to try to find query by key (uuid) if format match]
+ */
 int64_t CAPIDatabase::Statement_Find( std::string_view stringQuery ) const
 {                                                                                                  assert( stringQuery.empty() == false );
    const CDocument* pdocument = GetDocument();
@@ -621,12 +645,13 @@ int64_t CAPIDatabase::Statement_Find( std::string_view stringQuery ) const
    return -1;
 }
 
+/// @brief Get the SQL query template for a given statement row index.
 std::string_view CAPIDatabase::Statement_GetQuery( uint64_t uStatementRow ) const
 {
    const CDocument* pdocument = GetDocument();
    if( pdocument == nullptr ) { return {}; }
 
-   const META::CQueries* pqueries = pdocument->QUERIES_Get();
+   const META::CQueries* pqueries = pdocument->QUERIES_Get();                                     assert( uStatementRow < pqueries->Size() );
    return pqueries->GetQuery( uStatementRow );
 }
 

@@ -168,6 +168,7 @@ public:
    /// Adds data for a complete record for specified table
    std::pair<bool,std::string> AddRecord( std::string_view stringJson, gd::types::tag_json );
 
+   std::pair<bool, std::string> Preprocess( std::string_view stringSqlTemplate );
    std::pair<bool, std::string> Prepare();
    std::pair<bool, std::string> Validate();
 
@@ -206,6 +207,11 @@ public:
    std::pair<bool, std::string> ToSqlDelete( std::string& stringQuery );
    std::pair<bool, std::string> ToSql( std::string_view stringType, std::string& stringQuery );
    std::pair<bool, std::string> ToSqlFromTemplate( std::string_view stringTemplate, std::string& stringQuery );
+
+   /// @API [tag: arguments] [description: Arguments methods]
+
+   void ToArguments( gd::argument::arguments& arguments ) const;
+   void ToArguments( gd::argument::shared::arguments& arguments ) const;
 
    // @API [tag: validate]
 

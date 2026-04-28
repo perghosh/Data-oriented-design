@@ -309,7 +309,7 @@ int64_t CDatabase::Column_FindRow( const gd::argument::arguments& argumentsFind 
       unsigned uColumn = m_ptableColumn->column_get_index( "column" );
       iRow = m_ptableColumn->find( uColumn, (uint64_t)iRow, stringColumn );
    }
-                                                                                                   assert( iRow != -1 && "Row not found, this should not happen" );
+    
    return iRow;
 }
 

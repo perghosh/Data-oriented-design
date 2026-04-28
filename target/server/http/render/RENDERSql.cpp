@@ -9,8 +9,16 @@
 #include "jsoncons_ext/jsonpath/jsonpath.hpp"
 
 #include "gd/gd_arguments_io.h"
+#include "gd/gd_arguments_shared.h"
 #include "gd/gd_table_io.h"
+#include "gd/gd_sql_value.h"
 
+#include "gd/expression/gd_expression_value.h"
+#include "gd/expression/gd_expression_token.h"
+#include "gd/expression/gd_expression_method_01.h"
+#include "gd/expression/gd_expression_runtime.h"
+
+#include "gd/expression/gd_expression_glue_to_gd.h"
 
 #include "gd/parse/gd_parse_json.h"
 
@@ -518,6 +526,72 @@ std::pair<bool,std::string> CRENDERSql::AddRecord( std::string_view stringJson, 
    return {true, ""};
 }
 
+std::pair<bool, std::string> EXPRESSION_GetArgument_s( const std::vector<gd::expression::value>& vectorArgument, gd::expression::value* pvalueReturn );
+std::pair<bool, std::string> EXPRESSION_Exists_s( const std::vector<gd::expression::value>& vectorArgument, gd::expression::value* pvalueReturn );
+
+// Array of MethodInfo for visual studio operations
+const gd::expression::method pmethodSource_g[] = {
+   { (void*)&EXPRESSION_Exists_s, "exists", 2, 1 },
+   { (void*)&EXPRESSION_GetArgument_s, "get_argument", 2, 1 },
+};
+
+const size_t uMethodSourceSize_g = sizeof(pmethodSource_g) / sizeof(gd::expression::method);
+
+
+std::pair<bool, std::string> CRENDERSql::Preprocess( std::string_view stringSqlTemplate )
+{
+   // ## Test for preparsing, find "{??" to check if there are tags to process
+   auto position_ = stringSqlTemplate.find( "{??" );
+   if( position_ != std::string::npos ) 
+   {
+      gd::argument::shared::arguments argumentsValues; // hold the values for the arguments that can be used in the expression evaluation
+      ToArguments( argumentsValues );                                        // convert the table field to arguments for expression evaluation
+      std::string stringNew = std::string(stringSqlTemplate);
+      
+      // ## prepare runtime for expression evaluation, add methods and variables
+      using namespace gd::expression;
+      gd::expression::runtime runtime_;
+      runtime_.add( { (unsigned)uMethodDefaultSize_g, gd::expression::pmethodDefault_g, ""}); // global scope
+      runtime_.add( { (unsigned)uMethodStringSize_g, gd::expression::pmethodString_g, std::string( "str" ) } ); // str scope for string operations
+      runtime_.add( { (unsigned)uMethodSourceSize_g, pmethodSource_g, std::string("args")});
+      runtime_.set_variable( "args", std::pair<const char*, void*>("args", &argumentsValues)); // set source variable to the expression source
+
+      // ## callback for expression evaluation, this will be called for each expression found in the string, and will return the result of the expression to replace in the string
+      auto callback_ = [&]( const std::string_view& stringExpression, bool* pbError ) -> std::string
+      {
+         std::vector<gd::expression::token> vectorToken;
+         std::pair<bool, std::string> result_ = gd::expression::token::parse_s(stringExpression, vectorToken, gd::expression::tag_formula{});
+         if( result_.first == false && pbError != nullptr ) { *pbError = true; return result_.second; }
+
+         std::vector<token> vectorPostfix;
+         vectorPostfix.reserve( vectorToken.size() );
+         result_ = gd::expression::token::compile_s(vectorToken, vectorPostfix, tag_postfix{});
+         if( result_.first == false && pbError != nullptr ) { *pbError = true; return result_.second; }
+
+         std::vector<gd::expression::value> vectorReturn;
+         result_ = gd::expression::token::calculate_s(vectorPostfix, &vectorReturn, runtime_);
+         if( result_.first == false && pbError != nullptr ) { *pbError = true; return result_.second; }
+
+         std::string stringResult;
+         if( vectorReturn.size() > 0 ) { stringResult = vectorReturn[0].as_string(); }
+
+         return stringResult; // return empty variant if not found
+      };
+
+
+      bool bError = false;
+      auto stringResult = gd::sql::replace_g( stringNew, argumentsValues, callback_, &bError, gd::sql::tag_preprocess{} ); 
+      if( bError == true ) { return { false, "Error during SQL preprocessing, sql: " + std::string(stringSqlTemplate) }; }
+
+      stringNew.clear();
+      auto result_ = gd::sql::replace_g( stringResult, argumentsValues, stringNew, gd::sql::tag_brace{} ); 
+      if( result_.first == false ) { return result_; }
+      return { true, std::move(stringNew) };
+   }
+
+   return { true, "" };
+}
+
 /** --------------------------------------------------------------------------
  * @brief Prepares the SQL query by validating and transforming the data in the table field.
  * 
@@ -561,7 +635,7 @@ std::pair<bool, std::string> CRENDERSql::Prepare()                              
 
       
       argumentsFind.append( { {"table", stringTable}, {"column", stringName} });
-      int64_t iRow = pdatabase_->Column_FindRow( argumentsFind );                                  assert( iRow >= 0 && "Developer error because this should not assert");
+      int64_t iRow = pdatabase_->Column_FindRow( argumentsFind );
 
       if( iRow > 0 )
       {
@@ -984,6 +1058,29 @@ std::pair<bool, std::string> CRENDERSql::AddConditionToQuery( gd::sql::query& qu
 }
 */
 
+/// Convert the internal table field data into a structured arguments collection
+void CRENDERSql::ToArguments( gd::argument::arguments& arguments ) const
+{
+   for( auto itRow = m_tableField.row_begin(); itRow != m_tableField.row_end(); ++itRow )
+   {
+      std::string stringName = itRow.cell_get_variant_view( "name", gd::table::tag_not_null{} ).as_string();
+      auto value_ = itRow.cell_get_variant_view( "value", gd::table::tag_not_null{} );
+      arguments.append_argument( stringName, value_ );
+   }
+}
+
+/// Convert the internal table field data into a structured shared arguments collection
+void CRENDERSql::ToArguments( gd::argument::shared::arguments& arguments ) const
+{
+   for( auto itRow = m_tableField.row_begin(); itRow != m_tableField.row_end(); ++itRow )
+   {
+      std::string stringName = itRow.cell_get_variant_view( "name", gd::table::tag_not_null{} ).as_string();
+      auto value_ = itRow.cell_get_variant_view( "value", gd::table::tag_not_null{} );
+      arguments.append_argument( stringName, value_ );
+   }
+}
+
+
 /**  -------------------------------------------------------------------------- Validate
  * @brief Validate named SQL render attributes against known field columns.
  * 
@@ -1047,4 +1144,48 @@ void CRENDERSql::Destroy_s()
       m_pcolumnsField_s->release();
       m_pcolumnsField_s = nullptr;
    }
+}
+
+
+
+
+
+static std::pair<bool, std::string> EXPRESSION_GetArgument_s( const std::vector<gd::expression::value>& vectorArgument, gd::expression::value* pvalueReturn )
+{                                                                                                  assert(vectorArgument.size() > 1);
+   auto object_ = vectorArgument[1];                                                               assert(object_.is_pointer() == true);
+   gd::argument::shared::arguments* parguments_ = (gd::argument::shared::arguments*)object_.get_pointer();
+
+   auto& name_ = vectorArgument[0];
+   if( name_.is_string() == true )
+   {
+      std::string stringName( name_.as_string() );
+      if( stringName.empty() == true ) { return { false, "Argument name cannot be empty." }; }
+      auto variantview_ = ( *parguments_ )[stringName].as_variant_view();
+      *pvalueReturn = gd::expression::to_value_g( variantview_ );
+
+      return { true, "" };
+   }
+
+   return { false, "Invalid argument name type, expected string." };
+}
+
+static std::pair<bool, std::string> EXPRESSION_Exists_s( const std::vector<gd::expression::value>& vectorArgument, gd::expression::value* pvalueReturn )
+{                                                                                                  assert(vectorArgument.size() > 1);
+   auto object_ = vectorArgument[1];                                                               assert(object_.is_pointer() == true);
+   gd::argument::shared::arguments* parguments_ = (gd::argument::shared::arguments*)object_.get_pointer();
+
+   auto& name_ = vectorArgument[0];
+   if( name_.is_string() == true )
+   {
+      std::string stringName( name_.as_string() );
+      if( stringName.empty() == true ) { return { false, "Argument name cannot be empty." }; }
+      auto variantview_ = ( *parguments_ )[stringName].as_variant_view();
+
+      if( variantview_.is_null() == true ) { *pvalueReturn = false; }         // if argument not found, return false
+      else { *pvalueReturn = true; }
+
+      return { true, "" };
+   }
+
+   return { false, "Invalid argument name type, expected string." };
 }
