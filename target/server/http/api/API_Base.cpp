@@ -1,6 +1,24 @@
 // @FILE [tag: api, base] [summary: Implementation of base class for API commands] [type: source] [name: API_Base.cpp]
 
+#include <memory>
+#include <filesystem>
+
+#include "gd/gd_binary.h"
+#include "gd/parse/gd_parse_json.h"
+#include "gd/gd_database_sqlite.h"
+#include "gd/gd_file.h"
+#include "gd/database/gd_database_io.h"
+
+#include "gd/gd_sql_query.h"
+#include "gd/gd_sql_query_builder.h"
+
+#include "../lua/LUAObjects.h"
+
 #include "../Application.h"
+
+#include "../render/RENDERSql.h"
+
+#include "API_Scripting.h"
 
 #include "API_Base.h"
 
@@ -234,4 +252,140 @@ void CAPI_Base::IncrementArgumentCounter( std::string_view stringName )
 bool CAPI_Base::Exists( const std::string_view& stringName ) const
 {
    return m_argumentsQS.exists( stringName );
+}
+
+
+
+std::pair<bool, std::string> CAPI_Base::PrepareStatement( std::variant<size_t, std::string_view> statement_id_, std::string& stringSelectAddTo )
+{
+   std::string stringQuery;
+   std::string stringSelect;
+   uint64_t uStatementRow;
+   CDocument* pdocument = GetDocument();                                                           assert( pdocument != nullptr );
+
+   if( std::holds_alternative<size_t>( statement_id_ ) == true )
+   {
+      uStatementRow = std::get<size_t>( statement_id_ );                                           assert( uStatementRow < 1000 ); // sanity check for row index)
+   }
+   else
+   {
+      stringQuery = std::get<std::string_view>( statement_id_ );
+
+      if( stringQuery.empty() == false )
+      {
+         int64_t iRow = Statement_Find( stringQuery );
+         if( iRow == -1 ) { return { false, std::string( "query statement not found for: " ) + std::string( stringQuery ) }; }
+
+         uStatementRow = static_cast<uint64_t>( iRow );
+      }
+      else { return { false, "statement identifier is empty" }; }
+   }
+
+   auto result_ = Lua_Execute( uStatementRow, pdocument );
+   if( result_.first == false ) { return result_; }
+
+   std::string_view stringSelectTemplate = Statement_GetQuery( uStatementRow );
+   if( stringSelectTemplate.empty() == true ) { return { false, "query statement is empty for: " + std::string( stringQuery ) }; }
+
+   CRENDERSql sql_( pdocument, uStatementRow );
+   sql_.Initialize();
+   if( Exists( "values" ) == true ) 
+   {
+      auto stringValues = GetNextArgument( "values" ).as_string();
+      if( stringValues.empty() == false ) { sql_.AddValues( stringValues, gd::types::tag_json{}); }
+   }
+
+   std::string stringTemporary; // If preprocessing and it have modified query then we need to store it.
+
+   result_ = sql_.Preprocess( stringSelectTemplate );
+   if( result_.first == false ) { return result_; }
+   else if( result_.second.empty() == false ) 
+   { 
+      stringTemporary = std::move( result_.second ); 
+      stringSelectTemplate = stringTemporary;                              // set to preprocessed query
+   }
+
+   result_ = sql_.Prepare();
+   if( result_.first == false ) { return result_; }
+
+   stringSelect.clear();
+   result_ = sql_.ToSqlFromTemplate( stringSelectTemplate, stringSelect );
+   if( result_.first == false ) { return result_; }
+
+   if( stringSelectAddTo.empty() == true ) { stringSelectAddTo = std::move( stringSelect ); }
+   else { stringSelectAddTo += stringSelect; }
+
+   return { true, "" };
+}
+
+
+
+/**  ---------------------------------------------------------------------- Statement_Find
+ * @brief Find the row index for a named statement query.
+ * 
+ * Expects `stringQuery` to reference a query identifier prefixed with `#`.
+ * The prefix is stripped before the lookup is forwarded to the document query
+ * metadata.
+ * 
+ * @param stringQuery Query identifier to resolve, for example `#SelectUsers`.
+ * @return int64_t Zero-based query row index, or `-1` if the document is
+ *         missing, the identifier format is invalid, or the query is not found.
+ * 
+ * @TODO [tag: statement] [description: add logic to try to find query by key (uuid) if format match]
+ */
+int64_t CAPI_Base::Statement_Find( std::string_view stringQuery ) const
+{                                                                                                  assert( stringQuery.empty() == false );
+   const CDocument* pdocument = GetDocument();
+   if( pdocument == nullptr ) { return -1; }
+
+   if( stringQuery[0u] == '#' ) { stringQuery.remove_prefix(1); }             // remove leading #
+   else { return -1; }                                                        // query id must start with #
+
+   const META::CQueries* pqueries = pdocument->QUERIES_Get();
+   int64_t iRow = pqueries->GetQueryRow( stringQuery );
+
+   if( iRow != -1 ) { return static_cast<int64_t>( iRow ); }
+   return -1;
+}
+
+/// @brief Get the SQL query template for a given statement row index.
+std::string_view CAPI_Base::Statement_GetQuery( uint64_t uStatementRow ) const
+{
+   const CDocument* pdocument = GetDocument();
+   if( pdocument == nullptr ) { return {}; }
+
+   const META::CQueries* pqueries = pdocument->QUERIES_Get();                                     assert( uStatementRow < pqueries->Size() );
+   return pqueries->GetQuery( uStatementRow );
+}
+
+
+std::pair<bool, std::string> CAPI_Base::Lua_Execute( uint64_t uStatementRow, CDocument* pdocument )
+{
+   // ## Process code if any
+   META::CQueries* pqueries = pdocument->QUERIES_Get();
+
+   auto vectorCode = pqueries->GetArgumentsValues( uStatementRow, "code" );  // get code for insert
+   if( vectorCode.empty() == true ) return { true, "" };
+
+   // ## Execute lua code to prepare sql statement, this allows to use code to prepare complex sql statements that can not be prepared with the current sql builder
+
+   auto result_ = SCRIPT::LuaRequestExecute( vectorCode, GetContext(), [&](sol::state* pstateLua, CAPIContext* pcontext_) -> std::pair<bool, std::string> {
+      if( Exists( "values" ) == true )
+      {
+         auto* prequest_ = (*pstateLua)["request"].get<LUA::Request*>();
+         auto* psql_ = prequest_->GetRenderSql();
+         std::array<std::byte, 128> buffer_;
+         gd::argument::arguments argumentsValues(buffer_);
+         std::string stringValues = GetArgument("values").as_string();
+         auto result_ = psql_->AddValues( stringValues, gd::types::tag_json{} );
+         if( result_.first == false ) { return { false, "failed to add values for code execution: " + result_.second }; }
+      }
+      return { true, "" };
+   });
+
+   if( result_.first == false ) { return result_; }
+
+   if( GetContext()->IsStatusAbort() == true ) { return { true, "abort" }; } // check for aborting ?
+
+   return { true, "" };
 }

@@ -325,39 +325,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
 
    if( stringQuery.empty() == false )
    {
-      int64_t iRow = Statement_Find( stringQuery );
-      if( iRow == -1 ) { return { false, "query statement not found for: " + stringQuery }; }
-
-      uint64_t uStatementRow = static_cast<uint64_t>( iRow );
-      auto result_ = Lua_Execute( uStatementRow, pdocument );
-      if( result_.first == false ) { return result_; }
-
-      std::string_view stringSelectTemplate = Statement_GetQuery( uStatementRow );
-      if( stringSelectTemplate.empty() == true ) { return { false, "query statement is empty for: " + stringQuery }; }
-
-      CRENDERSql sql_( pdocument, uStatementRow );
-      sql_.Initialize();
-      if( Exists( "values" ) == true ) 
-      {
-         auto stringValues = GetNextArgument( "values" ).as_string();
-         if( stringValues.empty() == false ) { sql_.AddValues( stringValues, gd::types::tag_json{}); }
-      }
-
-      std::string stringTemporary; // If preprocessing and it have modified query then we need to store it.
-
-      result_ = sql_.Preprocess( stringSelectTemplate );
-      if( result_.first == false ) { return result_; }
-      else if( result_.second.empty() == false ) 
-      { 
-         stringTemporary = std::move( result_.second ); 
-         stringSelectTemplate = stringTemporary;                              // set to preprocessed query
-      }
-
-      result_ = sql_.Prepare();
-      if( result_.first == false ) { return result_; }
-
-      stringSelect.clear();
-      result_ = sql_.ToSqlFromTemplate( stringSelectTemplate, stringSelect );
+      auto result_ = PrepareStatement( stringQuery, stringSelect );
       if( result_.first == false ) { return result_; }
    }
    else
@@ -617,75 +585,6 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Delete()
    return { true, "" };
 }
 
-/**  ---------------------------------------------------------------------- Statement_Find
- * @brief Find the row index for a named statement query.
- * 
- * Expects `stringQuery` to reference a query identifier prefixed with `#`.
- * The prefix is stripped before the lookup is forwarded to the document query
- * metadata.
- * 
- * @param stringQuery Query identifier to resolve, for example `#SelectUsers`.
- * @return int64_t Zero-based query row index, or `-1` if the document is
- *         missing, the identifier format is invalid, or the query is not found.
- * 
- * @TODO [tag: statement] [description: add logic to try to find query by key (uuid) if format match]
- */
-int64_t CAPIDatabase::Statement_Find( std::string_view stringQuery ) const
-{                                                                                                  assert( stringQuery.empty() == false );
-   const CDocument* pdocument = GetDocument();
-   if( pdocument == nullptr ) { return -1; }
-
-   if( stringQuery[0u] == '#' ) { stringQuery.remove_prefix(1); }             // remove leading #
-   else { return -1; }                                                        // query id must start with #
-
-   const META::CQueries* pqueries = pdocument->QUERIES_Get();
-   int64_t iRow = pqueries->GetQueryRow( stringQuery );
-
-   if( iRow != -1 ) { return static_cast<int64_t>( iRow ); }
-   return -1;
-}
-
-/// @brief Get the SQL query template for a given statement row index.
-std::string_view CAPIDatabase::Statement_GetQuery( uint64_t uStatementRow ) const
-{
-   const CDocument* pdocument = GetDocument();
-   if( pdocument == nullptr ) { return {}; }
-
-   const META::CQueries* pqueries = pdocument->QUERIES_Get();                                     assert( uStatementRow < pqueries->Size() );
-   return pqueries->GetQuery( uStatementRow );
-}
-
-/*
-std::pair<bool, std::string> CAPIDatabase::Sql_Prepare( uint64_t uStatementRow, std::string& stringSql, gd::argument::arguments& argumentsData )
-{
-   std::pair<bool, std::string> result_( true, "" );
-   CDocument* pdocument = GetDocument();                                                           assert( pdocument != nullptr );
-   CSqlBuilder sqlbuilder;
-   std::string stringQueryTemplate;
-   auto uDialect = pdocument->DATABASE_Get()->GetDialect(); // get database dialect to use for sql building
-
-   if( Exists("values") == true )
-   {
-      std::string stringValues = GetArgument("values").as_string();
-      gd::argument::shared::arguments argumentsValues;
-      argumentsValues.reserve( 128 );
-      auto result_ = gd::parse::json::parse_shallow_object_g( stringValues, argumentsValues, false );
-      if( result_.first == false ) return result_;
-
-      if( IsGlobalEmpty() == false )
-      {
-         for( const auto [key_, value_] : GetGlobalArguments().named() )
-         {
-            std::string stringKey("::");
-            stringKey += key_;
-            argumentsValues.append_argument( stringKey, value_, gd::types::tag_view{});
-         }
-      }
-
-      sqlbuilder = argumentsValues;
-   }
-}
-*/
 
 /** --------------------------------------------------------------------------
  * Prepare SQL statement for execution.
@@ -881,6 +780,7 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql, g
    return { true, "" };
 }
 
+/*
 std::pair<bool, std::string> CAPIDatabase::Lua_Execute( uint64_t uStatementRow, CDocument* pdocument )
 {
    // ## Process code if any
@@ -911,6 +811,7 @@ std::pair<bool, std::string> CAPIDatabase::Lua_Execute( uint64_t uStatementRow, 
 
    return { true, "" };
 }
+*/
 
 
 std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::arguments& argumentsOptions, pugi::xml_document* pxmldocument, CDocument* pdocument, gd::argument::arguments* pargumentsReturn )

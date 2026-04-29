@@ -372,6 +372,8 @@ public:
 
    // -- execution-scoped accessors ------------------------------------------
 
+   // @API [tag: command] [description: Accessors for command path and index]
+
    /// Current command segment being processed
    std::string_view GetCommand() const { assert( m_uCommandIndex < m_vectorCommand.size() ); return m_stringCommand; }
 
@@ -383,7 +385,7 @@ public:
 
    bool IsLastCommand() const { return m_uCommandIndex >= (unsigned)m_vectorCommand.size(); }
 
-   // -- parameter helpers ---------------------------------------------------
+   // @API [tag: parameter] [description: Accessors for per-request parameters parsed from the URL query string]
 
    gd::variant_view Get( std::string_view stringName ) const { return m_argumentsQS.get_argument( stringName ); }
 
@@ -401,6 +403,8 @@ public:
 
    /// True if the named argument exists in m_argumentsQS
    bool Exists( const std::string_view& stringName ) const;
+
+
    const gd::argument::arguments& GetQSArguments() const { return m_argumentsQS; }
 
    // -- global argument helpers (forwarded to context) ----------------------
@@ -412,6 +416,21 @@ public:
    bool HasGlobal( std::string_view stringName ) const { return m_pcontext->HasGlobal( stringName ); }
    bool IsGlobalEmpty() const { return m_pcontext->GlobalArguments().empty(); }
    gd::argument::arguments& GetGlobalArguments() { return m_pcontext->GlobalArguments(); }
+
+
+   // @API [tag: format, template, statement] [description: Format logic to prepare information mixing values from endpoint to make it work in server]
+
+   std::pair<bool, std::string> PrepareStatement( std::variant<size_t,std::string_view> statement_id_, std::string& stringSelectAddTo );
+
+   // @API [tag: query] [description: Query helpers]
+
+   int64_t Statement_Find( std::string_view stringQuery ) const; ///< find query in meta information for queries
+   std::string_view Statement_GetQuery( uint64_t uStatementRow ) const;
+
+   // @API [tag: lua] [description: Lua scripting logic related to executing endpoints]
+
+   std::pair<bool, std::string> Lua_Execute( uint64_t uStatementRow, CDocument* pdocument );
+
 
    // -- pure virtual interface ----------------------------------------------
 

@@ -1,24 +1,11 @@
 // @FILE [tag: binary] [description: Handle binary data] [type: header] [name: gd_binary.h]
 
 /*
- * GD Binary Library
- *
- * This library provides functionality for handling binary data, including:
- * - Hexadecimal string validation and conversion
- * - UUID string validation and conversion
- * - Binary pattern searching
- * - Endianness-aware reading and writing of binary data
- *
- * The library provides two complementary APIs:
- * 1. Global functions (binary_*_g) for simple operations
- * 2. Template classes (reader<E> and writer<E>) for streaming operations
- *
- * The template classes use the global functions internally to ensure
- * consistent behavior and avoid code duplication.
- */
 
- /*
-@codef
+*/
+
+/*
+@code
 {
    // ## Example usage of gd::binary functions that reads integer and uuid from hex string
 

@@ -78,14 +78,10 @@ public:
    std::pair<bool, std::string> Execute_Update();  ///< Update data in database
    std::pair<bool, std::string> Execute_Delete();  ///< Delete data from database
 
-   int64_t Statement_Find( std::string_view stringQuery ) const; ///< find query in meta information for queries
-  std::string_view Statement_GetQuery( uint64_t uStatementRow ) const;
-   
-   //std::pair<bool, std::string> Sql_Prepare( uint64_t uStatementRow, std::string& stringSql, gd::argument::arguments& argumentsData );
    std::pair<bool, std::string> Sql_Prepare(std::string& stringSql, gd::argument::arguments& argumentsData );
    std::pair<bool, std::string> Sql_Prepare( std::string& stringSql ) { gd::argument::arguments argumentsData; return Sql_Prepare( stringSql, argumentsData ); }
 
-   std::pair<bool, std::string> Lua_Execute( uint64_t uStatementRow, CDocument* pdocument );
+   //std::pair<bool, std::string> Lua_Execute( uint64_t uStatementRow, CDocument* pdocument );
 
 protected:
 

@@ -1671,7 +1671,7 @@ inline void table_column_buffer::cell_set_not_null( uint64_t uRow, unsigned uCol
 
 }
 
-/** ---------------------------------------------------------------------------
+/** ------------------------------------------------------------------------- append
  * @brief Append to table from another table and select from that table what columns that are added
  * @param tableFrom table data is appended from
  * @param vectorColumnIndex list of column index values used to append from
@@ -1682,7 +1682,7 @@ inline void table_column_buffer::append( const table_column_buffer& tableFrom, c
    append( tableFrom, vectorColumnIndexFrom.data(), vectorColumnIndexTo.data(), (unsigned)vectorColumnIndexFrom.size() );
 }
 
-/** ---------------------------------------------------------------------------
+/** ------------------------------------------------------------------------- append
  * @brief Append to table from another table and select from that table what columns that are added
  * @param tableFrom table data is appended from
  * @param vectorColumnIndex list of column index values used to append from
@@ -1694,7 +1694,7 @@ inline void table_column_buffer::append( const table_column_buffer& tableFrom, c
 }
 
 
-/** ---------------------------------------------------------------------------
+/** ------------------------------------------------------------------------- append
  * @brief Append selected data from "from" table into selected columns in source (this) table
  * @param tableFrom table data is appended from
  * @param vectorColumnIndexFrom index to columns cell values are copied from
@@ -1705,7 +1705,7 @@ inline void table_column_buffer::append( const table_column_buffer& tableFrom, c
    append( tableFrom, vectorColumnIndexFrom.data(), vectorColumnIndexTo.data(), uColumnCount );
 }
 
-/** ---------------------------------------------------------------------------
+/** ------------------------------------------------------------------------- append
  * @brief Append selected data from "from" table into selected columns in source (this) table
  * @param tableFrom table data is appended from
  * @param vectorColumnIndexFrom index to columns cell values are copied from
@@ -1716,7 +1716,7 @@ inline void table_column_buffer::append( const table_column_buffer& tableFrom, c
    append( tableFrom, vectorColumnIndexFrom.data(), vectorColumnIndexTo.data(), uColumnCount, tag_convert{});
 }
 
-/** ---------------------------------------------------------------------------
+/** ------------------------------------------------------------------------- find_variant_view
  * @brief find value in column
  * @param stringName name for column where value are searched
  * @param uStartRow start row
@@ -1729,7 +1729,7 @@ inline int64_t table_column_buffer::find_variant_view(const std::string_view& st
    return find_variant_view( uColumn, uStartRow, uCount, variantviewFind );
 }
 
-/** ---------------------------------------------------------------------------
+/** ------------------------------------------------------------------------- harvest
  * @brief harvest selected columns from selected rows into table
  * @param vectorColumnName columns to harvest values from
  * @param vectorRow selected rows to read values from
@@ -1740,7 +1740,7 @@ inline void table_column_buffer::harvest(const std::vector< std::string_view >& 
    harvest( vectorColumn, vectorRow, tableHarvest );
 }
 
-/** ---------------------------------------------------------------------------
+/** ------------------------------------------------------------------------- harvest
  * @brief return vector with values in row. cast to specified type
  * @param uRow row where cells exists
  * @param uColumn first column
@@ -1759,7 +1759,7 @@ std::vector<TYPE> table_column_buffer::harvest( uint64_t uRow, unsigned uColumn,
 }
 
 
-/** ---------------------------------------------------------------------------
+/** ------------------------------------------------------------------------- harvest
  * @brief get vector with values based starting from selected row and count of values
  * @param uColumn column index values are taken from
  * @param uFrom start row where harvesting starts
