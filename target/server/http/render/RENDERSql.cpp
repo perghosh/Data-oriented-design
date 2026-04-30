@@ -419,6 +419,65 @@ std::pair<bool, std::string> CRENDERSql::AddValues( std::string_view stringJson,
    return { true, "" };
 }
 
+/** -------------------------------------------------------------------------- AddColumns
+ * @brief Parses JSON column input and prepares it for column metadata processing.
+ * 
+ * Attempts to parse `stringJson` with columns and add each column to the internal table.
+ * 
+ * Valid formats are: single column [table,name,value,{part}] where part is optional.
+ * Multiple columns can be provided as an array of such objects: [ [table,name,value,{part}], [table,name,value,{part}] ].
+ * Named fiels in array use [{table: "schema.table", name: "column_name", value: "value", type_part: "select|value|where|returning"}]
+ * 
+ * Uses `gd::argument::arguments` passed to void AddColumn as dto for column and add value with keys "table", "name", "value", "type_part".
+ * 
+ * - Uses a local `gd::argument::arguments` buffer (`arguments_`) as staging storage.
+ * - Catches `jsoncons::json_exception` and returns `{ false, error }` on parse failure.
+ * - Returns `{ true, "" }` when JSON parsing succeeds.
+ * 
+ * **Note:** This implementation currently validates/parses input only; column extraction logic is not yet applied.
+ * 
+ * @param stringJson JSON payload containing column data.
+ * @return std::pair<bool, std::string> Parse status and optional error message.
+ */
+std::pair<bool, std::string> CRENDERSql::AddColumns( std::string_view stringJson, gd::types::tag_json )
+{
+   std::array<std::byte, 256> buffer_;
+   gd::argument::arguments arguments_(buffer_);
+
+
+   auto add_column_array_ = [&]( const jsoncons::json& jsonColumn, std::size_t uColumnIndex ) -> std::pair<bool, std::string>
+   {
+      if( jsonColumn.is_array() == false ) { return { false, std::format( "column index {} is not an array", uColumnIndex ) }; }
+      if( jsonColumn.size() < 3 ) { return { false, std::format( "column index {} requires at least [table,name,value]", uColumnIndex ) }; }
+
+      arguments_.clear();
+      if( jsonColumn[0].is_string() == true ) { arguments_.append( "table", jsonColumn[0].as_string_view() ); }
+      if( jsonColumn[1].is_string() == true ) { arguments_.append( "name", jsonColumn[1].as_string_view() ); }
+      if( jsonColumn[2].is_string() == true ) { arguments_.append( "value", jsonColumn[2].as_string_view() ); }
+
+      if( jsonColumn.size() >= 4 && jsonColumn[3].is_string() == true )
+      {
+         arguments_.append( "type_part", utility::get_part_type_from_string( jsonColumn[3].as_string_view() ) );
+      }
+
+      AddColumn( arguments_ );
+      return { true, "" };
+   };
+
+
+   try 
+   {
+      jsoncons::json jsonRecord = jsoncons::json::parse(stringJson);
+   }
+   catch( jsoncons::json_exception& e )
+   {
+      std::string stringError = e.what();
+      return {false, stringError};
+   }
+   
+   return {true, ""};
+}
+
 /// @brief Adds a condition to the internal list of conditions for SQL query generation.
 void CRENDERSql::AddCondition( const gd::argument::arguments& argumentsCondition )
 {                                                                                                  assert( gd::sql::query::validate_condition_s( argumentsCondition ).first == true );
@@ -521,7 +580,6 @@ std::pair<bool,std::string> CRENDERSql::AddRecord( std::string_view stringJson, 
       std::string stringError = e.what();
       return {false, stringError};
    }
-   
    
    return {true, ""};
 }

@@ -154,7 +154,7 @@ public:
    int64_t FindRowForColumnName( std::string_view stringName ) const;
    /// Finds row for column name and part type, returns -1 if not found
    int64_t Find( const gd::argument::arguments& argumentsColumn ) const;
-   /// Remove row from internal table
+   /// Remove row from internal tabö7
    void Remove( uint64_t uRow ) { assert( uRow < m_tableField.size() ); m_tableField.erase( uRow ); }
 
    // @API [tag: add, simple] [description: Add values for columns, simple and only use key value to identify column value is added for]
@@ -162,6 +162,8 @@ public:
    /// Add multiple values for columns
    void AddValues( const gd::argument::arguments& argumentsField );
    std::pair<bool,std::string> AddValues( std::string_view stringJson, gd::types::tag_json );
+
+   std::pair<bool,std::string> AddColumns( std::string_view stringJson, gd::types::tag_json );
 
 
    void AddCondition( const gd::argument::arguments& argumentsCondition );

@@ -289,6 +289,13 @@ std::pair<bool, std::string> CAPI_Base::PrepareStatement( std::variant<size_t, s
 
    CRENDERSql sql_( pdocument, uStatementRow );
    sql_.Initialize();
+
+   if( Exists( "columns" ) == true )
+   {
+      auto stringColumns = GetNextArgument( "columns" ).as_string();
+      if( stringColumns.empty() == false ) { sql_.AddColumns( stringColumns, gd::types::tag_json{}); }
+   }
+
    if( Exists( "values" ) == true ) 
    {
       auto stringValues = GetNextArgument( "values" ).as_string();
@@ -317,8 +324,6 @@ std::pair<bool, std::string> CAPI_Base::PrepareStatement( std::variant<size_t, s
 
    return { true, "" };
 }
-
-
 
 /**  ---------------------------------------------------------------------- Statement_Find
  * @brief Find the row index for a named statement query.
