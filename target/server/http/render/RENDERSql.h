@@ -162,7 +162,7 @@ public:
    /// Add multiple values for columns
    void AddValues( const gd::argument::arguments& argumentsField );
    std::pair<bool,std::string> AddValues( std::string_view stringJson, gd::types::tag_json );
-
+   /// Add information to internal table storing data to generate query in column format (at least table and column) to connect to metadata
    std::pair<bool,std::string> AddColumns( std::string_view stringJson, gd::types::tag_json );
 
 

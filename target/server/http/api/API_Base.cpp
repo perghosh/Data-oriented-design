@@ -255,7 +255,27 @@ bool CAPI_Base::Exists( const std::string_view& stringName ) const
 }
 
 
-
+/** -------------------------------------------------------------------------- CAPI_Base::PrepareStatement
+ * @brief Resolve, preprocess, and prepare a SQL statement, then append it to `stringSelectAddTo`.
+ *
+ * Accepts `statement_id_` as either a numeric statement row (`size_t`) or a query
+ * identifier (`std::string_view`) that is resolved through `Statement_Find`.
+ *
+ * Workflow:
+ * - resolve `uStatementRow` from `statement_id_`
+ * - execute Lua-side setup with `Lua_Execute`
+ * - load statement template using `Statement_GetQuery`
+ * - initialize `CRENDERSql` and apply optional request arguments:
+ *   - `columns` via `AddColumns` (JSON format)
+ *   - `values` via `AddValues` (JSON format)
+ * - preprocess template (`Preprocess`) and keep transformed text alive if changed
+ * - finalize render state (`Prepare`) and build SQL (`ToSqlFromTemplate`)
+ * - write SQL into `stringSelectAddTo` (assign if empty, otherwise append)
+ *
+ * @param statement_id_ Statement selector: row index or named query identifier.
+ * @param stringSelectAddTo Output SQL buffer; receives generated SQL by assign/append.
+ * @return std::pair<bool, std::string> `first` is success; `second` is error text on failure.
+ */
 std::pair<bool, std::string> CAPI_Base::PrepareStatement( std::variant<size_t, std::string_view> statement_id_, std::string& stringSelectAddTo )
 {
    std::string stringQuery;
@@ -263,10 +283,9 @@ std::pair<bool, std::string> CAPI_Base::PrepareStatement( std::variant<size_t, s
    uint64_t uStatementRow;
    CDocument* pdocument = GetDocument();                                                           assert( pdocument != nullptr );
 
-   if( std::holds_alternative<size_t>( statement_id_ ) == true )
-   {
-      uStatementRow = std::get<size_t>( statement_id_ );                                           assert( uStatementRow < 1000 ); // sanity check for row index)
-   }
+   // ## Get statement row index ............................................
+
+   if( std::holds_alternative<size_t>( statement_id_ ) == true ) { uStatementRow = std::get<size_t>( statement_id_ ); } // sanity check for row index)
    else
    {
       stringQuery = std::get<std::string_view>( statement_id_ );
@@ -280,6 +299,8 @@ std::pair<bool, std::string> CAPI_Base::PrepareStatement( std::variant<size_t, s
       }
       else { return { false, "statement identifier is empty" }; }
    }
+                                                                                                   assert( uStatementRow < 10000 );
+   // ## Execute Lua setup code if any .......................................
 
    auto result_ = Lua_Execute( uStatementRow, pdocument );
    if( result_.first == false ) { return result_; }
@@ -363,7 +384,28 @@ std::string_view CAPI_Base::Statement_GetQuery( uint64_t uStatementRow ) const
    return pqueries->GetQuery( uStatementRow );
 }
 
-
+/**  --------------------------------------------------------------------------- Lua_Execute
+ * @brief Execute Lua pre-processing for a statement row if code exists.
+ * 
+ * Reads query argument `code` for `uStatementRow` and executes it in the current
+ * request context. If no `code` is found, the method returns success without doing
+ * any work.
+ * 
+ * During Lua execution, this method optionally forwards request argument `values`
+ * to the SQL renderer as JSON input (`AddValues`) so Lua scripts can build complex
+ * SQL payloads.
+ * 
+ * @param uStatementRow Zero-based statement row index in query metadata.
+ * @param pdocument Active document that provides query metadata.
+ * @return std::pair<bool, std::string>
+ * - `{ true, "" }` when execution succeeds (or no code exists).
+ * - `{ true, "abort" }` when context status is set to abort.
+ * - `{ false, "<error>" }` when Lua execution or JSON value injection fails.
+ * 
+ * @NOTE [tag: lua,sql,statement] [summary: pre_sql_lua_hook]
+ * This is a **pre-SQL hook** used when statement preparation requires logic that
+ * cannot be expressed by the regular SQL template builder.
+ */
 std::pair<bool, std::string> CAPI_Base::Lua_Execute( uint64_t uStatementRow, CDocument* pdocument )
 {
    // ## Process code if any

@@ -388,7 +388,7 @@ public:
    void SetStatus( std::variant<int64_t, std::string_view> status_ ); ///< Set status for current request, based on status the server know how to proceede with request,
 
    CAPIContext* GetContext() { return m_pcontext; } ///< Get pointer to API context for current request
-   CRENDERSql* GetSql_() { return m_psql.get(); } ///< Get pointer to SQL object for current request
+   //CRENDERSql* GetSql_() { return m_psql.get(); } ///< Get pointer to SQL object for current request
    CRENDERSql* GetRenderSql() { return m_psql.get(); } ///< Get pointer to SQL object for current request
 
 // ## attributes ----------------------------------------------------------------

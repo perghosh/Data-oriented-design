@@ -443,23 +443,59 @@ std::pair<bool, std::string> CRENDERSql::AddColumns( std::string_view stringJson
 {
    std::array<std::byte, 256> buffer_;
    gd::argument::arguments arguments_(buffer_);
+   std::pair<bool, std::string> result_;
 
-
-   auto add_column_array_ = [&]( const jsoncons::json& jsonColumn, std::size_t uColumnIndex ) -> std::pair<bool, std::string>
+   // ## lambda to check that all values are strings
+   auto check_all_strings_ = []( const jsoncons::json& jsonColumn ) -> bool
    {
-      if( jsonColumn.is_array() == false ) { return { false, std::format( "column index {} is not an array", uColumnIndex ) }; }
-      if( jsonColumn.size() < 3 ) { return { false, std::format( "column index {} requires at least [table,name,value]", uColumnIndex ) }; }
+      for( auto& element_ : jsonColumn.array_range() ) { if( element_.is_string() == false ) { return false; } }
+      return true;
+   };
+
+   // ## Lambda to add column from array format [table,name,value,{part},operator]
+   auto add_array_ = [&]( const jsoncons::json& jsonColumn, std::size_t uColumnIndex ) -> std::pair<bool, std::string>
+   {                                                                                               assert( jsonColumn.is_array() == true );
+      if( check_all_strings_( jsonColumn ) == false ) { return { false, "all elements must be strings" }; }
+      auto uCount = jsonColumn.size();
+
+      if( uCount < 2 ) { return { false, std::format( "column index {} requires at least [table,name]", uColumnIndex ) }; }
 
       arguments_.clear();
-      if( jsonColumn[0].is_string() == true ) { arguments_.append( "table", jsonColumn[0].as_string_view() ); }
-      if( jsonColumn[1].is_string() == true ) { arguments_.append( "name", jsonColumn[1].as_string_view() ); }
-      if( jsonColumn[2].is_string() == true ) { arguments_.append( "value", jsonColumn[2].as_string_view() ); }
 
-      if( jsonColumn.size() >= 4 && jsonColumn[3].is_string() == true )
-      {
-         arguments_.append( "type_part", utility::get_part_type_from_string( jsonColumn[3].as_string_view() ) );
+      arguments_.append( "table", jsonColumn[0].as_string_view() );
+      arguments_.append( "name", jsonColumn[1].as_string_view() );
+
+      if( uCount >= 3 ) { arguments_.append( "value", jsonColumn[2].as_string_view() ); }
+
+      // ## check for where part and this is before other parts because where parts need to have operator
+      if( uCount >= 5 ) 
+      { 
+         arguments_.append( "operator", jsonColumn[4].as_string_view() ); 
+         arguments_.append( "type_part", ePartTypeWhere );
       }
 
+      if( uCount >= 4  )
+      {
+         auto ePart = utility::get_part_type_from_string( jsonColumn[3].as_string_view() );
+         if( ePart == ePartTypeUnknown ) { return { false, std::format( "column index {} has unknown type_part", uColumnIndex ) }; }
+         arguments_.append( "type_part", ePart );
+      }
+
+      AddColumn( arguments_ );
+      return { true, "" };
+   };
+
+   auto add_object_ = [&]( const jsoncons::json& jsonColumn, std::size_t uColumnIndex ) -> std::pair<bool, std::string>
+   {                                                                                               assert( jsonColumn.is_object() == true );
+assert( false && "not implemented yet, need to add logic to parse object and add column" ); // @TODO: need to add logic to parse object and add column
+      arguments_.clear();
+      for( auto& [key_, value_] : jsonColumn.object_range() )
+      {
+      /*
+         if( value_.is_string() == true ) { arguments_.append( key_, value_.as_string_view() ); }
+         else { arguments_.append_argument( key_, value_ ); }
+         */
+      }
       AddColumn( arguments_ );
       return { true, "" };
    };
@@ -467,7 +503,25 @@ std::pair<bool, std::string> CRENDERSql::AddColumns( std::string_view stringJson
 
    try 
    {
-      jsoncons::json jsonRecord = jsoncons::json::parse(stringJson);
+      // ## parse columns, this has to be an array
+      jsoncons::json jsonArray = jsoncons::json::parse(stringJson);          // parse information about columns
+
+      if( jsonArray.is_array() == false ) { return { false, "must be an array" }; }
+
+      // ## Check if it's an array of arrays (multiple columns) or a single array (one column)
+      if( jsonArray.size() > 0 && jsonArray[0].is_array() == false )
+      {
+         return add_array_( jsonArray, 0 );                                   
+      }
+
+      // ## iterate rows in array or if only one array then add it as one column
+      for( std::size_t u = 0; u < jsonArray.size(); ++u )
+      {
+         const jsoncons::json& jsonRow = jsonArray[u];
+         if( jsonRow.is_array() == false ) { result_ = add_array_( jsonRow, u ); }
+         else if( jsonRow.is_object() == true ) { result_ = add_object_( jsonRow, u ); }
+         
+      }
    }
    catch( jsoncons::json_exception& e )
    {
