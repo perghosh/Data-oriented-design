@@ -382,6 +382,9 @@ public:
       gd::variant_view cell_get_variant_view( unsigned uIndex ) const { return m_ptablecolumnbuffer->cell_get_variant_view( m_uRow, uIndex ); }
       gd::variant_view cell_get_variant_view( const std::string_view& stringName ) const { return m_ptablecolumnbuffer->cell_get_variant_view( m_uRow, stringName ); }
 
+      bool cell_is_null( unsigned uColumn ) const noexcept { return m_ptablecolumnbuffer->cell_is_null( m_uRow, uColumn ); }
+      bool cell_is_null( std::string_view stringName ) const noexcept { return m_ptablecolumnbuffer->cell_is_null( m_uRow, stringName ); }
+
       void cell_set( unsigned uColumn, const gd::variant_view& variantviewValue ) { m_ptablecolumnbuffer->cell_set( m_uRow, uColumn, variantviewValue ); }
       void cell_set( const std::string_view& stringName, const gd::variant_view& variantviewValue ) { m_ptablecolumnbuffer->cell_set( m_uRow, stringName, variantviewValue ); }
       void cell_set( unsigned uColumn, const gd::variant_view& variantviewValue, tag_convert ) { m_ptablecolumnbuffer->cell_set( m_uRow, uColumn, variantviewValue, tag_convert{} ); }
@@ -417,6 +420,9 @@ public:
 
       gd::variant_view cell_get_variant_view( unsigned uIndex ) const { return m_ptablecolumnbuffer->cell_get_variant_view( m_uRow, uIndex ); }
       gd::variant_view cell_get_variant_view( const std::string_view& stringName ) const { return m_ptablecolumnbuffer->cell_get_variant_view( m_uRow, stringName ); }
+
+      bool cell_is_null( unsigned uColumn ) const noexcept { return m_ptablecolumnbuffer->cell_is_null( m_uRow, uColumn ); }
+      bool cell_is_null( std::string_view stringName ) const noexcept { return m_ptablecolumnbuffer->cell_is_null( m_uRow, stringName ); }
 
       const_iterator_row& operator++() { m_uRow++; return *this; }
       const_iterator_row operator++(int) { const_iterator_row it_ = *this; ++(*this); return it_; }
@@ -926,6 +932,7 @@ public:
    TYPE cell_get( uint64_t uRow, unsigned uColumn ) const noexcept;
 
    bool cell_is_null( uint64_t uRow, unsigned uColumn ) const noexcept;
+   bool cell_is_null( uint64_t uRow, std::string_view stringName ) const noexcept;
    const reference* cell_get_reference( uint64_t uRow, unsigned uColumn ) const noexcept;
 
    gd::variant_view cell_get_variant_view( uint64_t uRow, unsigned uColumn ) const noexcept;
@@ -1613,6 +1620,12 @@ inline bool table_column_buffer::cell_is_null( uint64_t uRow, unsigned uColumn )
    else              uNullRow = *(uint64_t*)puRow;
 
    return (uNullRow & (1ULL << uColumn)) != 0;
+}
+
+/// @brief Check if cell is null
+inline bool table_column_buffer::cell_is_null( uint64_t uRow, std::string_view stringName ) const noexcept { assert( m_uFlags & (eTableFlagNull32|eTableFlagNull64) );
+   unsigned uColumnIndex = column_get_index( stringName );
+   return cell_is_null( uRow, uColumnIndex );
 }
 
 /** ---------------------------------------------------------------------------

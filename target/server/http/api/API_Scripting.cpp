@@ -10,12 +10,12 @@
 
 SCRIPT_BEGIN
 
-std::pair<bool, std::string> LuaRequestExecute( std::string_view stringScript, CAPIContext* pcontext_, callback_lua_state callback_ )
+std::pair<bool, std::string> LuaRequestExecute( std::string_view stringScript, CAPIContext* pcontext_, CRENDERSql* psql, callback_lua_state callback_ )
 {
    if( stringScript.empty() == true ) { return { true, "" }; }
 
    std::vector<gd::variant_view> vectorScript{ stringScript };
-   return LuaRequestExecute( vectorScript, pcontext_, callback_ );
+   return LuaRequestExecute( vectorScript, pcontext_, psql, callback_ );
 }
 
 /** -------------------------------------------------------------------------- LuaRequestExecute
@@ -34,7 +34,7 @@ std::pair<bool, std::string> LuaRequestExecute( std::string_view stringScript, C
  * @param callback_ Optional Lua-state setup callback executed before scripts run.
  * @return std::pair<bool, std::string> `first` is success, `second` is error text.
  */
-std::pair<bool, std::string> LuaRequestExecute( const std::vector<gd::variant_view>& vectorScript, CAPIContext* pcontext_, callback_lua_state callback_ )
+std::pair<bool, std::string> LuaRequestExecute( const std::vector<gd::variant_view>& vectorScript, CAPIContext* pcontext_, CRENDERSql* psql, callback_lua_state callback_ )
 {                                                                                                  assert( pcontext_ != nullptr && "LuaRequestExecute requires valid context" );
                                                                                                    assert( pcontext_->GetApplication() != nullptr && pcontext_->GetDocument() != nullptr && "LuaRequestExecute requires valid application and document" );
    CApplication* papplication_ = pcontext_->GetApplication();
@@ -52,7 +52,7 @@ std::pair<bool, std::string> LuaRequestExecute( const std::vector<gd::variant_vi
    stateLua["app"] = std::move( papplication );    
    std::unique_ptr<LUA::Document> pdocument = std::make_unique<LUA::Document>( pdocument_, pdatabase_ ); // document information, note that the database isn't same as database inside document, this is the global database.
    stateLua["doc"] = std::move( pdocument );
-   std::unique_ptr<LUA::Request> prequest = std::make_unique<LUA::Request>( pcontext_ ); // request information, holds user data etc for current request to server.
+   std::unique_ptr<LUA::Request> prequest = std::make_unique<LUA::Request>( pcontext_, psql ); // request information, holds user data etc for current request to server.
    stateLua["request"] = std::move( prequest );
 
    // ## Callback is used to modify the lua state before executing the script, this can be used to set up the environment for the script

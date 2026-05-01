@@ -252,6 +252,9 @@ public:
       void cell_set( unsigned uColumn, const gd::variant_view& variantviewValue, tag_convert ) { m_ptable->cell_set( m_uRow, uColumn, variantviewValue, tag_convert{} ); }
       void cell_set( const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_convert ) { m_ptable->cell_set( m_uRow, stringName, variantviewValue, tag_convert{} ); }
 
+      bool cell_is_null( unsigned uColumn ) const { return m_ptable->cell_is_null( m_uRow, uColumn ); }
+      bool cell_is_null( std::string_view stringName ) const { return m_ptable->cell_is_null( m_uRow, stringName ); }
+
       uint64_t m_uRow;     ///< active row index
       table* m_ptable; ///< pointer to table that owns the iterator
    };
@@ -277,9 +280,13 @@ public:
       const_iterator_row operator-( int64_t iDistance ) { return const_iterator_row( m_uRow - iDistance, m_ptable ); }
 
       gd::variant_view cell_get_variant_view( unsigned uIndex ) const { return m_ptable->cell_get_variant_view( m_uRow, uIndex ); }
+      gd::variant_view cell_get_variant_view( unsigned uIndex, tag_not_null ) const { return m_ptable->cell_get_variant_view( m_uRow, uIndex, tag_not_null{} ); }
       gd::variant_view cell_get_variant_view( std::string_view stringName ) const { return m_ptable->cell_get_variant_view( m_uRow, stringName ); }
       gd::variant_view cell_get_variant_view( std::string_view stringName, tag_not_null ) const { return m_ptable->cell_get_variant_view( m_uRow, stringName, tag_not_null{} ); }
       std::vector< gd::variant_view > cell_get_variant_view() const { return m_ptable->cell_get_variant_view( m_uRow ); }
+
+      bool cell_is_null( unsigned uColumn ) const { return m_ptable->cell_is_null( m_uRow, uColumn ); }
+      bool cell_is_null( std::string_view stringName ) const { return m_ptable->cell_is_null( m_uRow, stringName ); }
 
       uint64_t m_uRow;
       const table* m_ptable;

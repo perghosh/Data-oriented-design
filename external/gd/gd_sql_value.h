@@ -44,6 +44,8 @@ struct tag_brace {};                                                          //
 struct tag_keep_not_found{};                                                  // tag for methods to keep something if not found/missing
 struct tag_preprocess{};                                                      // tag to preprocess text before inserting values, using this with replacement adds flexibility 
 
+// @API [tag: append] [description: append value to string, value is converted to string depending on type and dialect]
+
 /// Append ascii text as utf8 to string
 void append_ascii( const uint8_t* pbszAscii, std::string& stringSql );
 /// Append ascii text as utf8 to string
@@ -67,6 +69,12 @@ void append_g( gd::variant_view variantviewValue, unsigned uType, unsigned uDial
 void append_identifier_g( std::string_view stringColumn, unsigned uDialect, std::string& stringSql );
 
 inline void append_g( const gd::variant& variantValue, std::string& stringSql, tag_raw ) { append_g( gd::variant_view( variantValue ), stringSql, tag_raw{}); }
+
+
+// @API [tag: validate] [description: validate if value is valid for type and dialect] 
+
+bool validate_value_g( std::string_view stringValue, unsigned uType );
+
 
 /// Make bulk text suitable for parameterized sql insert or updates
 std::tuple<uint64_t,std::string,std::string> make_bulk_g( const std::string_view& stringFixed, const std::string_view& stringParameter, uint64_t uCount, uint64_t uBulkCount );

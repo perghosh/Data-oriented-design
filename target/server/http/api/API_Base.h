@@ -21,6 +21,7 @@
 
 class CApplication;
 class CDocument;
+class CRENDERSql;
 
 /**
  * @brief Client context object that carries per-request identity and result state across API sections.
@@ -429,7 +430,7 @@ public:
 
    // @API [tag: lua] [description: Lua scripting logic related to executing endpoints]
 
-   std::pair<bool, std::string> Lua_Execute( uint64_t uStatementRow, CDocument* pdocument );
+   std::pair<bool, std::string> Lua_Execute( uint64_t uStatementRow, CDocument* pdocument, CRENDERSql* psql_ );
 
 
    // -- pure virtual interface ----------------------------------------------

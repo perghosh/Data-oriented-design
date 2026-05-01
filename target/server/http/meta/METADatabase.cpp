@@ -313,6 +313,7 @@ int64_t CDatabase::Column_FindRow( const gd::argument::arguments& argumentsFind 
    return iRow;
 }
 
+/// @brief Get the type of a column from the column metadata table
 uint32_t CDatabase::Column_GetType( uint64_t uRow ) const noexcept
 {                                                                                                  assert( uRow < m_ptableColumn->get_row_count() && "Row index out of range" );
    uint32_t uType = 0;
@@ -320,6 +321,16 @@ uint32_t CDatabase::Column_GetType( uint64_t uRow ) const noexcept
    gd::variant_view vType = m_ptableColumn->cell_get_variant_view( uRow, uColumn );
    if( vType.is_uint32() == true ) { uType = vType.as_uint32(); }
    return uType;
+}
+
+/// @brief Get the maximum size of a column from the column metadata table
+uint32_t CDatabase::Column_GetMaxSize( uint64_t iRow ) const noexcept
+{                                                                                                  assert( iRow < m_ptableColumn->get_row_count() && "Row index out of range" );
+   uint32_t uSize = 0;
+   unsigned uColumn = m_ptableColumn->column_get_index( "size" );
+   gd::variant_view vSize = m_ptableColumn->cell_get_variant_view( iRow, uColumn );
+   if( vSize.is_uint32() == true ) { uSize = vSize.as_uint32(); }
+   return uSize;
 }
 
 // @TODO: Implement a more efficient index for column metadata, and use that finding column information

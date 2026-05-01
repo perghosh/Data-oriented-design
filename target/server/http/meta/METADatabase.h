@@ -95,6 +95,7 @@ public:
 
    [[nodiscard]] int64_t Column_FindRow( const gd::argument::arguments& argumentsFind ) const noexcept;
    [[nodiscard]] uint32_t Column_GetType( uint64_t iRow ) const noexcept;
+   [[nodiscard]] uint32_t Column_GetMaxSize( uint64_t iRow ) const noexcept;
    void Column_CreateIndex();
 
 

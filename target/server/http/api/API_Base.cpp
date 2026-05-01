@@ -300,14 +300,7 @@ std::pair<bool, std::string> CAPI_Base::PrepareStatement( std::variant<size_t, s
       else { return { false, "statement identifier is empty" }; }
    }
                                                                                                    assert( uStatementRow < 10000 );
-   // ## Execute Lua setup code if any .......................................
-
-   auto result_ = Lua_Execute( uStatementRow, pdocument );
-   if( result_.first == false ) { return result_; }
-
-   std::string_view stringSelectTemplate = Statement_GetQuery( uStatementRow );
-   if( stringSelectTemplate.empty() == true ) { return { false, "query statement is empty for: " + std::string( stringQuery ) }; }
-
+   // ## Harvest values from request arguments for Lua setup code (if any) ..
    CRENDERSql sql_( pdocument, uStatementRow );
    sql_.Initialize();
 
@@ -320,8 +313,16 @@ std::pair<bool, std::string> CAPI_Base::PrepareStatement( std::variant<size_t, s
    if( Exists( "values" ) == true ) 
    {
       auto stringValues = GetNextArgument( "values" ).as_string();
-      if( stringValues.empty() == false ) { sql_.AddValues( stringValues, gd::types::tag_json{}); }
+      if( stringValues.empty() == false ) { sql_.AddColumnValues( stringValues, gd::types::tag_json{}); }
    }
+
+   // ## Execute Lua setup code if any .......................................
+
+   auto result_ = Lua_Execute( uStatementRow, pdocument, &sql_ );
+   if( result_.first == false ) { return result_; }
+
+   std::string_view stringSelectTemplate = Statement_GetQuery( uStatementRow );
+   if( stringSelectTemplate.empty() == true ) { return { false, "query statement is empty for: " + std::string( stringQuery ) }; }
 
    std::string stringTemporary; // If preprocessing and it have modified query then we need to store it.
 
@@ -333,12 +334,12 @@ std::pair<bool, std::string> CAPI_Base::PrepareStatement( std::variant<size_t, s
       stringSelectTemplate = stringTemporary;                              // set to preprocessed query
    }
 
-   result_ = sql_.Prepare();
-   if( result_.first == false ) { return result_; }
+   result_ = sql_.Prepare();                                                                       if( result_.first == false ) { return result_; }
+
+   result_ = sql_.ValidateColumnValues();                                                          if( result_.first == false ) { return result_; }
 
    stringSelect.clear();
-   result_ = sql_.ToSqlFromTemplate( stringSelectTemplate, stringSelect );
-   if( result_.first == false ) { return result_; }
+   result_ = sql_.ToSqlFromTemplate( stringSelectTemplate, stringSelect );                         if( result_.first == false ) { return result_; }
 
    if( stringSelectAddTo.empty() == true ) { stringSelectAddTo = std::move( stringSelect ); }
    else { stringSelectAddTo += stringSelect; }
@@ -406,7 +407,7 @@ std::string_view CAPI_Base::Statement_GetQuery( uint64_t uStatementRow ) const
  * This is a **pre-SQL hook** used when statement preparation requires logic that
  * cannot be expressed by the regular SQL template builder.
  */
-std::pair<bool, std::string> CAPI_Base::Lua_Execute( uint64_t uStatementRow, CDocument* pdocument )
+std::pair<bool, std::string> CAPI_Base::Lua_Execute( uint64_t uStatementRow, CDocument* pdocument, CRENDERSql* psql_ )
 {
    // ## Process code if any
    META::CQueries* pqueries = pdocument->QUERIES_Get();
@@ -416,7 +417,8 @@ std::pair<bool, std::string> CAPI_Base::Lua_Execute( uint64_t uStatementRow, CDo
 
    // ## Execute lua code to prepare sql statement, this allows to use code to prepare complex sql statements that can not be prepared with the current sql builder
 
-   auto result_ = SCRIPT::LuaRequestExecute( vectorCode, GetContext(), [&](sol::state* pstateLua, CAPIContext* pcontext_) -> std::pair<bool, std::string> {
+   auto result_ = SCRIPT::LuaRequestExecute( vectorCode, GetContext(), psql_, [&](sol::state* pstateLua, CAPIContext* pcontext_) -> std::pair<bool, std::string> {
+   /*
       if( Exists( "values" ) == true )
       {
          auto* prequest_ = (*pstateLua)["request"].get<LUA::Request*>();
@@ -427,6 +429,7 @@ std::pair<bool, std::string> CAPI_Base::Lua_Execute( uint64_t uStatementRow, CDo
          auto result_ = psql_->AddValues( stringValues, gd::types::tag_json{} );
          if( result_.first == false ) { return { false, "failed to add values for code execution: " + result_.second }; }
       }
+      */
       return { true, "" };
    });
 

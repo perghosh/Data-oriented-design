@@ -830,6 +830,46 @@ void append_identifier_g( std::string_view stringColumn, unsigned uDialect, std:
 }
 
 
+bool validate_value_g( std::string_view stringValue, unsigned uType )
+{
+   using namespace gd::types;
+   if( is_number_g( uType ) || is_boolean_g( uType ) )
+   {
+      // For numbers and booleans, we can do a simple check to see if the string is a valid representation
+      // This is a very basic check and can be improved with regex or more comprehensive parsing
+      for( char c : stringValue )
+      {
+         if( !std::isdigit( c ) && c != '.' && c != '-' && c != '+' && c != 'e' && c != 'E' )
+         {
+            return false; // Invalid character for number
+         }
+      }
+      return true; // Basic check passed, assume it's valid
+   }
+   else if( is_binary_g( uType ) )
+   {
+      // For binary data, we expect a hex string (even length, only hex characters)
+      if( stringValue.length() % 2 != 0 )
+      {
+         return false; // Hex string must have even length
+      }
+      for( char c : stringValue )
+      {
+         if( !std::isxdigit( c ) )
+         {
+            return false; // Invalid character for hex string
+         }
+      }
+      return true; // Valid hex string
+   }
+   else
+   {
+      // For strings, we can allow any value since it will be properly escaped when appended
+      return true;
+   }
+}
+
+
 
 /** --------------------------------------------------------------------------- make_bulk_g
  * @brief Prepare two sql queries used for doing some sort of database bulk operation

@@ -1289,10 +1289,23 @@ Request::Request( CAPIContext* pcontext )
    auto* pdocument = m_pcontext->GetDocument();
    if( pdocument != nullptr )
    {
-      m_psql = std::move( std::make_unique<CRENDERSql>( pdocument ) );
-      m_psql->Initialize();
+      m_psqlOwned = std::move( std::make_unique<CRENDERSql>( pdocument ) );
+      m_psqlOwned->Initialize();
+      m_psql = m_psqlOwned.get();
    }
 }
+
+Request::Request( CAPIContext* pcontext, CRENDERSql* psql ) 
+{ 
+   m_pcontext = pcontext; 
+   m_psql = psql;
+}
+
+
+// ----------------------------------------------------------------------------
+// ---------------------------------------------------------------- Application
+// ----------------------------------------------------------------------------
+
 
 Application Request::GetApplication()
 {
@@ -1360,8 +1373,8 @@ void Request::SetScriptValue( std::string_view stringName, std::variant<int64_t,
 
 /// @brief Create SQL object that can be used to build sql string
 Sql Request::CreateSql()
-{
-   return Sql( m_psql.get() );
+{                                                                                                  assert( m_psql != nullptr );
+   return Sql( m_psql );
 }
 
 std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> Request::GetClientValue( std::string_view stringName, std::optional<std::string> type_)

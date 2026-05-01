@@ -449,7 +449,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
       {
          if( GetContext()->GetDatabase() == nullptr ) { GetContext()->SetDatabase(pdatabase); }
 
-         auto result_ = SCRIPT::LuaRequestExecute( vectorCode, GetContext(), [&](sol::state* pstateLua, CAPIContext* pcontext_) -> std::pair<bool, std::string> {
+         auto result_ = SCRIPT::LuaRequestExecute( vectorCode, GetContext(), nullptr, [&](sol::state* pstateLua, CAPIContext* pcontext_) -> std::pair<bool, std::string> {
             if( Exists( "values" ) == true )
             {
                auto* prequest_ = (*pstateLua)["request"].get<LUA::Request*>();
@@ -457,7 +457,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
                std::array<std::byte, 128> buffer_;
                gd::argument::arguments argumentsValues(buffer_);
                std::string stringValues = GetArgument("values").as_string();
-               auto result_ = psql_->AddValues( stringValues, gd::types::tag_json{} );
+               auto result_ = psql_->AddColumnValues( stringValues, gd::types::tag_json{} );
                if( result_.first == false ) { return { false, "failed to add values for code execution: " + result_.second }; }
             }
             return { true, "" };

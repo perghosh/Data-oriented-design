@@ -112,6 +112,7 @@ void CRENDERSql::Initialize()
       auto* p = new gd::table::detail::columns{};
 
       p->add( "uint32", 0, "key" );
+      p->add( "uint32", 0, "meta" );                                          // meta information for column, fast access to column information, avoid to find it again
       p->add( "string", uSize, "schema" );                                    // schema for table field belongs to
       p->add( "string", uSize, "table" );                                     // name for table field belongs to
       p->add( "string", uSize, "name" );                                      // name for column in table
@@ -124,7 +125,8 @@ void CRENDERSql::Initialize()
 
       CRENDERSql::m_pcolumnsField_s = p; // assign to static member for use in other instances of CRENDERSql
 
-                                                                                                   assert( m_pcolumnsField_s->find_index( "key"sv ) == eColumnFieldId );
+                                                                                                   assert( m_pcolumnsField_s->find_index( "key"sv ) == eColumnFieldKey );
+                                                                                                   assert( m_pcolumnsField_s->find_index( "meta"sv ) == eColumnFieldMeta );
                                                                                                    assert( m_pcolumnsField_s->find_index( "alias"sv ) == eColumnFieldAlias );
                                                                                                    assert( m_pcolumnsField_s->find_index( "type_part"sv ) == eColumnFieldPartType );
       return p;
@@ -213,7 +215,10 @@ void CRENDERSql::AddColumn( std::string_view stringName, gd::variant_view varian
  * @param argumentsField information about the field to add.
  */
 void CRENDERSql::AddColumn( const gd::argument::arguments& argumentsField )
-{                                                                                                  assert( m_pcolumnsField_s != nullptr );
+{                                                                                                  assert( m_pcolumnsField_s != nullptr ); assert( argumentsField.exists( "name" ) == true ); 
+#ifndef NDEBUG
+   [[maybe_unused]] std::string stringValues_d = gd::argument::debug::print( argumentsField );
+#endif // NDEBUG
    auto uRow = m_tableField.row_add_one();
    m_tableField.cell_set( uRow, 0u, uint32_t(uRow + 1) );                     // set key value
 
@@ -408,7 +413,7 @@ void CRENDERSql::AddValues( const gd::argument::arguments& argumentsField )
    }
 }
 
-std::pair<bool, std::string> CRENDERSql::AddValues( std::string_view stringJson, gd::types::tag_json )
+std::pair<bool, std::string> CRENDERSql::AddColumnValues( std::string_view stringJson, gd::types::tag_json )
 {
    std::array<std::byte, 256> buffer_;
    gd::argument::arguments argumentsField( buffer_ );
@@ -445,57 +450,24 @@ std::pair<bool, std::string> CRENDERSql::AddColumns( std::string_view stringJson
    gd::argument::arguments arguments_(buffer_);
    std::pair<bool, std::string> result_;
 
-   // ## lambda to check that all values are strings
-   auto check_all_strings_ = []( const jsoncons::json& jsonColumn ) -> bool
-   {
-      for( auto& element_ : jsonColumn.array_range() ) { if( element_.is_string() == false ) { return false; } }
-      return true;
-   };
-
    // ## Lambda to add column from array format [table,name,value,{part},operator]
    auto add_array_ = [&]( const jsoncons::json& jsonColumn, std::size_t uColumnIndex ) -> std::pair<bool, std::string>
    {                                                                                               assert( jsonColumn.is_array() == true );
-      if( check_all_strings_( jsonColumn ) == false ) { return { false, "all elements must be strings" }; }
-      auto uCount = jsonColumn.size();
+      if( ValidateIsAllStrings_s( jsonColumn ) == false ) { return { false, "all elements must be strings" }; }
 
-      if( uCount < 2 ) { return { false, std::format( "column index {} requires at least [table,name]", uColumnIndex ) }; }
-
-      arguments_.clear();
-
-      arguments_.append( "table", jsonColumn[0].as_string_view() );
-      arguments_.append( "name", jsonColumn[1].as_string_view() );
-
-      if( uCount >= 3 ) { arguments_.append( "value", jsonColumn[2].as_string_view() ); }
-
-      // ## check for where part and this is before other parts because where parts need to have operator
-      if( uCount >= 5 ) 
-      { 
-         arguments_.append( "operator", jsonColumn[4].as_string_view() ); 
-         arguments_.append( "type_part", ePartTypeWhere );
-      }
-
-      if( uCount >= 4  )
-      {
-         auto ePart = utility::get_part_type_from_string( jsonColumn[3].as_string_view() );
-         if( ePart == ePartTypeUnknown ) { return { false, std::format( "column index {} has unknown type_part", uColumnIndex ) }; }
-         arguments_.append( "type_part", ePart );
-      }
+      ToArgumentsFromArray_s( jsonColumn, arguments_ );                       // convert array to arguments with keys "table", "name", "value", "type_part" and "operator"
 
       AddColumn( arguments_ );
       return { true, "" };
    };
 
+   // ## Lambda to add column from object format {table: "schema.table", name: "column_name", value: "value", type_part: "select|value|where|returning"}
    auto add_object_ = [&]( const jsoncons::json& jsonColumn, std::size_t uColumnIndex ) -> std::pair<bool, std::string>
    {                                                                                               assert( jsonColumn.is_object() == true );
-assert( false && "not implemented yet, need to add logic to parse object and add column" ); // @TODO: need to add logic to parse object and add column
-      arguments_.clear();
-      for( auto& [key_, value_] : jsonColumn.object_range() )
-      {
-      /*
-         if( value_.is_string() == true ) { arguments_.append( key_, value_.as_string_view() ); }
-         else { arguments_.append_argument( key_, value_ ); }
-         */
-      }
+      if( ValidateIsAllStrings_s( jsonColumn ) == false ) { return { false, "all elements must be strings" }; }
+
+      ToArgumentsFromObject_s( jsonColumn, arguments_ );                       // convert array to arguments with keys "table", "name", "value", "type_part" and "operator"
+
       AddColumn( arguments_ );
       return { true, "" };
    };
@@ -752,7 +724,8 @@ std::pair<bool, std::string> CRENDERSql::Prepare()                              
       if( iRow > 0 )
       {
          uint32_t uType = pdatabase_->Column_GetType( iRow );
-         itRow.cell_set( "type", uType ); // set type for column in table field
+         itRow.cell_set( eColumnFieldType, uType );                           // set type for column in table field
+         itRow.cell_set( eColumnFieldMeta, static_cast<uint32_t>(iRow) );     // set column meta row
       }
    }
 
@@ -767,7 +740,8 @@ std::pair<bool, std::string> CRENDERSql::Prepare()                              
       if( iRow > 0 )
       {
          uint32_t uType = pdatabase_->Column_GetType( iRow );
-         argumentsCondition.set( "type", uType ); // set type for column in condition
+         argumentsCondition.set( "type", uType );                             // set type for column in condition
+         argumentsCondition.set( "meta", static_cast<uint32_t>( iRow ) );     // set meta row for column in condition
       }
    }
 
@@ -849,19 +823,32 @@ std::pair<bool, std::string> CRENDERSql::Query_AddFields( gd::sql::query* pquery
    std::array<std::byte, 256> buffer_;
    gd::argument::arguments arguments_( buffer_ );
 
-   if( pquery->table_size() == 0 ) { pquery->table_add( "default_table" ); }
+   //if( pquery->table_size() == 0 ) { pquery->table_add( "default_table" ); }
 
    std::vector< std::pair<uint32_t, gd::variant_view> > vectorValue;
    for( auto itRow = m_tableField.row_begin(); itRow != m_tableField.row_end(); ++itRow )
    {
       arguments_.clear();
-
-      std::string stringName = itRow.cell_get_variant_view( "name", gd::table::tag_not_null{}).as_string();
+      std::string_view stringTable = itRow.cell_get_variant_view( eColumnFieldTable, gd::table::tag_not_null{}).as_string_view();
+      std::string_view stringName = itRow.cell_get_variant_view( eColumnFieldName, gd::table::tag_not_null{}).as_string_view();
       //queryInsert.field_add( stringName );                                  // add column to query
-      uint32_t uType = itRow.cell_get_variant_view("type").as_uint();
-      auto value_ = itRow.cell_get_variant_view("value", gd::table::tag_not_null{});
+      uint32_t uType = itRow.cell_get_variant_view(eColumnFieldType).as_uint();
+      auto value_ = itRow.cell_get_variant_view(eColumnFieldValue, gd::table::tag_not_null{});
       arguments_.append( { { "name", stringName }, { "value", value_ }, { "type", uType } }, gd::types::tag_view{});
-      pquery->field_add( arguments_, gd::sql::tag_arguments{} );       // add column to query
+      if( stringTable.empty() == true )
+      {
+         pquery->field_add( arguments_, gd::sql::tag_arguments{} );           // add column to query
+      }
+      else
+      {
+         int32_t iTableKey = pquery->table_get_key( stringTable );            // get the key for the table to use in field and condition parts
+         if( iTableKey == -1 )
+         {
+            auto ptable_ = pquery->table_add( stringTable );                  // add table to query if not added yet
+            iTableKey = ptable_->get_key();                                   // get the key for the table to use in field and condition parts
+         }
+         pquery->field_add( iTableKey, arguments_, gd::sql::tag_arguments{} );  // add column to query with table key
+      }
    }
 
    return { true, "" };
@@ -1247,6 +1234,147 @@ std::pair<bool, std::string> CRENDERSql::ValidateCondition( gd::argument::argume
    return { true, "" };
 }
 
+// Validate values in table byt match against metadata for columns and also check values
+std::pair<bool, std::string> CRENDERSql::ValidateColumnValues() const
+{                                                                                                  assert( m_pdocument != nullptr ); 
+   std::array<std::byte, 256> buffer_;
+   gd::argument::arguments argumentsFind( buffer_ );
+   const META::CDatabase* pdatabase_ = m_pdocument->DATABASE_Get();                                assert( pdatabase_ != nullptr );
+
+   bool bIsValueValid = true; // 
+   for( auto itRow = m_tableField.row_begin(); itRow != m_tableField.row_end(); itRow++ )
+   {
+      const auto bIsNull = itRow.cell_is_null( eColumnFieldMeta );
+      if( bIsNull == false )
+      {
+         
+         uint32_t uRowMeta = itRow.cell_get_variant_view( eColumnFieldMeta ).as_uint(); // index to meta row for columns
+         uint32_t uType = pdatabase_->Column_GetType( uRowMeta );             // get type for column from meta row
+
+         auto value_ = itRow.cell_get_variant_view( eColumnFieldValue, gd::table::tag_not_null{} );
+         if( value_.is_string() == true )
+         {
+            bIsValueValid = gd::sql::validate_value_g( value_.as_string_view(), uType );
+         }
+      }
+
+      if( bIsValueValid == false ) { return { false, std::format( "Invalid value for column: {}", itRow.cell_get_variant_view( eColumnFieldName ).as_string() ) }; }
+   }
+   return { true, "" };
+}
+
+/** --------------------------------------------------------------------------- ToArgumentsFromArray_s
+ * @brief Converts a JSON array into a `gd::argument::arguments` key-value structure.
+ * 
+ * Parses a JSON array with positional elements representing column metadata:
+ * - `[0]` → `"table"`
+ * - `[1]` → `"name"`
+ * - `[2]` → `"value"` *(optional)*
+ * - `[3]` → `"type_part"` *(optional, must be a known part type string)*
+ * - `[4]` → `"operator"` *(optional, triggers `where` part type when present)*
+ * 
+ * At minimum, the array must contain `[table, name]`. If a `type_part` string
+ * at index `[3]` is unrecognized, the method returns an error.
+ * 
+ * @param jsonColumn  JSON array with positional column descriptor values.
+ * @param arguments_  Output `arguments` object that will be populated; cleared before writing.
+ * @return std::pair<bool, std::string> `{true, ""}` on success, or `{false, errorMessage}` on failure.
+ * 
+ * @code
+ * // Minimal: table + name
+ * jsoncons::json jsonArray = jsoncons::json::parse(R"(["users","id"])");
+ * gd::argument::arguments argumentsResult;
+ * auto [bOk, stringError] = CRENDERSql::ToArgumentsFromArray_s(jsonArray, argumentsResult);
+ * 
+ * // Full: table, name, value, type_part, operator
+ * jsoncons::json jsonFull = jsoncons::json::parse(R"(["users","id","42","where","="])");
+ * @endcode
+ */
+std::pair<bool, std::string> CRENDERSql::ToArgumentsFromArray_s( const jsoncons::json& jsonColumn, gd::argument::arguments& arguments_ )
+{
+   auto uCount = jsonColumn.size();
+   if( uCount < 2 ) { return { false, std::format( "requires at least [table,name]" ) }; }
+
+   arguments_.clear();
+
+   arguments_.append( "table", jsonColumn[0].as_string_view() );
+   arguments_.append( "name", jsonColumn[1].as_string_view() );
+
+   if( uCount >= 3 ) { arguments_.append( "value", jsonColumn[2].as_string_view() ); }
+
+   // ## check for where part and this is before other parts because where parts need to have operator
+   if( uCount >= 5 ) 
+   { 
+      arguments_.append( "operator", jsonColumn[4].as_string_view() ); 
+      arguments_.append( "type_part", ePartTypeWhere );
+   }
+
+   if( uCount >= 4  )
+   {
+      auto ePart = utility::get_part_type_from_string( jsonColumn[3].as_string_view() );
+      if( ePart == ePartTypeUnknown ) { return { false, std::format( "unknown type_part: {}", jsonColumn[3].as_string_view() ) }; }
+      arguments_.append( "type_part", ePart );
+   }
+
+   return { true, "" };
+}
+
+/// @brief Similar to `ToArgumentsFromArray_s`, but parses a JSON object with named keys instead of a positional array.
+std::pair<bool, std::string> CRENDERSql::ToArgumentsFromObject_s( const jsoncons::json& jsonColumn, gd::argument::arguments& arguments_ )
+{
+   if( jsonColumn.is_object() == false ) { return { false, "Expected JSON object" }; }
+   arguments_.clear();
+
+   for( const auto& item_ : jsonColumn.object_range() )
+   {                                                                                               assert( item_.value().is_string() == true );
+      std::string_view stringKey = item_.key();
+
+      if( stringKey == "operator" )
+      {
+         arguments_.append( "operator", item_.value().as_string_view() );
+         arguments_.append( "type_part", ePartTypeWhere );
+      }
+      else if( stringKey == "type_part" )
+      {
+         auto ePart = utility::get_part_type_from_string( item_.value().as_string_view() );
+         if( ePart == ePartTypeUnknown ) { return { false, std::format( "unknown type_part: {}", item_.value().as_string_view() ) }; }
+         arguments_.append( "type_part", ePart );
+      }
+      else 
+      { 
+         arguments_.append( item_.key(), item_.value().as_string_view() );
+      }
+   }
+   return { true, "" };    
+}
+
+
+
+/** ------------------------------------------------------------------------- ValidateIsAllStrings_s
+ * @brief Validates that a JSON structure contains only string values.  
+ * @param json_ The JSON object, array, or value to validate.
+ * @return True if all values are strings; false otherwise.
+ */
+bool CRENDERSql::ValidateIsAllStrings_s( const jsoncons::json& json_ )
+{
+   if( json_.is_array() == true )                                             // array
+   {
+      for( const auto& item : json_.array_range() )
+      {
+         if( item.is_string() == false ) { return false; }
+      }
+   }
+   else if( json_.is_object() == true )                                       // object
+   {
+      for( const auto& item : json_.object_range() )
+      {
+         if( item.value().is_string() == false ) { return false; }
+      }
+   }
+   else if( json_.is_string() == false ) { return false; }
+
+   return true;
+}
 
 /// Destroy static members
 void CRENDERSql::Destroy_s()

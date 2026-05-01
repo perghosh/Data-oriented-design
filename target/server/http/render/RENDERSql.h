@@ -72,10 +72,11 @@ public:
    
    enum enumColumnField
    {
-      eColumnFieldId,            ///< column id (key), used for internal purposes
+      eColumnFieldKey,           ///< column id (key), used for internal purposes
+      eColumnFieldMeta,          ///< column meta information, used for internal purposes
       eColumnFieldSchema,        ///< schema for table field belongs to
       eColumnFieldTable,         ///< name for table field belongs to
-      eColumnFieldName,        ///< name for column in table
+      eColumnFieldName,          ///< name for column in table
       eColumnFieldAlias,         ///< alias for column in table
       eColumnFieldValue,         ///< value for column in table
       eColumnFieldType,          ///< gd type value for column value
@@ -154,14 +155,15 @@ public:
    int64_t FindRowForColumnName( std::string_view stringName ) const;
    /// Finds row for column name and part type, returns -1 if not found
    int64_t Find( const gd::argument::arguments& argumentsColumn ) const;
-   /// Remove row from internal tabö7
+   /// Remove row from internal table
    void Remove( uint64_t uRow ) { assert( uRow < m_tableField.size() ); m_tableField.erase( uRow ); }
 
    // @API [tag: add, simple] [description: Add values for columns, simple and only use key value to identify column value is added for]
 
    /// Add multiple values for columns
    void AddValues( const gd::argument::arguments& argumentsField );
-   std::pair<bool,std::string> AddValues( std::string_view stringJson, gd::types::tag_json );
+   /// Simple key value json format to add multiple columns, handy to add were all belongs to same table.
+   std::pair<bool,std::string> AddColumnValues( std::string_view stringJson, gd::types::tag_json );
    /// Add information to internal table storing data to generate query in column format (at least table and column) to connect to metadata
    std::pair<bool,std::string> AddColumns( std::string_view stringJson, gd::types::tag_json );
 
@@ -225,6 +227,8 @@ public:
    std::pair<bool, std::string> Validate( gd::argument::arguments argumentsValue, unsigned* puFound = nullptr ) const;
    /// Validates if the provided arguments are valid for condition fields in renderer
    std::pair<bool, std::string> ValidateCondition( gd::argument::arguments argumentsValue ) const;
+   /// Validates if the provided arguments are valid for columns in renderer
+   std::pair<bool, std::string> ValidateColumnValues() const;
 
    //std::string Dump() const;
 protected:
@@ -249,6 +253,17 @@ public:
 // @API [tag: free-functions]
 public:
    static constexpr enumSqlQueryType QueryType_s( std::string_view stringQueryType ) noexcept;
+
+
+   // ## Arguments related free functions
+   static std::pair<bool, std::string> ToArgumentsFromArray_s( const jsoncons::json& jsonColumn, gd::argument::arguments& arguments );
+   static std::pair<bool, std::string> ToArgumentsFromObject_s( const jsoncons::json& jsonColumn, gd::argument::arguments& arguments );
+
+   // ## Validate helpers
+
+   static bool ValidateIsAllStrings_s( const jsoncons::json& json_ );
+
+   // ## Utility free functions
 
    /// Destroy the static columns used by this class, note that you have to call this before the program exits
    static void Destroy_s();

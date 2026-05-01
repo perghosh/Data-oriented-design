@@ -356,6 +356,7 @@ class Request
 public:
    Request() {}
    Request( CAPIContext* pcontext );
+   Request( CAPIContext* pcontext, CRENDERSql* psql );
    // copy
    Request( const Request& o ) { common_construct( o ); }
    // assign
@@ -364,7 +365,7 @@ public:
    ~Request() {}
 private:
    // common copy
-   void common_construct( const Request& o ) { m_pcontext = o.m_pcontext; m_psql = o.m_psql ? std::move( std::make_unique<CRENDERSql>( *o.m_psql ) ) : nullptr; }
+   void common_construct( const Request& o ) { m_pcontext = o.m_pcontext; m_psql = o.m_psql; }
 
 public:
 // @API [tag: operation]
@@ -388,13 +389,14 @@ public:
    void SetStatus( std::variant<int64_t, std::string_view> status_ ); ///< Set status for current request, based on status the server know how to proceede with request,
 
    CAPIContext* GetContext() { return m_pcontext; } ///< Get pointer to API context for current request
-   //CRENDERSql* GetSql_() { return m_psql.get(); } ///< Get pointer to SQL object for current request
-   CRENDERSql* GetRenderSql() { return m_psql.get(); } ///< Get pointer to SQL object for current request
+   CRENDERSql* GetRenderSql() { return m_psql; } ///< Get pointer to SQL object for current request
+   void SetRenderSql( CRENDERSql* psql ) { m_psql = psql; } ///< Set SQL object for current request, this can be used to set SQL object created outside of current request, for example when creating SQL object from document or application objects, etc.
 
 // ## attributes ----------------------------------------------------------------
 public:
-   CAPIContext* m_pcontext = nullptr; ///< pointer to API context, used to access request and response objects, and other information about current request
-   std::unique_ptr<CRENDERSql> m_psql;///< Base SQL object that can be used to build SQL queries
+   CAPIContext* m_pcontext = nullptr; ///< pointer to API context, used to access request and response objects
+   CRENDERSql* m_psql = nullptr; ///< pointer to SQL object for current request, used to build SQL queries
+   std::unique_ptr<CRENDERSql> m_psqlOwned; ///< If the SQL object is owned by this request, it will be stored here
 };
 
 // ----------------------------------------------------------------------------
