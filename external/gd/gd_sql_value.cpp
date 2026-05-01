@@ -830,11 +830,27 @@ void append_identifier_g( std::string_view stringColumn, unsigned uDialect, std:
 }
 
 
+/** --------------------------------------------------------------------------- validate_value_g
+ * @brief Validate that a string value is correctly formatted for a given type.
+ *
+ * This function checks if `stringValue` is a valid representation of the type specified by `uType`.
+ * It performs basic validation based on the type category (number, boolean, binary, string).
+ *
+ * For numbers and booleans, it checks if the string contains only valid characters for those types.
+ * For binary types, it checks if the string is a valid hex string of the expected length.
+ * For strings, it assumes any value is valid since it will be properly escaped when appended.
+ *
+ * @param stringValue The string representation of the value to validate.
+ * @param uType The type identifier from `gd::types` that specifies how to interpret `stringValue`.
+ * @return `true` if `stringValue` is valid for the specified type; otherwise, `false`.
+ */
 bool validate_value_g( std::string_view stringValue, unsigned uType )
 {
    using namespace gd::types;
    if( is_number_g( uType ) || is_boolean_g( uType ) )
    {
+      auto uSize = gd::types::value_textsize_g( uType );                      // Get expected size if fixed type (guid)
+      if( uSize > 0 && uSize > stringValue.length() ) { return false; }       // Check if hex string length matches expected size
       // For numbers and booleans, we can do a simple check to see if the string is a valid representation
       // This is a very basic check and can be improved with regex or more comprehensive parsing
       for( char c : stringValue )
@@ -849,10 +865,11 @@ bool validate_value_g( std::string_view stringValue, unsigned uType )
    else if( is_binary_g( uType ) )
    {
       // For binary data, we expect a hex string (even length, only hex characters)
-      if( stringValue.length() % 2 != 0 )
-      {
-         return false; // Hex string must have even length
-      }
+      if( stringValue.length() % 2 != 0 ) { return false; }                   // Hex string must have even length
+
+      auto uSize = gd::types::value_textsize_g( uType );                      // Get expected size if fixed type (guid)
+      if( uSize > 0 && stringValue.length() > uSize ) { return false; }       // Check if hex string length matches expected size
+
       for( char c : stringValue )
       {
          if( !std::isxdigit( c ) )

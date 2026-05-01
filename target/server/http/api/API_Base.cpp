@@ -304,13 +304,13 @@ std::pair<bool, std::string> CAPI_Base::PrepareStatement( std::variant<size_t, s
    CRENDERSql sql_( pdocument, uStatementRow );
    sql_.Initialize();
 
-   if( Exists( "columns" ) == true )
+   if( Exists( "columns" ) == true )                                          // read "columns"
    {
       auto stringColumns = GetNextArgument( "columns" ).as_string();
       if( stringColumns.empty() == false ) { sql_.AddColumns( stringColumns, gd::types::tag_json{}); }
    }
 
-   if( Exists( "values" ) == true ) 
+   if( Exists( "values" ) == true )                                           // read "values" 
    {
       auto stringValues = GetNextArgument( "values" ).as_string();
       if( stringValues.empty() == false ) { sql_.AddColumnValues( stringValues, gd::types::tag_json{}); }
@@ -331,7 +331,7 @@ std::pair<bool, std::string> CAPI_Base::PrepareStatement( std::variant<size_t, s
    else if( result_.second.empty() == false ) 
    { 
       stringTemporary = std::move( result_.second ); 
-      stringSelectTemplate = stringTemporary;                              // set to preprocessed query
+      stringSelectTemplate = stringTemporary;                                 // set to preprocessed query
    }
 
    result_ = sql_.Prepare();                                                                       if( result_.first == false ) { return result_; }

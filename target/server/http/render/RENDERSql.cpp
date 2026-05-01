@@ -397,6 +397,16 @@ int64_t CRENDERSql::Find( const gd::argument::arguments& argumentsColumn ) const
 
 void CRENDERSql::AddValues( const gd::argument::arguments& argumentsField )
 {
+   std::string_view stringTable;
+
+   if( m_iRowStatement != -1 )
+   {
+      const uint64_t uRowStatement = uint64_t( m_iRowStatement );
+      const META::CQueries* pqueries = m_pdocument->QUERIES_Get();                                 assert( pqueries != nullptr );
+      stringTable = pqueries->GetTable( uRowStatement );
+   }
+
+
    for( auto [key_, value_] : argumentsField.named() )
    {
       auto uRow = m_tableField.row_add_one();                                 // Add row to store field information
@@ -408,13 +418,15 @@ void CRENDERSql::AddValues( const gd::argument::arguments& argumentsField )
       }
       else
       {
-         m_tableField.cell_set( uRow, eColumnFieldValue, value_.as_string_view(), gd::table::tag_spill{});
+         m_tableField.cell_set( uRow, eColumnFieldValue, value_.as_string(), gd::table::tag_spill{});
       }
+
+      if( stringTable.empty() == false ) { m_tableField.cell_set( uRow, eColumnFieldTable, stringTable, gd::table::tag_spill{} ); }
    }
 }
 
 std::pair<bool, std::string> CRENDERSql::AddColumnValues( std::string_view stringJson, gd::types::tag_json )
-{
+{                                                                                                  assert( m_pdocument != nullptr );
    std::array<std::byte, 256> buffer_;
    gd::argument::arguments argumentsField( buffer_ );
 
