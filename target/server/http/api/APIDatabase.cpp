@@ -322,7 +322,6 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
    if( GetContext()->GetDatabase() == nullptr ) { GetContext()->SetDatabase(pdatabase); }
 
    std::string stringQuery = GetNextArgument( "query" ).as_string();          // get query to execute
-
    if( stringQuery.empty() == false )
    {
       auto result_ = PrepareStatement( stringQuery, stringSelect );

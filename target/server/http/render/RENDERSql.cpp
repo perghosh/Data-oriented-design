@@ -13,6 +13,10 @@
 #include "gd/gd_table_io.h"
 #include "gd/gd_sql_value.h"
 
+#include "gd/gd_sql_query.h"
+#include "gd/gd_sql_query_builder.h"
+
+
 #include "gd/expression/gd_expression_value.h"
 #include "gd/expression/gd_expression_token.h"
 #include "gd/expression/gd_expression_method_01.h"
@@ -1143,6 +1147,69 @@ std::pair<bool, std::string> CRENDERSql::ToSqlFromTemplate( std::string_view str
    return { true, "" };
 }
 
+std::pair<bool, std::string> CRENDERSql::ToBulkInsert( const gd::argument::arguments& argumentsOptions, pugi::xml_document* pxmldocument, std::function<bool( std::string_view )> execute_ )
+{                                                                                                  assert( m_pdocument != nullptr ); 
+   using namespace gd::sql;
+   std::array<char, 128> buffer_; // buffer to avoid allocate memory
+   uint64_t uInsertCount = 0;
+
+   const META::CDatabase* pdatabase_ = m_pdocument->DATABASE_Get();                                assert( pdatabase_ != nullptr );
+
+   std::string stringInsertTemplate; // If insert template is set for query
+   std::string stringForm = argumentsOptions["form"].as_string(); // layout is required and should be string
+   std::string stringContainer = argumentsOptions["container"].as_string(); // container is required and should be string
+   if( stringContainer.empty() == true ) { stringContainer = "//values"; }
+
+   // ## xml form is like <values column1="value1" column2="value2" />
+   if( stringForm == "attribute" )                                            // each value is sent as attribute in xml element, for example <values column1="value1" column2="value2" />
+   {
+      std::string stringTable = MetaGetTable();                               // get table for values
+
+      // ### Loop elements in container
+      pugi::xpath_node_set xpathnodesetValues = pxmldocument->select_nodes(stringContainer.c_str());
+      for( auto& xpathnode_ : xpathnodesetValues )
+      {
+         query queryInsert{ m_eSqlDialect };
+
+         queryInsert << table_g( stringTable, buffer_ );                     // set table for insert query
+
+         pugi::xml_node xmlnodeValue = xpathnode_.node();
+         for( auto& xmlattribute_ : xmlnodeValue.attributes() )              // loop attributes in element and add attribute name and values to query
+         {
+            std::string_view stringName = xmlattribute_.name();
+            std::string_view stringValue = xmlattribute_.value();
+
+            gd::argument::arguments argumentsFind( buffer_ );
+            argumentsFind.append( { {std::string_view("table"), gd::variant_view(stringTable)}, {std::string_view("column"), gd::variant_view(stringName)} }, gd::types::tag_view{});
+            int64_t iRow = pdatabase_->Column_FindRow( argumentsFind ); 
+            if( iRow == -1 ) { return { false, "column not found in database: " + std::string(stringName) }; }
+
+            auto uType = pdatabase_->Column_GetType( iRow );
+            queryInsert << field_g( stringName, buffer_ ).value( stringValue ).type( uType );
+         }
+
+         std::string stringInsertSql;
+
+         if( stringInsertTemplate.empty() == false )
+         {
+            const gd::argument::arguments* pargumentsGlobal = GetContext()->GetGlobalArguments();
+         }
+         else 
+         {
+            stringInsertSql = queryInsert.sql_get( eSqlInsert );
+         }
+      }
+   }
+   else if( stringForm == "container" )                                       // each value is sent as child element in container element, for example <values><value column="column1">value1</value><value column="column2">value2</value></values>
+   {
+
+   }
+
+
+
+   return { true, "" };
+}
+
 /*
 std::pair<bool, std::string> CRENDERSql::AddConditionToQuery( gd::sql::query& queryAddTo  )
 {
@@ -1274,6 +1341,20 @@ std::pair<bool, std::string> CRENDERSql::ValidateColumnValues() const
    }
    return { true, "" };
 }
+
+/// @brief Gets the table name from the metadata based on the current row statement
+std::string CRENDERSql::MetaGetTable() const 
+{
+   std::string stringTable;
+   if( m_iRowStatement != -1 ) 
+   {
+      const uint64_t uRowStatement = uint64_t( m_iRowStatement );
+      const META::CQueries* pqueries = m_pdocument->QUERIES_Get();                                 assert( pqueries != nullptr );
+      stringTable = pqueries->GetTable( uRowStatement );
+   }
+   return stringTable;
+}
+
 
 /** --------------------------------------------------------------------------- ToArgumentsFromArray_s
  * @brief Converts a JSON array into a `gd::argument::arguments` key-value structure.

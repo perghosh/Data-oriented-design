@@ -25,6 +25,7 @@
 
 
 class CDocument;
+class CAPIContext;
 
 /** @CLASS [name: CRENDERSql] [description:  ]
  * \brief
@@ -216,6 +217,8 @@ public:
    std::pair<bool, std::string> ToSql( std::string_view stringType, std::string& stringQuery );
    std::pair<bool, std::string> ToSqlFromTemplate( std::string_view stringTemplate, std::string& stringQuery );
 
+   std::pair<bool, std::string> ToBulkInsert( const gd::argument::arguments& argumentsOptions, pugi::xml_document* pxmldocument, std::function<bool(std::string_view)> execute_ );
+
    /// @API [tag: arguments] [description: Arguments methods]
 
    void ToArguments( gd::argument::arguments& arguments ) const;
@@ -230,6 +233,8 @@ public:
    /// Validates if the provided arguments are valid for columns in renderer
    std::pair<bool, std::string> ValidateColumnValues() const;
 
+   std::string MetaGetTable() const;
+
    //std::string Dump() const;
 protected:
 // @API [tag: internal]
@@ -241,6 +246,7 @@ public:
 // ## attributes ----------------------------------------------------------------
 public:
    const CDocument* m_pdocument = nullptr; ///< pointer to document, used to get arguments for query, acces internal data in web server
+   CAPIContext* m_papicontext = nullptr; ///< pointer to api context, used to get arguments for query, access internal data in web server, this is set when document is linked to api context
    gd::sql::enumSqlDialect m_eSqlDialect{ gd::sql::eSqlDialectUnknown }; /// database dialect, used to determine how the syntax of sql statements should be
    int64_t m_iRowStatement{ -1 };         ///< current row used active stament if this is connected.
    gd::table::arguments::table m_tableField;   ///< Values or Names used to produce query
