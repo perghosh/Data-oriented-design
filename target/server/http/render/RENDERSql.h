@@ -103,10 +103,10 @@ public:
 // @API [tag: construction]
 public:
    CRENDERSql(): m_tableField(8, gd::table::tag_full_meta{}) {}
-   CRENDERSql( const CDocument* pdocument );
-   CRENDERSql( const CDocument* pdocument, uint64_t uStatementRow );
-   CRENDERSql( const CDocument* pdocument, gd::sql::enumSqlDialect eSqlDialect ): m_pdocument(pdocument), m_eSqlDialect(eSqlDialect), m_tableField(8, gd::table::tag_full_meta{}) {}
-   CRENDERSql( const CDocument* pdocument, std::string_view stringDialect ): m_pdocument(pdocument), m_eSqlDialect( gd::sql::sql_get_dialect_g(stringDialect) ), m_tableField(8, gd::table::tag_full_meta{}) {}
+   CRENDERSql( const CAPIContext* papicontext );
+   CRENDERSql( const CAPIContext* papicontext, uint64_t uStatementRow );
+   CRENDERSql( const CAPIContext* papicontext, gd::sql::enumSqlDialect eSqlDialect ): m_papicontext(papicontext), m_eSqlDialect(eSqlDialect), m_tableField(8, gd::table::tag_full_meta{}) {}
+   CRENDERSql( const CAPIContext* papicontext, std::string_view stringDialect ): m_papicontext(papicontext), m_eSqlDialect( gd::sql::sql_get_dialect_g(stringDialect) ), m_tableField(8, gd::table::tag_full_meta{}) {}
    // copy
    CRENDERSql( const CRENDERSql& o ) { common_construct( o ); }
    CRENDERSql( CRENDERSql&& o ) noexcept { common_construct( std::move( o ) ); }
@@ -128,6 +128,7 @@ public:
 // ## methods ------------------------------------------------------------------
 public:
 // @API [tag: get, set]
+   const CDocument* GetDocument() const;
    void SetDialect( gd::sql::enumSqlDialect dialect ) noexcept { m_eSqlDialect = dialect; }
    void SetRowStatement( int64_t iRowStatement ) noexcept { m_iRowStatement = iRowStatement; } 
    int64_t GetRowStatement() const noexcept { return m_iRowStatement; }
@@ -245,8 +246,7 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
-   const CDocument* m_pdocument = nullptr; ///< pointer to document, used to get arguments for query, acces internal data in web server
-   CAPIContext* m_papicontext = nullptr; ///< pointer to api context, used to get arguments for query, access internal data in web server, this is set when document is linked to api context
+   const CAPIContext* m_papicontext = nullptr; ///< pointer to api context, used to get arguments for query, access internal data in web server, this is set when document is linked to api context
    gd::sql::enumSqlDialect m_eSqlDialect{ gd::sql::eSqlDialectUnknown }; /// database dialect, used to determine how the syntax of sql statements should be
    int64_t m_iRowStatement{ -1 };         ///< current row used active stament if this is connected.
    gd::table::arguments::table m_tableField;   ///< Values or Names used to produce query

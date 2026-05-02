@@ -301,7 +301,7 @@ std::pair<bool, std::string> CAPI_Base::PrepareStatement( std::variant<size_t, s
    }
                                                                                                    assert( uStatementRow < 10000 );
    // ## Harvest values from request arguments for Lua setup code (if any) ..
-   CRENDERSql sql_( pdocument, uStatementRow );
+   CRENDERSql sql_( m_pcontext, uStatementRow );
    sql_.Initialize();
 
    if( Exists( "columns" ) == true )                                          // read "columns"

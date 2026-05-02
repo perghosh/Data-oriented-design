@@ -603,7 +603,7 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql, g
    if( Exists( "xml" ) == true )
    {
       auto stringCommand = GetCommand();                                      // get current command being processed, this is the command at m_uCommandIndex and should match sql statements like select, insert, update or delete
-      CRENDERSql sql_( pdocument, gd::sql::enumSqlDialect(uDialect) );
+      CRENDERSql sql_( GetContext(), gd::sql::enumSqlDialect(uDialect));
       sql_.Initialize();
       pugi::xml_document* pdocument = reinterpret_cast<pugi::xml_document*>( GetArgument("xml").as_void() );
 
@@ -675,7 +675,7 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql, g
       if( GetCommand() == "insert" )
       {
          sqlbuilder.SetType( CSqlBuilder::eTypeInsert );
-         CRENDERSql sql_( pdocument, gd::sql::enumSqlDialect(uDialect) );
+         CRENDERSql sql_( GetContext(), gd::sql::enumSqlDialect(uDialect) );
          sql_.Initialize();
          result_ = sql_.AddRecord( stringRecord, gd::types::tag_json{});      // add record formated as json
          if( result_.first == false ) { return result_; }
@@ -692,7 +692,7 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql, g
       else if( GetCommand() == "update" )
       {
          sqlbuilder.SetType( CSqlBuilder::eTypeUpdate );
-         CRENDERSql sql_( pdocument, gd::sql::enumSqlDialect(uDialect) );
+         CRENDERSql sql_( GetContext(), gd::sql::enumSqlDialect(uDialect) );
          sql_.Initialize();
          result_ = sql_.AddRecord( stringRecord, gd::types::tag_json{} );     // add record formated as json
          if( result_.first == false ) { return result_; }
@@ -709,7 +709,7 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql, g
       else if( GetCommand() == "delete" )
       {
          sqlbuilder.SetType( CSqlBuilder::eTypeDelete );
-         CRENDERSql sql_( pdocument, gd::sql::enumSqlDialect(uDialect) );
+         CRENDERSql sql_( GetContext(), gd::sql::enumSqlDialect(uDialect) );
 
          sql_.Initialize();
          result_ = sql_.AddRecord( stringRecord, gd::types::tag_json{} );     // add record formated as json

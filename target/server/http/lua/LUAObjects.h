@@ -134,7 +134,7 @@ class Sql
 public:
    Sql() {}
    Sql( CRENDERSql* psql ) { m_psql = std::make_unique<CRENDERSql>( *psql ); } // creates a copy of internal sql object (already initialized)
-   Sql( CDocument* pdocument ) { m_psql = std::make_unique<CRENDERSql>( pdocument ); m_psql->Initialize(); }
+   Sql( CAPIContext* papicontext ) { m_psql = std::make_unique<CRENDERSql>( papicontext ); m_psql->Initialize(); }
 
 // @API [tag: operation]   
    std::string GetValue( const std::string_view& stringName ) const;
@@ -273,6 +273,7 @@ public:
 // ## attributes ----------------------------------------------------------------
 public:
    CDocument* m_pdocument;
+   CAPIContext* m_papicontext = nullptr;
    gd::database::database_i* m_pdatabase = nullptr;
 };
 

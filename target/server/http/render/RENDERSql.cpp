@@ -28,6 +28,7 @@
 
 #include "../convert/CONVERTCore.h"
 
+#include "../api/API_Base.h"
 #include "../Document.h"
 
 #include "RENDERSql.h"
@@ -72,20 +73,22 @@ namespace utility
    }
 }
 
-CRENDERSql::CRENDERSql( const CDocument* pdocument ) : m_pdocument( pdocument ), m_tableField( 8, gd::table::tag_full_meta{} ) 
-{                                                                                                  assert( pdocument ); 
-   if( pdocument->DATABASE_Get() ) { m_eSqlDialect = gd::sql::enumSqlDialect( pdocument->DATABASE_Get()->GetDialect() ); }
+CRENDERSql::CRENDERSql( const CAPIContext* papicontext ) : m_papicontext( papicontext ), m_tableField( 8, gd::table::tag_full_meta{} ) 
+{                                                                                                  assert( papicontext ); assert( papicontext->GetDocument() );
+   const auto* pdocument_ = papicontext->GetDocument();
+   if( pdocument_->DATABASE_Get() ) { m_eSqlDialect = gd::sql::enumSqlDialect( pdocument_->DATABASE_Get()->GetDialect() ); }
 }
 
-CRENDERSql::CRENDERSql( const CDocument* pdocument, uint64_t uStatementRow ): 
-   m_pdocument( pdocument ), m_iRowStatement( int64_t(uStatementRow) ), m_tableField( 8, gd::table::tag_full_meta{} )
-{                                                                                                  assert( pdocument );
-   if( pdocument->DATABASE_Get() ) { m_eSqlDialect = gd::sql::enumSqlDialect( pdocument->DATABASE_Get()->GetDialect() ); }
+CRENDERSql::CRENDERSql( const CAPIContext* papicontext, uint64_t uStatementRow ): 
+   m_papicontext( papicontext ), m_iRowStatement( int64_t(uStatementRow) ), m_tableField( 8, gd::table::tag_full_meta{} )
+{                                                                                                  assert( papicontext ); assert( papicontext->GetDocument() );
+   const auto* pdocument_ = papicontext->GetDocument();
+   if( pdocument_->DATABASE_Get() ) { m_eSqlDialect = gd::sql::enumSqlDialect( pdocument_->DATABASE_Get()->GetDialect() ); }
 }
 
 void CRENDERSql::common_construct( const CRENDERSql& o ) 
 {
-   m_pdocument = o.m_pdocument;
+   m_papicontext = o.m_papicontext;
    m_eSqlDialect = o.m_eSqlDialect;
    m_tableField = o.m_tableField;
    m_argumentsProperty = o.m_argumentsProperty;
@@ -93,10 +96,15 @@ void CRENDERSql::common_construct( const CRENDERSql& o )
 
 void CRENDERSql::common_construct( CRENDERSql&& o ) noexcept 
 {
-   m_pdocument = o.m_pdocument;
+   m_papicontext = o.m_papicontext;
    m_eSqlDialect = o.m_eSqlDialect;
    m_tableField = std::move(o.m_tableField);
    m_argumentsProperty = std::move(o.m_argumentsProperty);
+}
+
+inline const CDocument* CRENDERSql::GetDocument() const
+{                                                                             assert( m_papicontext ); assert( m_papicontext->GetDocument() );
+   return m_papicontext->GetDocument();
 }
 
 
@@ -406,7 +414,7 @@ void CRENDERSql::AddValues( const gd::argument::arguments& argumentsField )
    if( m_iRowStatement != -1 )
    {
       const uint64_t uRowStatement = uint64_t( m_iRowStatement );
-      const META::CQueries* pqueries = m_pdocument->QUERIES_Get();                                 assert( pqueries != nullptr );
+      const META::CQueries* pqueries = GetDocument()->QUERIES_Get();                                 assert( pqueries != nullptr );
       stringTable = pqueries->GetTable( uRowStatement );
    }
 
@@ -430,7 +438,7 @@ void CRENDERSql::AddValues( const gd::argument::arguments& argumentsField )
 }
 
 std::pair<bool, std::string> CRENDERSql::AddColumnValues( std::string_view stringJson, gd::types::tag_json )
-{                                                                                                  assert( m_pdocument != nullptr );
+{                                                                                                  assert( GetDocument() != nullptr );
    std::array<std::byte, 256> buffer_;
    gd::argument::arguments argumentsField( buffer_ );
 
@@ -703,17 +711,17 @@ std::pair<bool, std::string> CRENDERSql::Preprocess( std::string_view stringSqlT
  * @return std::pair<bool, std::string> A pair containing a boolean indicating success and a string containing an error message if preparation fails.
  */
 std::pair<bool, std::string> CRENDERSql::Prepare()                                                // @CRITICAL [tag: type, column, sql] [description: update types for each field from metadata about fileds]
-{                                                                                                  assert( m_pdocument != nullptr ); // at least one field should be added before preparing query
+{                                                                                                  assert( GetDocument() != nullptr ); 
    std::array<std::byte, 256> buffer_;
    gd::argument::arguments argumentsFind( buffer_ );
-   const META::CDatabase* pdatabase_ = m_pdocument->DATABASE_Get();
+   const META::CDatabase* pdatabase_ = GetDocument()->DATABASE_Get();
 
    if( m_iRowStatement >= 0 )
    {
       const uint64_t uRowStatement = uint64_t( m_iRowStatement );
       // ## Prepare table information for fields where this is not done ......
 
-      const META::CQueries* pqueries = m_pdocument->QUERIES_Get();                                 assert( pqueries != nullptr );
+      const META::CQueries* pqueries = GetDocument()->QUERIES_Get();                                 assert( pqueries != nullptr );
       auto stringTable = pqueries->GetTable( uRowStatement );
       if( stringTable.empty() == false )
       {
@@ -1148,12 +1156,12 @@ std::pair<bool, std::string> CRENDERSql::ToSqlFromTemplate( std::string_view str
 }
 
 std::pair<bool, std::string> CRENDERSql::ToBulkInsert( const gd::argument::arguments& argumentsOptions, pugi::xml_document* pxmldocument, std::function<bool( std::string_view )> execute_ )
-{                                                                                                  assert( m_pdocument != nullptr ); 
+{                                                                                                  assert( GetDocument() != nullptr ); 
    using namespace gd::sql;
    std::array<char, 128> buffer_; // buffer to avoid allocate memory
    uint64_t uInsertCount = 0;
 
-   const META::CDatabase* pdatabase_ = m_pdocument->DATABASE_Get();                                assert( pdatabase_ != nullptr );
+   const META::CDatabase* pdatabase_ = GetDocument()->DATABASE_Get();                                assert( pdatabase_ != nullptr );
 
    std::string stringInsertTemplate; // If insert template is set for query
    std::string stringForm = argumentsOptions["form"].as_string(); // layout is required and should be string
@@ -1192,7 +1200,7 @@ std::pair<bool, std::string> CRENDERSql::ToBulkInsert( const gd::argument::argum
 
          if( stringInsertTemplate.empty() == false )
          {
-            const gd::argument::arguments* pargumentsGlobal = GetContext()->GetGlobalArguments();
+            const gd::argument::arguments* pargumentsGlobal = m_papicontext->GetGlobalArguments();
          }
          else 
          {
@@ -1315,10 +1323,10 @@ std::pair<bool, std::string> CRENDERSql::ValidateCondition( gd::argument::argume
 
 // Validate values in table byt match against metadata for columns and also check values
 std::pair<bool, std::string> CRENDERSql::ValidateColumnValues() const
-{                                                                                                  assert( m_pdocument != nullptr ); 
+{                                                                                                  assert( GetDocument() != nullptr ); 
    std::array<std::byte, 256> buffer_;
    gd::argument::arguments argumentsFind( buffer_ );
-   const META::CDatabase* pdatabase_ = m_pdocument->DATABASE_Get();                                assert( pdatabase_ != nullptr );
+   const META::CDatabase* pdatabase_ = GetDocument()->DATABASE_Get();                              assert( pdatabase_ != nullptr );
 
    bool bIsValueValid = true; // 
    for( auto itRow = m_tableField.row_begin(); itRow != m_tableField.row_end(); itRow++ )
@@ -1344,12 +1352,12 @@ std::pair<bool, std::string> CRENDERSql::ValidateColumnValues() const
 
 /// @brief Gets the table name from the metadata based on the current row statement
 std::string CRENDERSql::MetaGetTable() const 
-{
+{                                                                                                  assert( GetDocument() != nullptr );
    std::string stringTable;
    if( m_iRowStatement != -1 ) 
    {
       const uint64_t uRowStatement = uint64_t( m_iRowStatement );
-      const META::CQueries* pqueries = m_pdocument->QUERIES_Get();                                 assert( pqueries != nullptr );
+      const META::CQueries* pqueries = GetDocument()->QUERIES_Get();                                 assert( pqueries != nullptr );
       stringTable = pqueries->GetTable( uRowStatement );
    }
    return stringTable;

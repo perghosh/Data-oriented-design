@@ -1162,7 +1162,8 @@ Database Document::GetDatabase()
 
 Sql Document::CreateSql()
 {
-   return Sql( m_pdocument );
+   if( m_papicontext == nullptr ) { throw sol::error( "document doesn't have api context" ); }
+   return Sql( m_papicontext );
 }
 
 
@@ -1284,15 +1285,11 @@ void Application::Message(const std::string_view & stringTypeOrMessage, std::opt
 // ----------------------------------------------------------------------------
 
 Request::Request( CAPIContext* pcontext ) 
-{ 
+{                                                                                                  assert( pcontext != nullptr ); assert( pcontext->GetDocument() != nullptr );
    m_pcontext = pcontext; 
-   auto* pdocument = m_pcontext->GetDocument();
-   if( pdocument != nullptr )
-   {
-      m_psqlOwned = std::move( std::make_unique<CRENDERSql>( pdocument ) );
-      m_psqlOwned->Initialize();
-      m_psql = m_psqlOwned.get();
-   }
+   m_psqlOwned = std::move( std::make_unique<CRENDERSql>( pcontext ) );
+   m_psqlOwned->Initialize();
+   m_psql = m_psqlOwned.get();
 }
 
 Request::Request( CAPIContext* pcontext, CRENDERSql* psql ) 
