@@ -245,6 +245,7 @@ public:
 
    /// Prepare application options for command line
    static void PrepareOption_s( gd::cli::options& optionsApplication );
+   std::pair<bool, std::string> Prepare_s( CApplication* papplication_, gd::cli::options& optionsApplication );
    /// Read parsed options and set properties
    static std::pair<bool, std::string> Read_s( CApplication* papplication_, gd::cli::options& optionsApplication );
 	///  Open database and put connection into pointer reference

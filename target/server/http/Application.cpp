@@ -125,7 +125,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 
 
       // ## Parse arguments if sent
-      if( iArgumentCount > 1 )											           // do we have arguments ? (first is application)
+      if( iArgumentCount > 1 )											               // do we have arguments ? (first is application)
       {
          auto result_ = optionsApplication.parse(iArgumentCount, ppbszArgument); // @CORE [title: options] [description: parse command line arguments] 
          if( result_.first == false ) { return result_; }
@@ -522,6 +522,7 @@ void CApplication::PrepareOption_s(gd::cli::options& optionsApplication)
    optionsApplication.add({"path", "Global path variable used to find files in any of the folders if not found in selected folder, folders are separated by semicolon"});
    optionsApplication.add({"folder-configuration", "Folder where to read configuration files"});
    optionsApplication.add({"folder-logging", "Set folder where logger places log files"});
+   optionsApplication.add({"folder-webroot", "Simplest solution, one single root folder for all files"});
 
    // ## Database
    optionsApplication.add({"database-open", "Open to database, if file database then add file name, if odbc then add the odbc name and use user and other settings comma separated"});
@@ -545,6 +546,12 @@ void CApplication::PrepareOption_s(gd::cli::options& optionsApplication)
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
 }
+
+std::pair<bool, std::string> CApplication::Prepare_s( CApplication* papplication_, gd::cli::options& optionsApplication )
+{
+   return { true, "" };
+}
+
 
 /** --------------------------------------------------------------------------- @API [tag: options] [title: read options] [description: Read command-line options]
  * @brief Reads and processes application options, updating application properties based on the provided command-line options.
