@@ -307,13 +307,13 @@ std::pair<bool, std::string> CAPI_Base::PrepareStatement( std::variant<size_t, s
    if( Exists( "columns" ) == true )                                          // read "columns"
    {
       auto stringColumns = GetNextArgument( "columns" ).as_string();
-      if( stringColumns.empty() == false ) { sql_.AddColumns( stringColumns, gd::types::tag_json{}); }
+      if( stringColumns.empty() == false ) { sql_.ColumnsAdd( stringColumns, gd::types::tag_json{}); }
    }
 
    if( Exists( "values" ) == true )                                           // read "values" 
    {
       auto stringValues = GetNextArgument( "values" ).as_string();
-      if( stringValues.empty() == false ) { sql_.AddColumnValues( stringValues, gd::types::tag_json{}); }
+      if( stringValues.empty() == false ) { sql_.ColumnAddValues( stringValues, gd::types::tag_json{}); }
    }
 
    // ## Execute Lua setup code if any .......................................
@@ -366,7 +366,6 @@ int64_t CAPI_Base::Statement_Find( std::string_view stringQuery ) const
    if( pdocument == nullptr ) { return -1; }
 
    if( stringQuery[0u] == '#' ) { stringQuery.remove_prefix(1); }             // remove leading #
-   else { return -1; }                                                        // query id must start with #
 
    const META::CQueries* pqueries = pdocument->QUERIES_Get();
    int64_t iRow = pqueries->GetQueryRow( stringQuery );

@@ -50,7 +50,7 @@ std::pair<bool, std::string> LuaRequestExecute( const std::vector<gd::variant_vi
    auto* pdocument_ = pcontext_->GetDocument();                               // get document from context, important to use this because how documents work is different and this should be prepared before running method
    std::unique_ptr<LUA::Application> papplication = std::make_unique<LUA::Application>( papplication_, pdatabase_ ); // applicaiton information
    stateLua["app"] = std::move( papplication );    
-   std::unique_ptr<LUA::Document> pdocument = std::make_unique<LUA::Document>( pdocument_, pdatabase_ ); // document information, note that the database isn't same as database inside document, this is the global database.
+   std::unique_ptr<LUA::Document> pdocument = std::make_unique<LUA::Document>( pdocument_, pcontext_ ); // document information, note that the database isn't same as database inside document, this is the global database.
    stateLua["doc"] = std::move( pdocument );
    std::unique_ptr<LUA::Request> prequest = std::make_unique<LUA::Request>( pcontext_, psql ); // request information, holds user data etc for current request to server.
    stateLua["request"] = std::move( prequest );

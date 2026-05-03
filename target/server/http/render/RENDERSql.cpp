@@ -206,19 +206,19 @@ std::pair<bool, std::string> CRENDERSql::Add( const pugi::xml_node& xmlnodeValue
       if( string_.empty() == false ) { argumentsField["table"] = string_; }
       else if( stringTable.empty() == false ) { argumentsField["table"] = stringTable; } // if table name is not in attribute try to get it from parent node attribute
 
-      AddColumn( argumentsField );
+      ColumnAdd( argumentsField );
    }
 
    return { true, "" };
 }
 
-void CRENDERSql::AddColumn( std::string_view stringName, gd::variant_view variantviewValue )
+void CRENDERSql::ColumnAdd( std::string_view stringName, gd::variant_view variantviewValue )
 {
    std::array<std::byte, 128> buffer_;
    gd::argument::arguments argumentsField(buffer_);
    argumentsField.append_argument( "name", stringName ); // column name
    argumentsField.append_argument( "value", variantviewValue);
-   AddColumn( argumentsField );
+   ColumnAdd( argumentsField );
 }
 
 /** --------------------------------------------------------------------------
@@ -226,7 +226,7 @@ void CRENDERSql::AddColumn( std::string_view stringName, gd::variant_view varian
  *
  * @param argumentsField information about the field to add.
  */
-void CRENDERSql::AddColumn( const gd::argument::arguments& argumentsField )
+void CRENDERSql::ColumnAdd( const gd::argument::arguments& argumentsField )
 {                                                                                                  assert( m_pcolumnsField_s != nullptr ); assert( argumentsField.exists( "name" ) == true ); 
 #ifndef NDEBUG
    [[maybe_unused]] std::string stringValues_d = gd::argument::debug::print( argumentsField );
@@ -286,7 +286,7 @@ void CRENDERSql::AddColumn( const gd::argument::arguments& argumentsField )
  * @param tag_json The tag_json type.
  * @return std::pair<bool,std::string> A pair containing a boolean indicating success and a string containing an error message.
  */
-std::pair<bool,std::string> CRENDERSql::AddColumn( std::string_view stringJson, gd::types::tag_json )
+std::pair<bool,std::string> CRENDERSql::ColumnAdd( std::string_view stringJson, gd::types::tag_json )
 {
    if( stringJson.empty() == true ) { return { true, "empty json" }; }
    std::array<std::byte, 256> buffer_;
@@ -298,7 +298,7 @@ std::pair<bool,std::string> CRENDERSql::AddColumn( std::string_view stringJson, 
    // check for value
    if( arguments_.exists("value") == false ) { return {false, "missing value"}; }
 
-   AddColumn( arguments_ );
+   ColumnAdd( arguments_ );
 
    return {true, ""};
 }
@@ -437,7 +437,21 @@ void CRENDERSql::AddValues( const gd::argument::arguments& argumentsField )
    }
 }
 
-std::pair<bool, std::string> CRENDERSql::AddColumnValues( std::string_view stringJson, gd::types::tag_json )
+/** -------------------------------------------------------------------------- AddColumnValues
+ * @brief Parse a simple JSON object with column values and append the values to the internal field table.
+ * 
+ * Expects `stringJson` to contain a shallow JSON object where each named property is treated as a
+ * column name and the property value is treated as the column value. The parsed values are stored in
+ * `argumentsField` and then forwarded to `AddValues`.
+ * 
+ * This overload is intended for the simple **key/value** JSON format where all values can be added
+ * without explicit per-column metadata in the input. 
+ * 
+ * @param stringJson JSON object with named column values.
+ * @return std::pair<bool, std::string> Returns `{ true, "" }` on success, otherwise the parse result
+ *         from `gd::parse::json::parse_shallow_object_g`.
+ */
+std::pair<bool, std::string> CRENDERSql::ColumnAddValues( std::string_view stringJson, gd::types::tag_json )
 {                                                                                                  assert( GetDocument() != nullptr );
    std::array<std::byte, 256> buffer_;
    gd::argument::arguments argumentsField( buffer_ );
@@ -445,10 +459,11 @@ std::pair<bool, std::string> CRENDERSql::AddColumnValues( std::string_view strin
    auto result_ = gd::parse::json::parse_shallow_object_g( stringJson, argumentsField, false );
    if( result_.first == false ) { return result_; }
    AddValues( argumentsField );
+
    return { true, "" };
 }
 
-/** -------------------------------------------------------------------------- AddColumns
+/** -------------------------------------------------------------------------- ColumnsAdd
  * @brief Parses JSON column input and prepares it for column metadata processing.
  * 
  * Attempts to parse `stringJson` with columns and add each column to the internal table.
@@ -468,7 +483,7 @@ std::pair<bool, std::string> CRENDERSql::AddColumnValues( std::string_view strin
  * @param stringJson JSON payload containing column data.
  * @return std::pair<bool, std::string> Parse status and optional error message.
  */
-std::pair<bool, std::string> CRENDERSql::AddColumns( std::string_view stringJson, gd::types::tag_json )
+std::pair<bool, std::string> CRENDERSql::ColumnsAdd( std::string_view stringJson, gd::types::tag_json )
 {
    std::array<std::byte, 256> buffer_;
    gd::argument::arguments arguments_(buffer_);
@@ -481,7 +496,7 @@ std::pair<bool, std::string> CRENDERSql::AddColumns( std::string_view stringJson
 
       ToArgumentsFromArray_s( jsonColumn, arguments_ );                       // convert array to arguments with keys "table", "name", "value", "type_part" and "operator"
 
-      AddColumn( arguments_ );
+      ColumnAdd( arguments_ );
       return { true, "" };
    };
 
@@ -492,7 +507,7 @@ std::pair<bool, std::string> CRENDERSql::AddColumns( std::string_view stringJson
 
       ToArgumentsFromObject_s( jsonColumn, arguments_ );                       // convert array to arguments with keys "table", "name", "value", "type_part" and "operator"
 
-      AddColumn( arguments_ );
+      ColumnAdd( arguments_ );
       return { true, "" };
    };
 
@@ -529,13 +544,13 @@ std::pair<bool, std::string> CRENDERSql::AddColumns( std::string_view stringJson
 }
 
 /// @brief Adds a condition to the internal list of conditions for SQL query generation.
-void CRENDERSql::AddCondition( const gd::argument::arguments& argumentsCondition )
+void CRENDERSql::ConditionAdd( const gd::argument::arguments& argumentsCondition )
 {                                                                                                  assert( gd::sql::query::validate_condition_s( argumentsCondition ).first == true );
    m_vectorCondition.push_back( argumentsCondition );
 }
 
 /// @brief Adds a condition to the internal list of conditions for SQL query generation using move semantics.
-void CRENDERSql::AddCondition( gd::argument::arguments&& argumentsCondition )
+void CRENDERSql::ConditionAdd( gd::argument::arguments&& argumentsCondition )
 {                                                                                                  assert( gd::sql::query::validate_condition_s( argumentsCondition ).first == true );
    m_vectorCondition.push_back( std::move(argumentsCondition) );
 }
@@ -597,7 +612,7 @@ std::pair<bool,std::string> CRENDERSql::AddRecord( std::string_view stringJson, 
          arguments_.append( "name", itValue.key() );
          arguments_.append_argument( "value", CONVERT::AsVariant( itValue.value() ) );
          arguments_.append( "type_part", uint32_t( ePartTypeValue ) ); // value part of query (insert and update queries)
-         AddColumn( arguments_ );
+         ColumnAdd( arguments_ );
       }
 
       auto jsonWhere = jsonRecord["where"];
@@ -614,7 +629,7 @@ std::pair<bool,std::string> CRENDERSql::AddRecord( std::string_view stringJson, 
             arguments_.append( "name", itValue.key() );
             arguments_.append_argument( "value", CONVERT::AsVariant( itValue.value() ) );
          }
-         AddCondition( arguments_ );
+         ConditionAdd( arguments_ );
       }
 
       auto jsonReturning = jsonRecord["returning"];
@@ -729,7 +744,7 @@ std::pair<bool, std::string> CRENDERSql::Prepare()                              
       }
    }
 
-   // ## Loop through rows fields and get type for field to set type.
+   // ## Loop through rows fields and get type for field to set type .........
    for( auto itRow = m_tableField.row_begin(); itRow != m_tableField.row_end(); ++itRow )
    {
       argumentsFind.clear();
@@ -751,9 +766,15 @@ std::pair<bool, std::string> CRENDERSql::Prepare()                              
          itRow.cell_set( eColumnFieldType, uType );                           // set type for column in table field
          itRow.cell_set( eColumnFieldMeta, static_cast<uint32_t>(iRow) );     // set column meta row
       }
+      else
+      {
+#ifndef NDEBUG
+                                                                                                   LOG_WARNING( std::format( "Column not found in database metadata, table: {}, column: {}", stringTable, stringName ) );
+#endif // NDEBUG
+      }
    }
 
-   // ## Loop conditions and update type
+   // ## Loop conditions and update type .....................................
    for( auto& argumentsCondition : m_vectorCondition )
    {
       argumentsFind.clear();
@@ -769,14 +790,8 @@ std::pair<bool, std::string> CRENDERSql::Prepare()                              
       }
    }
 
-
-
-
    // ## Prepare the query, this can include validation and transformation of the data in the table field before generating the final SQL query.
    // For example, you can check if all required fields are present, if the data types are correct, or if there are any constraints that need to be applied.
-
-
-
 
    return {true, ""};
 }
@@ -784,7 +799,7 @@ std::pair<bool, std::string> CRENDERSql::Prepare()                              
 
 
 /** ---------------------------------------------------------------------------
- * @brief Add a value to last row witch are the latest added field..
+ * @brief Add a value to last row which is the latest added field..
  *
  * @param stringName The name of the column.
  * @param stringValue The value to add.
@@ -1281,7 +1296,7 @@ void CRENDERSql::ToArguments( gd::argument::shared::arguments& arguments ) const
  * @return std::pair<bool, std::string> `{ true, "" }` if all keys are valid;
  *         otherwise `{ false, "Invalid column name: <column>" }`.
  */
-std::pair<bool, std::string> CRENDERSql::Validate( gd::argument::arguments argumentsValue, unsigned* puFound ) const
+std::pair<bool, std::string> CRENDERSql::Validate( const gd::argument::arguments& argumentsValue, unsigned* puFound ) const
 {  
    unsigned uRequired = 0;
       
@@ -1312,7 +1327,7 @@ std::pair<bool, std::string> CRENDERSql::Validate( gd::argument::arguments argum
 }
 
 /// Validate condition arguments against known field columns, ensuring all keys are valid for condition construction.
-std::pair<bool, std::string> CRENDERSql::ValidateCondition( gd::argument::arguments argumentsValue ) const
+std::pair<bool, std::string> CRENDERSql::ValidateCondition( const gd::argument::arguments& argumentsValue ) const
 {
    auto [bOk, stringField] = gd::sql::query::validate_condition_s(argumentsValue);
 

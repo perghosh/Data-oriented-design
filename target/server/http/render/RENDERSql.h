@@ -141,11 +141,11 @@ public:
    std::pair<bool,std::string> Add( const pugi::xml_node& xmlnodeValues );
 
    /// Simplest form, adds value with name
-   void AddColumn( std::string_view stringName, gd::variant_view variantviewValue );
+   void ColumnAdd( std::string_view stringName, gd::variant_view variantviewValue );
    /// Add single column to internal table with columns, keys are matched against column names
-   void AddColumn( const gd::argument::arguments& argumentsField );
+   void ColumnAdd( const gd::argument::arguments& argumentsField );
    /// Add json formated object column to internal table with columns, keys are matched against column names
-   std::pair<bool,std::string> AddColumn( std::string_view stringJson, gd::types::tag_json );
+   std::pair<bool,std::string> ColumnAdd( std::string_view stringJson, gd::types::tag_json );
 
    std::pair<bool, std::string> SetColumn( std::string_view stringColumn, const gd::argument::arguments& argumentsColumn );
    void SetColumn( uint64_t uRow, const gd::argument::arguments& argumentsColumn );
@@ -165,14 +165,15 @@ public:
    /// Add multiple values for columns
    void AddValues( const gd::argument::arguments& argumentsField );
    /// Simple key value json format to add multiple columns, handy to add were all belongs to same table.
-   std::pair<bool,std::string> AddColumnValues( std::string_view stringJson, gd::types::tag_json );
+   std::pair<bool,std::string> ColumnAddValues( std::string_view stringJson, gd::types::tag_json );
    /// Add information to internal table storing data to generate query in column format (at least table and column) to connect to metadata
-   std::pair<bool,std::string> AddColumns( std::string_view stringJson, gd::types::tag_json );
+   std::pair<bool,std::string> ColumnsAdd( std::string_view stringJson, gd::types::tag_json );
 
+   // @API [tag: condition] [summary: Methods for managing conditions]
 
-   void AddCondition( const gd::argument::arguments& argumentsCondition );
-   void AddCondition( gd::argument::arguments&& argumentsCondition );
-   size_t GetConditionCount() const { return m_vectorCondition.size(); }
+   void ConditionAdd( const gd::argument::arguments& argumentsCondition );
+   void ConditionAdd( gd::argument::arguments&& argumentsCondition );
+   size_t ConditionGetCount() const { return m_vectorCondition.size(); }
 
 
    /// Adds data for a complete record for specified table
@@ -228,9 +229,9 @@ public:
    // @API [tag: validate]
 
    /// Validates if the provided arguments are valid adding value to renderer
-   std::pair<bool, std::string> Validate( gd::argument::arguments argumentsValue, unsigned* puFound = nullptr ) const;
+   std::pair<bool, std::string> Validate( const gd::argument::arguments& argumentsValue, unsigned* puFound = nullptr ) const;
    /// Validates if the provided arguments are valid for condition fields in renderer
-   std::pair<bool, std::string> ValidateCondition( gd::argument::arguments argumentsValue ) const;
+   std::pair<bool, std::string> ValidateCondition( const gd::argument::arguments& argumentsValue ) const;
    /// Validates if the provided arguments are valid for columns in renderer
    std::pair<bool, std::string> ValidateColumnValues() const;
 

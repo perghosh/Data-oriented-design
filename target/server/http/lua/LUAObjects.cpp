@@ -770,6 +770,14 @@ std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> Expression::Cal
 // ------------------------------------------------------------------------ Sql
 // ----------------------------------------------------------------------------
 
+Sql::Sql( CApplication* papplication, CDocument* pdocument )
+{
+   // create api context
+   m_papicontext = std::make_unique<CAPIContext>( papplication, pdocument );
+   m_psql = std::make_unique<CRENDERSql>( m_papicontext.get() );
+   m_psql->Initialize();
+}
+
 /// Get value for name ------------------------------------------------------
 std::string Sql::GetValue( const std::string_view& stringName ) const
 {
@@ -784,7 +792,7 @@ std::string Sql::GetValue( const std::string_view& stringName ) const
 void Sql::AddValues( const sol::table& tableValues )
 {
    auto argumentsValue = ConvertToArguments_g( tableValues );
-   m_psql->AddColumn( argumentsValue );
+   m_psql->ColumnAdd( argumentsValue );
 }
 
 void Sql::AddColumn( const sol::table& tableField )
@@ -797,7 +805,7 @@ void Sql::AddColumn( const sol::table& tableField )
    if( result_.first == false ) { throw sol::error( result_.second ); }
    if( (uFlags & CRENDERSql::eColumnFlagName) != CRENDERSql::eColumnFlagName ) { throw sol::error( "column name not found" ); }
 
-   m_psql->AddColumn( argumentsValue );
+   m_psql->ColumnAdd( argumentsValue );
 }
 
 void Sql::SetColumn( std::variant<uint64_t, std::string_view> column_, const sol::table& tableField )
@@ -858,7 +866,7 @@ void Sql::AddCondition( const sol::table& tableField )
    auto result_ = m_psql->ValidateCondition( argumentsCondition );  // validate that column names (keys)
    if( result_.first == false ) { throw sol::error( result_.second ); }
 
-   m_psql->AddCondition( argumentsCondition );
+   m_psql->ConditionAdd( argumentsCondition );
 }
 
 
@@ -1161,9 +1169,8 @@ Database Document::GetDatabase()
 }
 
 Sql Document::CreateSql()
-{
-   if( m_papicontext == nullptr ) { throw sol::error( "document doesn't have api context" ); }
-   return Sql( m_papicontext );
+{                                                                                                  assert( m_papicontext != nullptr );
+   return Sql( m_pdocument->GetApplication(), m_pdocument );
 }
 
 
@@ -1390,6 +1397,64 @@ std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> Request::GetCli
    }
   
    return ConvertToAny_g( gd::variant( stringValue ) );
+}
+
+void Request::AddClientValue( std::variant<std::string_view, sol::table> column_, std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> value_ )
+{
+   std::array<std::byte, 256> buffer_;
+   gd::argument::arguments argumentsColumn( buffer_ );
+
+   if( column_.index() == 0 )
+   {
+      std::string_view stringName = std::get<0>( column_ );
+      argumentsColumn.append_argument( "name", stringName );
+      gd::variant_view valueView;
+      ConvertFromAny_g( value_, valueView );
+      argumentsColumn.append_argument( "value", valueView );
+   }
+   else
+   {
+      sol::table tableColumn = std::get<1>( column_ );
+      ConvertToArguments_g( tableColumn, argumentsColumn );
+
+      auto [bOk, stringError] = m_psql->Validate( argumentsColumn );          // validate that column names (keys) are correct
+      if( bOk == false ) { throw sol::error( stringError ); }
+
+      gd::variant_view valueView;
+      ConvertFromAny_g( value_, valueView );
+      argumentsColumn.append_argument( "value", valueView );
+   }
+
+   m_psql->ColumnAdd( argumentsColumn );
+}
+
+/**  -------------------------------------------------------------------------- RemoveClientValue
+ * @brief Remove a client value from the current SQL object.
+ * 
+ * Accepts `value_id_` as either a column name or a Lua table describing the value
+ * to remove. When `value_id_` contains a string, the method looks up the matching
+ * column row in render sql by name and removes it.
+ * The table-based path is **not implemented** and will currently trigger an assertion.
+ * 
+ * @param value_id_ Identifier for the value to remove, either a column name or a Lua table
+ * @return void No value is returned
+ */
+void Request::RemoveClientValue( std::variant<std::string_view, sol::table> value_id_ )
+{
+   if( m_psql == nullptr ) { throw sol::error( "SQL object not initialized" ); }
+
+   if( value_id_.index() == 0 )
+   {
+      std::string_view stringName = std::get<0>( value_id_ );
+      auto iRow = m_psql->FindRowForColumnName( stringName );                    // check if column name exists, if not exception is thrown
+      if( iRow < 0 ) { throw sol::error( std::format( "column name not found: {}", stringName ) ); }
+      m_psql->Remove( static_cast<uint64_t>( iRow ) );
+   }
+   else if( value_id_.index() == 1 )
+   {
+      sol::table tableValues = std::get<1>( value_id_ );
+      assert( false ); // not implemented yet, need to convert table to arguments and then find row for arguments
+   }
 }
 
 /// @brief Set request status that decides how to proceede

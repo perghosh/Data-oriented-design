@@ -49,6 +49,7 @@ void RegisterRequest( sol::state& stateLua )
 {
 	stateLua.new_usertype<Request>(
       "Request", sol::constructors<Request()>(),                              // constructor
+      "AddClientValue", &Request::AddClientValue,                             // Add a client value, treated as column where each value may have more properties then just a name.
       "CreateSql", &Request::CreateSql,                                       // Create SQL object, will add sql values if request has them
       "GetApplication", &Request::GetApplication,                             // Get the application object associated with this request
       "GetClientValue", &Request::GetClientValue,                             // Get a client value by name, client values are passed from client
@@ -58,6 +59,7 @@ void RegisterRequest( sol::state& stateLua )
       "GetResponse", &Request::GetResponse,                                   // Get the response object associated with this request
       "GetScriptValue", &Request::GetScriptValue,                             // Get script value, variables that is not transfered to created SQL object but may be used in this request
       "GetSessionId", &Request::GetSessionId,                                 // Get the session ID associated with this request
+      "RemoveClientValue", &Request::RemoveClientValue,                       // Remove a client value by name or table of matching properties for value
       "SetScriptValue", &Request::SetScriptValue,                             // Set a script value by name. Script values are added in script and is used there
       "SetStatus", &Request::SetStatus                                        // Set http status for currect request
    );

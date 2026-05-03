@@ -673,14 +673,13 @@ public:
 
    int64_t row_get_variant_view( unsigned uColumn, const gd::variant_view& variantviewFind, std::vector<gd::variant_view>& vectorValue ) const;
 
+   // @API [tag: arguments] [description: row arguments management methods]
+
    /// @name get values in row packed in arguments object
-   /// reserve memory to store more rows in table
-   ///@{
    void row_get_arguments( uint64_t uRow, gd::argument::arguments& argumentsValue ) const;
    gd::argument::arguments row_get_arguments( uint64_t uRow ) const { gd::argument::arguments a_; row_get_arguments( uRow, a_ ); return a_; }
    gd::argument::arguments row_get_arguments( uint64_t uRow, const unsigned* puIndex, unsigned uSize ) const;
    gd::argument::arguments row_get_arguments( uint64_t uRow, const std::vector<unsigned>& vectorIndex ) const { return row_get_arguments( uRow, vectorIndex.data(), (unsigned)vectorIndex.size() ); }
-   ///@}
 
    /// create arguments object for row where extra values are stored
    gd::argument::shared::arguments* row_create_arguments( uint64_t uRow );
@@ -695,6 +694,8 @@ public:
 
    /// delete arguments object for selected row
    void row_arguments_delete( uint64_t uRow );
+   /// Count number of rows with arguments object
+   uint64_t row_arguments_count() const noexcept;
 
    bool row_for_each( std::function<bool( std::vector<gd::variant_view>&, uint64_t )> callback_ );
    bool row_for_each( std::function<bool( const std::vector<gd::variant_view>&, uint64_t )> callback_ ) const;

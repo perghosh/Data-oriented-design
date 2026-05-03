@@ -135,6 +135,7 @@ public:
    Sql() {}
    Sql( CRENDERSql* psql ) { m_psql = std::make_unique<CRENDERSql>( *psql ); } // creates a copy of internal sql object (already initialized)
    Sql( CAPIContext* papicontext ) { m_psql = std::make_unique<CRENDERSql>( papicontext ); m_psql->Initialize(); }
+   Sql( CApplication* papplication, CDocument* pdocument );
 
 // @API [tag: operation]   
    std::string GetValue( const std::string_view& stringName ) const;
@@ -153,6 +154,7 @@ public:
 
 // ## attributes ----------------------------------------------------------------
    std::unique_ptr<CRENDERSql> m_psql;
+   std::unique_ptr<CAPIContext> m_papicontext;
 
 private:
    void Initialize() { m_psql->Initialize(); }
@@ -252,6 +254,8 @@ class Document
 public:
    Document() : m_pdocument{ nullptr } { }
    Document( void* pdocument ) : m_pdocument{ (CDocument*)pdocument } { }
+   Document( CDocument* pdocument, CAPIContext* papicontext ) { assert( pdocument != nullptr ); assert( papicontext != nullptr ); 
+      m_pdocument = pdocument; m_papicontext = papicontext; m_pdatabase = papicontext->GetDatabase(); }
    Document( void* pdocument, gd::database::database_i* pdatabase ) { m_pdocument = (CDocument*)pdocument; m_pdatabase = pdatabase; }
    // copy
    Document( const Document& o ) { common_construct( o ); }
@@ -384,8 +388,11 @@ public:
 
 
    Sql CreateSql(); ///< Create SQL object for current request, this can be used to build SQL queries
+
    std::variant<int64_t, std::string, double, bool, sol::lua_nil_t>
       GetClientValue( std::string_view stringName, std::optional<std::string> type_ = std::nullopt ); ///< Get value from SQL object for current request
+   void AddClientValue( std::variant<std::string_view, sol::table> column_, std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> value_ ); ///< Add value to SQL object for current request
+   void RemoveClientValue( std::variant<std::string_view, sol::table> value_id_ ); ///< Remove value for selected id
 
    void SetStatus( std::variant<int64_t, std::string_view> status_ ); ///< Set status for current request, based on status the server know how to proceede with request,
 
@@ -396,7 +403,7 @@ public:
 // ## attributes ----------------------------------------------------------------
 public:
    CAPIContext* m_pcontext = nullptr; ///< pointer to API context, used to access request and response objects
-   CRENDERSql* m_psql = nullptr; ///< pointer to SQL object for current request, used to build SQL queries
+   CRENDERSql* m_psql = nullptr; ///< client values are stored here, pointer to SQL object for current request, used to build SQL queries
    std::unique_ptr<CRENDERSql> m_psqlOwned; ///< If the SQL object is owned by this request, it will be stored here
 };
 

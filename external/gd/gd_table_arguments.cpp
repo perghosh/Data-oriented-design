@@ -2687,7 +2687,7 @@ gd::argument::shared::arguments* table::row_find_arguments_pointer( uint64_t uRo
    return nullptr;
 }
 
-/** ---------------------------------------------------------------------------
+/** ------------------------------------------------------------------------- row_arguments_delete  
  * @brief delete row arguments object for row
  * @param uRow index to row where arguments object is deleted
 */
@@ -2699,6 +2699,20 @@ void table::row_arguments_delete( uint64_t uRow )
       pargumentsRow->~arguments();                                            // call destructor
       *(intptr_t*)pargumentsRow = 0;                                          // clear pointer at position in row meta data
    }
+}
+
+/** ------------------------------------------------------------------------- row_arguments_count
+ * @brief Count number of rows in table that have arguments object attached to them
+ * @return number of rows in table that have arguments object attached to them
+ */
+uint64_t table::row_arguments_count() const noexcept
+{
+   uint64_t uCount = 0;
+   for( uint64_t uRow = 0; uRow < m_uRowCount; uRow++ )
+   {
+      if( row_is_arguments( uRow ) == true ) { uCount++; }
+   }
+   return uCount;
 }
 
 /** ---------------------------------------------------------------------------
@@ -4106,8 +4120,8 @@ void table::erase( uint64_t uFrom, uint64_t uCount )
       {
          for( uint64_t u = uFrom; u < (uFrom + uCount); u++ )
          {
-            gd::argument::shared::arguments* pargumentsRow = (gd::argument::shared::arguments*)row_get_arguments_meta(u);
-            if( pargumentsRow != nullptr ) pargumentsRow->release(); // release reference to arguments object
+            gd::argument::shared::arguments** ppargumentsRow = (gd::argument::shared::arguments**)row_get_arguments_meta(u);
+            if( *ppargumentsRow != nullptr ) (*ppargumentsRow)->buffer_delete(); // release reference to arguments object
          }
       }
 

@@ -1690,7 +1690,8 @@ public:
 
 // ## Buffer methods
 public:
-   void buffer_delete() { if( m_pbuffer != &m_buffer_s ) { m_pbuffer->release(); m_pbuffer = &m_buffer_s; }  }
+   void buffer_delete() { assert( m_pbuffer != nullptr );  
+      if( m_pbuffer != &m_buffer_s ) { m_pbuffer->release(); m_pbuffer = &m_buffer_s; }  }
    pointer buffer_data() { return m_pbuffer->data(); }
    const_pointer buffer_data() const { return m_pbuffer->data(); }
    const_pointer buffer_data_end() const { return m_pbuffer->data() + m_pbuffer->size(); }
