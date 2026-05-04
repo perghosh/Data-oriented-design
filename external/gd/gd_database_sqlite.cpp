@@ -113,7 +113,7 @@ std::pair<bool, std::string> database::execute( const std::string_view& stringQu
                case SQLITE_INTEGER:
                {
                   sqlite3_int64 iValue = ::sqlite3_column_int64(pStatement, i);
-                  arguments.append(pbszColumnName, iValue);
+                  arguments.append(pbszColumnName, (int64_t)iValue);
                   break;
                }
                case SQLITE_FLOAT:
