@@ -29,11 +29,13 @@ borrow->script( "print('hello')" );
 #include <atomic>
 #include <condition_variable>
 #include <functional>
+#include <list>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <string_view>
 #include <thread>
+#include <type_traits>
 #include <utility>
 #include <vector>
 

@@ -1506,7 +1506,7 @@ void CRENDERSql::Destroy_s()
 
 
 
-static std::pair<bool, std::string> EXPRESSION_GetArgument_s( const std::vector<gd::expression::value>& vectorArgument, gd::expression::value* pvalueReturn )
+std::pair<bool, std::string> EXPRESSION_GetArgument_s( const std::vector<gd::expression::value>& vectorArgument, gd::expression::value* pvalueReturn )
 {                                                                                                  assert(vectorArgument.size() > 1);
    auto object_ = vectorArgument[1];                                                               assert(object_.is_pointer() == true);
    gd::argument::shared::arguments* parguments_ = (gd::argument::shared::arguments*)object_.get_pointer();
@@ -1525,7 +1525,7 @@ static std::pair<bool, std::string> EXPRESSION_GetArgument_s( const std::vector<
    return { false, "Invalid argument name type, expected string." };
 }
 
-static std::pair<bool, std::string> EXPRESSION_Exists_s( const std::vector<gd::expression::value>& vectorArgument, gd::expression::value* pvalueReturn )
+std::pair<bool, std::string> EXPRESSION_Exists_s( const std::vector<gd::expression::value>& vectorArgument, gd::expression::value* pvalueReturn )
 {                                                                                                  assert(vectorArgument.size() > 1);
    auto object_ = vectorArgument[1];                                                               assert(object_.is_pointer() == true);
    gd::argument::shared::arguments* parguments_ = (gd::argument::shared::arguments*)object_.get_pointer();

@@ -95,14 +95,15 @@ CApplication::~CApplication()
  */
 std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszArgument[], std::function<bool(const std::string_view&, const gd::variant_view&)> process_)
 {
+   const unsigned uMaxPath = 260;
    std::string stringApplicationFolder;   // folder where application is stored
    std::string stringRootFolder;          // root folder for site
-   char pbszPathBuffer[MAX_PATH];         // buffer to store path
+   char pbszPathBuffer[uMaxPath];         // buffer to store path
 
 
    // ## Store application folder
 #if defined(_MSC_VER)
-   ::GetModuleFileNameA( nullptr, pbszPathBuffer, MAX_PATH );
+   ::GetModuleFileNameA( nullptr, pbszPathBuffer, uMaxPath );
    stringApplicationFolder = pbszPathBuffer;
 #else
    stringApplicationFolder = ppbszArgument[0];
