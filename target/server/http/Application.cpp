@@ -386,20 +386,20 @@ std::pair<bool, std::string> CApplication::Configure(const gd::cli::options& opt
          if( statement_file_.is_string() == true ) { arguments_.append_argument( "statement-file", statement_file_.as_string_view() ); }
 
          result_ = m_pdocumentActive->DATABASE_Initialize();                  // initialize database connection, this is needed to be able to select metadata for tables and columns
-         if( result_.first == false ) return result_;
+         if( result_.first == false ) return { false, std::string( "Unable to initialize database - " ) + result_.second };
          result_ = m_pdocumentActive->DATABASE_SelectMetadata( arguments_ );  // select metadata for tables and columns
-         if( result_.first == false ) return result_;
+         if( result_.first == false ) return { false, std::string( "Unable to generate metadata for database - " ) + result_.second };
          result_ = m_pdocumentActive->DATABASE_Prepare( arguments_ );
-         if( result_.first == false ) return result_;
+         if( result_.first == false ) return { false, std::string( "Unable to prepare database statements - " ) + result_.second };
          result_ = m_pdocumentActive->DATABASE_LoadStatements( arguments_ );  // load sql statements from file if any, this is in some way metadata related
-         if( result_.first == false ) return result_;
+         if( result_.first == false ) return { false, std::string( "Unable to load database statements - " ) + result_.second };
       }
    }
 
    if( stringCommand == "http" )
    {
       auto result_ = CLI::Http_g( &optionsActive, m_pdocumentActive );
-      if( result_.first == false ) { return result_; }
+      if( result_.first == false ) { return { false, std::string( "Unable to execute HTTP command - " ) + result_.second }; }
    }
 
    return { true, "" };
