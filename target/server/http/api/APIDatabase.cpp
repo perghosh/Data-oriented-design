@@ -461,61 +461,6 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
       return { true, "" }; 
    }
 
-   /*
-   if( stringQuery.empty() == false ) 
-   {  
-      if( stringQuery[0u] == '#' ) { stringQuery.erase( 0, 1 ); }             // remove leading #
-
-      // ## Process code if any
-      META::CQueries* pqueries = pdocument->QUERIES_Get();
-
-      auto vectorCode = pqueries->GetArgumentsValues( stringQuery, "code" );  // get code for insert
-      if( vectorCode.empty() == false )
-      {
-         if( GetContext()->GetDatabase() == nullptr ) { GetContext()->SetDatabase(pdatabase); }
-
-         auto result_ = SCRIPT::LuaRequestExecute( vectorCode, GetContext(), nullptr, [&](sol::state* pstateLua, CAPIContext* pcontext_) -> std::pair<bool, std::string> {
-            if( Exists( "values" ) == true )
-            {
-               auto* prequest_ = (*pstateLua)["request"].get<LUA::Request*>();
-               auto* psql_ = prequest_->GetRenderSql();
-               std::array<std::byte, 128> buffer_;
-               gd::argument::arguments argumentsValues(buffer_);
-               std::string stringValues = GetArgument("values").as_string();
-               auto result_ = psql_->AddColumnValues( stringValues, gd::types::tag_json{} );
-               if( result_.first == false ) { return { false, "failed to add values for code execution: " + result_.second }; }
-            }
-            return { true, "" };
-         });
-
-         if( result_.first == false ) { return result_; }
-      }
-
-      if( GetContext()->IsStatusAbort() == true ) { return { true, "abort" }; } // check for aborting ?
-
-      // ## if xml argument is prepared then do bulk insert with xml data
-
-      if( Exists( "xml" ) )
-      {
-         std::array<std::byte, 128> buffer_;
-         gd::argument::arguments argumentsOptions(buffer_);
-         argumentsOptions["query"] = stringQuery;
-
-         std::string stringTable = GetQSArguments()["table"].as_string(); // get table from query string
-         if( stringTable.empty() == false ) { argumentsOptions["table"] = stringTable; }
-
-         argumentsOptions["form"] = "attribute";
-         gd::argument::arguments argumentsReturn;
-         argumentsReturn.reserve( 128 );
-         pugi::xml_document* pxmldocument = GetQSArguments()["xml"].get_pointer<pugi::xml_document>(); // get pointer to xml pointer that is prepared
-         XML_BulkInsert( argumentsOptions, pxmldocument, pdocument, &argumentsReturn );
-         Objects().Add( argumentsReturn );
-      }
-
-      return { true, "" }; 
-   }
-   */
-
 
    // ## Prepare SQL statement ................................................
    std::string stringExecute;
@@ -806,43 +751,11 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql, g
    return { true, "" };
 }
 
-/*
-std::pair<bool, std::string> CAPIDatabase::Lua_Execute( uint64_t uStatementRow, CDocument* pdocument )
-{
-   // ## Process code if any
-   META::CQueries* pqueries = pdocument->QUERIES_Get();
-
-   auto vectorCode = pqueries->GetArgumentsValues( uStatementRow, "code" );  // get code for insert
-   if( vectorCode.empty() == true ) return { true, "" };
-
-   // ## Execute lua code to prepare sql statement, this allows to use code to prepare complex sql statements that can not be prepared with the current sql builder
-
-   auto result_ = SCRIPT::LuaRequestExecute( vectorCode, GetContext(), [&](sol::state* pstateLua, CAPIContext* pcontext_) -> std::pair<bool, std::string> {
-      if( Exists( "values" ) == true )
-      {
-         auto* prequest_ = (*pstateLua)["request"].get<LUA::Request*>();
-         auto* psql_ = prequest_->GetRenderSql();
-         std::array<std::byte, 128> buffer_;
-         gd::argument::arguments argumentsValues(buffer_);
-         std::string stringValues = GetArgument("values").as_string();
-         auto result_ = psql_->AddValues( stringValues, gd::types::tag_json{} );
-         if( result_.first == false ) { return { false, "failed to add values for code execution: " + result_.second }; }
-      }
-      return { true, "" };
-   });
-
-   if( result_.first == false ) { return result_; }
-
-   if( GetContext()->IsStatusAbort() == true ) { return { true, "abort" }; } // check for aborting ?
-
-   return { true, "" };
-}
-*/
-
 
 std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::arguments& argumentsOptions, pugi::xml_document* pxmldocument, CDocument* pdocument, gd::argument::arguments* pargumentsReturn )
 {
    using namespace gd::sql;
+
    std::array<std::byte, 256> buffer_; // buffer to avoid allocate memory
    gd::argument::arguments argumentsFind( buffer_ );
    uint64_t uInsertCount = 0;
@@ -865,16 +778,36 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
    auto* pdatabase = pdocument->GetDatabase();
    if( pdatabase == nullptr ) return { false, "no database connection in document: " + std::string( pdocument->GetName() ) };
 
-
    if( stringContainer.empty() == true ) { stringContainer = "//values"; }
+
+   std::string stringTable = argumentsOptions["table"].as_string(); // table is required and should be string  
+   if( stringTable.empty() == true ) { return { false, "table name is required for attribute form" }; }
+
+   auto append_arguments_ = [&]( const auto* pargumentsGlobal, auto& queryInsert )
+   {
+      std::string_view name_;
+      std::string_view table_ = stringTable;
+      for( auto [key_, value_] : pargumentsGlobal->named() )
+      {
+         auto index_ = key_.find('.');
+         if( index_ != std::string::npos ) { table_ = key_.substr( 0, index_ ); name_ = key_.substr( index_ + 1 ); }
+         else { name_ = key_; }
+
+         argumentsFind.clear();
+         argumentsFind.append( { {std::string_view("table"), table_}, {std::string_view("column"), name_} }, gd::types::tag_view{});
+         int64_t iRow = pdatabase_->Column_FindRow( argumentsFind ); 
+         if( iRow != -1 ) 
+         { 
+            auto uType = pdatabase_->Column_GetType( iRow );
+            queryInsert << field_g( table_, name_, buffer_ ).value( value_ ).type( uType );
+         }
+      }
+   };
 
 
    if( stringForm == "attribute" )
    {
       // ## xml form is like <values column1="value1" column2="value2" />
-
-      std::string stringTable = argumentsOptions["table"].as_string(); // table is required and should be string  
-      if( stringTable.empty() == true ) { return { false, "table name is required for attribute form" }; }
 
       // ### Loop elements in container
       pugi::xpath_node_set xpathnodesetValues = pxmldocument->select_nodes(stringContainer.c_str());
@@ -902,23 +835,7 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
          const gd::argument::arguments* pargumentsGlobal = GetContext()->GetGlobalArguments();
          if( pargumentsGlobal != nullptr && pargumentsGlobal->empty() == false )
          {
-            std::string_view name_;
-            std::string_view table_ = stringTable;
-            for( auto [key_, value_] : pargumentsGlobal->named() )
-            {
-               auto index_ = key_.find('.');
-               if( index_ != std::string::npos ) { table_ = key_.substr( 0, index_ ); name_ = key_.substr( index_ + 1 ); }
-               else { name_ = key_; }
-
-               argumentsFind.clear();
-               argumentsFind.append( { {std::string_view("table"), table_}, {std::string_view("column"), name_} }, gd::types::tag_view{});
-               int64_t iRow = pdatabase_->Column_FindRow( argumentsFind ); 
-               if( iRow != -1 ) 
-               { 
-                  auto uType = pdatabase_->Column_GetType( iRow );
-                  queryInsert << field_g( table_, name_, buffer_ ).value( value_ ).type( uType );
-               }
-            }
+            append_arguments_( pargumentsGlobal, queryInsert );
          }
 
          std::string stringInsertSql;
@@ -943,7 +860,6 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
       // ## xml form is like <values><value element="name" value="value" /></values> 
       std::string stringElement = argumentsOptions["element"].as_string();   // element name for columns
       std::string stringValue = argumentsOptions["value"].as_string();       // value attribute name
-      std::string stringTable = argumentsOptions["table"].as_string();       // table name for insert
 
       if( stringTable.empty() == true ) { return { false, "table name is required for element form" }; }
       if( stringElement.empty() == true ) { stringElement = "element"; }     // default element attribute
@@ -973,6 +889,12 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
 
             auto uType = pdatabase_->Column_GetType( iRow );
             queryInsert << field_g( stringName, buffer_ ).value( stringFieldValue ).type( uType );
+         }
+
+         const gd::argument::arguments* pargumentsGlobal = GetContext()->GetGlobalArguments();
+         if( pargumentsGlobal != nullptr && pargumentsGlobal->empty() == false )
+         {
+            append_arguments_( pargumentsGlobal, queryInsert );
          }
 
          std::string stringInsertSql = queryInsert.sql_get( eSqlInsert );
