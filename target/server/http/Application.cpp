@@ -402,6 +402,10 @@ std::pair< bool, std::string > CApplication::Execute( gd::cli::options& optionsC
 
       SITE_Add( stringIp, uPort, stringSite );
    }
+   else if( stringCommandName == "version" )
+   {
+      std::cout << "Version: " << "Version: 0.0.9" << std::endl;
+   }
 
    return std::pair<bool, std::string>( true, "" );
 }
@@ -545,6 +549,12 @@ void CApplication::PrepareOption_s(gd::cli::options& optionsApplication)
       optionsCommand.parent(&optionsApplication);
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
+
+   {  // ## `version` command, shows version information
+      gd::cli::options optionsCommand( 0, "version", "Shows version information" );
+      optionsApplication.sub_add( std::move( optionsCommand ) );
+   }
+
 }
 
 std::pair<bool, std::string> CApplication::Prepare_s( CApplication* papplication_, gd::cli::options& optionsApplication )

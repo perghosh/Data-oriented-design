@@ -435,14 +435,15 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
    
    if( GetContext()->GetDatabase() == nullptr ) { GetContext()->SetDatabase(pdatabase); }
 
-   std::string stringQuery = GetNextArgument( "query" ).as_string();         // get query to execute
-   if( stringQuery.empty() == false )
+   std::string stringQuery = GetNextArgument( "query" ).as_string();          // get query to execute
+   if( stringQuery.empty() == false )                                         // if query then process it
    {
       if( stringQuery[0u] == '#' ) { stringQuery.erase(0, 1); }
       auto result_ = PrepareStatement( stringQuery, stringInsert );                                if( result_.first == false ) { return result_; }
    }
 
-   if( Exists( "xml" ) )
+   // ## check for statement logic and xml data .............................
+   if( stringQuery.empty() == false && Exists( "xml" ) )
    {
       std::array<std::byte, 128> buffer_;
       gd::argument::arguments argumentsOptions(buffer_);
@@ -461,7 +462,6 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
       return { true, "" }; 
    }
 
-
    // ## Prepare SQL statement ................................................
    std::string stringExecute;
    auto result_ = Sql_Prepare(stringExecute);
@@ -479,10 +479,10 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
    // ## if not the last command in endpoint sequence then add to arguments as
    if( IsLastCommand() == false ) { SetGlobal( "key", variantInsertKey.as_variant_view() ); } // "key" is default name for geneated key values if not specified. maybe this need to be changed
 
-   if( argumentsKey.empty() == false )
+   if( argumentsKey.empty() == false )                                        // do we have generated key value to return
    {
       gd::argument::arguments* parguments_ = new gd::argument::arguments( argumentsKey );
-      Objects().Add( parguments_ );
+      Objects().Add( parguments_ );                                           // add to response data
    }
 
    return { true, "" };
