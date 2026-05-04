@@ -73,6 +73,7 @@ public:
    void PROPERTY_Set( const std::string_view& stringName, const gd::variant_view& variantviewValue );
    gd::variant_view PROPERTY_Get( size_t uIndex ) const { return gd::variant_view( m_vectorProperty.at(uIndex).second ); }
    gd::variant_view PROPERTY_Get( const std::string_view& stringName ) const;
+   gd::variant_view PROPERTY_Get( const gd::argument::arguments& arguments_, const std::string_view& stringName ) const;
    gd::variant_view PROPERTY_Get( const std::string_view& stringName, gd::variant_view variantviewDefault ) const;
    const std::vector<std::pair<std::string_view, gd::variant>> PROPERTY_GetAll() const;
    std::string PROPERTY_GetName( size_t uIndex ) const { return m_vectorProperty.at(uIndex).first; }
@@ -148,7 +149,7 @@ inline void CApplication::PROPERTY_Set( const std::string_view& stringName, cons
 }
 
 
-/** ---------------------------------------------------------------------------
+/** ------------------------------------------------------------------------- PROPERTY_Get
  * @brief Get property value
  * @param stringName name for property value to get
  * @return value for property if found
@@ -158,6 +159,17 @@ inline gd::variant_view CApplication::PROPERTY_Get( const std::string_view& stri
       if( it->first == stringName ) return gd::variant_view( it->second );
    }
    return gd::variant_view();
+}
+
+/** ------------------------------------------------------------------------- PROPERTY_Get
+ * @brief Get property value from arguments or if not found then get from properties
+ * @param arguments_ arguments to check for property value
+ * @param stringName name for property value to get
+ * @return value for property if found in arguments or properties, empty if not found
+*/
+inline gd::variant_view CApplication::PROPERTY_Get( const gd::argument::arguments& arguments_, const std::string_view& stringName ) const {
+   if( arguments_.exists( stringName ) ) return arguments_[stringName].as_variant_view();
+   return PROPERTY_Get( stringName, gd::variant_view() );
 }
 
 /** ---------------------------------------------------------------------------

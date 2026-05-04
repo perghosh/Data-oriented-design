@@ -137,6 +137,21 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
          auto poptionsActive = optionsApplication.sub_find_active();
          if( poptionsActive != nullptr )                                        
          {
+            // ## check for configuration for all commands ................... 
+            if( poptionsActive->exists( "configuration" ) == true )
+            {
+               auto stringConfigurationFile = ( *poptionsActive )["configuration"].as_string();
+               if( stringConfigurationFile.empty() == false && std::filesystem::exists( stringConfigurationFile ) == true )
+               {
+                  auto result_ = CONFIGURATION_Read( stringConfigurationFile );      // read configuration from configuration file
+                  if( result_.first == false ) { return result_; }
+               }
+               else
+               {
+                  return std::pair<bool, std::string>( false, "Configuration file '" + stringConfigurationFile + "' does not exist!" );
+               }
+            }
+
             stringApplicationCommand = poptionsActive->name();                                     assert( stringApplicationCommand.empty() == false && "Developer error because command should not be empty if options is active" );
             result_ = Configure( *poptionsActive );                                                if( result_.first == false ) { return result_; }
 
@@ -321,20 +336,23 @@ std::pair<bool, std::string> CApplication::Exit()
  */
 std::pair<bool, std::string> CApplication::Configure(const gd::cli::options& optionsActive)
 {
+   const auto& arguments_ = optionsActive.get_arguments();
    std::string stringCommand = optionsActive.name();                                               assert( stringCommand.empty() == false );
 
    // ## set global settings from command line
 
-   if( optionsActive.exists( "script-lua-pool" ) == true )
+   auto script_ = PROPERTY_Get( arguments_, "script-lua-pool" );
+   if( script_.is_string() == true )
    {
-      auto result_ = LUA_Initialize( optionsActive["script-lua-pool"].as_string_view() );
+      auto result_ = LUA_Initialize( script_.as_string_view() );
       if( result_.first == false ) return result_;
    }
 
-   if( optionsActive.exists( "database-open" ) == true )           
+   auto database_open_ = PROPERTY_Get( arguments_, "database-open" );
+   if( database_open_.is_string() == true )           
    {
       gd::argument::arguments argumentsOpen;
-      std::string stringOpen = optionsActive["database-open"].as_string();
+      std::string stringOpen = database_open_.as_string();
       if( stringOpen.find( ',' ) != std::string::npos )
       {
          auto vector_ = gd::utf8::split( stringOpen, ',' );
@@ -351,14 +369,20 @@ std::pair<bool, std::string> CApplication::Configure(const gd::cli::options& opt
       if( result_.first == false ) return result_;
       m_pdocumentActive->SetDatabase(pdatabaseOpen);
       if( pdatabaseOpen != nullptr ) pdatabaseOpen->release();
-                                                                                                  LOG_INFORMATION_RAW( "Open database: " & stringOpen );
-      if( optionsActive.get_arguments().exists_any({"database-meta-tables", "database-meta-columns"}) == true )
+                                                                                                   LOG_INFORMATION_RAW( "Open database: " & stringOpen & "\n");
+      auto database_meta_tables_ = PROPERTY_Get( arguments_, "database-meta-tables" );
+      auto database_meta_columns_ = PROPERTY_Get( arguments_, "database-meta-columns" );
+      if( database_meta_tables_.is_true() == true || database_meta_columns_.is_true() == true )
       {
          gd::argument::arguments arguments_;
-         optionsActive.iif( "database-meta-tables", [&arguments_]( auto& v_ ) { arguments_.append_argument( "tables", v_ ); });
-         optionsActive.iif( "database-meta-columns", [&arguments_]( auto& v_ ) { arguments_.append_argument( "columns", v_ ); });
-         optionsActive.iif( "database-dialect", [&arguments_]( auto& v_ ) { arguments_.append_argument( "dialect", v_ ); });
-         optionsActive.iif( "database-statement-file", [&arguments_]( auto& v_ ) { arguments_.append_argument( "statement-file", v_ ); });
+         if( database_meta_tables_.is_true() == true ) { arguments_.append_argument( "tables", database_meta_tables_ ); }
+         if( database_meta_columns_.is_true() == true ) { arguments_.append_argument( "columns", database_meta_columns_ ); }
+
+         auto dialect_ = PROPERTY_Get( arguments_, "database-dialect" );
+         if( dialect_.is_string() == true ) { arguments_.append_argument( "dialect", dialect_.as_string_view() ); }
+
+         auto statement_file_ = PROPERTY_Get( arguments_, "database-statement-file" );
+         if( statement_file_.is_string() == true ) { arguments_.append_argument( "statement-file", statement_file_.as_string_view() ); }
 
          result_ = m_pdocumentActive->DATABASE_Initialize();                  // initialize database connection, this is needed to be able to select metadata for tables and columns
          if( result_.first == false ) return result_;
@@ -745,6 +769,7 @@ std::pair<bool, std::string> CApplication::CONFIGURATION_Read( const std::string
             if( std::string_view( xmlnode.name() ) == "property" )
             {
                const char* pbszKey = xmlnode.attribute( "key" ).value();
+               if( pbszKey == nullptr || *pbszKey == '\0' ) { continue; }
 
                // ## read value from attribute value or cdata
                std::string stringValue;
