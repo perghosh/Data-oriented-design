@@ -192,6 +192,8 @@ public:
    std::pair<bool, std::string> PrintError(const std::string_view& stringMessage, const gd::argument::arguments& argumentsFormat);
    ///
    void Print( std::string_view stringColor, gd::types::tag_background );
+   void Print( std::string_view stringMessage, const gd::argument::arguments& argumentsFormat );
+   void Print( std::string_view stringMessage ) { PrintMessage( stringMessage, gd::argument::arguments() ); }
 
 
 

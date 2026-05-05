@@ -381,6 +381,7 @@ std::pair<bool, std::string> CApplication::Configure(const gd::cli::options& opt
 
          auto dialect_ = PROPERTY_Get( arguments_, "database-dialect" );
          if( dialect_.is_string() == true ) { arguments_.append_argument( "dialect", dialect_.as_string_view() ); }
+         else { Print( "WARNING: Database dialect is not set" ); }
 
          auto statement_file_ = PROPERTY_Get( arguments_, "database-statement-file" );
          if( statement_file_.is_string() == true ) { arguments_.append_argument( "statement-file", statement_file_.as_string_view() ); }
@@ -1202,6 +1203,26 @@ void CApplication::Print( std::string_view stringColor,  gd::types::tag_backgrou
       // ## Reset all attributes and clear the screen to return to the default state
       std::cout << "\033[0m";
    }
+}
+
+void CApplication::Print( std::string_view stringMessage, const gd::argument::arguments& argumentsFormat )
+{
+   if( argumentsFormat.empty() == false )
+   {
+      // ## Handle formatting options, for example, severity or color
+      if( argumentsFormat.exists( "color" ) == true )
+      {
+         std::string_view stringColor = argumentsFormat["color"].as_string_view();
+         Print( stringColor, gd::types::tag_background{} );
+      }
+   }
+   else 
+   {
+      // ## Reset color if no formatting is provided
+      Print( std::string_view(), gd::types::tag_background{} );
+   }
+
+   std::cout << "[application] " << stringMessage << std::endl << std::flush;
 }
 
 
