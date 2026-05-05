@@ -142,7 +142,10 @@ std::pair<bool, std::string> CQueries::GetQuery( std::string_view stringName, st
 std::vector< gd::variant_view > CQueries::GetArgumentsValues( uint64_t uRow, std::string_view stringKey ) const
 {
    const gd::argument::shared::arguments* parguments = GetQueryArguments( uRow );
-   if( parguments == nullptr ) return {};
+   if( parguments == nullptr || parguments->empty() == true ) return {};
+#ifndef NDEBUG
+   [[maybe_unused]] auto uCount_d = parguments->count();
+#endif // NDEBUG   
 
    return parguments->get_argument_all( stringKey, gd::types::tag_view{} );
 }
