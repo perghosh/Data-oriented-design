@@ -380,7 +380,7 @@ std::pair<bool, std::string> CApplication::Configure(const gd::cli::options& opt
          if( database_meta_columns_.is_true() == true ) { arguments_.append_argument( "columns", database_meta_columns_ ); }
 
          auto dialect_ = PROPERTY_Get( arguments_, "database-dialect" );
-         if( dialect_.is_string() == true ) { arguments_.append_argument( "dialect", dialect_.as_string_view() ); }
+         if( dialect_.is_string() == true && dialect_.as_string_view().empty() == false ) { arguments_.append_argument( "dialect", dialect_.as_string_view() ); }
          else { Print( "WARNING: Database dialect is not set" ); }
 
          auto statement_file_ = PROPERTY_Get( arguments_, "database-statement-file" );
@@ -1167,6 +1167,23 @@ std::pair<bool, std::string> CApplication::PrintMessage(const std::string_view& 
    // Example: std::string_view severity = argumentsFormat["severity"].as_string_view();
 
    std::unique_lock<std::mutex> lock_( m_mutex );
+
+   if( argumentsFormat.empty() == false )
+   {
+      // ## Handle formatting options, for example, severity or color
+      if( argumentsFormat.exists( "color" ) == true )
+      {
+         std::string_view stringColor = argumentsFormat["color"].as_string_view();
+         Print( stringColor, gd::types::tag_background{} );
+      }
+   }
+   else 
+   {
+      // ## Reset color if no formatting is provided
+      Print( std::string_view(), gd::types::tag_background{} );
+   }
+
+   std::cout << "[application] " << stringMessage << std::endl << std::flush;
 
    return {true, ""};
 }
