@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  cleaner:
+    image: cleaner-app:v1
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cleaner-app
+    ports:
+      - "8091:80"
+    volumes:
+      - /c/dev/cleaner/output:/app/output
+      - /c/dev/cleaner/work:/data/work
+    restart: unless-stopped
