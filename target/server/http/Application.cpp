@@ -465,12 +465,12 @@ std::pair<bool, std::string> CApplication::SERVER_Start(unsigned uIndex)
    unsigned uThreadCount = 4;
    if( PROPERTY_Get("system-threadcount").empty() == false ) uThreadCount = papplication_g->PROPERTY_Get("system-threadcount").as_uint();
 
-#ifndef NDEBUG
-   LOG_INFORMATION_RAW("== Starting server in DEBUG mode ==");
+// #ifndef NDEBUG
+   LOG_INFORMATION_RAW("== Starting server ==");
    auto ptable_d = PROPERTY_ToTable();
-   auto stringTable = gd::table::to_string(*ptable_d, gd::table::tag_io_cli{});
+   auto stringTable = gd::table::to_string(*ptable_d, {{"max_column_width", 80 }}, gd::table::tag_io_cli{}, gd::table::tag_text{});
    LOG_INFORMATION_RAW( stringTable );
-#endif
+// #endif
 
    boost::asio::io_context iocontext_( uThreadCount );
 
