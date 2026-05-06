@@ -72,6 +72,7 @@
 #include <vector>
 #include <type_traits>
 
+#include "gd_types.h"
 #include "gd_sql_types.h"
 #include "gd_arguments.h"
 #include "gd_variant.h"
@@ -246,8 +247,10 @@ public:
       field& operator=( const field& o ) { common_construct( o ); return *this; }
       field& operator=( field&& o ) noexcept { common_construct( o ); return *this; }
 
-      void common_construct(const field& o) { m_uTableKey = o.m_uTableKey; m_uUseAndType = o.m_uUseAndType; m_uFlags = o.m_uFlags; m_argumentsField = o.m_argumentsField; }
-      void common_construct( field&& o ) noexcept { m_uTableKey = o.m_uTableKey; m_uUseAndType = o.m_uUseAndType; m_uFlags = o.m_uFlags; m_argumentsField = std::move( o.m_argumentsField ); }
+      field& operator=( query* pquery ) { m_pquery = pquery; return *this; }
+
+      void common_construct(const field& o) { m_pquery = o.m_pquery; m_uTableKey = o.m_uTableKey; m_uUseAndType = o.m_uUseAndType; m_uFlags = o.m_uFlags; m_argumentsField = o.m_argumentsField; }
+      void common_construct( field&& o ) noexcept { m_pquery = o.m_pquery; m_uTableKey = o.m_uTableKey; m_uUseAndType = o.m_uUseAndType; m_uFlags = o.m_uFlags; m_argumentsField = std::move( o.m_argumentsField ); }
 
       gd::argument::arguments::argument operator[](const std::string_view& stringName) const noexcept { return m_argumentsField[stringName]; }
 
@@ -269,6 +272,10 @@ public:
       std::string_view join() const { return m_argumentsField["join"].as_string_view(); }
       std::string_view where() const { return m_argumentsField["where"].as_string_view(); }
       gd::variant_view order() const { return m_argumentsField["order"].as_variant_view(); }
+
+      std::string_view table_name() const { return m_pquery->table_get( m_uTableKey )->name(); }
+
+      void set_type( uint32_t uType ) { m_argumentsField.set( "type", uType ); }
 
       gd::argument::arguments& get_arguments() { return m_argumentsField; }
       const gd::argument::arguments& get_arguments() const { return m_argumentsField; }
@@ -297,9 +304,9 @@ public:
 
       // attributes
       public:
-         query* m_pQuery = nullptr;  ///< pointer to query that owns condition
+         query* m_pquery = nullptr;  ///< pointer to query that owns condition
          unsigned m_uTableKey = 0;   ///< table that owns field
-         unsigned m_uUseAndType = 0; ///< Field has specific rules (format or where to place it) flags and use type is used
+         unsigned m_uUseAndType = 0; ///< One single constant for type/use, Field has specific rules (format or where to place it) flags and use type is used
          unsigned m_uFlags = 0;
                                      ///< default (m_uUseAndType = 0) and field is only used in select part
          gd::argument::arguments m_argumentsField; ///< all field properties
@@ -320,9 +327,12 @@ public:
       condition& operator=( const condition& o ) { common_construct( o ); return *this; }
       condition& operator=( condition&& o ) noexcept { common_construct( o ); return *this; }
 
+      condition& operator=( query* pquery ) { m_pquery = pquery; return *this; }
+
+
       operator gd::argument::arguments() const { return m_argumentsCondition; }
-      void common_construct(const condition& o) { m_pQuery = o.m_pQuery; m_uTableKey = o.m_uTableKey; m_argumentsCondition = o.m_argumentsCondition; }
-      void common_construct(condition&& o) noexcept { m_pQuery = o.m_pQuery; m_uTableKey = o.m_uTableKey; m_argumentsCondition = std::move(o.m_argumentsCondition); o.m_pQuery = nullptr; o.m_uTableKey = 0; }
+      void common_construct(const condition& o) { m_pquery = o.m_pquery; m_uTableKey = o.m_uTableKey; m_argumentsCondition = o.m_argumentsCondition; }
+      void common_construct(condition&& o) noexcept { m_pquery = o.m_pquery; m_uTableKey = o.m_uTableKey; m_argumentsCondition = std::move(o.m_argumentsCondition); o.m_pquery = nullptr; o.m_uTableKey = 0; }
 
       /// return value for conditions, this is placed in arguments named "value"
       gd::variant_view value() const { return m_argumentsCondition["value"].as_variant_view(); }
@@ -339,6 +349,7 @@ public:
 
       unsigned get_table_key() const { return m_uTableKey; }
       unsigned get_operator() const { return m_argumentsCondition["operator"].get_uint(); }
+      void set_operator( gd::variant_view operator_ ) { uint32_t uOperator = operator_.is_integer() ? operator_.as_uint() : query::get_where_operator_number_s( operator_.as_string_view() ); m_argumentsCondition.set( "operator", uOperator ); }
 
       gd::argument::arguments& get_arguments() { return m_argumentsCondition; }
       const gd::argument::arguments& get_arguments() const { return m_argumentsCondition; }
@@ -356,7 +367,7 @@ public:
 
       // attributes
       public:
-         query* m_pQuery = nullptr; ///< pointer to query that owns condition
+         query* m_pquery = nullptr; ///< pointer to query that owns condition
          unsigned m_uTableKey = 0;  ///< table that owns condition
          gd::argument::arguments m_argumentsCondition; ///< all condition properties
    };
@@ -475,6 +486,8 @@ public:
    const field* field_get( std::string_view stringField ) const;
    /// Return pointer to field for table and field name
    const field* field_get( std::string_view stringTable, std::string_view stringField ) const;
+   const field* field_get_last() const { return m_vectorField.empty() ? nullptr : &m_vectorField.back(); }
+   field* field_get_last() { return m_vectorField.empty() ? nullptr : &m_vectorField.back(); }
 
    std::string_view field_get_value( std::string_view stringField, uint32_t* puType = nullptr ) const;
    std::string_view field_get_value( std::string_view stringTable, std::string_view stringField, uint32_t* puType = nullptr ) const;
@@ -518,8 +531,9 @@ public:
    std::vector<condition>::const_iterator condition_end() const { return m_vectorCondition.cend(); }
 
 
-/** \name ADD - simplified add operations wrapping other methods
-*///@{
+
+   // @API [tag: add] [summary: simplified add operations] [description: methods to add tables, fields and conditions with simplified parameters, these methods are wrappers around other add methods]
+
    query& add( const std::string_view& stringName, tag_table );
    query& add( const std::string_view& stringName, const std::string_view& stringAlias, tag_table );
 
@@ -532,7 +546,12 @@ public:
    query& add( const gd::variant_view& stringTable, const std::string_view& stringCondition, tag_condition );
 
    query& add( const query& queryFrom );
-//@}
+
+   /// Investigate fields to know what to add
+   query& add( const gd::argument::arguments& arguments_ );
+
+   /// Parse string with the internal format, no prefix table.field.alias, ?field, 
+   query& add( std::string_view stringField, gd::variant_view variantviewValue, tag_parse );
 
 
 

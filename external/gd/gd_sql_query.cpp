@@ -543,6 +543,162 @@ query& query::add( const query& queryFrom )
    return *this;
 }
 
+/** ------------------------------------------------------------------------- add 
+ * @brief Add fields, tables and conditions from another query to this query
+ * @param argumentsAdd 
+ * @param argumentsAdd.schema schema name to match against or add for tables added from query
+ * @param argumentsAdd.owner owner name to match against or add for tables added from query
+ * @param argumentsAdd.parent parent name to match against or add for tables added from query
+ * @param argumentsAdd.join join condition to match against or add for tables added from query
+ * @param argumentsAdd.table table name to match against or add
+ * @param argumentsAdd.table_alias table alias to match against or add
+ * @param argumentsAdd.name field name to add
+ * @param argumentsAdd.alias field alias to add
+ * @param argumentsAdd.value field value to add
+ * @param argumentsAdd.type field type to add
+ * @param argumentsAdd.raw raw sql string to add
+ * @param argumentsAdd.operator condition operator to add for conditions
+ * @return reference to this query for chaining
+*/
+query& query::add( const gd::argument::arguments& argumentsAdd )
+{
+   std::array<std::byte, 128> buffer_;
+   gd::argument::arguments arguments_{ buffer_ };
+
+   const table* ptable = nullptr;
+   // ## Check for table ....................................................
+   if( argumentsAdd.exists( "table" ) == true )
+   {
+      auto variantviewTable = argumentsAdd["table"].as_variant_view();
+      ptable = table_get( variantviewTable );
+      if( ptable == nullptr )
+      {                                                                                            assert( variantviewTable.is_string() == true && "Table name must be a string" );
+         // ### Table not found, add new table with name or alias from arguments
+         arguments_.append( "name", variantviewTable.as_string_view() );
+         if( argumentsAdd.exists( "table_alias" ) == true ) arguments_.append( "schema", argumentsAdd["schema"].as_string_view() ); 
+
+         arguments_.append( argumentsAdd, { "fk", "join", "key", "owner", "parent", "schema" } ); // append all table related properties from arguments, this is used to set properties for added table, for example join condition, foreign key and so on
+#ifndef NDEBUG // check that all are strings
+         for( const auto& it : arguments_ ) { assert( it.is_string() == true && "All table properties must be strings" ); };
+#endif // NDEBUG
+         
+         std::vector<std::pair<std::string_view, gd::variant_view>> vectorTableArguments;
+         if( argumentsAdd.exists( "schema" ) == true ) { vectorTableArguments.emplace_back( "schema", argumentsAdd["schema"] ); }
+         if( argumentsAdd.exists( "table_alias" ) == true ) { vectorTableArguments.emplace_back( "alias", argumentsAdd["table_alias"] ); }
+         vectorTableArguments.emplace_back( "name", variantviewTable );
+         ptable = table_add( vectorTableArguments );
+      }
+   }
+
+   // ## check for condotiond, operator indicates that this is condition ....
+   if( argumentsAdd.exists( "operator" ) == true || argumentsAdd.exists( "condition" ) == true )
+   {
+      arguments_.clear();
+      std::string_view stringConditionName;
+      stringConditionName = argumentsAdd["name"].as_string_view();            // get name first
+      if( stringConditionName.empty() == true ) stringConditionName = argumentsAdd["condition"].as_string_view(); // if name is empty try to get condition, this is for backward compatibility, condition is more descriptive than name for conditions )
+                                                                                                   assert( stringConditionName.empty() == false && "Condition name is required, it must be set in 'name' or 'condition' property" );
+      arguments_.append( "name", stringConditionName );
+      auto operator_ = argumentsAdd["operator"];
+      if( operator_.is_true() )
+      {
+         if( operator_.is_integer() ) arguments_.append( "operator", operator_.as_uint() );
+         else arguments_.append( "operator", uint32_t(  query::get_where_operator_number_s( operator_.as_string_view() ) ) );
+      }
+
+      auto type_ = argumentsAdd["type"];
+      if( type_.is_true() )
+      {
+         if( type_.is_integer() ) arguments_.append( "type", type_.as_uint() );
+         else arguments_.append( "type", uint32_t( gd::types::type_g( type_.as_string_view() ) ) );
+      }
+
+      arguments_.append( argumentsAdd, { "join", "group", "sql", "raw", "value", "value_hi" } ); // append all table related properties from arguments
+
+      condition* pcondition = nullptr;
+
+      if( ptable != nullptr ) { pcondition = condition_add( ptable->get_key(), arguments_, tag_arguments{}); }
+      else { pcondition = condition_add( arguments_, tag_arguments{}); }
+
+      *pcondition = this;
+   }
+
+   // ## Check for field ....................................................
+   if( argumentsAdd.exists( "name" ) == true )
+   {
+      arguments_.clear();
+
+      arguments_.append( argumentsAdd, { "name", "alias", "value", "order", "value" } ); // append all field related properties from arguments, this is used to set properties for added field, for example value, type and so on)
+      auto type_ = argumentsAdd["type"];
+      if( type_.is_true() )
+      {
+         if( type_.is_integer() ) arguments_.append( "type", type_.as_uint() );
+         else arguments_.append( "type", uint32_t( gd::types::type_g( type_.as_string_view() ) ) );
+      }
+
+      field* pfield = nullptr;
+      if( ptable != nullptr ) { pfield = field_add( ptable->get_key(), arguments_, tag_arguments{}); }
+      else { pfield = field_add( arguments_, tag_arguments{}); }
+
+      auto part_type_ = argumentsAdd["part"];
+      if( part_type_.is_true() )
+      {
+         unsigned uPartType = 0;
+         if( part_type_.is_integer() ) uPartType = part_type_.as_uint();
+         else uPartType = (unsigned)sql_get_part_type_g( part_type_.as_string_view() );
+         pfield->set_useandtype( uPartType );
+      }
+
+      *pfield = this;
+   }
+
+   return *this;
+}
+
+query& query::add( std::string_view stringField, gd::variant_view variantviewValue, tag_parse )
+{                                                                                                  assert( stringField.empty() == false );
+   std::array<std::byte, 128> buffer_;
+   gd::argument::arguments arguments_{ buffer_ };
+
+   auto iType = stringField[0];
+   
+   if( iType == '?' || iType == '!' ) { stringField.remove_prefix( 1 ); }
+   else { iType = 0; }
+
+   std::string_view stringTable;
+   std::string_view stringName;
+
+   auto uPosition = stringField.find( '.' ); // check if there is table name in field
+   if( uPosition != std::string_view::npos )
+   {
+      stringTable = stringField.substr( 0, uPosition );
+      stringName = stringField.substr( uPosition + 1 );
+   }
+   else { stringName = stringField; }
+
+   if( stringTable.empty() == false ) { arguments_.append( "table", stringTable ); }
+
+   if( variantviewValue.is_null() == false ) { arguments_.append_argument( "value", variantviewValue ); }
+
+   if( iType == 0 ) 
+   { 
+      arguments_.append( "name", stringName ); 
+   }
+   else
+   {
+      switch( iType )
+      {
+      case '?': // condition
+         arguments_.append( "condition", stringField );
+         arguments_.append_argument( "value", variantviewValue );
+      break;
+      default:
+      }
+   }
+
+   return add( arguments_ );
+}
+
 /** ----------------------------------------------------------------------------- set_limit */ /**
  * @brief Generate limit part based on what type of sql dialect that is used.
  * 

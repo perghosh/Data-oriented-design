@@ -294,6 +294,9 @@ struct tag_create {};
 /// tag dispatcher used to convert data from one type to another
 struct tag_convert {}; 
 
+/// tag dispatcher used to detect type of data, like detecting if data is integer, decimal or text or parsing format of data
+struct tag_parse {}; 
+
 /// tag dispatcher used to copy data from one type to another 
 struct tag_copy {}; 
 
@@ -771,7 +774,7 @@ eType = type_g("int8");             assert( eType == eTypeInt8 );
  * @param stringType type sent as string
  * @return {enumType} type constant
 */
-constexpr enumType type_g( const std::string_view& stringType )
+constexpr enumType type_g( std::string_view stringType )
 {                                                                                                  assert( stringType.length() >= 2 );
    using namespace detail;
 

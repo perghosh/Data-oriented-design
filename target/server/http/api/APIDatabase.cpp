@@ -823,18 +823,32 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
             std::string_view stringName = xmlattribute_.name();
             std::string_view stringValue = xmlattribute_.value();
 
-            std::string_view table_ = stringTable;
-            std::string_view name_ = stringName;
-            auto uDotIndex = stringName.find( '.' );                         // support for table.column format in attribute name, if dot is found then split table and column name
-            if( uDotIndex != std::string::npos ) { table_ = stringName.substr( 0, uDotIndex ); name_ = name_.substr( uDotIndex + 1 ); }
+            if( stringName[0] == '_' )
+            {
+               argumentsFind.clear();
+               stringName.remove_prefix( 1 );                                 // remove _ prefix to prepare for extended syntax
+               queryInsert.add( stringName, stringValue, gd::sql::tag_parse{} );
+
+               auto* pfield = queryInsert.field_get_last();
+               auto table_ = pfield->table_name();
+               auto name_ = pfield->name();
+
+               argumentsFind.append( { {std::string_view( "table" ), table_}, {std::string_view( "column" ), name_} }, gd::types::tag_view{} );
+               int64_t iRow = pdatabase_->Column_FindRow( argumentsFind ); 
+               if( iRow == -1 ) { return { false, "column not found in database: " + std::string(table_) }; }
+               auto uType = pdatabase_->Column_GetType( iRow );
+               pfield->set_type( uType );
+
+               continue;
+            }
 
             argumentsFind.clear();
-            argumentsFind.append( { {std::string_view("table"), table_}, {std::string_view("column"), gd::variant_view(name_)} }, gd::types::tag_view{});
+            argumentsFind.append( { {std::string_view("table"), stringTable}, {std::string_view("column"), stringName} }, gd::types::tag_view{});
             int64_t iRow = pdatabase_->Column_FindRow( argumentsFind ); 
             if( iRow == -1 ) { return { false, "column not found in database: " + std::string(stringName) }; }
 
             auto uType = pdatabase_->Column_GetType( iRow );
-            queryInsert << field_g( table_, name_, buffer_ ).value( stringValue ).type( uType );
+            queryInsert << field_g( stringTable, stringName, buffer_ ).value( stringValue ).type( uType );
          }
 
          const gd::argument::arguments* pargumentsGlobal = GetContext()->GetGlobalArguments();

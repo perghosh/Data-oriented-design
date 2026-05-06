@@ -291,6 +291,7 @@ int64_t CDatabase::Column_FindRow( const gd::argument::arguments& argumentsFind 
    std::string_view stringSchema = argumentsFind["schema"].as_string_view();  // Get schema name from arguments
    std::string_view stringTable = argumentsFind["table"].as_string_view();    // Get table name from arguments
    std::string_view stringColumn = argumentsFind["column"].as_string_view();  // Get column name from arguments
+                                                                                                   assert( stringColumn.empty() == false && "Column name is required to find column metadata" );
 
    if( stringSchema.empty() == false )
    {
