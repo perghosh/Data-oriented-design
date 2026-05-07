@@ -354,7 +354,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
 #endif // NDEBUG
       Objects().Add( ptable_ );
 
-      if( argumentsOptional["name"].is_true() == true )
+      if( argumentsOptional["name"].is_true() == true )  
       {                                                                                            assert( argumentsOptional["name"].is_string() == true && "name argument must be a string" );
          auto stringName = argumentsOptional["name"].as_string();
          Objects()["name"] = stringName;

@@ -379,13 +379,13 @@ std::pair<bool, std::string> CApplication::Configure(const gd::cli::options& opt
          if( database_meta_tables_.is_true() == true ) { arguments_.append_argument( "tables", database_meta_tables_ ); }
          if( database_meta_columns_.is_true() == true ) { arguments_.append_argument( "columns", database_meta_columns_ ); }
 
-         auto dialect_ = PROPERTY_Get( arguments_, "database-dialect" );
+         auto dialect_ = optionsActive["database-dialect"];
+         if( dialect_.is_string() == false ) { dialect_ = PROPERTY_Get( arguments_, "database-dialect" ); }
          if( dialect_.is_string() == true && dialect_.as_string_view().empty() == false ) { arguments_.append_argument( "dialect", dialect_.as_string_view() ); }
          else { Print( "WARNING: Database dialect is not set" ); }
 
          auto statement_file_ = optionsActive["database-statement-file"];
          if( statement_file_.is_string() == false ) { statement_file_ = PROPERTY_Get(arguments_, "database-statement-file"); }
-
          if( statement_file_.is_string() == true ) { arguments_.append_argument( "statement-file", statement_file_.as_string_view() ); }
          else { Print( "WARNING: Database statement file is not set" ); }
 
