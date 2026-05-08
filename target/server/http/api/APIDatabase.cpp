@@ -518,7 +518,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Update()
    auto result_ = Sql_Prepare(stringExecute);
    if( result_.first == false ) { return result_; }
 
-   result_ = pdatabase->execute( stringExecute );
+   result_ = Database_Execute( pdatabase, stringExecute );
    if( result_.first == false ) { return result_; }
 
    // ## Find out number of rows affected ....................................
@@ -552,7 +552,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Delete()
    auto result_ = Sql_Prepare(stringExecute);
    if( result_.first == false ) { return result_; }
 
-   result_ = pdatabase->execute( stringExecute );
+   result_ = Database_Execute( pdatabase, stringExecute );
    if( result_.first == false ) { return result_; }
    
    // ## Find out number of rows affected ....................................
@@ -760,6 +760,13 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql, g
    return { true, "" };
 }
 
+std::pair<bool, std::string> CAPIDatabase::Database_Execute( gd::database::database_i* pdatabase, std::string_view stringSql )
+{                                                                                                  LOG_DEBUG( "Executing SQL: " & stringSql );
+   auto result_ = pdatabase->execute( stringSql );
+                                                                                                   LOG_ERROR_IF( result_.first == false, "Database_Execute failed for SQL: " & stringSql & " with error: " & result_.second );
+   return result_;
+}
+
 
 std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::arguments& argumentsOptions, pugi::xml_document* pxmldocument, CDocument* pdocument, gd::argument::arguments* pargumentsReturn )
 {
@@ -878,7 +885,8 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
             stringInsertSql = queryInsert.sql_get( eSqlInsert );
          }
 
-         auto result_ = pdatabase->execute( stringInsertSql );
+         //auto result_ = pdatabase->execute( stringInsertSql );
+         auto result_ = Database_Execute( pdatabase, stringInsertSql );
          if( result_.first == false ) { return result_; }
          uInsertCount++;
       }
@@ -926,7 +934,7 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
          }
 
          std::string stringInsertSql = queryInsert.sql_get( eSqlInsert );
-         auto result_ = pdatabase->execute( stringInsertSql );
+         auto result_ = Database_Execute( pdatabase, stringInsertSql );
          if( result_.first == false ) { return result_; }
          uInsertCount++;
       }

@@ -81,8 +81,7 @@ public:
    std::pair<bool, std::string> Sql_Prepare(std::string& stringSql, gd::argument::arguments& argumentsData );
    std::pair<bool, std::string> Sql_Prepare( std::string& stringSql ) { gd::argument::arguments argumentsData; return Sql_Prepare( stringSql, argumentsData ); }
 
-   //std::pair<bool, std::string> Lua_Execute( uint64_t uStatementRow, CDocument* pdocument );
-
+   std::pair<bool, std::string> Database_Execute( gd::database::database_i* pdatabase, std::string_view stringQuery );
 protected:
 
 public:
