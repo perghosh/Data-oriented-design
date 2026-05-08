@@ -351,6 +351,11 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
 #ifndef NDEBUG
       // std::string stringTable_d = gd::table::debug::print( *ptable_ );
       // std::string stringTableHex_d = gd::binary_to_hex_g( stringTable_d );
+      uint64_t uRowCount_d = ptable_->size();                                 // how many rows in result, check in debug mode
+      if( uRowCount_d > 0 )
+      {
+         std::string stringRow0_d = gd::table::debug::print_row( *ptable_, 0 );
+      }
 #endif // NDEBUG
       Objects().Add( ptable_ );
 

@@ -430,6 +430,7 @@ public:
    bool less( const variant_view& v ) const;
    uint32_t length() const { return m_uSize; }
    uint32_t length_in_bytes() const;
+   uint32_t clength_in_bytes() const;
 
    void to( std::string& stringOut );
 

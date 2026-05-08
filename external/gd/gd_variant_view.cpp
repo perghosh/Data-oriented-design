@@ -809,6 +809,7 @@ bool variant_view::less( const variant_view& v ) const
 
 */
 
+/// @brief return length of value in bytes -----------------------------------
 uint32_t variant_view::length_in_bytes() const
 {
    switch( type_number() )
@@ -829,6 +830,8 @@ uint32_t variant_view::length_in_bytes() const
    case eTypeNumberString: return m_uSize;
    case eTypeNumberUtf8String: return m_uSize;
    case eTypeNumberWString: return m_uSize * 2;
+   case eTypeNumberUtf32String: return m_uSize * 4;
+   case eTypeNumberBinary: return m_uSize;
    //case eTypeNumberJson: return gd_std::wstring( gd_std::string::utf8( m_V.pbsz ), m_uSize ).get_wstring();
    //case eTypeNumberXml: return gd_std::wstring( gd_std::string::utf8( m_V.pbsz ), m_uSize ).get_wstring();
    case eTypeNumberBit: return 1;
@@ -836,7 +839,40 @@ uint32_t variant_view::length_in_bytes() const
 
    }
 
-    return 0;
+   return 0;
+}
+
+/// length in bytes of value, for string types this includes zero terminator -
+uint32_t variant_view::clength_in_bytes() const
+{
+   switch( type_number() )
+   {
+   case eTypeNumberUnknown: return 0;
+   case eTypeNumberBool: return 1;
+   //case eTypeNumberInt8: return std::to_wstring(m_V.int8);
+   //case eTypeNumberInt16: return std::to_wstring(m_V.int16);
+   //case eTypeNumberInt32: return std::to_wstring(m_V.int32);
+   //case eTypeNumberInt64: return std::to_wstring(m_V.int64);
+   //case eTypeNumberUInt8: return std::to_wstring(m_V.uint8);
+   //case eTypeNumberUInt16: return std::to_wstring(m_V.uint16);
+   //case eTypeNumberUInt32: return std::to_wstring(m_V.uint32);
+   //case eTypeNumberUInt64: return std::to_wstring(m_V.uint64);
+   //case eTypeNumberFloat: return std::to_wstring(m_V.f); 
+   //case eTypeNumberGuid: return 16;
+   // case eTypeNumberDouble: return std::to_wstring(m_V.d); 
+   case eTypeNumberString: return m_uSize + 1;
+   case eTypeNumberUtf8String: return m_uSize + 1;
+   case eTypeNumberWString: return m_uSize * 2 + 2;
+   case eTypeNumberUtf32String: return m_uSize * 4 + 4;
+   case eTypeNumberBinary: return m_uSize;
+   //case eTypeNumberJson: return gd_std::wstring( gd_std::string::utf8( m_V.pbsz ), m_uSize ).get_wstring();
+   //case eTypeNumberXml: return gd_std::wstring( gd_std::string::utf8( m_V.pbsz ), m_uSize ).get_wstring();
+   case eTypeNumberBit: return 1;
+   default:                                                                      assert(false);
+
+   }
+
+   return 0;
 }
 
 /** ---------------------------------------------------------------------------

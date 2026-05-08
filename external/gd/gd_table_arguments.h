@@ -488,7 +488,7 @@ public:
    bool column_is_reference( unsigned uIndex ) const { return m_pcolumns->is_reference( uIndex ); }
    
    bool column_validate_type( unsigned uIndex, gd::variant_view v_ ) const { return m_pcolumns->ctype_number( uIndex ) == v_.type_number(); }
-   bool column_validate_size( unsigned uIndex, gd::variant_view v_ ) const { return m_pcolumns->size( uIndex ) >= v_.length_in_bytes(); }
+   bool column_validate_size( unsigned uIndex, gd::variant_view v_ ) const { return m_pcolumns->size( uIndex ) >= v_.clength_in_bytes(); }
 
    /// Rename column
    std::string column_rename( unsigned uColumn, const std::string_view& stringNewName );

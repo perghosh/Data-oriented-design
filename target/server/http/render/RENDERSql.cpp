@@ -1012,6 +1012,9 @@ std::pair<bool,std::string> CRENDERSql::ToSqlInsert( std::string& stringQuery )
       //queryInsert.field_add( stringName );                                  // add column to query
       uint32_t uType = itRow.cell_get_variant_view("type").as_uint();
       auto value_ = itRow.cell_get_variant_view("value", gd::table::tag_not_null{});
+#ifndef NDEBUG
+      [[maybe_unused]] std::string stringValue_d = value_.as_string();
+#endif
       arguments_.append( { { "name", stringName }, { "value", value_ }, { "type", uType } }, gd::types::tag_view{});
       queryInsert.field_add( arguments_, gd::sql::tag_arguments{} );       // add column to query
    }
