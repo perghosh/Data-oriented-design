@@ -558,7 +558,7 @@ stringType = gd::types::type_name_g( variantTest.type() ); std::cout << stringTy
 bool variant::convert( const std::string_view& stringType )
 {
    auto eType = gd::types::type_g( stringType );
-   if( eType == eTypeUnknown ) return false;
+   if( eType == 0 ) return false;                                             // 0 is always eTypeUnknown, so if type_g returns 0 it means that type is not recognized
    convert( (variant_type::enumType)eType );
 
    return true;
