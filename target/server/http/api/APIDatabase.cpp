@@ -444,7 +444,11 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
    if( stringQuery.empty() == false )                                         // if query then process it
    {
       if( stringQuery[0u] == '#' ) { stringQuery.erase(0, 1); }
-      auto result_ = PrepareStatement( stringQuery, stringInsert );                                if( result_.first == false ) { return result_; }
+      auto result_ = PrepareStatement( stringQuery, stringInsert );                                
+      if( result_.first == false ) 
+      {                                                                                            LOG_ERROR( "PrepareStatement for insert query " & stringQuery & " returned error: " & result_.second );
+         return result_; 
+      }
    }
 
    // ## check for statement logic and xml data .............................

@@ -137,7 +137,7 @@ boost::beast::http::message_generator
    std::string stringPath = path_cat_g(stringRoot, request_.target());
    if(request_.target().back() == '/') { stringPath.append("index.html"); }
    else
-   {                                                                                               LOG_DEBUG_RAW( stringPath );
+   {                                                                                               //LOG_DEBUG_RAW( stringPath );
    }
 
    // ## Check for ending ? and remove it
@@ -150,7 +150,10 @@ boost::beast::http::message_generator
    body_.open(stringPath.c_str(), boost::beast::file_mode::scan, errorcode_);
 
 
-   if(errorcode_ == boost::beast::errc::no_such_file_or_directory) { return error_(  std::format( "The resource '{}' was not found.", stringTarget ) ); }
+   if(errorcode_ == boost::beast::errc::no_such_file_or_directory) 
+   {                                                                                               LOG_DEBUG_RAW( std::format( "File not found: '{}'", stringPath ) );
+      return error_(  std::format( "The resource '{}' was not found.", stringTarget ) ); 
+   }
    if(errorcode_) { return error_( std::format( "An error occurred: {}", errorcode_.message()) ); }
    
    auto const uSize = body_.size();

@@ -318,7 +318,7 @@ std::pair<bool, std::string> CAPI_Base::PrepareStatement( std::variant<size_t, s
 
    // ## Execute Lua setup code if any .......................................
 
-   auto result_ = Lua_Execute( uStatementRow, pdocument, &sql_ );
+   auto result_ = Lua_Execute( uStatementRow, pdocument, &sql_ );                                  LOG_ERROR_IF( result_.first == false, "Lua execution failed for statement row " + std::to_string( uStatementRow ) + ": " + result_.second );
    if( result_.first == false ) { return result_; }
 
    std::string_view stringSelectTemplate = Statement_GetQuery( uStatementRow );
