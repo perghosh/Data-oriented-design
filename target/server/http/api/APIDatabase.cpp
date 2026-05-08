@@ -802,9 +802,9 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
    auto append_arguments_ = [&]( const auto* pargumentsGlobal, auto& queryInsert ) -> std::pair<bool, std::string>
    {
       std::string_view name_;
-      std::string_view table_ = stringTable;
       for( auto [key_, value_] : pargumentsGlobal->named() )
       {
+         std::string_view table_ = stringTable;
          auto index_ = key_.find('.');
          if( index_ != std::string::npos ) { table_ = key_.substr( 0, index_ ); name_ = key_.substr( index_ + 1 ); }
          else { name_ = key_; }
@@ -815,12 +815,9 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
          if( iRow != -1 ) 
          { 
             auto uType = pdatabase_->Column_GetType( iRow );
-            queryInsert << field_g( table_, name_, buffer_ ).value( value_ ).type( uType );
+            queryInsert << field_g( table_, name_ ).value( value_ ).type( uType );
          }
-         else
-         {
-            return { false, "column not found in database: " + std::string( name_ ) };
-         }
+         else { return { false, "column not found in database: " + std::string( name_ ) };  }
       }
 
       return { true, "" };
@@ -837,13 +834,15 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
       {
          query queryInsert{ enumSqlDialect( uDialect ) };
 
-         queryInsert << table_g( stringTable, buffer_ );                     // set table for insert query
+         queryInsert << table_g( stringTable );                     // set table for insert query
 
          pugi::xml_node xmlnodeValue = xpathnode_.node();
          for( auto& xmlattribute_ : xmlnodeValue.attributes() )              // loop attributes in element and add attribute name and values to query
          {
             std::string_view stringName = xmlattribute_.name();
             std::string_view stringValue = xmlattribute_.value();
+
+            if( stringName.empty() == true ) { continue; }
 
             if( stringName[0] == '_' )
             {
@@ -870,7 +869,7 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
             if( iRow == -1 ) { return { false, "column not found in database: " + std::string(stringName) }; }
 
             auto uType = pdatabase_->Column_GetType( iRow );
-            queryInsert << field_g( stringTable, stringName, buffer_ ).value( stringValue ).type( uType );
+            queryInsert << field_g( stringTable, stringName ).value( stringValue ).type( uType );
          }
 
          const gd::argument::arguments* pargumentsGlobal = GetContext()->GetGlobalArguments();
@@ -913,7 +912,7 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
       for( auto& xpathnode_ : xpathnodesetValues )
       {
          query queryInsert{ enumSqlDialect( uDialect ) };
-         queryInsert << table_g( stringTable, buffer_ );                     // set table for insert query
+         queryInsert << table_g( stringTable );                     // set table for insert query
 
          pugi::xml_node xmlnodeValues = xpathnode_.node();
          for( auto& xmlnodeValue_ : xmlnodeValues.children() )               // loop child elements (each is a column)
@@ -925,13 +924,13 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
 
             if( stringName.empty() == true ) continue;                       // skip if no element name
 
-            gd::argument::arguments argumentsFind( buffer_ );
+            argumentsFind.clear();
             argumentsFind.append( { {std::string_view("table"), gd::variant_view(stringTable)}, {std::string_view("column"), gd::variant_view(stringName)} }, gd::types::tag_view{});
             int64_t iRow = pdatabase_->Column_FindRow( argumentsFind );
             if( iRow == -1 ) { return { false, "column not found in database: " + std::string(stringName) }; }
 
             auto uType = pdatabase_->Column_GetType( iRow );
-            queryInsert << field_g( stringName, buffer_ ).value( stringFieldValue ).type( uType );
+            queryInsert << field_g( stringName ).value( stringFieldValue ).type( uType );
          }
 
          const gd::argument::arguments* pargumentsGlobal = GetContext()->GetGlobalArguments();

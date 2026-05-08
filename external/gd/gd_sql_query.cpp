@@ -692,7 +692,7 @@ query& query::add( std::string_view stringField, gd::variant_view variantviewVal
          arguments_.append( "condition", stringField );
          arguments_.append_argument( "value", variantviewValue );
       break;
-      default:
+      //default:  break;
       }
    }
 
