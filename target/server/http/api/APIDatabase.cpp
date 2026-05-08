@@ -799,7 +799,7 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
    std::string stringTable = argumentsOptions["table"].as_string(); // table is required and should be string  
    if( stringTable.empty() == true ) { return { false, "table name is required for attribute form" }; }
 
-   auto append_arguments_ = [&]( const auto* pargumentsGlobal, auto& queryInsert )
+   auto append_arguments_ = [&]( const auto* pargumentsGlobal, auto& queryInsert ) -> std::pair<bool, std::string>
    {
       std::string_view name_;
       std::string_view table_ = stringTable;
@@ -817,7 +817,13 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
             auto uType = pdatabase_->Column_GetType( iRow );
             queryInsert << field_g( table_, name_, buffer_ ).value( value_ ).type( uType );
          }
+         else
+         {
+            return { false, "column not found in database: " + std::string( name_ ) };
+         }
       }
+
+      return { true, "" };
    };
 
 
@@ -870,7 +876,8 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
          const gd::argument::arguments* pargumentsGlobal = GetContext()->GetGlobalArguments();
          if( pargumentsGlobal != nullptr && pargumentsGlobal->empty() == false )
          {
-            append_arguments_( pargumentsGlobal, queryInsert );
+            auto result_ = append_arguments_( pargumentsGlobal, queryInsert );
+            if( result_.first == false ) { return result_; }
          }
 
          std::string stringInsertSql;
@@ -919,7 +926,7 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
             if( stringName.empty() == true ) continue;                       // skip if no element name
 
             gd::argument::arguments argumentsFind( buffer_ );
-            argumentsFind.append( { {std::string_view("table"), gd::variant_view(stringTable)}, {std::string_view("name"), gd::variant_view(stringName)} }, gd::types::tag_view{});
+            argumentsFind.append( { {std::string_view("table"), gd::variant_view(stringTable)}, {std::string_view("column"), gd::variant_view(stringName)} }, gd::types::tag_view{});
             int64_t iRow = pdatabase_->Column_FindRow( argumentsFind );
             if( iRow == -1 ) { return { false, "column not found in database: " + std::string(stringName) }; }
 
@@ -930,7 +937,8 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
          const gd::argument::arguments* pargumentsGlobal = GetContext()->GetGlobalArguments();
          if( pargumentsGlobal != nullptr && pargumentsGlobal->empty() == false )
          {
-            append_arguments_( pargumentsGlobal, queryInsert );
+            auto result_ = append_arguments_( pargumentsGlobal, queryInsert );
+            if( result_.first == false ) { return result_; }
          }
 
          std::string stringInsertSql = queryInsert.sql_get( eSqlInsert );
