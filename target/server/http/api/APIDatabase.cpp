@@ -767,11 +767,37 @@ std::pair<bool, std::string> CAPIDatabase::Database_Execute( gd::database::datab
    return result_;
 }
 
+std::pair<bool, std::string> append_arguments_( const std::string& stringTable, META::CDatabase* pdatabase_, const auto* pargumentsGlobal, auto& queryInsert )
+{
+   using namespace gd::sql;
+   std::array<std::byte, 128> buffer_; // buffer to avoid allocate memory
+   gd::argument::arguments argumentsFind( buffer_ );
+
+   std::string_view name_;
+   for( auto [key_, value_] : pargumentsGlobal->named() )
+   {
+      std::string_view table_ = stringTable;
+      auto index_ = key_.find('.');
+      if( index_ != std::string::npos ) { table_ = key_.substr( 0, index_ ); name_ = key_.substr( index_ + 1 ); }
+      else { name_ = key_; }
+
+      argumentsFind.clear();
+      argumentsFind.append( { {std::string_view("table"), table_}, {std::string_view("column"), name_} }, gd::types::tag_view{});
+      int64_t iRow = pdatabase_->Column_FindRow( argumentsFind ); 
+      if( iRow != -1 ) 
+      { 
+         auto uType = pdatabase_->Column_GetType( iRow );
+         queryInsert << field_g( table_, name_, buffer_ ).value( value_ ).type( uType );
+      }
+      else { return { false, "column not found in database: " + std::string( name_ ) };  }
+   }
+
+   return { true, "" };
+}
 
 std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::arguments& argumentsOptions, pugi::xml_document* pxmldocument, CDocument* pdocument, gd::argument::arguments* pargumentsReturn )
 {
    using namespace gd::sql;
-
    std::array<std::byte, 256> buffer_; // buffer to avoid allocate memory
    gd::argument::arguments argumentsFind( buffer_ );
    uint64_t uInsertCount = 0;
@@ -799,6 +825,7 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
    std::string stringTable = argumentsOptions["table"].as_string(); // table is required and should be string  
    if( stringTable.empty() == true ) { return { false, "table name is required for attribute form" }; }
 
+   /*
    auto append_arguments_ = [&]( const auto* pargumentsGlobal, auto& queryInsert ) -> std::pair<bool, std::string>
    {
       std::string_view name_;
@@ -822,6 +849,7 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
 
       return { true, "" };
    };
+   */
 
 
    if( stringForm == "attribute" )
@@ -869,13 +897,13 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
             if( iRow == -1 ) { return { false, "column not found in database: " + std::string(stringName) }; }
 
             auto uType = pdatabase_->Column_GetType( iRow );
-            queryInsert << field_g( stringTable, stringName ).value( stringValue ).type( uType );
+            queryInsert << field_g( stringTable, stringName, buffer_ ).value( stringValue ).type( uType );
          }
 
          const gd::argument::arguments* pargumentsGlobal = GetContext()->GetGlobalArguments();
          if( pargumentsGlobal != nullptr && pargumentsGlobal->empty() == false )
          {
-            auto result_ = append_arguments_( pargumentsGlobal, queryInsert );
+            auto result_ = append_arguments_( stringTable, pdatabase_, pargumentsGlobal, queryInsert );
             if( result_.first == false ) { return result_; }
          }
 
@@ -930,13 +958,13 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
             if( iRow == -1 ) { return { false, "column not found in database: " + std::string(stringName) }; }
 
             auto uType = pdatabase_->Column_GetType( iRow );
-            queryInsert << field_g( stringName ).value( stringFieldValue ).type( uType );
+            queryInsert << field_g( stringName, buffer_ ).value( stringFieldValue ).type( uType );
          }
 
          const gd::argument::arguments* pargumentsGlobal = GetContext()->GetGlobalArguments();
          if( pargumentsGlobal != nullptr && pargumentsGlobal->empty() == false )
          {
-            auto result_ = append_arguments_( pargumentsGlobal, queryInsert );
+            auto result_ = append_arguments_( stringTable, pdatabase_, pargumentsGlobal, queryInsert );
             if( result_.first == false ) { return result_; }
          }
 
