@@ -316,6 +316,18 @@ std::pair<bool, std::string> CAPI_Base::PrepareStatement( std::variant<size_t, s
       if( stringValues.empty() == false ) { sql_.ColumnAddValues( stringValues, gd::types::tag_json{}); }
    }
 
+   // @NOTE [tag: order, limit] [summary: prepare to set order and limit for SQL query]
+   if( Exists( "options" ) == true )                                           // read query "options" for order and limit
+   {
+      auto stringOptions = GetNextArgument( "options" ).as_string();
+      if( stringOptions.empty() == false )
+      {
+         //auto result_ = sql_.SetOptions( stringOptions, gd::types::tag_json{} );
+         //if( result_.first == false ) { return result_; }
+      }
+   }
+
+
    // ## Execute Lua setup code if any .......................................
 
    auto result_ = Lua_Execute( uStatementRow, pdocument, &sql_ );                                  LOG_ERROR_IF( result_.first == false, "Lua execution failed for statement row " + std::to_string( uStatementRow ) + ": " + result_.second );

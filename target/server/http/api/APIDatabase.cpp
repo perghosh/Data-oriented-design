@@ -349,13 +349,9 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
       gd::database::to_table( pcursor.get(), ptable_ );
 
 #ifndef NDEBUG
-      // std::string stringTable_d = gd::table::debug::print( *ptable_ );
-      // std::string stringTableHex_d = gd::binary_to_hex_g( stringTable_d );
+      std::string stringRow0_d;
       uint64_t uRowCount_d = ptable_->size();                                 // how many rows in result, check in debug mode
-      if( uRowCount_d > 0 )
-      {
-         std::string stringRow0_d = gd::table::debug::print_row( *ptable_, 0 );
-      }
+      if( uRowCount_d > 0 ) { stringRow0_d = gd::table::debug::print_row( *ptable_, 0 ); }
 #endif // NDEBUG
       Objects().Add( ptable_ );
 
@@ -768,7 +764,17 @@ std::pair<bool, std::string> CAPIDatabase::Database_Execute( gd::database::datab
 }
 
 namespace {
-
+/** -------------------------------------------------------------------------
+ * @brief Appends named arguments as fields to a SQL insert query, validating columns against database metadata.
+ * 
+ * @NOTE [tag: gcc] [description: There were problems adding this method as a lambda using GCC compiler]
+ * 
+ * @param stringTable The default table name to use when column names don't specify a table.
+ * @param pdatabase_ Pointer to the database metadata object used to validate columns and retrieve types.
+ * @param pargumentsGlobal Pointer to the arguments container with named key-value pairs to append.
+ * @param queryInsert Reference to the SQL insert query object that will receive the fields.
+ * @return A pair containing: success flag (true if all columns found), and error message (empty on success, or description of missing column on failure).
+ */
 std::pair<bool, std::string> append_arguments_( const std::string& stringTable, META::CDatabase* pdatabase_, const auto* pargumentsGlobal, auto& queryInsert )
 {
    using namespace gd::sql;
