@@ -141,7 +141,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Execute()
       gd::argument::arguments argumentsReturn;
       argumentsReturn.reserve( 64 );
       pugi::xml_document* pxmldocument = GetQSArguments()["xml"].get_pointer<pugi::xml_document>(); // get pointer to xml pointer that is prepared
-      XML_BulkInsert( argumentsOptions, pxmldocument, pdocument, &argumentsReturn );
+      XML_BulkExecute( argumentsOptions, pxmldocument, pdocument, &argumentsReturn );
       Objects().Add( argumentsReturn );
    }
 
@@ -465,7 +465,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
       gd::argument::arguments argumentsReturn;
       argumentsReturn.reserve( 128 );
       pugi::xml_document* pxmldocument = GetQSArguments()["xml"].get_pointer<pugi::xml_document>(); // get pointer to xml pointer that is prepared
-      auto result_ = XML_BulkInsert( argumentsOptions, pxmldocument, pdocument, &argumentsReturn );if( result_.first == false ) { return result_; }
+      auto result_ = XML_BulkExecute( argumentsOptions, pxmldocument, pdocument, &argumentsReturn );if( result_.first == false ) { return result_; }
       Objects().Add( argumentsReturn );
 
       return { true, "" }; 
@@ -767,6 +767,8 @@ std::pair<bool, std::string> CAPIDatabase::Database_Execute( gd::database::datab
    return result_;
 }
 
+namespace {
+
 std::pair<bool, std::string> append_arguments_( const std::string& stringTable, META::CDatabase* pdatabase_, const auto* pargumentsGlobal, auto& queryInsert )
 {
    using namespace gd::sql;
@@ -795,7 +797,9 @@ std::pair<bool, std::string> append_arguments_( const std::string& stringTable, 
    return { true, "" };
 }
 
-std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::arguments& argumentsOptions, pugi::xml_document* pxmldocument, CDocument* pdocument, gd::argument::arguments* pargumentsReturn )
+}
+
+std::pair<bool, std::string> CAPIDatabase::XML_BulkExecute( const gd::argument::arguments& argumentsOptions, pugi::xml_document* pxmldocument, CDocument* pdocument, gd::argument::arguments* pargumentsReturn )
 {
    using namespace gd::sql;
    std::array<std::byte, 256> buffer_; // buffer to avoid allocate memory
@@ -824,33 +828,6 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkInsert( const gd::argument::a
 
    std::string stringTable = argumentsOptions["table"].as_string(); // table is required and should be string  
    if( stringTable.empty() == true ) { return { false, "table name is required for attribute form" }; }
-
-   /*
-   auto append_arguments_ = [&]( const auto* pargumentsGlobal, auto& queryInsert ) -> std::pair<bool, std::string>
-   {
-      std::string_view name_;
-      for( auto [key_, value_] : pargumentsGlobal->named() )
-      {
-         std::string_view table_ = stringTable;
-         auto index_ = key_.find('.');
-         if( index_ != std::string::npos ) { table_ = key_.substr( 0, index_ ); name_ = key_.substr( index_ + 1 ); }
-         else { name_ = key_; }
-
-         argumentsFind.clear();
-         argumentsFind.append( { {std::string_view("table"), table_}, {std::string_view("column"), name_} }, gd::types::tag_view{});
-         int64_t iRow = pdatabase_->Column_FindRow( argumentsFind ); 
-         if( iRow != -1 ) 
-         { 
-            auto uType = pdatabase_->Column_GetType( iRow );
-            queryInsert << field_g( table_, name_ ).value( value_ ).type( uType );
-         }
-         else { return { false, "column not found in database: " + std::string( name_ ) };  }
-      }
-
-      return { true, "" };
-   };
-   */
-
 
    if( stringForm == "attribute" )
    {
