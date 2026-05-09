@@ -120,6 +120,14 @@
       }
     },
     {
+      "name": "linux-relwithdebinfo",
+      "displayName": "Linux RelWithDebInfo",
+      "inherits": "linux-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
+    },
+    {
       "name": "macos-release",
       "displayName": "macOS Release",
       "inherits": "macos-base",
@@ -158,6 +166,11 @@
       "name": "linux-release",
       "configurePreset": "linux-release",
       "displayName": "Build Linux Release"
+    },
+    {
+      "name": "linux-relwithdebinfo",
+      "configurePreset": "linux-relwithdebinfo",
+      "displayName": "Build Linux RelWithDebInfo"
     },
     {
       "name": "macos-release",
