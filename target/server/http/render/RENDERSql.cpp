@@ -409,6 +409,7 @@ int64_t CRENDERSql::Find( const gd::argument::arguments& argumentsColumn ) const
 }
 
 
+
 /** -------------------------------------------------------------------------- AddValues
  * @brief Adds field values from arguments to the internal field table.
  * @param argumentsField The arguments containing field name-value pairs to add.
@@ -592,7 +593,7 @@ std::pair<bool, std::string> CRENDERSql::ModifierAdd( std::string_view stringJso
 
       if( jsonModifier.contains( "order" ) == true )
       {
-         auto jsonOrder = jsonModifier["order"];
+         const auto& jsonOrder = jsonModifier["order"];
          if( jsonOrder.is_array() == true )
          {
             for( const auto& it : jsonOrder.array_range() )
@@ -615,10 +616,39 @@ std::pair<bool, std::string> CRENDERSql::ModifierAdd( std::string_view stringJso
                //else if( it.is_integer() == true ) { m_vectorModifierOrder.push_back( std::to_string( it.as_integer() ) ); }
             }
          }
-         // else if( jsonOrder.is_string() == true ) { m_vectorModifierOrder.push_back( jsonOrder.as_string_view() ); }
-         // else if( jsonOrder.is_integer() == true ) { m_vectorModifierOrder.push_back( std::to_string( jsonOrder.as_integer() ) ); }
-      }
+         else if( jsonOrder.is_string() == true || jsonOrder.is_number() == true ) 
+         { 
+            arguments_.clear();
+            if( stringTable.empty() == false ) { arguments_.append( "table", stringTable ); } // add table ?
+            arguments_.append( "type_part", (uint32_t)ePartTypeOrderBy );  // set part type to ORDER BY
+            if( jsonOrder.is_string() == true ) { arguments_.append_argument( "name", jsonOrder.as_string_view() ); }
 
+            ColumnAdd( arguments_ );
+         }
+         else { return { false, "invalid order value" }; }
+      }
+      
+      if( jsonModifier.contains( "limit" ) == true )                     // check for limit
+      {
+         arguments_.clear();
+         if( stringTable.empty() == false ) { arguments_.append( "table", stringTable ); } // add table ?
+         arguments_.append( "type_part", (uint32_t)ePartTypeLimit );         // set part type to LIMIT
+         arguments_.append( "name", "limit" );                               // name for limit is always "limit"
+
+         const auto& jsonLimit = jsonModifier["limit"];
+         if( jsonLimit.is_number() == true ) { arguments_.append( "value", jsonLimit.as_string() ); }
+         else if( jsonLimit.is_array() == true ) 
+         { 
+            std::string stringLimit;
+            // get first value
+            if( jsonLimit.size() > 0 ) { stringLimit = jsonLimit[0].as_string(); }
+            if( jsonLimit.size() > 1 ) { stringLimit += "," + jsonLimit[1].as_string(); }
+            arguments_.append( "value", stringLimit );
+         }
+         else { return { false, "invalid limit value" }; }
+
+         ColumnAdd( arguments_ );
+      }
    }
    catch( jsoncons::json_exception& e )
    {
@@ -844,7 +874,8 @@ std::pair<bool, std::string> CRENDERSql::Prepare()                              
       else
       {
 #ifndef NDEBUG
-                                                                                                   LOG_WARNING( std::format( "Column not found in database metadata, table: {}, column: {}", stringTable, stringName ) );
+         enumPartType ePartType = (enumPartType)itRow.cell_get_variant_view(eColumnFieldPartType).as_uint();
+         if( ePartType < ePartTypeOrderBy ) {                                                      LOG_WARNING( std::format( "Column not found in database metadata, table: {}, column: {}", stringTable, stringName ) ); }
 #endif // NDEBUG
       }
    }
@@ -981,6 +1012,38 @@ std::pair<bool, std::string> CRENDERSql::Query_AddFields( gd::sql::query* pquery
                pquery->field_add_as_orderby( stringTable, stringName );
             }
             continue;
+         }
+         else if( uPartType == uint32_t( ePartTypeLimit ) )                      // LIMIT
+         {
+            if( stringTable.empty() == true )                                 // no table check for table.column format in name
+            {
+               auto position_ = stringName.find( '.' );                       // table syntax is table.column
+               if( position_ != std::string_view::npos )
+               {
+                  stringTable = stringName.substr( 0, position_ );
+                  stringName = stringName.substr( position_ + 1 );
+               }
+            }
+            if( stringTable.empty() == true ) { return { false, "Need table for limit" }; }
+            if( pquery->table_exists( stringTable ) == false ) { pquery->table_add( stringTable ); }
+
+            // ### get value, it may be one or two integer values: "10" or "10,20", if two then first is offset and second is limit
+            std::string_view stringValue = itRow.cell_get_variant_view( eColumnFieldValue, gd::table::tag_not_null{} ).as_string_view(); assert( stringValue.empty() == false );
+
+            std::size_t uOffset = 0; // default offset is 0
+            std::size_t uLimit = 0;  // default limit is 0, which means no limit
+
+            auto uCommaPosition = stringValue.find(',');
+            if( uCommaPosition != std::string_view::npos )                    // two values: "offset,limit"
+            {
+               std::string_view stringOffset = stringValue.substr(0, uCommaPosition);
+               std::string_view stringLimit = stringValue.substr(uCommaPosition + 1);
+               uOffset = static_cast<std::size_t>(std::stoul(std::string(stringOffset)));
+               uLimit = static_cast<std::size_t>(std::stoul(std::string(stringLimit)));
+            }
+            else { uLimit = static_cast<std::size_t>(std::stoul(std::string(stringValue))); } // single value: just limit
+
+            pquery->set_limit( uOffset, uLimit );
          }
       }
 
@@ -1349,32 +1412,6 @@ std::pair<bool, std::string> CRENDERSql::ToBulkInsert( const gd::argument::argum
 
    return { true, "" };
 }
-
-/*
-std::pair<bool, std::string> CRENDERSql::AddConditionToQuery( gd::sql::query& queryAddTo  )
-{
-   for( auto& argumentsCondition : m_argumentsCondition )
-   {                                                                                               assert( gd::sql::query::validate_condition_s( argumentsCondition ).first == true );
-      // ## check for operator
-      if( argumentsCondition.exists( "operator" ) == false ) { argumentsCondition.append( "operator", uint32_t( gd::sql::eOperatorEqual ) ); }
-      else
-      {
-         auto v_ = argumentsCondition["operator"].as_variant_view();
-         if( v_.is_string() == true )
-         {
-            auto eOperator = gd::sql::query::get_where_operator_number_s(v_.as_string_view());
-            if( eOperator == gd::sql::eOperatorError ) { return { false, std::format( "Invalid operator: {}", v_.as_string_view() ) }; }
-
-            argumentsCondition.set( "operator", eOperator );
-         }
-      }
-
-      queryAddTo.condition_add( argumentsCondition, gd::sql::tag_arguments{} );
-   }  
-
-   return { true, "" };
-}
-*/
 
 /// Convert the internal table field data into a structured arguments collection
 void CRENDERSql::ToArguments( gd::argument::arguments& arguments ) const

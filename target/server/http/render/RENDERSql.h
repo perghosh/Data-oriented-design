@@ -50,6 +50,7 @@ public:
       ePartTypeWhere,            ///< where part of query, used for select, update and delete queries
       ePartTypeOrderBy,          ///< order by part of query, used for select queries to specify columns to order by
       ePartTypeGroupBy,          ///< group by part of query, used for select queries to specify columns to group by
+      ePartTypeLimit,            ///< limit part of query, used for select queries to specify number of rows to return
       ePartTypeReturning,        ///< returning part of query, used for select queries to specify columns to return
       enumPartType_Max
    };

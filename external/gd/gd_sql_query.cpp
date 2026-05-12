@@ -762,6 +762,7 @@ void query::set_limit( std::size_t uOffset, std::size_t uCount )
       break;
    }
 
+   m_uAddedPartType |= eSqlPartLimit;                                         // mark that limit part is added to query
    m_argumentsAttribute.set( "limit", stringLimit );
 }
 
