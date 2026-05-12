@@ -265,11 +265,13 @@ void CRENDERSql::ColumnAdd( const gd::argument::arguments& argumentsField )
             if( gd::types::detail::hash_match_g( stringPartType, "select" ) == true ) { uPartType = ePartTypeSelect; }
             else if( gd::types::detail::hash_match_g( stringPartType, "value" ) == true ) { uPartType = ePartTypeValue; }
             else if( gd::types::detail::hash_match_g( stringPartType, "where" ) == true ) { uPartType = ePartTypeWhere; }
+            else if( gd::types::detail::hash_match_g( stringPartType, "order" ) == true ) { uPartType = ePartTypeOrderBy; }
+            else if( gd::types::detail::hash_match_g( stringPartType, "group" ) == true ) { uPartType = ePartTypeGroupBy; }
             else if( gd::types::detail::hash_match_g( stringPartType, "returning" ) == true ) { uPartType = ePartTypeReturning; }
-            else { continue; } // if part type is not select, value, where or returning skip it
+            else { continue; } // if part type is not select, value, where, order_by, group_by or returning skip it
             m_tableField.cell_set( uRow, eColumnFieldPartType, uPartType );
          }
-         else { m_tableField.cell_set( uRow, eColumnFieldPartType, value_ ); }
+         else { m_tableField.cell_set( uRow, eColumnFieldPartType, value_.as_variant_view().as<uint32_t>() ); }
       }
       else
       {
@@ -407,6 +409,10 @@ int64_t CRENDERSql::Find( const gd::argument::arguments& argumentsColumn ) const
 }
 
 
+/** -------------------------------------------------------------------------- AddValues
+ * @brief Adds field values from arguments to the internal field table.
+ * @param argumentsField The arguments containing field name-value pairs to add.
+ */
 void CRENDERSql::AddValues( const gd::argument::arguments& argumentsField )
 {
    std::string_view stringTable;
@@ -553,6 +559,73 @@ void CRENDERSql::ConditionAdd( const gd::argument::arguments& argumentsCondition
 void CRENDERSql::ConditionAdd( gd::argument::arguments&& argumentsCondition )
 {                                                                                                  assert( gd::sql::query::validate_condition_s( argumentsCondition ).first == true );
    m_vectorCondition.push_back( std::move(argumentsCondition) );
+}
+
+/**
+ * @brief
+ * 
+ * Configure the behavior of the query
+ * { "order": -2 } - order by column second column in descending order
+ * { "order": [ 1, -2, "FDate" ] } - order by multiple columns, first ascending, second descending, third by "FDate"
+ * 
+ * @param stringJson JSON string containing the modifier data
+ * @param tag_json Tag parameter indicating JSON parsing context (tag dispatch pattern)
+ * @return std::pair<bool,std::string> Success status and error message. Returns `{true, ""}` on success,
+ *         or `{false, error_description}` if JSON parsing fails or structure is invalid
+ */
+std::pair<bool, std::string> CRENDERSql::ModifierAdd( std::string_view stringJson, gd::types::tag_json )
+{
+   std::array<std::byte, 256> buffer_;
+   gd::argument::arguments arguments_( buffer_ );
+   try 
+   {
+      // ## Read json harvest modifier information ..........................
+      jsoncons::json jsonModifier = jsoncons::json::parse(stringJson);        // parse information about columns
+
+      if( jsonModifier.is_object() == false ) { return { false, "must be an object" }; } // only object is valid
+
+      std::string stringTable; // main table if modifiery data brings separate table name.
+      
+      if( jsonModifier.contains( "table" ) == true ) { stringTable = jsonModifier["table"].as_string(); }
+
+      // ### read order information
+
+      if( jsonModifier.contains( "order" ) == true )
+      {
+         auto jsonOrder = jsonModifier["order"];
+         if( jsonOrder.is_array() == true )
+         {
+            for( const auto& it : jsonOrder.array_range() )
+            {
+               arguments_.clear();
+               if( stringTable.empty() == false ) { arguments_.append( "table", stringTable ); } // add table ?
+               arguments_.append( "type_part", (uint32_t)ePartTypeOrderBy );  // set part type to ORDER BY
+               if( it.is_string() == true )
+               {
+                  arguments_.append_argument( "name", it.as_string_view() );
+               }
+               else if( it.is_number() == true )
+               {
+                  arguments_.append( "name", it.as_string() );
+               }
+
+               ColumnAdd( arguments_ );
+
+               //if( it.is_string() == true ) { m_vectorModifierOrder.push_back( it.as_string_view() ); }
+               //else if( it.is_integer() == true ) { m_vectorModifierOrder.push_back( std::to_string( it.as_integer() ) ); }
+            }
+         }
+         // else if( jsonOrder.is_string() == true ) { m_vectorModifierOrder.push_back( jsonOrder.as_string_view() ); }
+         // else if( jsonOrder.is_integer() == true ) { m_vectorModifierOrder.push_back( std::to_string( jsonOrder.as_integer() ) ); }
+      }
+
+   }
+   catch( jsoncons::json_exception& e )
+   {
+      std::string stringError = e.what();
+      return {false, stringError};
+   }
+   return { true, "" };
 }
 
 
@@ -705,11 +778,13 @@ std::pair<bool, std::string> CRENDERSql::Preprocess( std::string_view stringSqlT
       bool bError = false;
       auto stringResult = gd::sql::replace_g( stringNew, argumentsValues, callback_, &bError, gd::sql::tag_preprocess{} ); 
       if( bError == true ) { return { false, "Error during SQL preprocessing, sql: " + std::string(stringSqlTemplate) }; }
+      return { true, std::move( stringResult ) };                              // @TODO [summary: currently the string is replaced in the preprocess, but maybe we want to keep the original string and just return the result of the expression evaluation, and then replace it in the final query generation, this way we can have more control over when the expressions are evaluated and how they are replaced in the final query]
 
+      /*
       stringNew.clear();
       auto result_ = gd::sql::replace_g( stringResult, argumentsValues, stringNew, gd::sql::tag_brace{} ); 
       if( result_.first == false ) { return result_; }
-      return { true, std::move(stringNew) };
+      */
    }
 
    return { true, "" };
@@ -862,14 +937,39 @@ std::pair<bool, std::string> CRENDERSql::Query_AddFields( gd::sql::query* pquery
    std::array<std::byte, 256> buffer_;
    gd::argument::arguments arguments_( buffer_ );
 
-   //if( pquery->table_size() == 0 ) { pquery->table_add( "default_table" ); }
+   //if( pquery->table_size() == 0 ) { pquery->table_add( "_default_table_" ); }
 
    std::vector< std::pair<uint32_t, gd::variant_view> > vectorValue;
    for( auto itRow = m_tableField.row_begin(); itRow != m_tableField.row_end(); ++itRow )
    {
       arguments_.clear();
+
       std::string_view stringTable = itRow.cell_get_variant_view( eColumnFieldTable, gd::table::tag_not_null{}).as_string_view();
       std::string_view stringName = itRow.cell_get_variant_view( eColumnFieldName, gd::table::tag_not_null{}).as_string_view();
+
+      uint32_t uPartType = itRow.cell_get_variant_view( eColumnFieldPartType ).as_uint();
+      if( uPartType != 0 )
+      {
+         if( uPartType == uint32_t( ePartTypeOrderBy ) )
+         {
+            if( stringTable.empty() == true )                                 // no table check for table.column format in name
+            {
+               auto position_ = stringName.find( '.' );
+               if( position_ != std::string_view::npos )
+               {
+                  stringTable = stringName.substr( 0, position_ );
+                  stringName = stringName.substr( position_ + 1 );
+               } 
+            }
+
+            if( stringTable.empty() == true ) { return { false, "Need table for order by" }; }
+            if( pquery->table_exists( stringTable ) == false ) { pquery->table_add( stringTable ); }
+            
+            pquery->field_add_as_orderby( stringTable, stringName );
+            continue;
+         }
+      }
+
       //queryInsert.field_add( stringName );                                  // add column to query
       uint32_t uType = itRow.cell_get_variant_view(eColumnFieldType).as_uint();
       auto value_ = itRow.cell_get_variant_view(eColumnFieldValue, gd::table::tag_not_null{});
@@ -1278,8 +1378,11 @@ void CRENDERSql::ToArguments( gd::argument::shared::arguments& arguments ) const
 {
    for( auto itRow = m_tableField.row_begin(); itRow != m_tableField.row_end(); ++itRow )
    {
-      std::string stringName = itRow.cell_get_variant_view( "name", gd::table::tag_not_null{} ).as_string();
-      auto value_ = itRow.cell_get_variant_view( "value", gd::table::tag_not_null{} );
+      uint32_t uPartType = itRow.cell_get_variant_view(eColumnFieldPartType);
+      if( uPartType > ePartTypeWhere ) continue;                             // only include physical columns, not field that act as modifiers for query
+
+      std::string stringName = itRow.cell_get_variant_view( eColumnFieldName, gd::table::tag_not_null{} ).as_string();
+      auto value_ = itRow.cell_get_variant_view( eColumnFieldValue, gd::table::tag_not_null{} );
       arguments.append_argument( stringName, value_ );
    }
 }

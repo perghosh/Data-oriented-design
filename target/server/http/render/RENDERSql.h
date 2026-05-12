@@ -48,6 +48,8 @@ public:
       ePartTypeSelect,           ///< select part of query
       ePartTypeValue,            ///< value part of query, used for insert and update queries
       ePartTypeWhere,            ///< where part of query, used for select, update and delete queries
+      ePartTypeOrderBy,          ///< order by part of query, used for select queries to specify columns to order by
+      ePartTypeGroupBy,          ///< group by part of query, used for select queries to specify columns to group by
       ePartTypeReturning,        ///< returning part of query, used for select queries to specify columns to return
       enumPartType_Max
    };
@@ -175,6 +177,9 @@ public:
    void ConditionAdd( gd::argument::arguments&& argumentsCondition );
    size_t ConditionGetCount() const { return m_vectorCondition.size(); }
 
+   // @API [tag: modifiers] [summary: Methods for managing options]
+
+   std::pair<bool, std::string> ModifierAdd( std::string_view stringJson, gd::types::tag_json );
 
    /// Adds data for a complete record for specified table
    std::pair<bool,std::string> AddRecord( std::string_view stringJson, gd::types::tag_json );

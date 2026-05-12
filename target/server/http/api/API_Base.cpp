@@ -317,13 +317,13 @@ std::pair<bool, std::string> CAPI_Base::PrepareStatement( std::variant<size_t, s
    }
 
    // @NOTE [tag: order, limit] [summary: prepare to set order and limit for SQL query]
-   if( Exists( "options" ) == true )                                           // read query "options" for order and limit
+   if( Exists( "modifiers" ) == true )                                           // read query "modifiers" for distinct, order and limit
    {
-      auto stringOptions = GetNextArgument( "options" ).as_string();
-      if( stringOptions.empty() == false )
+      auto stringModifiers = GetNextArgument( "modifiers" ).as_string();
+      if( stringModifiers.empty() == false )
       {
-         //auto result_ = sql_.SetOptions( stringOptions, gd::types::tag_json{} );
-         //if( result_.first == false ) { return result_; }
+         auto result_ = sql_.ModifierAdd( stringModifiers, gd::types::tag_json{} );
+         if( result_.first == false ) { return result_; }
       }
    }
 

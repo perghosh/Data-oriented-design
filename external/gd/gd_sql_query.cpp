@@ -272,12 +272,14 @@ query::field* query::field_add_as_orderby( const gd::variant_view& variantTable,
 {
    auto ptable = table_get(variantTable);                                                          assert(ptable != nullptr);
 
-   field fieldAdd( *ptable, eSqlPartOrderBy );                                 // create field object that is added to query
+   field fieldAdd( *ptable, eSqlPartOrderBy );                                // create field object that is added to query
 
-   fieldAdd.append_argument("index", variantviewField);                        // add order index
+   fieldAdd.append_argument("order", variantviewField);
+   //fieldAdd.append_argument("index", variantviewField);                       // add order index
 
-   m_vectorField.push_back(std::move(fieldAdd));                               // add to list with fields
-   return &m_vectorField.back();                                               // return pointer to added field
+   m_uAddedPartType |= eSqlPartOrderBy;                                       // mark that order by part is added to query
+   m_vectorField.push_back(std::move(fieldAdd));                              // add to list with fields
+   return &m_vectorField.back();                                              // return pointer to added field
 }
 
 

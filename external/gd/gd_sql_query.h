@@ -432,6 +432,7 @@ public:
    table* table_add(const table& tableAdd );
    table* table_add( const gd::argument::arguments& argumentsTable, tag_arguments );
    bool table_exists( const table& tableExists ) const noexcept { return table_get( tableExists ) != nullptr; }
+   bool table_exists( std::string_view stringTable ) const noexcept { return table_get( stringTable ) != nullptr; }
    std::size_t table_size() const { return m_vectorTable.size(); }
    bool table_empty() const { return m_vectorTable.empty(); }
    uint32_t table_get_key() const { auto pTable = table_get(); return pTable ? (uint32_t)pTable->get_key() : 0; }
