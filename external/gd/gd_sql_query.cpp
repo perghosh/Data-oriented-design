@@ -1478,6 +1478,12 @@ std::string query::sql_get_orderby( std::string_view stringOrderByPrefix ) const
          stringOrderBy += ' ';
          stringOrderBy += order_.as_string_view();
       }
+      else if( order_.is_integer() == true )                                  // if order is integer
+      {
+         stringOrderBy += order_.as_string();
+         if( order_.cast_as_int32() >= 0 ) stringOrderBy += std::string_view{ " ASC" };
+         else stringOrderBy += std::string_view{ " DESC" };
+      }
       else
       {
          if( ptable->has( "alias" ) == true )

@@ -51,10 +51,9 @@
 #ifndef _GD_TYPES_BEGIN
 #define _GD_TYPES_BEGIN namespace gd { namespace types {
 #define _GD_TYPES_END } }
-_GD_TYPES_BEGIN
-#else
-_GD_TYPES_BEGIN
 #endif
+
+_GD_TYPES_BEGIN
 
 
 #if defined( __clang__ )
@@ -165,8 +164,8 @@ struct tag_value {};          ///< value used in some form
 struct tag_version {};        ///< version is used in some form, like v1.0
 struct tag_warning {};        ///< warning is used in some form
 
-struct tag_main_type {};      /// main type if there are secondary types
-struct tag_secondary_type {}; /// secondary type if there are main types
+struct tag_main_type {};      ///< main type if there are secondary types
+struct tag_secondary_type {}; ///< secondary type if there are main types
 
 struct tag_buffer {};         ///< buffer is used in some form, like a memory buffer
 struct tag_callback {};       ///< callback is used in some form, like a function pointer
@@ -182,7 +181,7 @@ struct tag_variable {};       ///< variable is used in some form
 // ## focus on action
 
 struct tag_try {};            ///< try is used in some form, like a try-catch block
-struct tag_force {};          /// force is used in some form, like force a value or state
+struct tag_force {};          ///< force is used in some form, like force a value or state
 struct tag_default {};        ///< default is used in some form, like a default value or state
 struct tag_custom {};         ///< custom is used in some form, like a user-defined value or state
 struct tag_special {};        ///< special is used in some form, like a special value or state
@@ -332,13 +331,7 @@ struct tag_variadic {};
 
 struct tag_detail {};        ///< detail is used in some form, like detailed information
 
-/// declare pointer to character main type as global 
-extern const uint8_t puCharType_g[0x100];
-
-/// declare pointer to character types as global 
-extern const uint16_t puCharGroup_g[0x100];
-
-// declare global methods
+// @API [tag: gd, type, character] [summary: global character type constants and helpers]
 
 /// Get the constant number for character type name, names like "space", "digit" etc
 uint8_t ctype_g(const std::string_view& stringCType, tag_main_type );
@@ -485,12 +478,69 @@ enum enumType
    eTypeRBinary      = eTypeNumberBinary     | eTypeGroupBinary                      | eTypeDetailReference,
    eTypeRString      = eTypeNumberString     | eTypeGroupString                      | eTypeDetailReference,
    eTypeRUtf8String  = eTypeNumberUtf8String | eTypeGroupString                      | eTypeDetailReference,
-   eTypeRWString     = eTypeNumberUtf8String | eTypeGroupString                      | eTypeDetailReference,
+   eTypeRWString     = eTypeNumberWString    | eTypeGroupString                      | eTypeDetailReference,
 
    eTypeArray        = eTypeNumberArray                                              | eTypeDetailReference,
    eTypeObject       = eTypeNumberObject                                             | eTypeDetailReference
 
 };
+
+constexpr uint8_t puCharType_g[0x100] =
+{
+   //       0, 1, 2, 3,  4, 5, 6, 7,  8, 9, A, B,  C, D, E, F,
+   /* 0 */ 00,00,00,00, 00,00,00,00, 01,01,00,00, 00,01,00,00,  /* 0   - 15  */
+   /* 1 */ 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00,  /* 16  - 31  */
+   /* 2 */ 01,00,07,00, 00,00,00,07, 00,00,00,00, 00,00,00,00,  /* 32  - 47   ,!,",#,$,%,&,',(,),*,+,,,-,.,/ */
+   /* 3 */ 02,02,02,02, 02,02,02,02, 02,02,00,00, 00,00,00,00,  /* 48  - 63  0,1,2,3,4,5,6,7,8,9,:,;,<,=,>,? */  
+
+   /* 4 */ 00,03,03,03, 03,03,03,03, 03,03,03,03, 03,03,03,03,  /* 64  - 79  */
+   /* 5 */ 03,03,03,03, 03,03,03,03, 03,03,03,00, 00,00,00,00,  /* 80  - 95  */
+   /* 6 */ 07,03,03,03, 03,03,03,03, 03,03,03,03, 03,03,03,03,  /* 96  - 111 */
+   /* 7 */ 03,03,03,03, 03,03,03,03, 03,03,03,00, 00,00,00,00,  /* 112 - 127 */
+
+   /* 8 */ 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00,  /* 128 - 143 */
+   /* 9 */ 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00,  /* 144 - 159 */
+   /* A */ 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00,  /* 160 - 175 */
+   /* B */ 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00,  /* 176 - 191 */
+
+   /* C */ 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00,  /* 192 - 207 */
+   /* D */ 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00,  /* 208 - 223 */
+   /* E */ 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00,  /* 224 - 239 */
+   /* F */ 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00   /* 240 - 255 */
+};
+
+
+
+
+/// 256 word values with bits set to mark different character classes used in parse logic
+/// 0x0020 = CHAR_GROUP_DECIMAL | CHAR_GROUP_SCIENTIFIC
+/// 0x04E2 = CHAR_GROUP_ALNUM | CHAR_GROUP_SCIENTIFIC | CHAR_GROUP_HEX | CHAR_GROUP_DECIMAL | CHAR_GROUP_DIGIT (number) 
+/// 0x0404 = CHAR_GROUP_ALNUM | CHAR_GROUP_ALPHABET
+/// 0x0444 = CHAR_GROUP_ALNUM | CHAR_GROUP_HEX | CHAR_GROUP_ALPHABET
+/// 0x04E4 = CHAR_GROUP_ALNUM | CHAR_GROUP_SCIENTIFIC | CHAR_GROUP_HEX | CHAR_GROUP_DECIMAL | CHAR_GROUP_ALPHABET
+/// 0x0010 = CHAR_GROUP_QUOTE (quote)
+inline constexpr uint16_t puCharGroup_g[0x100] =
+{
+   //   0,     1,     2,     3,     4,     5,     6,     7,     8,     9,     A,     B,     C,     D,     E,     F
+   0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0001,0x0001,0x0001,0x0000,0x0001,0x0000,0x0000,0x0000, /* 0x00-0x0F */
+   0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0001,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000, /* 0x10-0x1F */
+   0x0001,0x0000,0x0010,0x0000,0x0000,0x0000,0x0000,0x0010,0x0000,0x0001,0x0008,0x0008,0x0000,0x0008,0x00A0,0x1008, /* 0x20-0x2F  ,!,",#,$,%,&,',(,),*,+,,,-,.,/ */
+   0x04E2,0x04E2,0x04E2,0x04E2,0x04E2,0x04E2,0x04E2,0x04E2,0x04E2,0x04E2,0x0000,0x0000,0x0008,0x0008,0x0008,0x0000, /* 0x30-0x3F 0,1,2,3,4,5,6,7,8,9,:,;,<,=,>,? */
+   0x0000,0x0444,0x0444,0x0444,0x0444,0x04E4,0x0444,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404, /* 0x40-0x4F @,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O */
+   0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0008,0x1000,0x0000,0x0008,0x0008, /* 0x50-0x5F P,Q,R,S,T,U,V,W,X,Y,Z,[,\,],^,_ */
+   0x0000,0x0444,0x0444,0x0444,0x0444,0x04E4,0x0444,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404, /* 0x60-0x6F `,a,b,c,d,e,f,g,h,i,j,k,l,m,n,o */
+   0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0000,0x0000,0x0000,0x0000,0x0000, /* 0x70-0x7F p,q,r,s,t,u,v,w,x,y,z,{,|,},~*/
+   0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000, /* 0x80-0x8F */
+   0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000, /* 0x90-0x9F */
+   0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000, /* 0xA0-0xAF */
+   0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000, /* 0xB0-0xBF */
+   0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000, /* 0xC0-0xCF */
+   0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000, /* 0xD0-0xDF */
+   0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000, /* 0xE0-0xEF */
+   0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000, /* 0xF0-0xFF */
+};
+
+
 
 namespace detail {
    /// get the type number part
@@ -1337,12 +1387,12 @@ struct uuid
    uuid( std::span<uint8_t> data_ )       { assert( data_.size() >= 16 ); memcpy( m_puData, data_.data(), 16 ); }
    uuid( std::span<const uint8_t> data_ ) { assert( data_.size() >= 16 ); memcpy( m_puData, data_.data(), 16 ); }
 
-   
    bool operator==( const uuid& o ) const { return memcmp( m_puData, o.m_puData, 16 ) == 0; }
 
    uuid& operator=( const uuid& o ) { for( size_t i = 0; i < 16; i++ ) { m_puData[i] = o.m_puData[i]; } return *this; }
    uuid& operator=( const uint8_t* pbData ) { for( size_t i = 0; i < 16; i++ ) { m_puData[i] = pbData[i]; } return *this; }
    uuid& operator=( std::span<uint8_t> data_ ) { assert( data_.size() >= 16 ); memcpy( m_puData, data_.data(), 16 ); return *this; }
+   uuid& operator=( std::span<const uint8_t> data_ ) { assert( data_.size() >= 16 ); memcpy( m_puData, data_.data(), 16 ); return *this; }
    
    operator uint8_t*() { return m_puData; }
    operator const uint8_t*() const { return m_puData; }
@@ -1366,7 +1416,7 @@ uuid from_string_g( std::string_view stringUuid, tag_uuid );
 struct binary
 {
    binary( const uint8_t* pbData, size_t uLength ) : m_puData(pbData), m_uLength(uLength) {}
-   const binary& operator=( const binary& o ) { m_puData = o.m_puData; m_uLength = o.m_uLength; return *this; }
+   const binary& operator=( binary& o ) { m_puData = o.m_puData; m_uLength = o.m_uLength; return *this; }
    
    bool operator==( const binary& o ) const { return length() == o.length() && memcmp( m_puData, o.m_puData, m_uLength ) == 0; }
    

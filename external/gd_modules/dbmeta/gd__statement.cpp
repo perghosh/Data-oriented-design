@@ -100,7 +100,7 @@ std::pair<bool, std::string> statement::add( const gd::argument::arguments& argu
          if( result_.first == false ) { return { false, "Invalid UUID format: " + result_.second }; }
 
 
-         uuidValue = gd::uuid( stringUuid.data(), stringUuid.data() + stringUuid.length() );
+         uuidValue = std::span<const uint8_t>( gd::uuid( stringUuid.data(), stringUuid.data() + stringUuid.length() ) );
          m_ptableStatement->cell_set( uRow, eColumnUuid, uuidValue );
       }
    }

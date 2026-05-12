@@ -336,7 +336,7 @@ std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryCount()
          else if( stringUuid.length() == 36 ) { result_ = gd::binary_validate_uuid_g( stringUuid ); }
          if( result_.first == false ) { return { false, "Invalid UUID format: " + result_.second }; }
 
-         uuidValue = gd::uuid( stringUuid.data(), stringUuid.data() + stringUuid.length() );
+         uuidValue = std::span<const uint8_t>( gd::uuid( stringUuid.data(), stringUuid.data() + stringUuid.length() ) );
 
          uCount = pqueries->Count( uuidValue );
       }
@@ -457,7 +457,7 @@ std::pair<bool, std::string> CAPISystem::Execute_SessionAdd()
    }
    else
    { 
-      uuid = gd::uuid( gd::types::tag_command_random{} );
+      uuid = gd::types::uuid_generate_g();
       stringSession = gd::binary_to_hex_g( uuid.data(), 16, false );
    }
    

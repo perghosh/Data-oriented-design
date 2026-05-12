@@ -947,14 +947,15 @@ std::pair<bool, std::string> CRENDERSql::Query_AddFields( gd::sql::query* pquery
       std::string_view stringTable = itRow.cell_get_variant_view( eColumnFieldTable, gd::table::tag_not_null{}).as_string_view();
       std::string_view stringName = itRow.cell_get_variant_view( eColumnFieldName, gd::table::tag_not_null{}).as_string_view();
 
+      // ## Check for specific types that are stored differently in  query, order by, group by, etc.
       uint32_t uPartType = itRow.cell_get_variant_view( eColumnFieldPartType ).as_uint();
       if( uPartType != 0 )
       {
-         if( uPartType == uint32_t( ePartTypeOrderBy ) )
+         if( uPartType == uint32_t( ePartTypeOrderBy ) )                      // ORDER BY
          {
             if( stringTable.empty() == true )                                 // no table check for table.column format in name
             {
-               auto position_ = stringName.find( '.' );
+               auto position_ = stringName.find( '.' );                       // table syntax is table.column
                if( position_ != std::string_view::npos )
                {
                   stringTable = stringName.substr( 0, position_ );
@@ -964,8 +965,21 @@ std::pair<bool, std::string> CRENDERSql::Query_AddFields( gd::sql::query* pquery
 
             if( stringTable.empty() == true ) { return { false, "Need table for order by" }; }
             if( pquery->table_exists( stringTable ) == false ) { pquery->table_add( stringTable ); }
-            
-            pquery->field_add_as_orderby( stringTable, stringName );
+
+            // ### Check if column index or column name
+            auto type_group_ = gd::types::detect_ctypegroup_g( stringName ); // detect if name is column index or column name
+            if( type_group_ == gd::types::eTypeGroupInteger ) // column index
+            {
+               // convert to integer
+               gd::variant_view variantviewIndex = stringName;
+               variantviewIndex.convert( gd::variant_type::eTypeInt32 );
+               if( variantviewIndex.cast_as_uint32() == 0u || variantviewIndex.cast_as_uint32() > 10000u ) { return {false, "Invalid column order value"}; }
+               pquery->field_add_as_orderby( stringTable, variantviewIndex );
+            }
+            else // column name
+            {
+               pquery->field_add_as_orderby( stringTable, stringName );
+            }
             continue;
          }
       }

@@ -13,66 +13,10 @@
 
 _GD_TYPES_BEGIN
 
-constexpr uint8_t puCharType_g[0x100] =
-{
-   //       0, 1, 2, 3,  4, 5, 6, 7,  8, 9, A, B,  C, D, E, F,
-   /* 0 */ 00,00,00,00, 00,00,00,00, 01,01,00,00, 00,01,00,00,  /* 0   - 15  */
-   /* 1 */ 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00,  /* 16  - 31  */
-   /* 2 */ 01,00,07,00, 00,00,00,07, 00,00,00,00, 00,00,00,00,  /* 32  - 47   ,!,",#,$,%,&,',(,),*,+,,,-,.,/ */
-   /* 3 */ 02,02,02,02, 02,02,02,02, 02,02,00,00, 00,00,00,00,  /* 48  - 63  0,1,2,3,4,5,6,7,8,9,:,;,<,=,>,? */  
-
-   /* 4 */ 00,03,03,03, 03,03,03,03, 03,03,03,03, 03,03,03,03,  /* 64  - 79  */
-   /* 5 */ 03,03,03,03, 03,03,03,03, 03,03,03,00, 00,00,00,00,  /* 80  - 95  */
-   /* 6 */ 07,03,03,03, 03,03,03,03, 03,03,03,03, 03,03,03,03,  /* 96  - 111 */
-   /* 7 */ 03,03,03,03, 03,03,03,03, 03,03,03,00, 00,00,00,00,  /* 112 - 127 */
-
-   /* 8 */ 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00,  /* 128 - 143 */
-   /* 9 */ 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00,  /* 144 - 159 */
-   /* A */ 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00,  /* 160 - 175 */
-   /* B */ 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00,  /* 176 - 191 */
-
-   /* C */ 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00,  /* 192 - 207 */
-   /* D */ 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00,  /* 208 - 223 */
-   /* E */ 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00,  /* 224 - 239 */
-   /* F */ 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00   /* 240 - 255 */
-};
-
-
-
-
-/// 256 word values with bits set to mark different character classes used in parse logic
-/// 0x0020 = CHAR_GROUP_DECIMAL | CHAR_GROUP_SCIENTIFIC
-/// 0x04E2 = CHAR_GROUP_ALNUM | CHAR_GROUP_SCIENTIFIC | CHAR_GROUP_HEX | CHAR_GROUP_DECIMAL | CHAR_GROUP_DIGIT (number) 
-/// 0x0404 = CHAR_GROUP_ALNUM | CHAR_GROUP_ALPHABET
-/// 0x0444 = CHAR_GROUP_ALNUM | CHAR_GROUP_HEX | CHAR_GROUP_ALPHABET
-/// 0x04E4 = CHAR_GROUP_ALNUM | CHAR_GROUP_SCIENTIFIC | CHAR_GROUP_HEX | CHAR_GROUP_DECIMAL | CHAR_GROUP_ALPHABET
-/// 0x0010 = CHAR_GROUP_QUOTE (quote)
-constexpr uint16_t puCharGroup_g[0x100] =
-{
-   //   0,     1,     2,     3,     4,     5,     6,     7,     8,     9,     A,     B,     C,     D,     E,     F
-   0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0001,0x0001,0x0001,0x0000,0x0001,0x0000,0x0000,0x0000, /* 0x00-0x0F */
-   0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0001,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000, /* 0x10-0x1F */
-   0x0001,0x0000,0x0010,0x0000,0x0000,0x0000,0x0000,0x0010,0x0000,0x0001,0x0008,0x0008,0x0000,0x0008,0x00A0,0x1008, /* 0x20-0x2F  ,!,",#,$,%,&,',(,),*,+,,,-,.,/ */
-   0x04E2,0x04E2,0x04E2,0x04E2,0x04E2,0x04E2,0x04E2,0x04E2,0x04E2,0x04E2,0x0000,0x0000,0x0008,0x0008,0x0008,0x0000, /* 0x30-0x3F 0,1,2,3,4,5,6,7,8,9,:,;,<,=,>,? */
-   0x0000,0x0444,0x0444,0x0444,0x0444,0x04E4,0x0444,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404, /* 0x40-0x4F @,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O */
-   0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0008,0x1000,0x0000,0x0008,0x0008, /* 0x50-0x5F P,Q,R,S,T,U,V,W,X,Y,Z,[,\,],^,_ */
-   0x0000,0x0444,0x0444,0x0444,0x0444,0x04E4,0x0444,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404, /* 0x60-0x6F `,a,b,c,d,e,f,g,h,i,j,k,l,m,n,o */
-   0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0404,0x0000,0x0000,0x0000,0x0000,0x0000, /* 0x70-0x7F p,q,r,s,t,u,v,w,x,y,z,{,|,},~*/
-   0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000, /* 0x80-0x8F */
-   0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000, /* 0x90-0x9F */
-   0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000, /* 0xA0-0xAF */
-   0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000, /* 0xB0-0xBF */
-   0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000, /* 0xC0-0xCF */
-   0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000, /* 0xD0-0xDF */
-   0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000, /* 0xE0-0xEF */
-   0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000, /* 0xF0-0xFF */
-};
-
 // static_assert( ctype_g("digit") & CHAR_GROUP_DIGIT, "Wrong type for '1'");
 // static_assert( (puCharGroup_g[uint8_t('1')] && ctype_g("digit")) == ctype_g("digit"), "Wrong type for '1'");
 // static_assert( ctype_g("alphabet") == CHAR_GROUP_ALPHABET );
 // static_assert( is_ctype( 'a', ctype_g("alphabet") ) == true, "Wrong type for 'a'");
-
 
 /// 256 byte values with bits set to mark different character classes used in parse logic
 //static const uint16_t pCharGroup__s[0x100] =
@@ -139,13 +83,29 @@ uint16_t ctype_g(const std::string_view& stringCType)
    return 0;
 }
 
-/** ---------------------------------------------------------------------------
- * @brief Check if string buffer is text, number or decimal
- * This method tries to figure out if value is integer, decimal or text, just those
- * types form text.
- * @param puText start of text
- * @param uLength text length
- * @return constant for the type group, eTypeGroupInteger, eTypeGroupDecimal or eTypeGroupString
+/**  -------------------------------------------------------------------------- detect_ctypegroup_g 
+ * @brief Detect whether a byte buffer represents an integer, decimal, or string.
+ *
+ * The function scans `puText` from left to right and accepts:
+ * - optional leading `-`
+ * - digits (`0-9`)
+ * - at most one decimal separator (`.`)
+ *
+ * Any other character, or multiple decimal separators, classifies the input as
+ * `eTypeGroupString`.
+ *
+ * @param puText Pointer to the first byte in the input buffer.
+ * @param uLength Number of bytes to evaluate from `puText`.
+ * @return `eTypeGroupInteger` for integer-only text,
+ *         `eTypeGroupDecimal` for decimal text,
+ *         `eTypeGroupString` otherwise.
+ *
+ * @code
+ * detect_ctypegroup_g(reinterpret_cast<const uint8_t*>("42"), 2);     // eTypeGroupInteger
+ * detect_ctypegroup_g(reinterpret_cast<const uint8_t*>("-3.14"), 5);  // eTypeGroupDecimal
+ * detect_ctypegroup_g(reinterpret_cast<const uint8_t*>("12.3.4"), 6); // eTypeGroupString
+ * detect_ctypegroup_g(reinterpret_cast<const uint8_t*>("abc"), 3);    // eTypeGroupString
+ * @endcode
  */
 unsigned detect_ctypegroup_g( const uint8_t* puText, unsigned uLength )
 {
@@ -218,19 +178,14 @@ unsigned detect_ctypegroup_g( const uint8_t* puText, unsigned uLength )
 uuid uuid_generate_g()
 {
    // One engine per thread — no locks, no contention
-   thread_local std::mt19937_64 rng = []()
-   {
-      // Seed with multiple entropy sources to avoid same-sequence threads
-      std::mt19937_64 mt_;
-      std::seed_seq seedseq_
-      {
-          static_cast<uint64_t>( std::chrono::high_resolution_clock::now().time_since_epoch().count() ),
-          static_cast<uint64_t>( std::hash<std::thread::id>{}( std::this_thread::get_id() ) ),
-          static_cast<uint64_t>( reinterpret_cast<uintptr_t>( &mt_ ) )  // stack address for extra variance
+   thread_local std::mt19937_64 rng = [] {
+      std::seed_seq seq_{
+         static_cast<uint64_t>(std::chrono::high_resolution_clock::now().time_since_epoch().count()),
+         static_cast<uint64_t>(std::hash<std::thread::id>{}(std::this_thread::get_id())),
+         reinterpret_cast<uint64_t>(&rng)
       };
-      mt_.seed( seedseq_ );
-      return mt_;
-   }( );
+      return std::mt19937_64(seq_);
+    }();
 
    uint64_t uHi = rng();
    uint64_t uLo = rng();
@@ -301,7 +256,7 @@ void from_string_g( const std::string_view& stringHex, std::span<uint8_t> spanBi
  * @return uuid       decoded 16-byte UUID value
  */
 uuid from_string_g( std::string_view stringUuid, tag_uuid )
-{                                                                                                    assert( stringUuid.length() == 32 || stringUuid.length() == 36 || stringUuid.length() == 38 );
+{                                                                                                  assert( stringUuid.length() == 32 || stringUuid.length() == 36 || stringUuid.length() == 38 );
    uuid uuid_;
 
    const uint8_t* puBegin = reinterpret_cast<const uint8_t*>( stringUuid.data() );
@@ -316,7 +271,7 @@ uuid from_string_g( std::string_view stringUuid, tag_uuid )
       // ## compact path — no dashes, unroll the 16 iterations in pairs of two bytes
       //    to give the compiler better auto-vectorisation hints
       for( ; puBegin != puEnd; puBegin += 2 )
-      {                                                                                              assert( *puBegin < sizeof(puHexNibble_s) ); assert( *(puBegin + 1) < sizeof(puHexNibble_s) );
+      {                                                                                            assert( *puBegin < sizeof(puHexNibble_s) ); assert( *(puBegin + 1) < sizeof(puHexNibble_s) );
          *puSet++ = static_cast<uint8_t>( puHexNibble_s[*puBegin] << 4 ) | puHexNibble_s[*(puBegin + 1)];
       }
    }
@@ -326,7 +281,7 @@ uuid from_string_g( std::string_view stringUuid, tag_uuid )
       while( puBegin != puEnd )
       {
          if( *puBegin == '-' ) { puBegin++; continue; }
-                                                                                                     assert( *puBegin < sizeof(puHexNibble_s) ); assert( *(puBegin + 1) < sizeof(puHexNibble_s) );
+                                                                                                   assert( *puBegin < sizeof(puHexNibble_s) ); assert( *(puBegin + 1) < sizeof(puHexNibble_s) );
          *puSet++ = static_cast<uint8_t>( puHexNibble_s[*puBegin] << 4 ) | puHexNibble_s[*(puBegin + 1)];
          puBegin += 2;
       }

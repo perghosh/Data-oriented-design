@@ -100,6 +100,9 @@ public:
       *(uint64_t*)(m_pbData + sizeof(uint64_t)) = u2;
    }
 
+   uuid& operator=( const uuid& o ) { memcpy( m_pbData, o.m_pbData, sizeof(m_pbData) ); return *this; }
+   uuid& operator=( uuid&& o ) noexcept { memcpy( m_pbData, o.m_pbData, sizeof(m_pbData) ); return *this; }
+
    /// assign to raw uint8_t*, make sure pointer to buffer it is valid for uuid
    uuid& operator=( const uint8_t* p );
    /// assign to hexadecimal string
