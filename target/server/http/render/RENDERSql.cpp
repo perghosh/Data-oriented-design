@@ -1392,8 +1392,11 @@ void CRENDERSql::ToArguments( gd::argument::shared::arguments& arguments ) const
 {
    for( auto itRow = m_tableField.row_begin(); itRow != m_tableField.row_end(); ++itRow )
    {
-      uint32_t uPartType = itRow.cell_get_variant_view(eColumnFieldPartType);
-      if( uPartType > ePartTypeWhere ) continue;                             // only include physical columns, not field that act as modifiers for query
+      if( itRow.cell_is_null( eColumnFieldPartType ) == false )
+      {
+         uint32_t uPartType = itRow.cell_get_variant_view(eColumnFieldPartType);
+         if( uPartType > ePartTypeWhere ) continue;                           // only include physical columns, not field that act as modifiers for query
+      }
 
       std::string stringName = itRow.cell_get_variant_view( eColumnFieldName, gd::table::tag_not_null{} ).as_string();
       auto value_ = itRow.cell_get_variant_view( eColumnFieldValue, gd::table::tag_not_null{} );
