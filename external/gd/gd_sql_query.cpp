@@ -1481,8 +1481,10 @@ std::string query::sql_get_orderby( std::string_view stringOrderByPrefix ) const
       }
       else if( order_.is_integer() == true )                                  // if order is integer
       {
-         stringOrderBy += order_.as_string();
-         if( order_.cast_as_int32() >= 0 ) stringOrderBy += std::string_view{ " ASC" };
+         int32_t iOrderIndex = order_.cast_as_int32();
+         int32_t iOrderIndexAbs = iOrderIndex >= 0 ? iOrderIndex : -iOrderIndex; // add absolut value of order index
+         stringOrderBy += std::to_string( iOrderIndexAbs );
+         if( iOrderIndex >= 0 ) stringOrderBy += std::string_view{ " ASC" };
          else stringOrderBy += std::string_view{ " DESC" };
       }
       else

@@ -1004,7 +1004,8 @@ std::pair<bool, std::string> CRENDERSql::Query_AddFields( gd::sql::query* pquery
                // convert to integer
                gd::variant_view variantviewIndex = stringName;
                variantviewIndex.convert( gd::variant_type::eTypeInt32 );
-               if( variantviewIndex.cast_as_uint32() == 0u || variantviewIndex.cast_as_uint32() > 10000u ) { return {false, "Invalid column order value"}; }
+               int32_t iOrderIndex = variantviewIndex;
+               if( iOrderIndex == 0 || iOrderIndex > 2000 || iOrderIndex < -2000 ) { return {false, "Invalid column order value"}; } // realistic?? 
                pquery->field_add_as_orderby( stringTable, variantviewIndex );
             }
             else // column name
