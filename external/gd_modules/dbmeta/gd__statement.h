@@ -25,7 +25,6 @@
 
 _GD_MODULES_DBMETA_BEGIN
 
-
 /** @CLASS [name: statement] [description:  ]
  * \brief
  *
