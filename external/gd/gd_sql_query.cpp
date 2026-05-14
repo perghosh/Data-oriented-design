@@ -2846,7 +2846,7 @@ std::pair<bool, std::string> query::validate_field_s( const gd::argument::argume
 /// validate keys used in condition, "name", "value", "value_hi", "raw", "join", "type", "operator", "group", "sql"
 std::pair<bool, std::string> query::validate_condition_s( const gd::argument::arguments& argumentsCondition )
 {
-   static constexpr std::array<std::string_view, 10> arrayValid = { "table", "name", "value", "value_hi", "raw", "join", "type", "operator", "group", "sql" };
+   static constexpr std::array<std::string_view, 11> arrayValid = { "table", "name", "meta", "value", "value_hi", "raw", "join", "type", "operator", "group", "sql" };
    std::vector<std::string_view> keys_ = argumentsCondition.get_keys();
 
    // ## validate condition keys

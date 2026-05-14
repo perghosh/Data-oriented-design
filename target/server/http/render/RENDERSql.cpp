@@ -43,6 +43,9 @@ namespace utility
       if( gd::types::detail::hash_match_g( stringPartType, "select" ) == true ) { uPartType = CRENDERSql::ePartTypeSelect; }
       else if( gd::types::detail::hash_match_g( stringPartType, "value" ) == true ) { uPartType = CRENDERSql::ePartTypeValue; }
       else if( gd::types::detail::hash_match_g( stringPartType, "where" ) == true ) { uPartType = CRENDERSql::ePartTypeWhere; }
+      else if( gd::types::detail::hash_match_g( stringPartType, "order" ) == true ) { uPartType = CRENDERSql::ePartTypeOrderBy; }
+      else if( gd::types::detail::hash_match_g( stringPartType, "group" ) == true ) { uPartType = CRENDERSql::ePartTypeGroupBy; }
+      else if( gd::types::detail::hash_match_g( stringPartType, "limit" ) == true ) { uPartType = CRENDERSql::ePartTypeLimit; }
       else if( gd::types::detail::hash_match_g( stringPartType, "returning" ) == true ) { uPartType = CRENDERSql::ePartTypeReturning; }
       return uPartType;
    }
