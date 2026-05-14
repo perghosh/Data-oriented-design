@@ -253,8 +253,6 @@ boost::beast::http::message_generator CServer::RouteCommand( std::string_view st
    // 3. Set other response parameters
    PrepareResponseHeader_s( argumentHeader, response );                       // prepare response header
 
-   //auto u_ = std::distance( response.begin(), response.end() ); // suppress unused warning
-
    return response;
 }
 
@@ -472,11 +470,6 @@ void listener::on_accept(boost::beast::error_code errorcode, boost::asio::ip::tc
    const CServer* pserver_ = papplication_g->GetServer();                                          assert( pserver_ != nullptr );
    if( pserver_->IsProxy() == true ) { psession->SetFlags( CServer::eFlagProxy, 0u ); } // if server is in proxy mode, read session information based on requested item flags, for example read IP address of client
 
-   // ## Check for what type of information that is read from all incoming connections
-   const auto* pdocument = papplication_g->GetDocument();
-   if( pdocument != nullptr ) { psession->Read( pdocument->GetRequestFlags() ); } // read session information based on requested item flags
-
-
    psession->Run();
 
    do_accept();                                                               // Accept another connection
@@ -504,10 +497,12 @@ void session::Read( uint64_t uRequestItems )
          if( IsProxy() == true )                                              // if server is in proxy mode, read IP address of client from request header, for example "X-Forwarded-For" or "X-Real-IP"
          {
             // TILLFÄLLIG LOGG: Skriv ut alla headers som servern tar emot
+            /*
             for( const auto& header : m_request )
             {
                LOG_INFORMATION( "Header mottagen -> " << std::string( header.name_string() ) << ": " << std::string( header.value() ) );
             }
+            */
 
             std::string_view stringRealIp = m_request["X-Forwarded-For"];
             if( stringRealIp.empty() == true ) { stringRealIp = m_request["x-forwarded-for"]; }
@@ -563,6 +558,10 @@ void session::do_read()
 
 void session::on_read( boost::beast::error_code errorcode, std::size_t uBytesTransferred)
 {                                                                                                  boost::ignore_unused(uBytesTransferred);
+   // ## Check for what type of information that is read from all incoming connections
+   const auto* pdocument = papplication_g->GetDocument();
+   if( pdocument != nullptr ) { Read( pdocument->GetRequestFlags() ); }       // read session information based on requested item flags
+
    // This means they closed the connection
    if(errorcode == boost::beast::http::error::end_of_stream) { return do_close(); }
 
