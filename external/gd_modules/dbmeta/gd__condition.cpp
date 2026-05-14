@@ -34,7 +34,7 @@ std::pair<bool, std::string> condition::add( std::string_view stringSet,
    auto uRow = m_ptableCondition->row_add_one();
    m_ptableCondition->cell_set( uRow, eColumnKey,         (uint32_t)uRow       );
    m_ptableCondition->cell_set( uRow, eColumnUuid,        gd::types::uuid_generate_g() );
-   m_ptableCondition->cell_set( uRow, eColumnSetName,     stringSet            );
+   m_ptableCondition->cell_set( uRow, eColumnSet,         stringSet            );
    m_ptableCondition->cell_set( uRow, eColumnTable,       stringTable          );
    m_ptableCondition->cell_set( uRow, eColumnName,        stringName           );
    m_ptableCondition->cell_set( uRow, eColumnField,       stringField          );
@@ -68,7 +68,7 @@ std::pair<bool, std::string> condition::add( const gd::argument::arguments& argu
       auto stringUuid = uuid_.as_string_view();
       if( stringUuid.length() == 36 || stringUuid.length() == 32 )
       {
-         gd::types::uuid uuidValue( gd::uuid( stringUuid.data(), stringUuid.data() + stringUuid.length() ) );
+         gd::types::uuid uuidValue = gd::types::from_string_g( stringUuid, gd::types::tag_uuid{} );
          m_ptableCondition->cell_set( uRow, eColumnUuid, uuidValue );
       }
       else { return { false, "Invalid UUID length: " + std::to_string( stringUuid.length() ) }; }
@@ -105,9 +105,9 @@ gd::types::uuid condition::get_id( uint64_t uRow ) const
 }
 
 /// @brief Get condition-set name for row ------------------------------------ get_set_name
-std::string_view condition::get_set_name( uint64_t uRow ) const
+std::string_view condition::get_set( uint64_t uRow ) const
 {                                                                                                  assert( m_ptableCondition != nullptr ); assert( uRow < m_ptableCondition->size() );
-   return m_ptableCondition->cell_get_variant_view( uRow, eColumnSetName ).as_string_view();
+   return m_ptableCondition->cell_get_variant_view( uRow, eColumnSet ).as_string_view();
 }
 
 /// @brief Get condition name for row ---------------------------------------- get_name
@@ -162,7 +162,7 @@ int64_t condition::find( const gd::types::uuid* puuid ) const
  */
 int64_t condition::find_set( std::string_view stringSetName ) const
 {                                                                                                  assert( m_ptableCondition != nullptr );
-   return m_ptableCondition->find( eColumnSetName, stringSetName );
+   return m_ptableCondition->find( eColumnSet, stringSetName );
 }
 
 
