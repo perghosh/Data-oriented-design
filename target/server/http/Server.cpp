@@ -503,6 +503,12 @@ void session::Read( uint64_t uRequestItems )
       {
          if( IsProxy() == true )                                              // if server is in proxy mode, read IP address of client from request header, for example "X-Forwarded-For" or "X-Real-IP"
          {
+            // TILLFÄLLIG LOGG: Skriv ut alla headers som servern tar emot
+            for( const auto& header : m_request )
+            {
+               LOG_INFORMATION( "Header mottagen -> " << std::string( header.name_string() ) << ": " << std::string( header.value() ) );
+            }
+
             std::string_view stringRealIp = m_request["X-Forwarded-For"];
             if( stringRealIp.empty() == true ) { stringRealIp = m_request["x-forwarded-for"]; }
             
