@@ -450,19 +450,19 @@ std::pair<bool, std::string> CApplication::SERVER_Start(unsigned uIndex)
    std::string stringIp;
    std::string stringRoot;
 
-   // ## site
+   // ## site ...............................................................
    uPort = (unsigned short)m_ptableSite->cell_get_variant_view(uIndex, "port").as_uint();
    stringIp = m_ptableSite->cell_get_variant_view(uIndex, "ip").as_string();
    stringRoot = m_ptableSite->cell_get_variant_view(uIndex, "root").as_string();
 
 
-   // ## Prepare ip address
+   // ## Prepare ip address .................................................
 
    if (PROPERTY_Get("ip").empty() == false) { stringIp = papplication_g->PROPERTY_Get("ip").as_string(); }
    if( stringIp.empty() == true) { stringIp = stringDefaultIp; }
 
-   // ## Prepare root folder for site on local disk
-   std::string stringRootFolder = FOLDER_GetRoot_s( "temp__/" );
+   // ## Prepare root folder for site on local disk .........................
+   std::string stringRootFolder = FOLDER_GetRoot_s( "root/" );
    if( PROPERTY_Get("folder-root").empty() == false ) stringRootFolder = papplication_g->PROPERTY_Get("folder-root").as_string();
 
    unsigned uThreadCount = 4;
@@ -490,6 +490,13 @@ std::pair<bool, std::string> CApplication::SERVER_Start(unsigned uIndex)
    {
       m_pserverBoost->SetApplication( this );
       m_pserverBoost->SetListener( plistener );
+   }
+
+   // ## Check if proxy is set ..............................................
+   if( PROPERTY_Exists( "proxy" ) == true )
+   {
+      std::string stringProxy = PROPERTY_Get("proxy").as_string();                                 LOG_INFORMATION_RAW("Using proxy: " + stringProxy);
+      if( m_pserverBoost != nullptr ) { m_pserverBoost->AddFlags( CServer::eFlagProxy ); } // set proxy flag for server, this is used in http handler to know if we need to use x-forwarded-for header to get real client ip address
    }
 
    std::vector<std::thread> vectorThread;
@@ -550,6 +557,7 @@ void CApplication::PrepareOption_s(gd::cli::options& optionsApplication)
    optionsApplication.add({"logging-show", "Default is to log messages (non tagged), with this you can turn them on or off. If setting tag/tags then this turns off if not set to be on, value 0|1"});
 
    optionsApplication.add({ "port", "Set port number" });
+   optionsApplication.add({ "proxy", "Set proxy for the server" });
 
    // ## Folder settings
    optionsApplication.add({"path", "Global path variable used to find files in any of the folders if not found in selected folder, folders are separated by semicolon"});

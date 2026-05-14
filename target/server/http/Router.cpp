@@ -72,32 +72,6 @@ std::pair<bool, std::string> CRouter::Parse()
    return { true, "" };
 }
 
-/** -------------------------------------------------------------------------
- * @brief Template method that handles the common execution pattern for all API command objects.
- *        Expects APIObject to expose: Execute(), GetObjects(), GetCommandIndex(),
- *        and a constructor matching (application, path, arguments, commandIndex).
- * @return pair of success flag and status message
- */
- /*
-template<typename APIObject>
-std::pair<bool, std::string> CRouter::ExecuteCommand_( const std::vector<std::string_view>& vectorPath, const gd::argument::arguments& arguments_, unsigned& uCommandIndex)
-{
-   APIObject apiobject_( m_pApplication, vectorPath, arguments_, uCommandIndex );
-   auto result_ = apiobject_.Execute();                                       // execute command based on command
-
-   if( result_.first == true )                                                // if success get objects from api
-   {
-      Types::Objects* pobjectsResult = apiobject_.GetObjects();                                    assert( pobjectsResult );
-      if( pobjectsResult != nullptr && pobjectsResult->Empty() == false )
-      {
-         result_ = m_pdtoresponse->AddTransfer( pobjectsResult );             // add objects to response dto
-      }
-   }
-
-   uCommandIndex = apiobject_.GetCommandIndex();                              // get current active command index
-   return result_;
-}
-*/
 
 template<typename APIObject>
 std::pair<bool, std::string> CRouter::ExecuteCommand_( const std::vector<std::string_view>& vectorPath,  const gd::argument::arguments& arguments_,   unsigned& uCommandIndex )

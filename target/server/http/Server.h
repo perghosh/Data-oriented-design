@@ -56,6 +56,12 @@ class listener;
  */
 class CServer
 {
+public:
+   enum enumFlags : unsigned
+   {
+      eFlagProxy = 1, ///< flag to set server in proxy mode, in proxy mode server will forward request to other server and return response from that server to client
+   };
+
 // ## construction -------------------------------------------------------------
 public:
    CServer();
@@ -81,16 +87,22 @@ public:
 
 // ## methods ------------------------------------------------------------------
 public:
-   // @API [tag: get, set]
-      /// Get application pointer
+// @API [tag: get, set]
+   void SetFlags( unsigned uFlags ) { m_uFlags = uFlags; }
+   void AddFlags( unsigned uFlags ) { m_uFlags |= uFlags; }
+   void SetFlags( unsigned uSet, unsigned uClear ) { m_uFlags = ( m_uFlags | uSet ) & ~uClear; }
+
+   /// Get application pointer
    CApplication* GetApplication() const { return m_ppapplication; }
    void SetApplication( CApplication* ppapplication ) { m_ppapplication = ppapplication; }
 
    std::shared_ptr<listener> GetListener() const;
    void SetListener( std::shared_ptr<listener> plistener );
 
-/** \name OPERATION
-*///@{
+   bool IsProxy() const { return ( m_uFlags & eFlagProxy ) != 0; }
+
+// @API [tag: operation]
+
    std::pair<bool, std::string> Initialize();
 
    /// Route command
@@ -98,8 +110,6 @@ public:
 
    std::pair<bool, std::string> Execute( const std::vector<std::string_view>& vectorCommand, gd::com::server::command_i* pcommand );
 
-   
-//@}
 
 /** \name ROUTER
 *///@{
@@ -122,6 +132,7 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
+   unsigned m_uFlags{}; ///< flags for server, can be used to set different options for server
    CApplication* m_ppapplication{}; ///< application pointer, access application that is used as object root for server
    std::shared_ptr<listener> m_plistener; ///< listener object that accepts incoming connections and launches sessions to handle them
 
@@ -157,11 +168,16 @@ public:
    session( boost::asio::ip::tcp::socket&& socket, std::shared_ptr<std::string const> const& pstringFolderRoot);
 
 // ## methods -----------------------------------------------------------------
- 
-   void read( uint64_t uRequestItems );
+
+   void etFlags( unsigned uFlags ) { m_uFlags = uFlags; }
+   void AddFlags( unsigned uFlags ) { m_uFlags |= uFlags; }
+   void SetFlags( unsigned uSet, unsigned uClear ) { m_uFlags = ( m_uFlags | uSet ) & ~uClear; }
+   bool IsProxy() const { return ( m_uFlags & CServer::eFlagProxy ) != 0; }
+
+   void Read( uint64_t uRequestItems );
  
    // Start the asynchronous request
-   void run();
+   void Run();
 
    void do_read();
    void on_read( boost::beast::error_code errorcode, std::size_t uBytesTransferred);
@@ -174,6 +190,7 @@ public:
 
 // ## attributes --------------------------------------------------------------
 public:
+   unsigned m_uFlags{}; ///< flags for session, can be used to set different options for session
    boost::beast::tcp_stream m_tcpstream;        ///< Stream data using socket
    boost::beast::flat_buffer m_flatbuffer;      ///< Buffer to store data used in request
    std::shared_ptr<std::string const> m_pstringFolderRoot;///< root folder on disk where to find files

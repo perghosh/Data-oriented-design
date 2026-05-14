@@ -465,15 +465,19 @@ void listener::on_accept(boost::beast::error_code errorcode, boost::asio::ip::tc
       return;                                                                 // To avoid infinite loop
    }
 
-   // ## Create the session and run it
+   // ## Create the session and run it ......................................
    auto psession = std::make_shared<session>( std::move(socket), m_pstringFolderRoot);
+
+   // ## check for proxy mode and set session information based on requested item flags
+   const CServer* pserver_ = papplication_g->GetServer();                                          assert( pserver_ != nullptr );
+   if( pserver_->IsProxy() == true ) { psession->SetFlags( CServer::eFlagProxy, 0u ); } // if server is in proxy mode, read session information based on requested item flags, for example read IP address of client
 
    // ## Check for what type of information that is read from all incoming connections
    const auto* pdocument = papplication_g->GetDocument();
-   if( pdocument != nullptr ) { psession->read( pdocument->GetRequestFlags() ); } // read session information based on requested item flags
+   if( pdocument != nullptr ) { psession->Read( pdocument->GetRequestFlags() ); } // read session information based on requested item flags
 
 
-   psession->run();
+   psession->Run();
 
    do_accept();                                                               // Accept another connection
 }
@@ -490,13 +494,25 @@ session::session( boost::asio::ip::tcp::socket&& socket, std::shared_ptr<std::st
  * @brief Reads session information based on requested item flags.
  * @param uRequestItems Bit mask specifying which session items to read (e.g., `Types::eRequestItemIp` for IP address).
  */
-void session::read( uint64_t uRequestItems )
+void session::Read( uint64_t uRequestItems )
 {
    // ## Read IP address ?
    if( (uRequestItems & Types::eRequestItemIp) == Types::eRequestItemIp )
    {
       try
       {
+         if( IsProxy() == true )                                              // if server is in proxy mode, read IP address of client from request header, for example "X-Forwarded-For" or "X-Real-IP"
+         {
+            std::string_view stringRealIp = m_request["X-Forwarded-For"];
+            if( stringRealIp.empty() == true ) { stringRealIp = m_request["X-Real-IP"]; }
+
+            if( stringRealIp.empty() == false )
+            {
+               m_argument.append( "ip", stringRealIp );
+               return;
+            }
+         }
+
          auto endpoint_ = m_tcpstream.socket().remote_endpoint();
          auto stringIp = endpoint_.address().to_string();
          m_argument.append( "ip", stringIp );
@@ -508,7 +524,7 @@ void session::read( uint64_t uRequestItems )
    }
 }
 
-void session::run()
+void session::Run()
 {
    // We need to be executing within a strand to perform async operations
    // on the I/O objects in this session. Although not strictly necessary
