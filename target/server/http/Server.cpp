@@ -512,7 +512,7 @@ void session::Read( uint64_t uRequestItems )
                m_argument.append( "ip", stringRealIp );
                return;
             }
-                                                                                                   LOG_WARNING( "Proxy mode enabled but no real IP address found." );
+                                                                                                   // LOG_WARNING( "Proxy mode enabled but no real IP address found." );
          }
 
          auto endpoint_ = m_tcpstream.socket().remote_endpoint();
@@ -543,7 +543,7 @@ void session::do_read()
    // otherwise the operation behavior is undefined.
    m_request = {};
 
-   m_tcpstream.expires_after(std::chrono::seconds(30));                        // Set the timeout.
+   m_tcpstream.expires_after(std::chrono::seconds(60));                        // Set the timeout.
 
    // Read a request
    boost::beast::http::async_read(m_tcpstream, m_flatbuffer, m_request, boost::beast::bind_front_handler( &session::on_read, shared_from_this()));
@@ -551,6 +551,10 @@ void session::do_read()
 
 void session::on_read( boost::beast::error_code errorcode, std::size_t uBytesTransferred)
 {                                                                                                  boost::ignore_unused(uBytesTransferred);
+   if( errorcode == boost::beast::http::error::end_of_stream ) { return do_close(); } // This means they closed the connection
+
+   if( errorcode ) { fail_g( errorcode, "read" ); return do_close(); }            // if an error occurs, log the error and close the connection
+
    // ## Check for what type of information that is read from all incoming connections
    const auto* pdocument = papplication_g->GetDocument();
    if( pdocument != nullptr ) { Read( pdocument->GetRequestFlags() ); }       // read session information based on requested item flags
