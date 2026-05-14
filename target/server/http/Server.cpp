@@ -508,11 +508,12 @@ void session::Read( uint64_t uRequestItems )
 
             if( stringRealIp.empty() == false )
             {
+                                                                                                   LOG_INFORMATION( "Proxy mode enabled, IP address from request headers: " << std::string( stringRealIp ) );
                m_argument.append( "ip", stringRealIp );
                return;
             }
 
-            if( stringRealIp.empty() == true ) { LOG_WARNING_RAW( "Proxy mode enabled but no real IP address found." ); }
+            if( stringRealIp.empty() == true ) { LOG_WARNING( "Proxy mode enabled but no real IP address found." ); }
          }
 
          auto endpoint_ = m_tcpstream.socket().remote_endpoint();
