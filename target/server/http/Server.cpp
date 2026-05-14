@@ -511,6 +511,8 @@ void session::Read( uint64_t uRequestItems )
                m_argument.append( "ip", stringRealIp );
                return;
             }
+
+            if( stringRealIp.empty() == true ) { LOG_WARNING_RAW( "Proxy mode enabled but no real IP address found." ); }
          }
 
          auto endpoint_ = m_tcpstream.socket().remote_endpoint();
