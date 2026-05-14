@@ -504,16 +504,22 @@ void session::Read( uint64_t uRequestItems )
          if( IsProxy() == true )                                              // if server is in proxy mode, read IP address of client from request header, for example "X-Forwarded-For" or "X-Real-IP"
          {
             std::string_view stringRealIp = m_request["X-Forwarded-For"];
+            if( stringRealIp.empty() == true ) { stringRealIp = m_request["x-forwarded-for"]; }
+            
+            // Om X-Forwarded-For saknas, kontrollera X-Real-IP
             if( stringRealIp.empty() == true ) { stringRealIp = m_request["X-Real-IP"]; }
+            if( stringRealIp.empty() == true ) { stringRealIp = m_request["x-real-ip"]; }
 
             if( stringRealIp.empty() == false )
             {
-                                                                                                   LOG_INFORMATION( "Proxy mode enabled, IP address from request headers: " << std::string( stringRealIp ) );
+               // Extrahera endast den första IP-adressen om det är en kommaseparerad lista
+               auto uCommaPos = stringRealIp.find(',');
+               if( uCommaPos != std::string_view::npos ) { stringRealIp = stringRealIp.substr( 0, uCommaPos ); }
+
                m_argument.append( "ip", stringRealIp );
                return;
             }
-
-            if( stringRealIp.empty() == true ) { LOG_WARNING( "Proxy mode enabled but no real IP address found." ); }
+                                                                                                   LOG_WARNING( "Proxy mode enabled but no real IP address found." );
          }
 
          auto endpoint_ = m_tcpstream.socket().remote_endpoint();
