@@ -850,7 +850,7 @@ bool validate_value_g( std::string_view stringValue, unsigned uType )
    if( is_number_g( uType ) || is_boolean_g( uType ) )
    {
       auto uSize = gd::types::value_textsize_g( uType );                      // Get expected size if fixed type (guid)
-      if( uSize > 0 && uSize > stringValue.length() ) { return false; }       // Check if hex string length matches expected size
+      if( uSize > 0 && stringValue.length() > uSize ) { return false; }       // Check if string length is within expected max size 
       // For numbers and booleans, we can do a simple check to see if the string is a valid representation
       // This is a very basic check and can be improved with regex or more comprehensive parsing
       for( char c : stringValue )

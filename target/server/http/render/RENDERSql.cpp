@@ -432,7 +432,21 @@ void CRENDERSql::AddValues( const gd::argument::arguments& argumentsField )
    for( auto [key_, value_] : argumentsField.named() )
    {
       auto uRow = m_tableField.row_add_one();                                 // Add row to store field information
-      m_tableField.cell_set( uRow, eColumnFieldName, key_, gd::table::tag_spill{});
+
+      // ## Check for table name in key, if key has . then split it and get table name
+      std::string_view stringKey( key_ );
+      std::size_t uPosition = stringKey.find( '.' );
+      if( uPosition != std::string_view::npos )
+      {
+         std::string_view stringTableName = stringKey.substr( 0, uPosition );
+         std::string_view stringColumnName = stringKey.substr( uPosition + 1 );
+         m_tableField.cell_set( uRow, eColumnFieldTable, stringTableName, gd::table::tag_spill{} );
+         m_tableField.cell_set( uRow, eColumnFieldName, stringColumnName, gd::table::tag_spill{} );
+      }
+      else
+      {
+         m_tableField.cell_set( uRow, eColumnFieldName, key_, gd::table::tag_spill{} );
+      }
 
       if( value_.is_text() == true ) 
       { 
@@ -1057,6 +1071,7 @@ std::pair<bool, std::string> CRENDERSql::Query_AddFields( gd::sql::query* pquery
       arguments_.append( { { "name", stringName }, { "value", value_ }, { "type", uType } }, gd::types::tag_view{});
       if( stringTable.empty() == true )
       {
+         if( pquery->table_size() == 0 ) { return { false, "No table available" }; } // this needs a table
          pquery->field_add( arguments_, gd::sql::tag_arguments{} );           // add column to query
       }
       else
