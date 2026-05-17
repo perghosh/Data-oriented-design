@@ -108,7 +108,7 @@ inline uint32_t get_json_primitive_type( std::string_view stringJsonPrimitive  )
 {
    if( stringJsonPrimitive.empty() || stringJsonPrimitive[0] == 'n' ) return gd::variant_type::eTypeUnknown;
    else if( stringJsonPrimitive[0] == 't' || stringJsonPrimitive[0] == 'f' ) return gd::variant_type::eTypeBool;
-   else if( stringJsonPrimitive[0] == '-' || stringJsonPrimitive[0] == '+' ) return gd::variant_type::eTypeCDouble;
+   else if( stringJsonPrimitive[0] == '-' || stringJsonPrimitive[0] == '+' ) stringJsonPrimitive.remove_prefix(1);
 
    // ## Check for digits and count dots
    bool bFoundDot = false;
@@ -120,6 +120,7 @@ inline uint32_t get_json_primitive_type( std::string_view stringJsonPrimitive  )
       return gd::variant_type::eTypeString;
    }
 
+   if( bFoundDot == false ) return gd::variant_type::eTypeInt64;              // No dot means it's an integer
    return gd::variant_type::eTypeCDouble;                                     // All numbers are decimal in json
 }
 

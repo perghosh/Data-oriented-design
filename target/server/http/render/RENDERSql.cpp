@@ -771,10 +771,12 @@ std::pair<bool,std::string> CRENDERSql::AddRecord( std::string_view stringJson, 
 
 std::pair<bool, std::string> EXPRESSION_GetArgument_s( const std::vector<gd::expression::value>& vectorArgument, gd::expression::value* pvalueReturn );
 std::pair<bool, std::string> EXPRESSION_Exists_s( const std::vector<gd::expression::value>& vectorArgument, gd::expression::value* pvalueReturn );
+std::pair<bool, std::string> EXPRESSION_AllExists_s( const std::vector<gd::expression::value>& vectorArgument, gd::expression::value* pvalueReturn );
 
 // Array of MethodInfo for visual studio operations
 const gd::expression::method pmethodSource_g[] = {
-   { (void*)&EXPRESSION_Exists_s, "exists", 2, 1 },
+   { (void*)&EXPRESSION_AllExists_s, "all_exists", 2, 1, gd::expression::method::eFlagVarArgs },
+   { (void*)&EXPRESSION_Exists_s, "exists", 2, 1, gd::expression::method::eFlagVarArgs },
    { (void*)&EXPRESSION_GetArgument_s, "get_argument", 2, 1 },
 };
 
@@ -1704,23 +1706,63 @@ std::pair<bool, std::string> EXPRESSION_GetArgument_s( const std::vector<gd::exp
    return { false, "Invalid argument name type, expected string." };
 }
 
-std::pair<bool, std::string> EXPRESSION_Exists_s( const std::vector<gd::expression::value>& vectorArgument, gd::expression::value* pvalueReturn )
+std::pair<bool, std::string> EXPRESSION_AllExists_s( const std::vector<gd::expression::value>& vectorArgument, gd::expression::value* pvalueReturn )
 {                                                                                                  assert(vectorArgument.size() > 1);
-   auto object_ = vectorArgument[1];                                                               assert(object_.is_pointer() == true);
+   // ## get arguments object from last argument .............................
+   auto object_ = vectorArgument.back();                                                           assert( object_.is_pointer() == true );
+   if( object_.is_pointer() == false ) { return { false, "First argument must be a pointer." }; } // Note that it is a stack so first is last
+
    gd::argument::shared::arguments* parguments_ = (gd::argument::shared::arguments*)object_.get_pointer();
 
-   auto& name_ = vectorArgument[0];
-   if( name_.is_string() == true )
+   // ## check if all arguments are found ....................................
+   for( size_t u = 0; u < vectorArgument.size() - 1; ++u )
    {
-      std::string stringName( name_.as_string() );
-      if( stringName.empty() == true ) { return { false, "Argument name cannot be empty." }; }
-      auto variantview_ = ( *parguments_ )[stringName].as_variant_view();
-
-      if( variantview_.is_null() == true ) { *pvalueReturn = false; }         // if argument not found, return false
-      else { *pvalueReturn = true; }
-
-      return { true, "" };
+      auto& name_ = vectorArgument[u];
+      if( name_.is_string() == true )
+      {
+         std::string stringName( name_.as_string() );
+         if( stringName.empty() == true ) { return { false, "Argument name cannot be empty." }; }
+         auto variantview_ = ( *parguments_ )[stringName].as_variant_view();
+         if( variantview_.is_null() == true )
+         {
+            *pvalueReturn = false;
+            return { true, "" };
+         } // if argument is not found, return false
+      }
+      else { return { false, "Invalid argument type, expected string." }; }
    }
+      
+   *pvalueReturn = true;
+   return { true, "" };
+}
 
-   return { false, "Invalid argument name type, expected string." };
+
+std::pair<bool, std::string> EXPRESSION_Exists_s( const std::vector<gd::expression::value>& vectorArgument, gd::expression::value* pvalueReturn )
+{                                                                                                  assert(vectorArgument.size() > 1);
+   // ## get arguments object from last argument .............................
+   auto object_ = vectorArgument.back();                                                           assert( object_.is_pointer() == true );
+   if( object_.is_pointer() == false ) { return { false, "First argument must be a pointer." }; } // Note that it is a stack so first is last
+
+   gd::argument::shared::arguments* parguments_ = (gd::argument::shared::arguments*)object_.get_pointer();
+
+   // ## check if any argument is found ......................................
+   for( size_t u = 0; u < vectorArgument.size() - 1; ++u )
+   {
+      auto& name_ = vectorArgument[u];
+      if( name_.is_string() == true )
+      {
+         std::string stringName( name_.as_string() );
+         if( stringName.empty() == true ) { return { false, "Argument name cannot be empty." }; }
+         auto variantview_ = ( *parguments_ )[stringName].as_variant_view();
+         if( variantview_.is_null() == false )
+         {
+            *pvalueReturn = true;
+            return { true, "" };
+         } // if argument is found, return true
+      }
+      else { return { false, "Invalid argument type, expected string." }; }
+   }
+      
+   *pvalueReturn = false;
+   return { true, "" };
 }

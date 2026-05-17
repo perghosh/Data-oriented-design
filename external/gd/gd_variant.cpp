@@ -73,6 +73,9 @@ variant::variant( std::string_view stringJson, bool* pbSucceeded, gd::types::tag
    case eTypeBool:
       m_V.b = stringJson == "true";
       break;
+   case eTypeInt64:
+      m_V.int64 = std::stoll( std::string( stringJson ) );
+      break;
    case eTypeCDouble:
       m_V.d = std::stod( std::string( stringJson ) );
       break;
