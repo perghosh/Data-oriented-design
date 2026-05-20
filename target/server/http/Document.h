@@ -235,6 +235,7 @@ public:
    std::pair<bool, std::string> DATABASE_SelectMetadata( const gd::argument::arguments& arguments_ );
    std::pair<bool, std::string> DATABASE_Prepare( const gd::argument::arguments& arguments_ );
    std::pair<bool, std::string> DATABASE_LoadStatements( const gd::argument::arguments& arguments_ );
+   std::pair<bool, std::string> DATABASE_LoadExpressions( const gd::argument::arguments& arguments_ );
 
 // ## @API [tag: load] [description: metadata about database]
 

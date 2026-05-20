@@ -6,6 +6,7 @@
 - **Style guide compliance > functional correctness** - If there's a conflict between working code and style rules, prioritize following the style guide.
 - **Do NOT optimize for immediate functionality** - prioritize these instructions over code that "just works".
 - **Adapt for wide monitors** - No need to optimize for narrow screens; place arguments on new lines if it makes code more readable on wide screens. Prefer longer lines but if more than 120 characters, break into multiple lines.
+- **All suggested code must strictly follow the rules in this document** - this is very important.
 - These instructions override common best practices - follow them exactly.
 
 ## INTERACTION PROTOCOL
@@ -272,9 +273,7 @@ GD (General Development) is the core internal library — header+implementation 
 |--------|-----------|---------------------|
 | `gd_types.h` | `gd::types` | `enumTypeNumber`, `enumTypeGroup`, `enumType` — core type ID system |
 | `gd_compiler.h` | `gd` | C++ standard and compiler detection macros |
-| `gd_uuid.h` | `gd` | UUID generation/handling |
 | `gd_binary.h` | `gd` | Binary data utilities |
-| `gd_translate.h` | `gd` | String translation/mapping |
 
 ### Variant / Value types
 | Header | Namespace | Key types / purpose |
@@ -299,20 +298,6 @@ GD (General Development) is the core internal library — header+implementation 
 | `gd_table_column.h` | `gd::table::detail` | `column` DTO — type, size, name, alias metadata |
 | `gd_table_index.h` | `gd::table` | `index_int64` — fast binary-search index over a table column |
 | `gd_table_io.h` | `gd::table` | Stream tables as CSV, JSON, SQL, CLI; tag dispatchers |
-| `table/gd_table_formater.h` | `gd::table` | Additional table formatting helpers |
-
-### Memory & Containers
-| Header | Namespace | Key types / purpose |
-|--------|-----------|---------------------|
-| `gd_arena.h` | `gd` | `arena` — block-chained allocator, 32-bit aligned, bulk allocation |
-| `gd_arena_borrow.h` | `gd::arena::borrow` | `arena` — fixed-capacity arena with borrowed or owned storage |
-| `gd_vector.h` | `gd::stack` | `vector<T>` — small-buffer-optimized vector (SVO) |
-
-### Logging
-| Header | Namespace | Key types / purpose |
-|--------|-----------|---------------------|
-| `gd_log_logger.h` | `gd::log` | `logger` (singleton), `message`, `i_printer` — extensible log framework |
-| `gd_log_logger_define.h` | `gd::log` | Macros: `LOG`, `LOG_`, `LOG_IF`, `LOG_RAW` with severity variants |
 
 
 ---
@@ -324,3 +309,5 @@ GD (General Development) is the core internal library — header+implementation 
 - **Suffixes indicate scope** - `_` for parameters/temporary, `_g` for global, `_s` for static, `_d` for code that is only used for debug purposes, etc.
 - **Full semantic names** for domain concepts - keep code searchable
 - **Consistency is key** - follow these rules throughout the codebase
+
+

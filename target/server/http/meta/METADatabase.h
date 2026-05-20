@@ -22,6 +22,9 @@
 #include "gd/gd_table_index.h"
 #include "gd/gd_table_arguments.h"
 
+#include "gd_modules/dbmeta/gd__database.h"
+#include "gd_modules/dbmeta/gd__expression.h"
+
 
 #ifndef NAMESPACE_META_BEGIN
 
@@ -79,8 +82,12 @@ public:
 // @API [tag: operation]
    std::pair<bool, std::string> Initialize();
    
+   // @API [tag: add]
    std::pair<bool, std::string> Add( gd::table::dto::table& tableTable, gd::types::tag_table );
    std::pair<bool, std::string> Add( gd::table::dto::table& tableTable, gd::types::tag_column );
+
+// @API [tag: find]
+   [[nodiscard]] bool Table_FindKey(std::string_view stingTable, uint32_t* puKey = nullptr) const noexcept; ///< find key to table
 
    /// Check if tables are ready to be connected
    bool IsReadyToLinkTables() const;
@@ -93,11 +100,15 @@ public:
 
    std::pair<bool, std::string> ReadColumnMetadata( std::string_view stringTable, std::vector<std::string_view> vectorField, gd::table::dto::table* ptableColumn ) const;
 
+
    [[nodiscard]] int64_t Column_FindRow( const gd::argument::arguments& argumentsFind ) const noexcept;
    [[nodiscard]] uint32_t Column_GetType( uint64_t iRow ) const noexcept;
    [[nodiscard]] uint32_t Column_GetMaxSize( uint64_t iRow ) const noexcept;
    void Column_CreateIndex();
 
+   [[nodiscard]] int64_t Expression_FindRow( const gd::argument::arguments& argumentsFind ) const noexcept;
+
+   std::pair<bool, std::string> LoadExpressions(std::string_view stringFile, gd::table::dto::table* ptableExpression, gd::types::tag_xml);
 
 protected:
 // @API [tag: internal]
@@ -113,6 +124,9 @@ public:
    std::unique_ptr<gd::table::arguments::table> m_ptableJoin;  ///< table with connections between tables
    std::unique_ptr<gd::table::arguments::table> m_ptableComputed;  ///< table with computed columns
 
+   std::unique_ptr<gd::modules::dbmeta::database> m_pdatabase;  ///< database meta information
+   std::unique_ptr<gd::modules::dbmeta::expression> m_pexpression;  ///< expression handler
+
    gd::table::index_string m_indexstringColumn;
 
 
@@ -122,6 +136,8 @@ public:
    static void CreateColumn_s( gd::table::arguments::table& tableColumn ); ///< create table structure for column information
    static void CreateJoin_s( gd::table::arguments::table& tableJoin ); ///< create session table structure
    static void CreateComputed_s( gd::table::arguments::table& tableComputed );
+
+
 
 };
 

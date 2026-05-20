@@ -1853,37 +1853,37 @@ inline arguments& arguments::append( const std::vector<gd::variant_view>& vector
 
 /// append values from vector with pairs of string_view items
 inline arguments& arguments::append( const std::vector<std::pair<std::string_view, std::string_view>>& vectorStringValue ) {
-   for( auto it : vectorStringValue ) append( it.first, it.second );
+   for( const auto& it : vectorStringValue ) append( it.first, it.second );
    return *this;
 }
 
 /// append values from vector with pairs of string items
 inline arguments& arguments::append( const std::vector<std::pair<std::string, std::string>>& vectorStringValue ) {
-   for( auto it : vectorStringValue ) append( it.first, it.second );
+   for( const auto& it : vectorStringValue ) append( it.first, it.second );
    return *this;
 }
 
 /// append values from vector with variant items
 inline arguments& arguments::append( const std::vector<std::pair<std::string,gd::variant>>& vectorStringVariant ) {
-   for( auto it : vectorStringVariant ) append_argument( it.first, it.second );
+   for( const auto& it : vectorStringVariant ) append_argument( it.first, it.second );
    return *this;
 }
 
 /// append values from vector with pair of string_view and variant_view items
 inline arguments& arguments::append(const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorStringVariantView ) {
-   for( auto it : vectorStringVariantView ) append_argument(it.first, it.second);
+   for( const auto& it : vectorStringVariantView ) append_argument(it.first, it.second);
    return *this;
 }
 
 
 /// append values from vector with variant items
 inline arguments& arguments::append( const std::vector<std::pair<std::string_view,std::string_view>>& vectorStringValue, tag_parse_type ) {
-   for( auto it : vectorStringValue ) append_argument( it.first, it.second, tag_parse_type{} );
+   for( const auto& it : vectorStringValue ) append_argument( it.first, it.second, tag_parse_type{} );
    return *this;
 }
 
 inline arguments& arguments::append( const std::vector<std::pair<std::string,std::string>>& vectorStringValue, tag_parse_type ) {
-   for( auto it : vectorStringValue ) append_argument( it.first, it.second, tag_parse_type{} );
+   for( const auto& it : vectorStringValue ) append_argument( it.first, it.second, tag_parse_type{} );
    return *this;
 }
 

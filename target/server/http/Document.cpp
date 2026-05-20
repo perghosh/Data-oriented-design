@@ -595,6 +595,28 @@ std::pair<bool, std::string> CDocument::DATABASE_LoadStatements( const gd::argum
    return { true, "" };
 }
 
+/** ------------------------------------------------------------------------- DATABASE_LoadExpressions
+ * @brief Loads database expressions from a file specified in arguments.
+ * @param arguments_ Arguments containing optional `expression-file` key with path to expressions file.
+ * @return Pair of success status and error message (empty string on success).
+ */
+std::pair<bool, std::string> CDocument::DATABASE_LoadExpressions(const gd::argument::arguments& arguments_)
+{
+   if( arguments_.exists( "expression-file" ) == true )
+   {
+      std::string stringExpressionFile = arguments_["expression-file"].as_string();
+      gd::table::dto::table tableExpression;                                   // create table for expressions    
+      auto result_ = m_pMDatabase->LoadExpressions( stringExpressionFile, &tableExpression, gd::types::tag_xml{});// load expressions to query manager, this is used to generate queries from templates
+                                                                                                   LOG_DEBUG_RAW( "Database expressions loaded from file: " & stringExpressionFile & " number of loaded expressions " & m_pMQueries->Size() );
+      if( result_.first == false  ) { return result_; }
+
+      // ## set property to file with expressions
+      GetApplication()->PROPERTY_Set( "file-expressions", stringExpressionFile );
+   }
+
+   return { true, "" };
+}
+
 /** ---------------------------------------------------------------------------
  * @brief Add error to internal list of errors
  * @param stringError error information

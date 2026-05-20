@@ -1,4 +1,8 @@
 #include <array>
+#include <filesystem>
+
+#include "pugixml/pugixml.hpp"
+
 
 #include "../convert/CONVERTCore.h"
 
@@ -20,12 +24,16 @@ std::pair<bool, std::string> CDatabase::Initialize()
       
       m_ptableColumn = std::make_unique<gd::table::arguments::table>();
       CreateColumn_s(*m_ptableColumn);
+
       
       m_ptableJoin = std::make_unique<gd::table::arguments::table>();
       CreateJoin_s(*m_ptableJoin);
       
       m_ptableComputed = std::make_unique<gd::table::arguments::table>();
       CreateComputed_s(*m_ptableComputed);
+
+      m_pdatabase = std::make_unique<gd::modules::dbmeta::database>();
+      m_pdatabase->initialize();
    }
    catch (const std::exception& e)
    {
@@ -50,6 +58,8 @@ std::pair<bool, std::string> CDatabase::Add( gd::table::dto::table& tableTable, 
 
       argumentsRow.append( "key", (uint32_t)itRow.get_row() );
       m_ptableTable->row_add( argumentsRow, gd::table::tag_arguments{}, gd::table::tag_convert{});
+
+      m_pdatabase->add(argumentsRow, gd::types::tag_table{});
    }
 
    return { true, "" };
@@ -124,6 +134,34 @@ std::pair<bool, std::string> CDatabase::Add( gd::table::dto::table& tableColumn,
 
    return { true, "" };
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Find key for table by table name
+ * @param stringTable name of table to find key for, can be in format "schema.table"
+ * @param puKey pointer to variable where key is placed if found, can be nullptr if key is not needed
+ * @return true if table is found and key is placed in puKey, false if table is not found
+ */
+bool CDatabase::Table_FindKey(std::string_view stringTable, uint32_t* puKey) const noexcept
+{
+   std::string_view stringSchema;
+   // check for schema by finding . in table name, if found split schema and table name
+   auto position_ = stringTable.find('.');
+   if(position_ != std::string_view::npos)
+   {
+      stringSchema = stringTable.substr(0, position_);
+      stringTable = stringTable.substr(position_ + 1);
+   }
+
+   auto iRow = m_pdatabase->find(stringSchema, stringTable, gd::types::tag_table{});
+   if(iRow != -1)
+   {
+      uint32_t uKey = m_pdatabase->table_key(iRow);
+      if(puKey != nullptr) { *puKey = uKey; }
+      return true;
+   }
+   return false;
+}
+
 
 bool CDatabase::IsReadyToLinkTables() const
 {
@@ -314,6 +352,13 @@ int64_t CDatabase::Column_FindRow( const gd::argument::arguments& argumentsFind 
    return iRow;
 }
 
+int64_t CDatabase::Expression_FindRow( const gd::argument::arguments& argumentsFind ) const noexcept
+{
+   int64_t iRow = 0;
+
+   return iRow;
+}
+
 /// @brief Get the type of a column from the column metadata table
 uint32_t CDatabase::Column_GetType( uint64_t uRow ) const noexcept
 {                                                                                                  assert( uRow < m_ptableColumn->get_row_count() && "Row index out of range" );
@@ -342,6 +387,109 @@ void CDatabase::Column_CreateIndex()
    //    This allows for fast lookup of column information based on the combination of schema, table and column name.
    // ## Note that this is a simple implementation of an index, in a real implementation you would want to use a more efficient data structure for the index, like a hash map or a trie.
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Loads SQL expressions from an XML file into a table structure.
+ *
+ * <expressions table="owner table">
+ *    <expression> expression logic </expression>
+ *    <expression name="expression name" column="column name" type="data type"> expression logic </expression>
+ *    <expression name="expression name" column="table.field.type;table.field.type;"> expression logic </expression>
+ * </expressions>
+ *
+ * @param stringFilename The path to the XML file containing expressions to load.
+ * @param ptableExpression Pointer to the table that will receive the loaded expression data.
+ * @param  Tag dispatch parameter to specify XML format loading.
+ * @return A pair containing a boolean success flag and an error message string (empty on success).
+ */
+std::pair<bool, std::string> CDatabase::LoadExpressions(std::string_view stringFilename, gd::table::dto::table* ptableExpression, gd::types::tag_xml)
+{
+   using namespace gd::modules::dbmeta;
+
+   if(std::filesystem::exists(stringFilename) == false) { return { false, "File not found: " + std::string(stringFilename) }; }
+
+   gd::table::dto::table tableExpression = gd::modules::dbmeta::expression::create_expression_s();
+
+   gd::argument::arguments argumentsExpression;
+   argumentsExpression.reserve(256);
+
+   // ## Initialize pugixml document ..........................................
+   pugi::xml_document xmldocument;
+
+   // Load the XML file
+   pugi::xml_parse_result xmlparseresult = xmldocument.load_file(stringFilename.data());
+   if(false == xmlparseresult ) { return { false, "XML parsing error: " + std::string(xmlparseresult.description()) }; }
+
+   // ## Prepare error logic ..................................................
+   pugi::xml_node xmlnodeError;
+   struct error_ { std::string stringError; std::string stringNode; };
+   std::vector<error_> vectorError; // Vector to hold errors encountered during loading
+   auto add_error_ = [&vectorError](std::string_view stringError, pugi::xml_node xmlnode) {
+      std::string stringNode;
+      if(xmlnode) { stringNode = std::string(xmlnode.name()) + " with value '" + xmlnode.child_value() + "'"; }
+      vectorError.push_back({ std::string(stringError), stringNode });
+   };
+
+   auto expressions_ = xmldocument.document_element().children("expressions");  // find all expression nodes
+   for(auto expressionsActive : expressions_)
+   {
+      for(auto expression_ : expressionsActive.children("expression"))
+      {
+         if(xmlnodeError) { break; }
+         argumentsExpression.clear();
+
+         // ## id information .................................................
+         std::string_view stringId = expression_.attribute("id").value();
+         if(stringId.empty() == true) { add_error_("id is missing", expression_); continue; }
+         argumentsExpression["id"] = stringId;
+
+         // ## table information ...............................................
+         std::string_view stringTable = expression_.attribute("table").value();
+         if(stringTable.empty() == true) { stringTable = expressionsActive.attribute("table").value(); } // get table from expressions if not found in expression
+         if(stringTable.empty() == true) { add_error_("Table is missing", expression_); continue; }
+         argumentsExpression["table"] = stringTable;
+
+         // ## Find table key for expression to connect table .................
+         uint32_t uTableKey = 0;
+         if(Table_FindKey(stringTable, &uTableKey) == false) { add_error_("Failed to find table key", expression_); continue; }
+         argumentsExpression["table-key"] = uTableKey;                          // Add table key to arguments for expression, this is used to quickly find owner table for expression
+
+         // ## column information .................................................
+         std::string_view stringColumn = expression_.attribute("column").value();
+         if(stringColumn.empty() == true) { add_error_("Column is missing", expression_); continue; }
+         argumentsExpression["column"] = stringColumn;
+
+         std::string_view stringExpression = expression_.attribute("expression").value();
+         if(stringExpression.empty() == true) { stringExpression = expression_.child_value(); }
+         if(stringExpression.empty() == true) { add_error_("Expression is missing", expression_); continue; }
+         argumentsExpression["expression"] = stringExpression;
+
+         tableExpression.row_add(argumentsExpression, gd::table::tag_arguments{});
+      }
+   }
+
+   // ## Check for errors and return if any ...................................
+   if(vectorError.empty() == false)
+   {
+      std::string stringError = "Errors encountered while loading expressions:\n";
+      for(const auto& error : vectorError)
+      {
+         stringError += "- " + error.stringError;
+         if(error.stringNode.empty() == false) { stringError += " in node: " + error.stringNode; }
+         stringError += "\n";
+      }
+      return { false, stringError };
+   }
+
+   // ## add loaded expressions to database ...................................
+   auto result_ = m_pdatabase->add(tableExpression, gd::types::tag_table{});
+   if(result_.first == false) { return { false, "Failed to add expressions to database: " + result_.second }; }
+
+   // ## Update table keys for expression table, this is used to quickly find owner table
+
+   return { true, "" };
+}
+
 
 
 void CDatabase::CreateTable_s( gd::table::arguments::table& tableTable )
@@ -463,6 +611,7 @@ void CDatabase::CreateComputed_s( gd::table::arguments::table& tableComputed )
 
 
 */
+
 
 
 NAMESPACE_META_END

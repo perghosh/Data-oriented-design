@@ -415,6 +415,14 @@ int64_t CRENDERSql::Find( const gd::argument::arguments& argumentsColumn ) const
 
 /** -------------------------------------------------------------------------- AddValues
  * @brief Adds field values from arguments to the internal field table.
+ * 
+ * This method iterates over the named arguments in `argumentsField` and adds each
+ * field value to the internal field table. If a table name is present in the key
+ * (in the format `table.column`), it splits the key and stores the table name
+ * separately.
+ * 
+ * @NOTE: [tag: value, expression] [description: value are often custom to handle non standard cases, so expressions are often used to handle these cases]
+ * 
  * @param argumentsField The arguments containing field name-value pairs to add.
  */
 void CRENDERSql::AddValues( const gd::argument::arguments& argumentsField )
@@ -424,10 +432,9 @@ void CRENDERSql::AddValues( const gd::argument::arguments& argumentsField )
    if( m_iRowStatement != -1 )
    {
       const uint64_t uRowStatement = uint64_t( m_iRowStatement );
-      const META::CQueries* pqueries = GetDocument()->QUERIES_Get();                                 assert( pqueries != nullptr );
+      const META::CQueries* pqueries = GetDocument()->QUERIES_Get();                               assert( pqueries != nullptr );
       stringTable = pqueries->GetTable( uRowStatement );
    }
-
 
    for( auto [key_, value_] : argumentsField.named() )
    {
@@ -864,7 +871,7 @@ std::pair<bool, std::string> CRENDERSql::Prepare()                              
       auto stringTable = pqueries->GetTable( uRowStatement );
       if( stringTable.empty() == false )
       {
-         FillColumn( eColumnFieldTable, stringTable );                       // fill table name for fields where this is not set @TODO [summary: need more flexibility, now only one table]
+         FillColumn( eColumnFieldTable, stringTable );                         // fill table name for fields where this is not set @TODO [summary: need more flexibility, now only one table]
       }
    }
 
@@ -873,10 +880,9 @@ std::pair<bool, std::string> CRENDERSql::Prepare()                              
    {
       argumentsFind.clear();
       std::string stringTable = itRow.cell_get_variant_view( "table", gd::table::tag_not_null{}).as_string();
-      if( stringTable.empty() == true )                                       // No table defaults to type 0, no formating is done, just a value
+      if( stringTable.empty() == true )                                        // No table defaults to type 0, no formating is done, just a value
       { 
-         itRow.cell_set( "type", 0, gd::table::tag_convert{} ); 
-         continue; 
+         itRow.cell_set( "type", 0, gd::table::tag_convert{} ); continue; 
       } 
       std::string stringName = itRow.cell_get_variant_view( "name", gd::table::tag_not_null{}).as_string();
 
@@ -891,7 +897,9 @@ std::pair<bool, std::string> CRENDERSql::Prepare()                              
          itRow.cell_set( eColumnFieldMeta, static_cast<uint32_t>(iRow) );     // set column meta row
       }
       else
-      {
+      {  // ## try to find expression ..........................................
+         //pdatabase_->
+
 #ifndef NDEBUG
          enumPartType ePartType = (enumPartType)itRow.cell_get_variant_view(eColumnFieldPartType).as_uint();
          if( ePartType < ePartTypeOrderBy ) {                                                      LOG_WARNING( std::format( "Column not found in database metadata, table: {}, column: {}", stringTable, stringName ) ); }
