@@ -3053,6 +3053,36 @@ int64_t table_column_buffer::find(uint64_t uStartRow, uint64_t uCount, const std
    return find( uStartRow, uCount, vectorFind );
 }
 
+/** --------------------------------------------------------------------------- find
+ * @brief find value in table
+ * @code
+ * 
+ * @endcode
+ * @param uStartRow row to start search
+ * @param uCount number of rows trying to find value in
+ * @param vectorFind vector with column indexes and values to find
+ * @return index to row if value was found, -1 if not found
+ */
+int64_t table_column_buffer::find(uint64_t uStartRow, uint64_t uCount, const gd::argument::arguments& argumentsFind) const
+{                                                                                                   assert(argumentsFind.size() > 0);
+   auto itFindBegin = argumentsFind.named_begin();
+   auto itFindEnd = argumentsFind.named_end();
+
+   for(uint64_t uRow = uStartRow, uEnd = uStartRow + uCount; uRow < uEnd; uRow++)
+   {
+      bool bFound = true;
+      for(auto it = itFindBegin; it != itFindEnd; it++)
+      {
+         auto variantviewValue = cell_get_variant_view(uRow, it->first);
+         if(it->second != variantviewValue) { bFound = false; break; }
+      }
+
+      if(bFound == true) return uRow;
+   }
+
+   return -1;
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief find all values in table

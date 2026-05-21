@@ -609,9 +609,6 @@ std::pair<bool, std::string> CDocument::DATABASE_LoadExpressions(const gd::argum
       auto result_ = m_pMDatabase->LoadExpressions( stringExpressionFile, &tableExpression, gd::types::tag_xml{});// load expressions to query manager, this is used to generate queries from templates
                                                                                                    LOG_DEBUG_RAW( "Database expressions loaded from file: " & stringExpressionFile & " number of loaded expressions " & m_pMQueries->Size() );
       if( result_.first == false  ) { return result_; }
-
-      // ## set property to file with expressions
-      GetApplication()->PROPERTY_Set( "file-expressions", stringExpressionFile );
    }
 
    return { true, "" };

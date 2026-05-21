@@ -107,6 +107,9 @@ public:
    void Column_CreateIndex();
 
    [[nodiscard]] int64_t Expression_FindRow( const gd::argument::arguments& argumentsFind ) const noexcept;
+   [[nodiscard]] uint32_t Expression_GetType(uint64_t uRow) const noexcept;
+
+   [[nodiscard]] int32_t Table_GetKey(std::string_view stringTable) const noexcept;
 
    std::pair<bool, std::string> LoadExpressions(std::string_view stringFile, gd::table::dto::table* ptableExpression, gd::types::tag_xml);
 

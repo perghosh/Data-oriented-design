@@ -117,6 +117,7 @@ public:
    std::pair<bool, std::string> add( gd::table::dto::table& tableColumn, gd::types::tag_column );
 
 // @API [tag: find]
+   int64_t find(const std::string_view& stringTable, gd::types::tag_table) const noexcept;
    int64_t find(const std::string_view& stringSchema, const std::string_view& stringTable, gd::types::tag_table) const noexcept;
 
 protected:

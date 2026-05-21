@@ -897,11 +897,19 @@ std::pair<bool, std::string> CRENDERSql::Prepare()                              
          itRow.cell_set( eColumnFieldMeta, static_cast<uint32_t>(iRow) );     // set column meta row
       }
       else
-      {  // ## try to find expression ..........................................
-         //pdatabase_->
+      {  
+         enumPartType ePartType = (enumPartType)itRow.cell_get_variant_view(eColumnFieldPartType).as_uint();
+         if(ePartType >= ePartTypeOrderBy) continue;                           // skip special types, these are not values
+         // ## try to find expression ..........................................
+         iRow = pdatabase_->Expression_FindRow(argumentsFind);
+         if(iRow > 0)
+         {
+            uint32_t uType = pdatabase_->Expression_GetType(iRow);
+            itRow.cell_set(eColumnFieldType, uType);                           // set type for column in table field
+            itRow.cell_set(eColumnFieldMeta, static_cast<uint32_t>(iRow));     // set expression meta row
+         }
 
 #ifndef NDEBUG
-         enumPartType ePartType = (enumPartType)itRow.cell_get_variant_view(eColumnFieldPartType).as_uint();
          if( ePartType < ePartTypeOrderBy ) {                                                      LOG_WARNING( std::format( "Column not found in database metadata, table: {}, column: {}", stringTable, stringName ) ); }
 #endif // NDEBUG
       }

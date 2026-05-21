@@ -1015,6 +1015,9 @@ public:
    int64_t find( uint64_t uStartRow, uint64_t uCount, const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorFind ) const;
    int64_t find( const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorFind ) const { return find( 0, get_row_count(), vectorFind ); }
 
+   int64_t find(uint64_t uStartRow, uint64_t uCount, const gd::argument::arguments& argumentsFind) const;
+   int64_t find(const gd::argument::arguments& argumentsFind) const { return find(0, get_row_count(), argumentsFind); }
+
    // ## find row based on multiple column values
 
    int64_t find(const std::initializer_list< std::pair< std::variant< unsigned, std::string_view>, gd::variant_view > >& listFind, tag_column_variant ) const noexcept { return find(0, get_row_count(), listFind, tag_column_variant{}); }

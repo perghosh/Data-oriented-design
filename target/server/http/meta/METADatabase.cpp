@@ -34,6 +34,9 @@ std::pair<bool, std::string> CDatabase::Initialize()
 
       m_pdatabase = std::make_unique<gd::modules::dbmeta::database>();
       m_pdatabase->initialize();
+
+      m_pexpression = std::make_unique<gd::modules::dbmeta::expression>();
+      m_pexpression->initialize();
    }
    catch (const std::exception& e)
    {
@@ -352,11 +355,52 @@ int64_t CDatabase::Column_FindRow( const gd::argument::arguments& argumentsFind 
    return iRow;
 }
 
+/// @brief Find a row in the expression table by search criteria
 int64_t CDatabase::Expression_FindRow( const gd::argument::arguments& argumentsFind ) const noexcept
 {
-   int64_t iRow = 0;
+   if(argumentsFind.empty() == true) { return -1; }                             // No search criteria provided
+   std::array<uint8_t, 256> buffer_;
+   gd::argument::arguments argumentsExpression(buffer_);
+
+   int64_t iRow = -1;
+
+   if(argumentsFind.exists("table") == true)                                    // If "table" then get key to table
+   {
+      std::string_view stringTable = argumentsFind["table"].as_string_view();
+      std::string_view stringSchema;
+      auto position_ = stringTable.find('.');
+      if(position_ != std::string_view::npos)
+      {
+         stringSchema = stringTable.substr(0, position_);
+         stringTable = stringTable.substr(position_ + 1);
+      }  
+
+      iRow = m_pdatabase->find(stringSchema, stringTable, gd::types::tag_table{});
+      if( iRow != -1 ) { argumentsExpression["table-key"] = m_pdatabase->table_key(iRow); }
+   }
+
+   argumentsExpression.append(argumentsFind, { "id", "column", "type" });
+
+   iRow = m_pexpression->find(argumentsExpression);
 
    return iRow;
+}
+
+/// @brief Get the type of an expression from the expression table
+uint32_t CDatabase::Expression_GetType(uint64_t uRow) const noexcept
+{                                                                                                  assert( uRow < m_pexpression->size() && "Row index out of range" );
+   if(uRow >= m_pexpression->size()) { return 0; }                            // Out of range check
+   uint32_t uType = m_pexpression->get_type(uRow);
+   return uType;
+}
+
+/// @brief Get the key of a table from the database by table name
+int32_t CDatabase::Table_GetKey(std::string_view stringTable) const noexcept
+{
+   int32_t iKey = -1;
+   auto iRow = m_pdatabase->find(stringTable, gd::types::tag_table{});
+   if(iRow != -1) { iKey = (int32_t)m_pdatabase->table_key(iRow); }
+   return iKey;   
 }
 
 /// @brief Get the type of a column from the column metadata table
@@ -421,7 +465,6 @@ std::pair<bool, std::string> CDatabase::LoadExpressions(std::string_view stringF
    if(false == xmlparseresult ) { return { false, "XML parsing error: " + std::string(xmlparseresult.description()) }; }
 
    // ## Prepare error logic ..................................................
-   pugi::xml_node xmlnodeError;
    struct error_ { std::string stringError; std::string stringNode; };
    std::vector<error_> vectorError; // Vector to hold errors encountered during loading
    auto add_error_ = [&vectorError](std::string_view stringError, pugi::xml_node xmlnode) {
@@ -435,7 +478,6 @@ std::pair<bool, std::string> CDatabase::LoadExpressions(std::string_view stringF
    {
       for(auto expression_ : expressionsActive.children("expression"))
       {
-         if(xmlnodeError) { break; }
          argumentsExpression.clear();
 
          // ## id information .................................................
@@ -458,6 +500,13 @@ std::pair<bool, std::string> CDatabase::LoadExpressions(std::string_view stringF
          std::string_view stringColumn = expression_.attribute("column").value();
          if(stringColumn.empty() == true) { add_error_("Column is missing", expression_); continue; }
          argumentsExpression["column"] = stringColumn;
+
+         std::string_view stringType = expression_.attribute("type").value();
+         if(stringType.empty() == false) 
+         {
+            uint32_t uType = gd::types::type_g(stringType);
+            argumentsExpression["type"] = uType;
+         }
 
          std::string_view stringExpression = expression_.attribute("expression").value();
          if(stringExpression.empty() == true) { stringExpression = expression_.child_value(); }
@@ -482,7 +531,7 @@ std::pair<bool, std::string> CDatabase::LoadExpressions(std::string_view stringF
    }
 
    // ## add loaded expressions to database ...................................
-   auto result_ = m_pdatabase->add(tableExpression, gd::types::tag_table{});
+   auto result_ = m_pexpression->add(tableExpression);
    if(result_.first == false) { return { false, "Failed to add expressions to database: " + result_.second }; }
 
    // ## Update table keys for expression table, this is used to quickly find owner table

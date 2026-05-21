@@ -3182,6 +3182,66 @@ int64_t table::find(uint64_t uStartRow, uint64_t uCount, const std::vector< std:
    return iRow;
 }
 
+/** --------------------------------------------------------------------------- find
+ * @brief find value in table
+ * @code
+ *
+ * @endcode
+ * @param uStartRow row to start search
+ * @param uCount number of rows trying to find value in
+ * @param vectorFind vector with column indexes and values to find
+ * @return index to row if value was found, -1 if not found
+ */
+int64_t table::find(uint64_t uStartRow, uint64_t uCount, const gd::argument::arguments& argumentsFind) const
+{                                                                                                  assert(argumentsFind.size() > 0);
+   auto itFindBegin = argumentsFind.named_begin();
+   auto itFindEnd = argumentsFind.named_end();
+
+   // ## convert to column index ..............................................
+   std::vector<std::pair<std::variant<unsigned,std::string_view>, gd::variant_view>> vectorFind;
+   for(auto it = itFindBegin; it != itFindEnd; it++)
+   {
+      std::string_view stringColumn = it->first;
+      auto iColumn = column_find_index(stringColumn);
+      if(iColumn != -1) { vectorFind.push_back({ (unsigned)iColumn, it->second }); }
+      else { vectorFind.push_back({ stringColumn, it->second }); }
+   }
+
+   gd::variant_view variantviewValue;
+   for(uint64_t uRow = uStartRow, uEnd = uStartRow + uCount; uRow < uEnd; uRow++)
+   {
+      bool bFound = true;
+
+      for(const auto& column_ : vectorFind)
+      {
+         if(std::holds_alternative<unsigned>(column_.first) == true)
+         {
+            auto uColumn = std::get<unsigned>(column_.first);
+            variantviewValue = cell_get_variant_view(uRow, uColumn);
+         }
+         else
+         {
+            // get arguments connected to row
+            auto pargumentsRow = row_find_arguments_pointer(uRow);
+            if(pargumentsRow != nullptr)
+            {
+               auto stringName = std::get<std::string_view>(column_.first);
+               variantviewValue = pargumentsRow->get_variant_view(stringName);
+            }
+         }
+
+         if(variantviewValue.is_null() == true) { bFound = false; break; }      
+
+         if(variantviewValue != column_.second) { bFound = false; break; }
+      }
+
+      if(bFound == true) return uRow;
+   }
+
+   return -1;
+}
+
+
 
 /** ---------------------------------------------------------------------------
  * @brief Finds first row that isn't marked as in use

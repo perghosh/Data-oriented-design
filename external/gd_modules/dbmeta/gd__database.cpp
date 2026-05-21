@@ -32,8 +32,6 @@ std::pair<bool, std::string> database::add(const gd::argument::arguments& argume
 
    m_ptableTable->row_add(argumentsRow, gd::table::tag_arguments{}, gd::table::tag_convert{});
    return { true, "" };
-   
-
 }
 
 /** ---------------------------------------------------------------------------
@@ -133,6 +131,12 @@ std::pair<bool, std::string> database::add( gd::table::dto::table& tableColumn, 
    }
 
    return { true, "" };
+}
+
+/// @brief Find table in database by table name, this is used to link database information
+int64_t database::find(const std::string_view& stringTable, gd::types::tag_table) const noexcept
+{
+   return find(std::string_view{}, stringTable, gd::types::tag_table{});
 }
 
 /** --------------------------------------------------------------------------- find
