@@ -66,6 +66,7 @@ std::pair<bool, std::string> expression::add(gd::table::dto::table& tableExpress
 int64_t expression::find(const gd::argument::arguments& argumentsFind) const
 {   assert(m_ptableExpression != nullptr); assert(m_ptableExpression->empty() == false);
 #ifndef NDEBUG
+   std::string stringSearch_d = gd::argument::debug::print(argumentsFind);
    // ## Validate keys
    auto vectorKey = argumentsFind.get_keys();
    for(const auto& key_ : vectorKey)

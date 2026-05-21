@@ -331,16 +331,19 @@ public:
    /// get value as template type
    template <typename TYPE> TYPE as() const;
 
-   /// @name cast_as_* convert fast to another type
-   /// cast_as_* is used for type casting in a safe way, faster compared to as_* and not as strict is operator casts
-   ///@{
+// @API [tag: cast, cast_as] [description: cast_as methods for fast type casting between compatible types]
+
    int16_t cast_as_int16() const noexcept;
    uint16_t cast_as_uint16() const noexcept;
    int32_t cast_as_int32() const noexcept;
    uint32_t cast_as_uint32() const noexcept;
    int64_t cast_as_int64() const noexcept;
    uint64_t cast_as_uint64() const noexcept;
-   ///@}
+
+   int32_t cast_as_int32(int32_t iDefault) const noexcept { return is_integer() ? cast_as_uint32() : iDefault; }
+   uint32_t cast_as_uint32(uint32_t uDefault) const noexcept { return is_integer() ? cast_as_uint32() : uDefault; }
+   int64_t cast_as_int64(int64_t iDefault) const noexcept { return is_integer() ? cast_as_int64() : iDefault; }
+   uint64_t cast_as_uint64(uint64_t uDefault) const noexcept { return is_integer() ? cast_as_uint64() : uDefault; }
 
    // ## buffer methods, use this if you need speed, no heap allocations
 

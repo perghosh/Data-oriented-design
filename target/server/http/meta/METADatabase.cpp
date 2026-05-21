@@ -376,7 +376,7 @@ int64_t CDatabase::Expression_FindRow( const gd::argument::arguments& argumentsF
       }  
 
       iRow = m_pdatabase->find(stringSchema, stringTable, gd::types::tag_table{});
-      if( iRow != -1 ) { argumentsExpression["table-key"] = m_pdatabase->table_key(iRow); }
+      if(iRow != -1) { argumentsExpression["table-key"] = m_pdatabase->table_key(iRow); } // If table is found, add key to table to search criteria
    }
 
    argumentsExpression.append(argumentsFind, { "id", "column", "type" });

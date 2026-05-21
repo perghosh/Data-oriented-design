@@ -63,6 +63,7 @@ public:
       enumSqlRenderState_Max
    };
 
+   /// Part type value belongs to, this is needed because based on how value is used in query logic differs
    enum enumSqlQueryType
    {
       eSqlQueryTypeInsert,
@@ -73,10 +74,19 @@ public:
       enumSqlQueryType_Max
    };
 
-   
+   /// Type of meta information for value
+   enum enumColumnMetaType : uint32_t
+   {
+      eColumnMetaTypeNormal = 0, ///< normal column, used for select, value and where parts of query
+      eColumnMetaTypeExpression, ///< expression column, used for select part of query to specify expressions like sum, count, etc.
+      enumColumnMetaType_Max
+   };
+
+   /// Index number for column values in internal table that hold information about values used to prepare query
    enum enumColumnField
    {
       eColumnFieldKey,           ///< column id (key), used for internal purposes
+      eColumnFieldMetaType,      ///< meta type for column, used for internal purposes (default is normal field)
       eColumnFieldMeta,          ///< column meta information, used for internal purposes
       eColumnFieldSchema,        ///< schema for table field belongs to
       eColumnFieldTable,         ///< name for table field belongs to

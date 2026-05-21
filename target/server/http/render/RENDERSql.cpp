@@ -127,6 +127,7 @@ void CRENDERSql::Initialize()
       auto* p = new gd::table::detail::columns{};
 
       p->add( "uint32", 0, "key" );
+      p->add( "uint32", 0, "meta_type");                                      // type of meta information, for example if value is connected to column description or expression
       p->add( "uint32", 0, "meta" );                                          // meta information for column, fast access to column information, avoid to find it again
       p->add( "string", uSize, "schema" );                                    // schema for table field belongs to
       p->add( "string", uSize, "table" );                                     // name for table field belongs to
@@ -897,21 +898,29 @@ std::pair<bool, std::string> CRENDERSql::Prepare()                              
          itRow.cell_set( eColumnFieldMeta, static_cast<uint32_t>(iRow) );     // set column meta row
       }
       else
-      {  
-         enumPartType ePartType = (enumPartType)itRow.cell_get_variant_view(eColumnFieldPartType).as_uint();
+      {  // ## Value is added without column information, try to find expression 
+         //    for value and get type from expression.
+
+         auto VVType = itRow.cell_get_variant_view(eColumnFieldPartType);                           assert(VVType.is_primitive() || VVType.is_null());
+         enumPartType ePartType = VVType.is_null() ? ePartTypeUnknown : (enumPartType)VVType.cast_as_int32();
          if(ePartType >= ePartTypeOrderBy) continue;                           // skip special types, these are not values
          // ## try to find expression ..........................................
          iRow = pdatabase_->Expression_FindRow(argumentsFind);
-         if(iRow > 0)
+         if(iRow != -1)                                                        // if expression is found for value, get type from expression
          {
+            // ## Prepare information, this to speed up the process and all values need to be checked.
+            //    Things like sequrity etc. Unknown values is dangerous!
             uint32_t uType = pdatabase_->Expression_GetType(iRow);
             itRow.cell_set(eColumnFieldType, uType);                           // set type for column in table field
+            itRow.cell_set(eColumnFieldMetaType, CRENDERSql::eColumnMetaTypeExpression); // set meta type to expression (to know where to look for it)
             itRow.cell_set(eColumnFieldMeta, static_cast<uint32_t>(iRow));     // set expression meta row
          }
-
+         else
+         {
 #ifndef NDEBUG
-         if( ePartType < ePartTypeOrderBy ) {                                                      LOG_WARNING( std::format( "Column not found in database metadata, table: {}, column: {}", stringTable, stringName ) ); }
+            if(ePartType < ePartTypeOrderBy) { LOG_WARNING(std::format("Column not found in database metadata, table: {}, column: {}", stringTable, stringName)); }
 #endif // NDEBUG
+         }
       }
    }
 
@@ -1009,6 +1018,9 @@ std::pair<bool, std::string> CRENDERSql::Query_AddFields( gd::sql::query* pquery
    for( auto itRow = m_tableField.row_begin(); itRow != m_tableField.row_end(); ++itRow )
    {
       arguments_.clear();
+
+      // ## Set meta type iformation for field .................................
+      enumColumnMetaType eMetaType = static_cast<enumColumnMetaType>(itRow.cell_get_variant_view(eColumnFieldMetaType).cast_as_uint32(eColumnMetaTypeNormal));
 
       std::string_view stringTable = itRow.cell_get_variant_view( eColumnFieldTable, gd::table::tag_not_null{}).as_string_view();
       std::string_view stringName = itRow.cell_get_variant_view( eColumnFieldName, gd::table::tag_not_null{}).as_string_view();
