@@ -73,15 +73,14 @@ public:
 };
 
 inline std::string_view expression::get_expression(uint64_t uRow)
-{                                                                          
-   // Implementation for getting the expression by row
-   // This is a placeholder, actual implementation should access m_ptableExpression
-   return {};
+{                                                                             assert(m_ptableExpression); assert(uRow < m_ptableExpression->size());
+   std::string_view stringExpression = m_ptableExpression->cell_get_variant_view(uRow, eColumnExpression).as_string_view();
+   return stringExpression;
 }
 
 inline uint32_t expression::get_type(uint64_t uRow) const
 {                                                                              assert(m_ptableExpression); assert(uRow < m_ptableExpression->size());
-   uint32_t uType = m_ptableExpression->cell_get_variant_view(uRow, eColumnExpression).type();
+   uint32_t uType = m_ptableExpression->cell_get_variant_view(uRow, eColumnType);
    return uType;
 }
                                                                                
