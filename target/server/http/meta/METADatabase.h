@@ -108,6 +108,7 @@ public:
 
    [[nodiscard]] int64_t Expression_FindRow( const gd::argument::arguments& argumentsFind ) const noexcept;
    [[nodiscard]] uint32_t Expression_GetType(uint64_t uRow) const noexcept;
+   [[nodiscard]] std::string_view Expression_GetExpression(uint64_t uRow) const noexcept;
 
    [[nodiscard]] int32_t Table_GetKey(std::string_view stringTable) const noexcept;
 

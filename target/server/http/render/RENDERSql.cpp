@@ -1022,10 +1022,17 @@ std::pair<bool, std::string> CRENDERSql::Query_AddFields( gd::sql::query* pquery
       // ## Set meta type iformation for field .................................
       enumColumnMetaType eMetaType = static_cast<enumColumnMetaType>(itRow.cell_get_variant_view(eColumnFieldMetaType).cast_as_uint32(eColumnMetaTypeNormal));
 
+      if(eMetaType == eColumnMetaTypeExpression) // if column is an expression, get information from expression
+      {
+         auto result_ = Query_AddExpression( pquery, itRow.get_row() );
+         continue;
+      }
+
       std::string_view stringTable = itRow.cell_get_variant_view( eColumnFieldTable, gd::table::tag_not_null{}).as_string_view();
       std::string_view stringName = itRow.cell_get_variant_view( eColumnFieldName, gd::table::tag_not_null{}).as_string_view();
 
       // ## Check for specific types that are stored differently in  query, order by, group by, etc.
+
       uint32_t uPartType = itRow.cell_get_variant_view( eColumnFieldPartType ).as_uint();
       if( uPartType != 0 )
       {
@@ -1115,6 +1122,54 @@ std::pair<bool, std::string> CRENDERSql::Query_AddFields( gd::sql::query* pquery
          pquery->field_add( iTableKey, arguments_, gd::sql::tag_arguments{} );  // add column to query with table key
       }
    }
+
+   return { true, "" };
+}
+
+std::pair<bool, std::string> CRENDERSql::Query_AddExpression(gd::sql::query* pquery, uint64_t uRow)
+{                                                                                                  assert(pquery != nullptr); assert(uRow < m_tableField.size());
+   using namespace gd::sql;
+   const META::CDatabase* pdatabase_ = GetDocument()->DATABASE_Get();                              assert(pdatabase_ != nullptr);
+   std::string_view stringTable = m_tableField.cell_get_variant_view(uRow, eColumnFieldTable, gd::table::tag_not_null{}).as_string_view();
+   std::string_view stringName = m_tableField.cell_get_variant_view(uRow, eColumnFieldName, gd::table::tag_not_null{}).as_string_view();
+   std::string_view stringAlias = m_tableField.cell_get_variant_view(uRow, eColumnFieldAlias, gd::table::tag_not_null{}).as_string_view();
+
+   std::string stringValue = m_tableField.cell_get_variant_view(uRow, eColumnFieldValue, gd::table::tag_not_null{}).as_string();
+
+   // ## Get expression information from metadata .............................
+   const auto bIsNull = m_tableField.cell_is_null(uRow, eColumnFieldMeta);                         assert(bIsNull == false && "Meta column is null"); 
+   if(bIsNull == true) { return { false, "Meta information is missing" }; }
+   uint32_t uRowExpression = m_tableField.cell_get_variant_view(uRow, eColumnFieldMeta);
+
+   std::string_view stringExpression = pdatabase_->Expression_GetExpression(uRowExpression); // get expression information
+   uint32_t uType = pdatabase_->Expression_GetType(uRowExpression);
+
+   // ## Prepare expression ...................................................
+   std::array<std::byte, 256> buffer_;
+   gd::argument::arguments arguments_(buffer_);
+
+   query queryExpression(m_eSqlDialect);
+   queryExpression.table_add(stringTable);                                    // add table to query
+   if(stringAlias.empty() == false) { stringName = stringAlias; }             // if alias is present use it as name for field in query
+   arguments_.append("name", stringName);
+   arguments_.append("value", stringValue );
+   if(uType != 0) { arguments_.append("type", uType); }
+   queryExpression.field_add(arguments_, tag_arguments{});
+
+
+   std::string stringExpressionSql;
+   auto result_ = queryExpression.sql_format(stringExpression, stringExpressionSql); // format expression to sql
+   if(result_.first == false) { return result_; }
+
+   // ## Add expression to query ..............................................
+   arguments_.clear();
+   arguments_.append("name", stringName);
+   arguments_.append("raw", stringExpressionSql);
+
+   if(pquery->table_empty() == true) { pquery->table_add(stringTable); }      // if query has no table, add table from expression
+   else if(pquery->table_exists(stringTable) == false) { pquery->table_add(stringTable); }
+
+   pquery->condition_add(arguments_, tag_arguments{});
 
    return { true, "" };
 }
@@ -1558,14 +1613,21 @@ std::pair<bool, std::string> CRENDERSql::ValidateColumnValues() const
       const auto bIsNull = itRow.cell_is_null( eColumnFieldMeta );
       if( bIsNull == false )
       {
-         
-         uint32_t uRowMeta = itRow.cell_get_variant_view( eColumnFieldMeta ).as_uint(); // index to meta row for columns
-         uint32_t uType = pdatabase_->Column_GetType( uRowMeta );             // get type for column from meta row
+         uint32_t uRowMeta = itRow.cell_get_variant_view(eColumnFieldMeta).as_uint(); // index to meta row for columns
 
-         auto value_ = itRow.cell_get_variant_view( eColumnFieldValue, gd::table::tag_not_null{} );
-         if( value_.is_string() == true )
+         enumColumnMetaType eMetaType = static_cast<enumColumnMetaType>(itRow.cell_get_variant_view(eColumnFieldMetaType).cast_as_uint32(eColumnMetaTypeNormal));
+
+         if(eMetaType == eColumnMetaTypeExpression) // if column is an expression, get information from expression
          {
-            bIsValueValid = gd::sql::validate_value_g( value_.as_string_view(), uType );
+            uint32_t uType = pdatabase_->Expression_GetType(uRowMeta);          // get type for column from meta row
+            auto value_ = itRow.cell_get_variant_view(eColumnFieldValue, gd::table::tag_not_null{});
+            if(value_.is_string() == true) { bIsValueValid = gd::sql::validate_value_g(value_.as_string_view(), uType); }
+         }
+         else
+         {
+            uint32_t uType = pdatabase_->Column_GetType(uRowMeta);             // get type for column from meta row
+            auto value_ = itRow.cell_get_variant_view(eColumnFieldValue, gd::table::tag_not_null{});
+            if(value_.is_string() == true) { bIsValueValid = gd::sql::validate_value_g(value_.as_string_view(), uType); }
          }
       }
 

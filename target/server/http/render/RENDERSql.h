@@ -222,6 +222,7 @@ public:
    // @API [tag: query] [description: prepare query object]
 
    std::pair<bool, std::string> Query_AddFields( gd::sql::query* pquery );
+   std::pair<bool, std::string> Query_AddExpression(gd::sql::query* pquery, uint64_t uRow );
 
    // @API [tag: sql] [description: Generate SQL queries]
    

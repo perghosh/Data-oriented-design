@@ -394,6 +394,13 @@ uint32_t CDatabase::Expression_GetType(uint64_t uRow) const noexcept
    return uType;
 }
 
+std::string_view CDatabase::Expression_GetExpression(uint64_t uRow) const noexcept
+{                                                                                                  assert( uRow < m_pexpression->size() && "Row index out of range" );
+   if(uRow >= m_pexpression->size()) { return ""; }                            // Out of range check
+   std::string_view stringExpression = m_pexpression->get_expression(uRow);
+   return stringExpression;
+}
+
 /// @brief Get the key of a table from the database by table name
 int32_t CDatabase::Table_GetKey(std::string_view stringTable) const noexcept
 {
