@@ -588,8 +588,8 @@ std::pair<bool, std::string> CDocument::DATABASE_LoadStatements( const gd::argum
                                                                                                    LOG_DEBUG_RAW( "Database statements loaded from file: " & stringStatementFile & " number of loaded statements " & m_pMQueries->Size() );
       if( result_.first == false  ) { return result_; }
 
-      // ## set property to file with statemets
-      GetApplication()->PROPERTY_Set( "file-statements", stringStatementFile );
+      // ## set property to file with statemets ...............................
+      if(GetApplication()->PROPERTY_Exists("database-statement-file") == false) { GetApplication()->PROPERTY_Set( "database-statement-file", stringStatementFile ); }
    }
 
    return { true, "" };
@@ -609,6 +609,9 @@ std::pair<bool, std::string> CDocument::DATABASE_LoadExpressions(const gd::argum
       auto result_ = m_pMDatabase->LoadExpressions( stringExpressionFile, &tableExpression, gd::types::tag_xml{});// load expressions to query manager, this is used to generate queries from templates
                                                                                                    LOG_DEBUG_RAW( "Database expressions loaded from file: " & stringExpressionFile & " number of loaded expressions " & m_pMQueries->Size() );
       if( result_.first == false  ) { return result_; }
+
+      // ## set property to file with expressions .............................
+      if(GetApplication()->PROPERTY_Exists("database-expression-file") == false) { GetApplication()->PROPERTY_Set("database-expression-file", stringExpressionFile); }
    }
 
    return { true, "" };

@@ -32,6 +32,7 @@ class expression
       eColumnKey,           ///< column id (key), used for internal purposes
       eColumnUuid,          ///< unique identifier for expression
       eColumnTableKey,      ///< key to the parent table in `m_ptableTable` (defines which table this expression belongs to) and try som match this with index to be fast to lookup
+      eColumnGroup,         ///< group identifier for expression
       eColumnId,            ///< expression id, this is used to identify expression and also used in query templates to refer to expression
       eColumnColumn,        ///< expression name, this is used to identify expression and also used in query templates to refer to expression
       eColumnType,          ///< expression type

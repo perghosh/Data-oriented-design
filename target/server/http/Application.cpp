@@ -72,11 +72,22 @@ std::string FOLDER_GetRoot_g( const std::string_view& stringSubfolder );
 
 CApplication::~CApplication() 
 {
+   // ## Release database connections .........................................
    for( auto it : m_vectorDatabase )
    {
       it->release();
    }
 
+   // ## Stop server if running ...............................................
+   if(m_pserverBoost != nullptr)
+   {
+      auto result_ = SERVER_Stop();
+      if(result_.first == false) { std::cerr << "Error stopping server: " << result_.second << std::endl; }
+      delete m_pserverBoost;
+      m_pserverBoost = nullptr;
+   }
+
+   // ## Clear loggers ........................................................
    gd::log::logger<0>* plogger = gd::log::get_s();
    // Call logger destructor
    plogger->clear();

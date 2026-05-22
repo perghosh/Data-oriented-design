@@ -29,13 +29,12 @@ namespace
    /// @brief AllocHook_d is called for each allocation and deallocation, set breakpoint here and inspect call stack to find where allocation is
    static int AllocHook_d(int iAllocType, void* /*pUserData*/, size_t uSize, int /*iBlockType*/, long iRequestNumber, const unsigned char* /*pFilename*/, int /*iLineNumber*/)
    {
-      /*
-      if( iAllocType == _HOOK_ALLOC && uSize == 320 )
+      //if( iAllocType == _HOOK_ALLOC && uSize == 320 )
+      if(iAllocType == _HOOK_ALLOC && iRequestNumber == 716 && uSize == 32)
       {
           std::cout << "## AllocHook: alloc# " << iRequestNumber << ", size " << uSize << std::endl;
-           //__debugbreak();                                                    // attach debugger and inspect call stack here
+          //__debugbreak();                                                    // attach debugger and inspect call stack here
       }
-      */
       return TRUE;
    }
 }

@@ -109,6 +109,7 @@ void expression::create_expression_s(gd::table::arguments::table& tableExpressio
       { "uint32",   0, "key"         }, // key (these keys do also represent row number to be fast)
       { "uuid",     0, "uuid"        }, // unique identifier for statement
       { "uint32",   0, "table-key"   }, // key to the parent table in `m_ptableTable` (defines which table this expression belongs to) and try som match this with index to be fast to lookup
+      { "uint32",   0, "group"       }, // group identifier for expression
       { "string",   32,"id"          }, // expression name, this is used to identify expression and also used in query templates to refer to expression
       { "string",   32,"column"      }, // column information
       { "uint32",   0, "type"        }, // expression type
@@ -122,15 +123,16 @@ void expression::create_expression_s(gd::table::arguments::table& tableExpressio
 gd::table::dto::table expression::create_expression_s()
 {
    gd::table::dto::table table_((gd::table::dto::table::eTableFlagNull32 | gd::table::dto::table::eTableFlagRowStatus), {
-      { "uuid",     0, "uuid" }, // unique identifier for statement
-      { "uint32",   0, "table-key" }, // key to the parent table in `m_ptableTable`
-      { "rstring",  0, "table" }, //table name if table name 
-      { "rstring",  0, "id" }, // expression id
-      { "rstring",  0, "column" }, // column information
-      { "uint32",   0, "type" }, // expression type
-      { "rutf8",    0, "expression" }, // raw data for expression
+      { "uuid",     0, "uuid"        }, // unique identifier for statement
+      { "uint32",   0, "table-key"   }, // key to the parent table in `m_ptableTable`
+      { "rstring",  0, "table"       }, // table name if table name
+      { "uint32",   0, "group"       }, // group identifier for expression
+      { "rstring",  0, "id"          }, // expression id
+      { "rstring",  0, "column"      }, // column information
+      { "uint32",   0, "type"        }, // expression type
+      { "rutf8",    0, "expression"  }, // raw data for expression
       { "rstring",  0, "description" }, // optional description for statement
-   });
+      } );
    table_.prepare();
 
    return table_;
