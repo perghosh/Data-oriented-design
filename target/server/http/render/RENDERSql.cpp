@@ -437,8 +437,12 @@ void CRENDERSql::AddValues( const gd::argument::arguments& argumentsField )
       stringTable = pqueries->GetTable( uRowStatement );
    }
 
+   bool bHasDunder = false;
    for( auto [key_, value_] : argumentsField.named() )
    {
+      // ## Check for dunder prefix, if key starts with __ it is used for internal purposes and should not be added to field table
+      if( key_.size() >= 2 && key_[0] == '_' && key_[1] == '_' ) { bHasDunder = true; continue; }
+
       auto uRow = m_tableField.row_add_one();                                 // Add row to store field information
 
       // ## Check for table name in key, if key has . then split it and get table name
@@ -467,6 +471,47 @@ void CRENDERSql::AddValues( const gd::argument::arguments& argumentsField )
 
       if( stringTable.empty() == false ) { m_tableField.cell_set( uRow, eColumnFieldTable, stringTable, gd::table::tag_spill{} ); }
    }
+
+   if(bHasDunder == true)
+   {
+      for(auto [key_, value_] : argumentsField.named())
+      {
+         if(key_.size() >= 2 && key_[0] == '_' && key_[1] == '_')
+         {
+            // ## handle dunder keys, for example __expression
+            if(key_ == "__expression") { AddExpression(value_.as_string_view()); }
+         }
+      }
+   }
+}
+
+/** -------------------------------------------------------------------------- AddExpression
+ * @brief Adds one or more expressions as columns by parsing a comma-separated string of expressions.
+ * 
+ * Expressions need to set "meta_type" to expression. column or id is also needed to be set to have a reference to column.
+ * Table ca be usesfull but some expressons may be used for different tables and then any table will do.
+ * 
+ * String format is like "group.id,group2.id2, expression3" where group is optional
+ * 
+ * @param stringExpression A comma-separated string containing one or more expressions to be added as columns.
+ */
+void CRENDERSql::AddExpression(std::string_view stringExpression)
+{
+   std::array<std::byte, 128> buffer_;
+   gd::argument::arguments argumentsColumn(buffer_);
+
+   // Split string between ,
+   std::vector<std::string_view> vectorExpression = gd::utf8::split(stringExpression, ',');
+   for(const auto& expression_ : vectorExpression)
+   {
+      if(expression_.empty() == true) { continue; }
+
+      argumentsColumn.append("name", expression_);                            // use expression as name, this is later parsed
+      argumentsColumn.append("meta_type", uint32_t(CRENDERSql::eColumnMetaTypeExpression));
+
+      ColumnAdd(argumentsColumn);
+   }
+
 }
 
 /** -------------------------------------------------------------------------- AddColumnValues
@@ -880,6 +925,9 @@ std::pair<bool, std::string> CRENDERSql::Prepare()                              
    for( auto itRow = m_tableField.row_begin(); itRow != m_tableField.row_end(); ++itRow )
    {
       argumentsFind.clear();
+
+      enumColumnMetaType eMetaType = (enumColumnMetaType)itRow.cell_get_variant_view(eColumnFieldMetaType).cast_as_uint32(eColumnMetaTypeNormal); assert(eMetaType < enumColumnMetaType_Max);
+
       std::string stringTable = itRow.cell_get_variant_view( "table", gd::table::tag_not_null{}).as_string();
       if( stringTable.empty() == true )                                        // No table defaults to type 0, no formating is done, just a value
       { 
@@ -887,25 +935,44 @@ std::pair<bool, std::string> CRENDERSql::Prepare()                              
       } 
       std::string stringName = itRow.cell_get_variant_view( "name", gd::table::tag_not_null{}).as_string();
 
-      
-      argumentsFind.append( { {"table", stringTable}, {"column", stringName} });
-      int64_t iRow = pdatabase_->Column_FindRow( argumentsFind );
+      argumentsFind.append("table", stringTable);
 
-      if( iRow > 0 )
+      if(eMetaType == eColumnMetaTypeNormal)
       {
-         uint32_t uType = pdatabase_->Column_GetType( iRow );
-         itRow.cell_set( eColumnFieldType, uType );                           // set type for column in table field
-         itRow.cell_set( eColumnFieldMeta, static_cast<uint32_t>(iRow) );     // set column meta row
+         argumentsFind.append("column", stringName);
+         int64_t iRow = pdatabase_->Column_FindRow(argumentsFind);
+
+         if(iRow > 0)                                                          // @CRITICAL [tag: type, column] [description: Sets column type, very important to know how to format field]
+         {
+            uint32_t uType = pdatabase_->Column_GetType(iRow);
+            itRow.cell_set(eColumnFieldType, uType);                           // set type for column in table field
+            itRow.cell_set(eColumnFieldMeta, static_cast<uint32_t>(iRow));     // set column meta row
+            continue;
+         }
       }
-      else
+
       {  // ## Value is added without column information, try to find expression 
          //    for value and get type from expression.
 
+         if(eMetaType == eColumnMetaTypeExpression)                            // field is added as expression. No fallback to column
+         {  // ## Field is added as expression so we know how to search for it.
+            std::string_view stringId = stringName; // id for expression
+            std::string_view stringGroup; // group expession belongs to
+            size_t uPosition = stringId.find('.');
+            if(uPosition != std::string_view::npos)
+            {
+               stringGroup = stringId.substr(0, uPosition);
+               stringId = stringId.substr(uPosition + 1);
+            }
+            argumentsFind.append("id", stringId);                             // search for id
+            if(!stringGroup.empty()) { argumentsFind.append("group", stringGroup); }// if groupd then add it
+         }
+         
          auto VVType = itRow.cell_get_variant_view(eColumnFieldPartType);                           assert(VVType.is_primitive() || VVType.is_null());
          enumPartType ePartType = VVType.is_null() ? ePartTypeUnknown : (enumPartType)VVType.cast_as_int32();
          if(ePartType >= ePartTypeOrderBy) continue;                           // skip special types, these are not values
          // ## try to find expression ..........................................
-         iRow = pdatabase_->Expression_FindRow(argumentsFind);
+         int64_t iRow = pdatabase_->Expression_FindRow(argumentsFind);
          if(iRow != -1)                                                        // if expression is found for value, get type from expression
          {
             // ## Prepare information, this to speed up the process and all values need to be checked.

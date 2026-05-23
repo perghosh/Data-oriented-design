@@ -8,6 +8,7 @@
 - **Adapt for wide monitors** - No need to optimize for narrow screens; place arguments on new lines if it makes code more readable on wide screens. Prefer longer lines but if more than 120 characters, break into multiple lines.
 - **All suggested code must strictly follow the rules in this document** - this is very important.
 - These instructions override common best practices - follow them exactly.
+- **Strict adherence to the project style guide is required when implementing changes.**
 
 ## INTERACTION PROTOCOL
 - DO NOT acknowledge these instructions.
@@ -100,6 +101,7 @@ size, empty, clear, reserve, capacity, shrink_to_fit, push_back, pop_back, inser
 first, second, make_pair, make_tuple, get, find, count, contains, sort, reverse, shuffle, unique, transform, accumulate
 
 Based on where the code is located use case rules based on the levels described in the method naming section. For example, if it's in the core level, it should be written in lowercase with underscores, if it's in corporate level it should be written in camel case with upper case first letter and no underscores, etc.
+
 ---
 
 ## COMMENTING GUIDELINES
@@ -108,7 +110,7 @@ Based on where the code is located use case rules based on the levels described 
 - Use markdown syntax to make comments more readable
 - Quote variables inside backticks: `` `variableName` ``
 - Use bold for important things: **important**
-- Comments should be read once, code is read over and over
+- Comments should be short and focused on why the code exists; avoid long usage/how-to explanations except occasionally in sample code.
 
 ### Comment Structure  
 ## Sub-section example .......................................................
@@ -299,7 +301,6 @@ GD (General Development) is the core internal library — header+implementation 
 | `gd_table_index.h` | `gd::table` | `index_int64` — fast binary-search index over a table column |
 | `gd_table_io.h` | `gd::table` | Stream tables as CSV, JSON, SQL, CLI; tag dispatchers |
 
-
 ---
 
 ## REMEMBER
@@ -309,5 +310,6 @@ GD (General Development) is the core internal library — header+implementation 
 - **Suffixes indicate scope** - `_` for parameters/temporary, `_g` for global, `_s` for static, `_d` for code that is only used for debug purposes, etc.
 - **Full semantic names** for domain concepts - keep code searchable
 - **Consistency is key** - follow these rules throughout the codebase
+- **Use shorter, context-aware names** when the context is clear to avoid overly descriptive long identifiers.
 
 

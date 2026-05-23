@@ -28,7 +28,7 @@ std::pair<bool, std::string> expression::add(const gd::argument::arguments& argu
 
    uint32_t uKey = (uint32_t)m_ptableExpression->size() + 1u;
    argumentsRow.append("key", uKey);
-   argumentsRow.append(argumentsTable, { "uuid", "table-key", "id", "column", "expression", "description" }); assert(argumentsRow.exists({ "id", "expression" }) == true);
+   argumentsRow.append(argumentsTable, { "uuid", "table-key", "group", "id", "column", "expression", "description" }); assert(argumentsRow.exists({ "id", "expression" }) == true);
    if(argumentsRow.exists("uuid") == false) argumentsRow.append("uuid", gd::types::uuid_generate_g()); // if table-key is not provided then generate
 
    m_ptableExpression->row_add(argumentsRow, gd::table::tag_arguments{}, gd::table::tag_convert{});
@@ -50,6 +50,16 @@ std::pair<bool, std::string> expression::add(gd::table::dto::table& tableExpress
    {
       argumentsRow.clear();
       itRow.get_arguments(argumentsRow);
+      if(argumentsRow.exists("group") == true)
+      {
+         auto group_ = argumentsRow["group"].as_variant_view();
+         if( group_.is_string() == true )
+         {
+            uint32_t uGroupKey;
+            find_group(group_.as_string_view(), &uGroupKey);
+            argumentsRow.set("group", uGroupKey);
+         }
+      }
 
       argumentsRow.append("key", (uint32_t)itRow.get_row());
       m_ptableExpression->row_add(argumentsRow, gd::table::tag_arguments{}, gd::table::tag_convert{});
@@ -63,7 +73,7 @@ std::pair<bool, std::string> expression::add(gd::table::dto::table& tableExpress
  * @param argumentsFind An arguments object containing the search criteria. Valid keys are "schema", "table", and "column". At least "column" must be provided.
  * @return The row index of the found expression, or -1 if no matching expression is found or if invalid keys are provided.
  */
-int64_t expression::find(const gd::argument::arguments& argumentsFind) const
+int64_t expression::find(gd::argument::arguments& argumentsFind) const
 {   assert(m_ptableExpression != nullptr); assert(m_ptableExpression->empty() == false);
 #ifndef NDEBUG
    std::string stringSearch_d = gd::argument::debug::print(argumentsFind);
@@ -71,9 +81,9 @@ int64_t expression::find(const gd::argument::arguments& argumentsFind) const
    auto vectorKey = argumentsFind.get_keys();
    for(const auto& key_ : vectorKey)
    {
-      if(key_ != "id" && key_ != "uuid" && key_ != "table-key" && key_ != "column")
+      if(key_ != "id" && key_ != "uuid" && key_ != "table-key" && key_ != "column" && key_ != "group")
       {
-         assert(false && "Invalid key in argumentsFind, expected keys are 'id', 'uuid', 'table-key', 'column'");
+         assert(false && "Invalid key in argumentsFind, expected keys are 'id', 'uuid', 'table-key', 'column', 'group'");
          return -1; // Invalid key found
       }
    }
@@ -91,11 +101,86 @@ int64_t expression::find(const gd::argument::arguments& argumentsFind) const
    }
    else
    {
+      // ## if group and it is a string, then convert to group key
+      if(argumentsFind.exists("group") == true)
+      {
+         auto group_ = argumentsFind["group"].as_variant_view();
+         if(group_.is_string() == true)
+         {
+            uint32_t uGroupKey;
+            auto uRow = find_group(group_.as_string_view(), &uGroupKey);                          assert(uRow != static_cast<size_t>(-1) && "Group not found for the provided group name"); // Validate that group was found for the provided group name
+            if(uRow == static_cast<size_t>(-1)) { return -1; }                // Group not found
+            argumentsFind.set( "group", uGroupKey);
+         }
+      }
+
       iRow = m_ptableExpression->find(argumentsFind);
    }
 
    return iRow;
 }
+
+size_t  expression::find_group( uint32_t uKey ) const
+{
+   for(const auto& group_ : m_vectorGroup)
+   {
+      if( group_.get_key() == uKey) return (int64_t)(&group_ - &m_vectorGroup[0]);
+   }
+
+   return -1;
+}
+
+/// @brief Finds the index of a group in the internal group vector based on the provided group name.
+size_t expression::find_group(std::string_view stringName, uint32_t* puKey) const
+{
+   for(size_t uIndex = 0; uIndex < m_vectorGroup.size(); ++uIndex)
+   {
+      if(m_vectorGroup[uIndex].get_name() == stringName)
+      {
+         if(puKey) *puKey = m_vectorGroup[uIndex].get_key();
+         return uIndex;
+      }
+   }
+
+   return static_cast<size_t>(-1);
+}
+
+std::pair<bool, std::string> expression::add_group( uint32_t uGroup, int32_t iParentGroup )
+{
+   if( find_group( uGroup ) != static_cast<size_t>(-1) ) return { false, "Group is already added" };
+
+   if( iParentGroup != -1 )
+   {
+      if( find_group( (uint32_t)iParentGroup ) == static_cast<size_t>(-1) ) return { false, "Parent group was not found" };
+   }
+
+   group group_{ uGroup, iParentGroup };
+   m_vectorGroup.push_back( std::move( group_ ) );
+
+   return { true, "" };
+}
+
+uint32_t expression::add_group(std::string_view stringName, std::string_view stringParent)
+{
+   uint32_t uGroup = next_key();
+   int32_t iParentGroup = -1;
+   if(stringParent.empty() == false) 
+   {
+      iParentGroup = (int32_t)find_group(stringParent);
+      if(iParentGroup == -1) { assert(false && "Parent group was not found"); return 0; } // Parent group not found
+   }
+
+   group group_{ uGroup, iParentGroup };
+   group_.set_name(stringName);
+   m_vectorGroup.push_back( std::move( group_ ) );
+
+   return uGroup; // Return the new group identifier
+}
+
+void expression::set_expression_group( uint64_t uRow, uint32_t uGroup )
+{                                                                                                  assert(m_ptableExpression != nullptr); assert(uRow < m_ptableExpression->size()); assert(find_group(uGroup) != -1);
+   m_ptableExpression->cell_set( uRow, eColumnGroup, uGroup );
+}     
 
 
 
@@ -120,13 +205,15 @@ void expression::create_expression_s(gd::table::arguments::table& tableExpressio
 }
 
 /// @brief create expression dto table for expression structure used to transport expression data.
+///
+/// Note that columns in this transport table differs from internal table that is optimized
 gd::table::dto::table expression::create_expression_s()
 {
    gd::table::dto::table table_((gd::table::dto::table::eTableFlagNull32 | gd::table::dto::table::eTableFlagRowStatus), {
       { "uuid",     0, "uuid"        }, // unique identifier for statement
       { "uint32",   0, "table-key"   }, // key to the parent table in `m_ptableTable`
       { "rstring",  0, "table"       }, // table name if table name
-      { "uint32",   0, "group"       }, // group identifier for expression
+      { "rstring",  0, "group"       }, // group identifier for expression
       { "rstring",  0, "id"          }, // expression id
       { "rstring",  0, "column"      }, // column information
       { "uint32",   0, "type"        }, // expression type

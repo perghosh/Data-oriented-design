@@ -338,8 +338,7 @@ std::pair<bool, std::string> CAPI_Base::PrepareStatement( std::variant<size_t, s
 
    std::string stringTemporary; // If preprocessing and it have modified query then we need to store it.
 
-   result_ = sql_.Preprocess( stringSelectTemplate );
-   if( result_.first == false ) { return result_; }
+   result_ = sql_.Preprocess(stringSelectTemplate);                                              if(result_.first == false) { return result_; } // Preprocess is like a preprocessor for sql template.
    else if( result_.second.empty() == false ) 
    { 
       stringTemporary = std::move( result_.second ); 

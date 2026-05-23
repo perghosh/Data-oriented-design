@@ -358,13 +358,16 @@ int64_t CDatabase::Column_FindRow( const gd::argument::arguments& argumentsFind 
 /// @brief Find a row in the expression table by search criteria
 int64_t CDatabase::Expression_FindRow( const gd::argument::arguments& argumentsFind ) const noexcept
 {
+#ifndef NDEBUG
+   std::string stringFind_d = gd::argument::debug::print(argumentsFind);
+#endif // NDEBUG
    if(argumentsFind.empty() == true) { return -1; }                             // No search criteria provided
    std::array<uint8_t, 256> buffer_;
    gd::argument::arguments argumentsExpression(buffer_);
 
    int64_t iRow = -1;
 
-   if(argumentsFind.exists("table") == true)                                    // If "table" then get key to table
+   if(argumentsFind.exists("table") == true)                              // If "table" then get key to table
    {
       std::string_view stringTable = argumentsFind["table"].as_string_view();
       std::string_view stringSchema;
@@ -375,11 +378,11 @@ int64_t CDatabase::Expression_FindRow( const gd::argument::arguments& argumentsF
          stringTable = stringTable.substr(position_ + 1);
       }  
 
-      iRow = m_pdatabase->find(stringSchema, stringTable, gd::types::tag_table{});
+      auto iRow = m_pdatabase->find(stringSchema, stringTable, gd::types::tag_table{});
       if(iRow != -1) { argumentsExpression["table-key"] = m_pdatabase->table_key(iRow); } // If table is found, add key to table to search criteria
    }
-
-   argumentsExpression.append(argumentsFind, { "id", "column", "type" });
+   
+   argumentsExpression.append(argumentsFind, { "id", "column", "group", "type" });
 
    iRow = m_pexpression->find(argumentsExpression);
 
@@ -480,12 +483,17 @@ std::pair<bool, std::string> CDatabase::LoadExpressions(std::string_view stringF
       vectorError.push_back({ std::string(stringError), stringNode });
    };
 
-   auto expressions_ = xmldocument.document_element().children("expressions");  // find all expression nodes
+   auto expressions_ = xmldocument.document_element().children("expressions"); // find all expression nodes
    for(auto expressionsActive : expressions_)
    {
+      std::string_view stringGroup = expressionsActive.attribute("group").value(); // optional group for expressions
+      if(stringGroup.empty() == false) { m_pexpression->add_group(stringGroup); } // create group for expressions if group attribute is found
+
       for(auto expression_ : expressionsActive.children("expression"))
       {
          argumentsExpression.clear();
+
+         if(stringGroup.empty() == false) { argumentsExpression["group"] = stringGroup; }
 
          // ## id information .................................................
          std::string_view stringId = expression_.attribute("id").value();
@@ -501,7 +509,7 @@ std::pair<bool, std::string> CDatabase::LoadExpressions(std::string_view stringF
          // ## Find table key for expression to connect table .................
          uint32_t uTableKey = 0;
          if(Table_FindKey(stringTable, &uTableKey) == false) { add_error_("Failed to find table key", expression_); continue; }
-         argumentsExpression["table-key"] = uTableKey;                          // Add table key to arguments for expression, this is used to quickly find owner table for expression
+         argumentsExpression["table-key"] = uTableKey;                         // Add table key to arguments for expression, this is used to quickly find owner table for expression
 
          // ## column information .................................................
          std::string_view stringColumn = expression_.attribute("column").value();

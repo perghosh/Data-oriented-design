@@ -177,6 +177,8 @@ public:
 
    /// Add multiple values for columns
    void AddValues( const gd::argument::arguments& argumentsField );
+   /// Adds one or more expression columns, this have a specific format to be able to specify expression
+   void AddExpression( std::string_view stringExpression );
    /// Simple key value json format to add multiple columns, handy to add were all belongs to same table.
    std::pair<bool,std::string> ColumnAddValues( std::string_view stringJson, gd::types::tag_json );
    /// Add information to internal table storing data to generate query in column format (at least table and column) to connect to metadata

@@ -1233,22 +1233,22 @@ public:
    //    Set values for selected position in buffer, it could be for a name, index or pointer
    //    If position is not found, new value is appended to buffer
 
-   arguments& set(const std::string_view& stringName, std::nullptr_t) { return set(stringName, eTypeNumberBool, nullptr, 0); }
-   arguments& set(const std::string_view& stringName, bool v) { return set(stringName, eTypeNumberBool, (const_pointer)&v, sizeof(bool)); }
-   arguments& set(const std::string_view& stringName, int8_t v) { return set(stringName, eTypeNumberInt8, (const_pointer)&v, sizeof(int8_t)); }
-   arguments& set(const std::string_view& stringName, uint8_t v) { return set(stringName, eTypeNumberUInt8, (const_pointer)&v, sizeof(uint8_t)); }
-   arguments& set(const std::string_view& stringName, int16_t v) { return set(stringName, eTypeNumberInt16, (const_pointer)&v, sizeof(int16_t)); }
-   arguments& set(const std::string_view& stringName, uint16_t v) { return set(stringName, eTypeNumberUInt16, (const_pointer)&v, sizeof(uint16_t)); }
-   arguments& set(const std::string_view& stringName, int32_t v) { return set(stringName, eTypeNumberInt32, (const_pointer)&v, sizeof(int32_t)); }
-   arguments& set(const std::string_view& stringName, uint32_t v) { return set(stringName, eTypeNumberUInt32, (const_pointer)&v, sizeof(uint32_t)); }
-   arguments& set(const std::string_view& stringName, int64_t v) { return set(stringName, eTypeNumberInt64, (const_pointer)&v, sizeof(int64_t)); }
-   arguments& set(const std::string_view& stringName, uint64_t v) { return set(stringName, eTypeNumberUInt64, (const_pointer)&v, sizeof(uint64_t)); }
+   arguments& set( std::string_view stringName, std::nullptr_t) { return set(stringName, eTypeNumberBool, nullptr, 0); }
+   arguments& set( std::string_view stringName, bool v) { return set(stringName, eTypeNumberBool, (const_pointer)&v, sizeof(bool)); }
+   arguments& set( std::string_view stringName, int8_t v) { return set(stringName, eTypeNumberInt8, (const_pointer)&v, sizeof(int8_t)); }
+   arguments& set( std::string_view stringName, uint8_t v) { return set(stringName, eTypeNumberUInt8, (const_pointer)&v, sizeof(uint8_t)); }
+   arguments& set( std::string_view stringName, int16_t v) { return set(stringName, eTypeNumberInt16, (const_pointer)&v, sizeof(int16_t)); }
+   arguments& set( std::string_view stringName, uint16_t v) { return set(stringName, eTypeNumberUInt16, (const_pointer)&v, sizeof(uint16_t)); }
+   arguments& set( std::string_view stringName, int32_t v) { return set(stringName, eTypeNumberInt32, (const_pointer)&v, sizeof(int32_t)); }
+   arguments& set( std::string_view stringName, uint32_t v) { return set(stringName, eTypeNumberUInt32, (const_pointer)&v, sizeof(uint32_t)); }
+   arguments& set( std::string_view stringName, int64_t v) { return set(stringName, eTypeNumberInt64, (const_pointer)&v, sizeof(int64_t)); }
+   arguments& set( std::string_view stringName, uint64_t v) { return set(stringName, eTypeNumberUInt64, (const_pointer)&v, sizeof(uint64_t)); }
+                   
+   arguments& set( std::string_view stringName, float v) { return set(stringName, eTypeNumberFloat, (const_pointer)&v, sizeof(float)); }
+   arguments& set( std::string_view stringName, double v) { return set(stringName, eTypeNumberDouble, (const_pointer)&v, sizeof(double)); }
 
-   arguments& set(const std::string_view& stringName, float v) { return set(stringName, eTypeNumberFloat, (const_pointer)&v, sizeof(float)); }
-   arguments& set(const std::string_view& stringName, double v) { return set(stringName, eTypeNumberDouble, (const_pointer)&v, sizeof(double)); }
-
-   arguments& set(const std::string_view& stringName, const char* v) { return set(stringName, std::string_view(v) ); }
-   arguments& set_uuid(const std::string_view& stringName, const uint8_t* puData) { return set(stringName, eTypeNumberGuid, (const_pointer)puData, 16); }
+   arguments& set( std::string_view stringName, const char* v) { return set(stringName, std::string_view(v) ); }
+   arguments& set_uuid(std::string_view stringName, const uint8_t* puData) { return set(stringName, eTypeNumberGuid, (const_pointer)puData, 16); }
 
 
    arguments& set(std::string_view stringName, std::string_view v, tag_string_view) { return set(stringName, (eTypeNumberString | eValueLength), (const_pointer)v.data(), (unsigned int)v.length() + 1); }
