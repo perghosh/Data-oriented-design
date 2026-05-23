@@ -304,6 +304,12 @@ std::pair<bool, std::string> CAPI_Base::PrepareStatement( std::variant<size_t, s
    CRENDERSql sql_( m_pcontext, uStatementRow );
    sql_.Initialize();
 
+   if( Exists("xml") == true)                                                 // read "xml" values
+   {
+      pugi::xml_document* pdocument = reinterpret_cast<pugi::xml_document*>(GetArgument("xml").as_void());
+      sql_.ColumnsAdd(pdocument, {{"element", "where"}});
+   }
+
    if( Exists( "columns" ) == true )                                          // read "columns"
    {
       auto stringColumns = GetNextArgument( "columns" ).as_string();
