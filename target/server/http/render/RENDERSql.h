@@ -183,6 +183,9 @@ public:
    std::pair<bool,std::string> ColumnAddValues( std::string_view stringJson, gd::types::tag_json );
    /// Add information to internal table storing data to generate query in column format (at least table and column) to connect to metadata
    std::pair<bool,std::string> ColumnsAdd( std::string_view stringJson, gd::types::tag_json );
+   /// Add information from xml
+   std::pair<bool, std::string> ColumnsAdd(pugi::xml_document* pdocument, const gd::argument::arguments& argumentsOptions);
+   std::pair<bool, std::string> ColumnsAdd(std::string_view stringXml, gd::types::tag_xml);
 
    // @API [tag: condition] [summary: Methods for managing conditions]
 

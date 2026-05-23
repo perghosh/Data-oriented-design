@@ -620,6 +620,20 @@ std::pair<bool, std::string> CRENDERSql::ColumnsAdd( std::string_view stringJson
    return {true, ""};
 }
 
+std::pair<bool, std::string> CRENDERSql::ColumnsAdd(pugi::xml_document* pdocument, const gd::argument::arguments& argumentsOptions)
+{
+
+   return { true, "" };
+}
+
+std::pair<bool, std::string> CRENDERSql::ColumnsAdd(std::string_view stringXml, gd::types::tag_xml)
+{
+
+   return { true, "" };
+}
+
+
+
 /// @brief Adds a condition to the internal list of conditions for SQL query generation.
 void CRENDERSql::ConditionAdd( const gd::argument::arguments& argumentsCondition )
 {                                                                                                  assert( gd::sql::query::validate_condition_s( argumentsCondition ).first == true );
