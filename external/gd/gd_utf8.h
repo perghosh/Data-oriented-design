@@ -1,4 +1,4 @@
-// @FILE {tag: string, utf8] [description: Lots of string methods with focus on utf8 formating] [type: header] [name: gd_utf8.h]
+// @FILE [tag: string, utf8] [description: Lots of string methods with focus on utf8 formating] [type: header] [name: gd_utf8.h]
 
 /*
 ## Overview

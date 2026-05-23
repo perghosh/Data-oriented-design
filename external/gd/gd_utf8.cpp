@@ -1,3 +1,5 @@
+// @FILE [tag: utf8] [description: Handle utf-8 encoding and decoding, and related operations] [type: source] [name: gd_utf8.cpp]
+
 #include <cassert>
 #include <stdint.h>
 #include <stdexcept>
@@ -2768,45 +2770,6 @@ namespace gd {
    }
 } // gd
 
-
-
-
-
-/*
-
-    template <typename octet_iterator>
-    inline typename std::iterator_traits<octet_iterator>::difference_type
-    sequence_length(octet_iterator lead_it)
-    {
-        uint8_t lead = utf8::internal::mask8(*lead_it);
-        if (lead < 0x80)
-            return 1;
-        else if ((lead >> 5) == 0x6)
-            return 2;
-        else if ((lead >> 4) == 0xe)
-            return 3;
-        else if ((lead >> 3) == 0x1e)
-            return 4;
-        else
-            return 0;
-    }
-
-
-size_t utf8codepointsize(utf8_int32_t chr) {
-  if (0 == ((utf8_int32_t)0xffffff80 & chr)) {
-    return 1;
-  } else if (0 == ((utf8_int32_t)0xfffff800 & chr)) {
-    return 2;
-  } else if (0 == ((utf8_int32_t)0xffff0000 & chr)) {
-    return 3;
-  } else { // if (0 == ((int)0xffe00000 & chr)) {
-    return 4;
-  }
-}
-
-
-
-*/
 
 namespace gd {
    namespace utf8 {
