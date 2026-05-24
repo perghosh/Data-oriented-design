@@ -104,17 +104,33 @@ int64_t expression::find(gd::argument::arguments& argumentsFind) const
       // ## if group and it is a string, then convert to group key
       if(argumentsFind.exists("group") == true)
       {
+         std::array<char, 64> buffer_;
+         gd::argument::arguments argumentsGroup(buffer_);
          auto group_ = argumentsFind["group"].as_variant_view();
          if(group_.is_string() == true)
          {
             uint32_t uGroupKey;
             auto uRow = find_group(group_.as_string_view(), &uGroupKey);                          assert(uRow != static_cast<size_t>(-1) && "Group not found for the provided group name"); // Validate that group was found for the provided group name
             if(uRow == static_cast<size_t>(-1)) { return -1; }                // Group not found
-            argumentsFind.set( "group", uGroupKey);
+            argumentsGroup.set( "group", uGroupKey);
          }
-      }
+         else if(group_.is_uint32() == true)
+         {
+            argumentsGroup.set("group", group_.as_uint32());
+         }
+         else
+         {                                                                                         assert(false && "Invalid group value, expected string or uint32");
+            return -1; // Invalid group value
+         }
 
-      iRow = m_ptableExpression->find(argumentsFind);
+         std::string_view id_ = argumentsFind["id"].as_string_view();
+         argumentsGroup.set("id", id_);
+         iRow = m_ptableExpression->find(argumentsGroup);
+      }
+      else
+      {
+         iRow = m_ptableExpression->find(argumentsFind);
+      }
    }
 
    return iRow;

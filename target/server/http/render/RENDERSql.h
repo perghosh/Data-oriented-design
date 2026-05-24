@@ -90,6 +90,7 @@ public:
       eColumnFieldMeta,          ///< column meta information, used for internal purposes
       eColumnFieldSchema,        ///< schema for table field belongs to
       eColumnFieldTable,         ///< name for table field belongs to
+      eColumnFieldId,            ///< id to get object based on what the column is connected to
       eColumnFieldName,          ///< name for column in table
       eColumnFieldAlias,         ///< alias for column in table
       eColumnFieldValue,         ///< value for column in table

@@ -131,6 +131,7 @@ void CRENDERSql::Initialize()
       p->add( "uint32", 0, "meta" );                                          // meta information for column, fast access to column information, avoid to find it again
       p->add( "string", uSize, "schema" );                                    // schema for table field belongs to
       p->add( "string", uSize, "table" );                                     // name for table field belongs to
+      p->add( "string", uSize, "id" );                                        // id to get object based on what the column is connected to
       p->add( "string", uSize, "name" );                                      // name for column in table
       p->add( "string", uSize, "alias" );                                     // alias for column in table
       p->add( "string", uSize * 2, "value" );                                 // value for column in table
@@ -231,7 +232,7 @@ void CRENDERSql::ColumnAdd( std::string_view stringName, gd::variant_view varian
  * @param argumentsField information about the field to add.
  */
 void CRENDERSql::ColumnAdd( const gd::argument::arguments& argumentsField )
-{                                                                                                  assert( m_pcolumnsField_s != nullptr ); assert( argumentsField.exists( "name" ) == true ); 
+{                                                                                                  assert( m_pcolumnsField_s != nullptr ); assert( argumentsField.exists_any( {"name", "id"} ) == true);
 #ifndef NDEBUG
    [[maybe_unused]] std::string stringValues_d = gd::argument::debug::print( argumentsField );
 #endif // NDEBUG
@@ -507,7 +508,7 @@ void CRENDERSql::AddExpression(std::string_view stringExpression)
       if(expression_.empty() == true) { continue; }
 
       argumentsColumn.append("name", expression_);                            // use expression as name, this is later parsed
-      argumentsColumn.append("meta_type", uint32_t(CRENDERSql::eColumnMetaTypeExpression));
+      argumentsColumn.append("meta_type", uint32_t(eColumnMetaTypeExpression));
 
       ColumnAdd(argumentsColumn);
    }
@@ -620,8 +621,61 @@ std::pair<bool, std::string> CRENDERSql::ColumnsAdd( std::string_view stringJson
    return {true, ""};
 }
 
-std::pair<bool, std::string> CRENDERSql::ColumnsAdd(pugi::xml_document* pdocument, const gd::argument::arguments& argumentsOptions)
-{
+std::pair<bool, std::string> CRENDERSql::ColumnsAdd(pugi::xml_document* pxmldocument, const gd::argument::arguments& argumentsOptions)
+{                                                                                                  assert( pxmldocument != nullptr ); assert( argumentsOptions.exists("element") == true );
+
+   pugi::xml_node xmlnodeDocument = pxmldocument->document_element();
+   pugi::xml_node xmlnodeContainer = xmlnodeDocument;
+
+   std::string_view stringElement = argumentsOptions["element"].as_string_view();                  assert(stringElement.empty() == false);
+   std::vector<std::string_view> vectorElement = gd::utf8::split(stringElement, ',');
+
+   std::array<std::byte, 256> buffer_;
+   gd::argument::arguments arguments_(buffer_);
+
+   std::string stringXpath;
+   for(const auto& element_ : vectorElement)
+   {
+      if(element_.empty() == true) { continue; }
+      stringXpath = "//";
+      stringXpath += element_;
+
+      pugi::xpath_node_set xpathnodeset_ = xmlnodeContainer.select_nodes(stringXpath.c_str());
+      for(const pugi::xpath_node& xpathnode_ : xpathnodeset_)
+      {
+         bool bValid = false;
+         arguments_.clear();
+         std::string_view value_;
+         value_ = xpathnode_.node().attribute("meta_type").value();
+         if(value_.empty() == false && value_[0] == 'e') { arguments_.append("meta_type", uint32_t(eColumnMetaTypeExpression)); }
+         value_ = xpathnode_.node().attribute("id").value();
+         if(value_.empty() == false) { arguments_.append("id", value_); bValid = true; }
+         value_ = xpathnode_.node().attribute("name").value();
+         if(value_.empty() == false) { arguments_.append("name", value_); bValid = true; }
+         value_ = xpathnode_.node().attribute("table").value();
+         if(value_.empty() == false) { arguments_.append("table", value_); }
+         value_ = xpathnode_.node().attribute("column").value();
+         if(value_.empty() == false) { arguments_.append("column", value_); }
+
+         value_ = xpathnode_.node().attribute("type_part").value();
+         if(value_.empty() == false)
+         {
+            uint32_t uPartType = utility::get_part_type_from_string(value_);
+            if(uPartType != 0) { arguments_.append("type_part", uPartType); }
+         }
+
+         value_ = xpathnode_.node().attribute("value").value();
+         if(value_.empty() == false) { arguments_.append("value", value_); }
+         else
+         {
+            value_ = xpathnode_.node().child_value();
+            if(value_.empty() == false) { arguments_.append("value", value_); }
+         }
+
+         if(bValid == true) { ColumnAdd(arguments_); }
+         else { return { false, "missing required attributes (id or name)" }; }
+      }
+   }
 
    return { true, "" };
 }
@@ -948,6 +1002,7 @@ std::pair<bool, std::string> CRENDERSql::Prepare()                              
          itRow.cell_set( "type", 0, gd::table::tag_convert{} ); continue; 
       } 
       std::string stringName = itRow.cell_get_variant_view( "name", gd::table::tag_not_null{}).as_string();
+      std::string_view stringId = itRow.cell_get_variant_view( "id", gd::table::tag_not_null{}).as_string_view();
 
       argumentsFind.append("table", stringTable);
 
@@ -970,7 +1025,7 @@ std::pair<bool, std::string> CRENDERSql::Prepare()                              
 
          if(eMetaType == eColumnMetaTypeExpression)                            // field is added as expression. No fallback to column
          {  // ## Field is added as expression so we know how to search for it.
-            std::string_view stringId = stringName; // id for expression
+            if(stringId.empty() == true) { stringId = stringName; } // use name if no id
             std::string_view stringGroup; // group expession belongs to
             size_t uPosition = stringId.find('.');
             if(uPosition != std::string_view::npos)
@@ -1214,6 +1269,7 @@ std::pair<bool, std::string> CRENDERSql::Query_AddExpression(gd::sql::query* pqu
    std::string_view stringTable = m_tableField.cell_get_variant_view(uRow, eColumnFieldTable, gd::table::tag_not_null{}).as_string_view();
    std::string_view stringName = m_tableField.cell_get_variant_view(uRow, eColumnFieldName, gd::table::tag_not_null{}).as_string_view();
    std::string_view stringAlias = m_tableField.cell_get_variant_view(uRow, eColumnFieldAlias, gd::table::tag_not_null{}).as_string_view();
+   std::string_view stringId = m_tableField.cell_get_variant_view(uRow, eColumnFieldId, gd::table::tag_not_null{}).as_string_view();
 
    std::string stringValue = m_tableField.cell_get_variant_view(uRow, eColumnFieldValue, gd::table::tag_not_null{}).as_string();
 
@@ -1231,8 +1287,11 @@ std::pair<bool, std::string> CRENDERSql::Query_AddExpression(gd::sql::query* pqu
 
    query queryExpression(m_eSqlDialect);
    queryExpression.table_add(stringTable);                                    // add table to query
+
    if(stringAlias.empty() == false) { stringName = stringAlias; }             // if alias is present use it as name for field in query
-   arguments_.append("name", stringName);
+   else if(stringName.empty() == true) { stringName = stringId; }             // if no alias and no name, use id as name for field in query)
+
+   if(stringName.empty() == false) { arguments_.append("name", stringName); } // add name for field in query if present
    arguments_.append("value", stringValue );
    if(uType != 0) { arguments_.append("type", uType); }
    queryExpression.field_add(arguments_, tag_arguments{});
