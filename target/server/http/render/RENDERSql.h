@@ -155,9 +155,9 @@ public:
    std::pair<bool,std::string> Add( const pugi::xml_node& xmlnodeValues );
 
    /// Simplest form, adds value with name
-   void ColumnAdd( std::string_view stringName, gd::variant_view variantviewValue );
+   std::pair<bool, std::string> ColumnAdd( std::string_view stringName, gd::variant_view variantviewValue );
    /// Add single column to internal table with columns, keys are matched against column names
-   void ColumnAdd( const gd::argument::arguments& argumentsField );
+   std::pair<bool, std::string> ColumnAdd( const gd::argument::arguments& argumentsField );
    /// Add json formated object column to internal table with columns, keys are matched against column names
    std::pair<bool,std::string> ColumnAdd( std::string_view stringJson, gd::types::tag_json );
 

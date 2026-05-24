@@ -217,13 +217,13 @@ std::pair<bool, std::string> CRENDERSql::Add( const pugi::xml_node& xmlnodeValue
    return { true, "" };
 }
 
-void CRENDERSql::ColumnAdd( std::string_view stringName, gd::variant_view variantviewValue )
+std::pair<bool, std::string> CRENDERSql::ColumnAdd( std::string_view stringName, gd::variant_view variantviewValue )
 {
    std::array<std::byte, 128> buffer_;
    gd::argument::arguments argumentsField(buffer_);
    argumentsField.append_argument( "name", stringName ); // column name
    argumentsField.append_argument( "value", variantviewValue);
-   ColumnAdd( argumentsField );
+   return ColumnAdd( argumentsField );
 }
 
 /** --------------------------------------------------------------------------
@@ -231,7 +231,7 @@ void CRENDERSql::ColumnAdd( std::string_view stringName, gd::variant_view varian
  *
  * @param argumentsField information about the field to add.
  */
-void CRENDERSql::ColumnAdd( const gd::argument::arguments& argumentsField )
+std::pair<bool, std::string> CRENDERSql::ColumnAdd( const gd::argument::arguments& argumentsField )
 {                                                                                                  assert( m_pcolumnsField_s != nullptr ); assert( argumentsField.exists_any( {"name", "id"} ) == true);
 #ifndef NDEBUG
    [[maybe_unused]] std::string stringValues_d = gd::argument::debug::print( argumentsField );
@@ -253,9 +253,13 @@ void CRENDERSql::ColumnAdd( const gd::argument::arguments& argumentsField )
          { 
             // ## translate type name to type number .....................
             auto stringType = value_.as_string_view();
-            if( stringType.length() <= 2 ) { continue; }
-            uint32_t uType = gd::types::type_g( value_.as_string_view() );
-            m_tableField.cell_set( uRow, eColumnFieldType, uType);
+            if(stringType.length() > 2)
+            {
+               uint32_t uType = gd::types::type_g(value_.as_string_view());
+               if(uType > 0) m_tableField.cell_set(uRow, eColumnFieldType, uType);
+               else return { false, std::format("Invalid type: {}", stringType) };
+            }
+            else { return { false, "Type is too short" }; }
          }
          else { m_tableField.cell_set( uRow, eColumnFieldType, value_); }
       }
@@ -284,6 +288,8 @@ void CRENDERSql::ColumnAdd( const gd::argument::arguments& argumentsField )
          else { Add( key_, value_ ); }
       }
    }
+
+   return { true, "" };
 }
 
 /** ---------------------------------------------------------------------------

@@ -362,7 +362,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
 
          // ## Check for ui information
          META::CQueries* pqueries = pdocument->QUERIES_Get();
-         auto iRow = pqueries->GetQueryRow( stringName );                    assert( iRow != -1 && "query name not found in document queries" );
+         auto iRow = pqueries->GetQueryRow( stringName );                                          assert( iRow != -1 && "query name not found in document queries" );
          if( iRow != -1 )
          {
             auto parguments_ = pqueries->GetQueryArguments( static_cast<uint64_t>( iRow ) );
