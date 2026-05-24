@@ -87,7 +87,7 @@ if( USE_TARGET_ )
       "main.cpp"
    )
 
-   target_compile_features(${TARGET_NAME_} PRIVATE cxx_std_23)
+   # target_compile_features(${TARGET_NAME_} PRIVATE CXX_STD_23)
    set_target_properties(${TARGET_NAME_} PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO)
 
    target_include_directories(${TARGET_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
