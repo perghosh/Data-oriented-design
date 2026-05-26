@@ -334,6 +334,17 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
 
    gd::com::pointer<gd::database::cursor_i> pcursor;
    pdatabase->get_cursor( &pcursor );
+//#if(TARGET_COMPILE_MODE_ & FLAG_MODE_DEVELOPER_)
+#if(TARGET_COMPILE_MODE_ & 1)
+   auto debug_ = GetArgument("debug");
+   if(debug_.is_true() == true)
+   {
+      gd::argument::arguments* parguments_ = new gd::argument::arguments(); parguments_->reserve(128);
+      parguments_->append("sql", stringSelect);
+      Objects().Add(parguments_);
+      Objects()["name"] = "debug";
+   }
+#endif // (TARGET_COMPILE_MODE_ & FLAG_MODE_DEVELOPER_)
 
    std::pair< bool, std::string > pairReturn;   
    pairReturn = pcursor->open( stringSelect );
