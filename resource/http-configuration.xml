@@ -5,3 +5,26 @@
       <property key="folder-root" value="D:\temp\www"/>
    </properties>
 </configuration>
+
+<!--
+sample configuration for vote project
+
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+   <properties>
+      <property key="port" value="8001" />
+      <property key="proxy" value="caddy" />
+		<property key="file-ignore-extension" value="php,env" />
+      <property key="folder-root" value="C:\dev\home\web\web-vote\target\vote" />
+      <property key="database-open" value="D:\temp\www\test.sqlite" />
+      <property key="database-dialect" value="sqlite" />
+      <property key="database-statement-file" value="C:\dev\home\web\web-vote\target\vote\vote-statements.xml" />
+      <property key="database-meta-tables" value="SELECT name AS 'table' FROM sqlite_master WHERE type='table' ORDER BY 1" />
+      <property key="database-meta-columns" value="SELECT m.name AS 'table', ci.cid AS ordinal, ci.name AS 'column', ci.type AS _type, ci.'notnull' AS _flag_null, ci.pk AS _flag_pk FROM sqlite_master m JOIN pragma_table_info(m.name) ci WHERE m.type = 'table' AND m.name NOT LIKE 'sqlite_%'" />
+		<property key="database-expression-file" value="C:\dev\home\web\web-vote\target\vote\vote-expressions.xml" />
+		
+
+		<property key="script-lua-pool"><![CDATA[{"core": 2}]]></property>
+   </properties>
+</configuration>
+-->

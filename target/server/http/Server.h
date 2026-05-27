@@ -59,7 +59,9 @@ class CServer
 public:
    enum enumFlags : unsigned
    {
-      eFlagProxy = 1, ///< flag to set server in proxy mode, in proxy mode server will forward request to other server and return response from that server to client
+      eFlagProxy  = 1,   ///< flag to set server in proxy mode, in proxy mode server will forward request to other server and return response from that server to client
+      eFlagBlock  = 2,   ///< flag to set server have blocking operations
+      eFlagSSR    = 4,   ///< flag to set server in SSR mode, in SSR mode server will render html on server side and return rendered html to client
    };
 
 // ## construction -------------------------------------------------------------
@@ -92,14 +94,16 @@ public:
    void AddFlags( unsigned uFlags ) { m_uFlags |= uFlags; }
    void SetFlags( unsigned uSet, unsigned uClear ) { m_uFlags = ( m_uFlags | uSet ) & ~uClear; }
 
+   bool IsProxy() const { return (m_uFlags & eFlagProxy) != 0; }
+   bool IsBlock() const { return (m_uFlags & eFlagBlock) != 0; }
+   bool IsSSR() const { return (m_uFlags & eFlagSSR) != 0; }
+
    /// Get application pointer
    CApplication* GetApplication() const { return m_ppapplication; }
    void SetApplication( CApplication* ppapplication ) { m_ppapplication = ppapplication; }
 
    std::shared_ptr<listener> GetListener() const;
    void SetListener( std::shared_ptr<listener> plistener );
-
-   bool IsProxy() const { return ( m_uFlags & eFlagProxy ) != 0; }
 
 // @API [tag: operation]
 

@@ -124,13 +124,13 @@ boost::beast::http::message_generator
 
    // ## Route command if target begins with '!' ............................. @API [tag: server, uri, route-command] [summary: Investigate and route command requests]
 
-   if( stringTarget.empty() == false && stringTarget.front() == '!' )
+   if(stringTarget.empty() == false && stringTarget.front() == '!')          // @CRITICAL [tag: command] [description: Route command requests that start with '!' to the command handler]
    {
       CServer server_( papplication_g );
       return server_.RouteCommand( stringTarget, stringBody, std::move( request_ ), psession_ );
    }
 
-   // ## Request path must be absolute and not contain "..".
+   // ## Request path must be absolute and not contain ".."...................
    if( stringPage.empty() || stringPage[0] != '/' || stringPage.find("..") != boost::beast::string_view::npos) { return error_("Illegal request-target"); }
 
    // ## Build the path to the requested file
@@ -140,9 +140,17 @@ boost::beast::http::message_generator
    {                                                                                               //LOG_DEBUG_RAW( stringPath );
    }
 
-   // ## Check for ending ? and remove it
+   // ## Check for ending ? and remove it ....................................
    auto uPosition = stringPath.find('?');
    if( uPosition != std::string::npos ) { stringPath = stringPath.substr( 0, uPosition ); }
+
+   CServer* pserver = papplication_g->GetServer();
+
+   // ## Check if server is in blocking mode, if it is, check if file is blocked
+   if( pserver != nullptr && pserver->IsBlock() == true )
+   {
+
+   }
 
    // ## Attempt to open the file
    boost::beast::error_code errorcode_;

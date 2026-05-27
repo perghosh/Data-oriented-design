@@ -517,6 +517,11 @@ std::pair<bool, std::string> CApplication::SERVER_Start(unsigned uIndex)
       if( m_pserverBoost != nullptr ) { m_pserverBoost->AddFlags( CServer::eFlagProxy ); } // set proxy flag for server, this is used in http handler to know if we need to use x-forwarded-for header to get real client ip address
    }
 
+   if(PROPERTY_Exists("file-ignore-extension") == true)
+   {
+      if(m_pserverBoost != nullptr) { m_pserverBoost->AddFlags(CServer::eFlagBlock); }
+   }
+
    std::vector<std::thread> vectorThread;
    vectorThread.reserve(uThreadCount - 1);
    for(auto u = uThreadCount - 1; u > 0; --u)
@@ -576,6 +581,9 @@ void CApplication::PrepareOption_s(gd::cli::options& optionsApplication)
 
    optionsApplication.add({ "port", "Set port number" });
    optionsApplication.add({ "proxy", "Set proxy for the server" });
+
+   // ## File settings
+   optionsApplication.add({ "file-ignore-extension", "comma separated list of file extensions to ignore" });
 
    // ## Folder settings
    optionsApplication.add({"path", "Global path variable used to find files in any of the folders if not found in selected folder, folders are separated by semicolon"});
