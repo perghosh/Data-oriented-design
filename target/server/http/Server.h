@@ -30,7 +30,9 @@
 #include "gd/gd_com.h"
 #include "gd/com/gd_com_server.h"
 
+#include "gd/gd_arguments.h"
 #include "gd/gd_arguments_shared.h"
+#include "gd/gd_arguments_index.h"
 #include "gd/gd_log_logger.h"
 #include "gd/gd_log_logger_define.h"
 
@@ -60,8 +62,17 @@ public:
    enum enumFlags : unsigned
    {
       eFlagProxy  = 1,   ///< flag to set server in proxy mode, in proxy mode server will forward request to other server and return response from that server to client
-      eFlagBlock  = 2,   ///< flag to set server have blocking operations
+      eFlagIgnore = 2,   ///< flag to set server have blocking operations
       eFlagSSR    = 4,   ///< flag to set server in SSR mode, in SSR mode server will render html on server side and return rendered html to client
+      eFlagRoot   = 8,   ///< flag to set server as root folder
+      eFlagPath   = 16,  ///< flag to set server have path settings, used to set folders where to look if not found in webroot folder
+   };
+
+   enum enumIndexSettings : std::size_t
+   {
+      eIndexSettingsIgnoreExtension = 0, ///< index for ignore-extension setting, this is used to quickly access ignore-extension setting without searching by name
+      eIndexSettingsWebroot,             ///< index for webroot setting, this is used to quickly access webroot setting without searching by name
+      eIndexSettingsPath,                ///< index for path setting, this is used to quickly access path setting without searching by name
    };
 
 // ## construction -------------------------------------------------------------
@@ -95,7 +106,7 @@ public:
    void SetFlags( unsigned uSet, unsigned uClear ) { m_uFlags = ( m_uFlags | uSet ) & ~uClear; }
 
    bool IsProxy() const { return (m_uFlags & eFlagProxy) != 0; }
-   bool IsBlock() const { return (m_uFlags & eFlagBlock) != 0; }
+   bool IsIgnore() const { return (m_uFlags & eFlagIgnore) != 0; }
    bool IsSSR() const { return (m_uFlags & eFlagSSR) != 0; }
 
    /// Get application pointer
@@ -105,14 +116,19 @@ public:
    std::shared_ptr<listener> GetListener() const;
    void SetListener( std::shared_ptr<listener> plistener );
 
+   std::string_view GetValue(std::size_t uIndex) const { assert(uIndex < 3); return m_argumentIndexSettings.get_argument(m_argumentSettings, m_uIndexSettings[uIndex]).as_string_view(); }
+   std::string_view GetValue(std::string_view stringName) const { std::size_t uIndex = ValueIndex_s(stringName); return uIndex != std::size_t(-1) ? GetValue(uIndex) : std::string_view(); }
+
 // @API [tag: operation]
 
-   std::pair<bool, std::string> Initialize();
+   std::pair<bool, std::string> Initialize( const gd::argument::arguments& arguments_ );
 
    /// Route command
    boost::beast::http::message_generator RouteCommand( std::string_view stringTarget, std::string_view stringBody, boost::beast::http::request<boost::beast::http::string_body>&& request_, const session* psession_ );
 
    std::pair<bool, std::string> Execute( const std::vector<std::string_view>& vectorCommand, gd::com::server::command_i* pcommand );
+
+   bool IsBlocked(std::string_view stringPath) const;
 
 
 /** \name ROUTER
@@ -133,18 +149,29 @@ public:
 
 //@}
 
-
 // ## attributes ----------------------------------------------------------------
 public:
    unsigned m_uFlags{}; ///< flags for server, can be used to set different options for server
    CApplication* m_ppapplication{}; ///< application pointer, access application that is used as object root for server
    std::shared_ptr<listener> m_plistener; ///< listener object that accepts incoming connections and launches sessions to handle them
 
+   gd::argument::arguments m_argumentSettings; ///< settings from application and other server related information.
+   gd::argument::arguments_index_t m_argumentIndexSettings; ///< index for settings arguments, this is used to quickly access settings arguments without searching by name, need to be fast
+   std::size_t m_uIndexSettings[3]{}; ///< index for settings arguments, this is used to quickly access settings arguments without searching by name
+
 // ## free functions ------------------------------------------------------------
 public:
    /// Prepares response header for request
    void PrepareResponseHeader_s( gd::argument::arguments& argumentHeader, boost::beast::http::response<boost::beast::http::string_body>& response );
    boost::beast::http::response<boost::beast::http::string_body> PrepareResponse_s( const boost::beast::http::request<boost::beast::http::string_body>& request_, int iType, std::string_view stringContentType, std::string& stringBody );
+
+   static constexpr std::size_t ValueIndex_s(std::string_view stringName)
+   {
+      if(stringName == "ignore-extension") { return eIndexSettingsIgnoreExtension; }
+      else if(stringName == "webroot") { return eIndexSettingsWebroot; }
+      else if(stringName == "path") { return eIndexSettingsPath; }
+      else { return std::size_t(-1); }
+   }
 
 
 };

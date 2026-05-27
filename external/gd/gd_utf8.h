@@ -74,6 +74,8 @@ namespace gd {
       using tag_string = gd::types::tag_string;
       /// tag dispatcher for stl string_view
       using tag_string_view = gd::types::tag_string_view;
+      /// tag dispatcher for for stack storage
+      using tag_stack = gd::types::tag_stack;
 
       constexpr uint8_t UTF8_MAX_ASCII = 0x7F;
       constexpr uint8_t UTF8_MIN_ENCODE = 0x80;
@@ -896,6 +898,15 @@ namespace gd {
          split( stringText.data(), stringText.data() + stringText.length(), chSplitWith, vectorPart );
       }
 
+      // @API [tag: split, stack] [description: split without allocate]
+
+      std::size_t split(const char* piBegin, const char* piEnd, char iSplitWith, std::span<std::string_view> span_, tag_stack);
+
+      /// Convenience wrappers (stack / no heap allocation)
+      inline std::size_t split(const std::string_view& stringText, char iSplitWith, std::span<std::string_view> span_, tag_stack);
+      template<size_t N>
+      inline std::size_t split(const std::string_view& stringText, char iSplitWith, std::array<std::string_view, N>& arr_, tag_stack);
+
       // @API [tag: split] [description: split with escape character, double split character is used to escape split character]
 
       /// Split string into std::string parts, each part is separated by `chSplit` character, escape character is used to escape split character
@@ -1064,6 +1075,52 @@ namespace gd {
          inline std::string print( const uint8_t* puText, const uint8_t* puEnd ) { return print( puText, puEnd, " ", 8 ); }
          inline std::string print( const uint8_t* puText, std::size_t uLength ) { return print( puText, puText + uLength, " ", 8 ); }
          std::string print( const void* puText, std::size_t uLength );
+      }
+   }
+}
+
+namespace gd {
+   namespace utf8 {
+
+      /// split string into parts, each part is separated by `iSplitWith` character, result is stored in `span_` and method returns pointer to end of string
+      inline std::size_t split(const char* piBegin, const char* piEnd, char iSplitWith, std::span<std::string_view> span_, tag_stack)
+      {
+         if(piBegin == piEnd) return 0;
+
+         size_t uCount = 0;
+         const char* piStart = piBegin;
+
+         for(const char* p_ = piBegin; p_ != piEnd; ++p_)
+         {
+            if(*p_ == iSplitWith)
+            {
+               if(uCount < span_.size()) { span_[uCount] = std::string_view(piStart, static_cast<size_t>(p_ - piStart)); }
+               ++uCount;
+               piStart = p_ + 1;
+            }
+         }
+
+         // ## Always add the final part (even if empty)
+         if(uCount < span_.size()) 
+         { 
+            span_[uCount] = std::string_view(piStart, static_cast<size_t>(piEnd - piStart)); 
+            uCount++;
+         }
+
+         return uCount;
+      }
+       
+      /// Convenience wrappers (stack / no heap allocation)
+      inline std::size_t split(const std::string_view& stringText, char iSplitWith, std::span<std::string_view> span_, tag_stack)
+      {
+         return split(stringText.data(), stringText.data() + stringText.length(), iSplitWith, span_, tag_stack{});
+      }
+
+      /// Convenience wrappers (stack / no heap allocation)
+      template<size_t N>
+      inline std::size_t split(const std::string_view& stringText, char iSplitWith, std::array<std::string_view, N>& arr_, tag_stack)
+      {
+         return split(stringText.data(), stringText.data() + stringText.length(), iSplitWith, std::span<std::string_view>{arr_}, tag_stack{});
       }
    }
 }

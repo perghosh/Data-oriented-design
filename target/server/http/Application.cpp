@@ -508,6 +508,12 @@ std::pair<bool, std::string> CApplication::SERVER_Start(unsigned uIndex)
    {
       m_pserverBoost->SetApplication( this );
       m_pserverBoost->SetListener( plistener );
+      gd::argument::arguments arguments_;
+      arguments_.reserve(64);
+      arguments_["ignore-extension"] = PROPERTY_Get("file-ignore-extension").as_string();
+      arguments_["webroot"] = stringRootFolder;
+      arguments_["path"] = PROPERTY_Get("path").as_string();
+      m_pserverBoost->Initialize( arguments_ );
    }
 
    // ## Check if proxy is set ..............................................
@@ -515,11 +521,6 @@ std::pair<bool, std::string> CApplication::SERVER_Start(unsigned uIndex)
    {
       std::string stringProxy = PROPERTY_Get("proxy").as_string();                                 LOG_INFORMATION_RAW("Using proxy: " + stringProxy);
       if( m_pserverBoost != nullptr ) { m_pserverBoost->AddFlags( CServer::eFlagProxy ); } // set proxy flag for server, this is used in http handler to know if we need to use x-forwarded-for header to get real client ip address
-   }
-
-   if(PROPERTY_Exists("file-ignore-extension") == true)
-   {
-      if(m_pserverBoost != nullptr) { m_pserverBoost->AddFlags(CServer::eFlagBlock); }
    }
 
    std::vector<std::thread> vectorThread;

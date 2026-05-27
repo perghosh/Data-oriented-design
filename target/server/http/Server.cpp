@@ -35,10 +35,32 @@ void CServer::SetListener( std::shared_ptr<listener> plistener )
    m_plistener = plistener;
 }
 
-std::pair<bool, std::string> CServer::Initialize()
+std::pair<bool, std::string> CServer::Initialize( const gd::argument::arguments& arguments_ )
 {
-   // Implementation of the Initialize method
-   // For now, just return a dummy response
+   // ## read file extensions to block .......................................
+   if(arguments_.exists("ignore-extension") == true) 
+   { 
+      auto strintgValue = arguments_["ignore-extension"].as_string();
+      if(strintgValue.empty() == false) { m_argumentSettings.append("ignore-extension", strintgValue); AddFlags(CServer::eFlagIgnore); }
+   }
+
+   // ## read folder settings ................................................
+   if(arguments_.exists("webroot") == true)
+   {
+      auto strintgValue = arguments_["webroot"].as_string();
+      if(strintgValue.empty() == false) { m_argumentSettings.append("webroot", strintgValue); AddFlags(CServer::eFlagRoot); }
+   }
+
+   // ## read folder settings ................................................
+   if(arguments_.exists("path") == true)
+   {
+      auto strintgValue = arguments_["path"].as_string();
+      if( strintgValue.empty() == false ) { m_argumentSettings.append("path", strintgValue); AddFlags(CServer::eFlagPath); }
+   }
+
+   // ## Build index for values in argument settings .........................
+   m_argumentIndexSettings.build(m_argumentSettings);
+
    return { true, "" };
 }
 
@@ -124,10 +146,19 @@ boost::beast::http::message_generator
 
    // ## Route command if target begins with '!' ............................. @API [tag: server, uri, route-command] [summary: Investigate and route command requests]
 
+   CServer* pserver = papplication_g->GetServer();
+
    if(stringTarget.empty() == false && stringTarget.front() == '!')          // @CRITICAL [tag: command] [description: Route command requests that start with '!' to the command handler]
    {
-      CServer server_( papplication_g );
-      return server_.RouteCommand( stringTarget, stringBody, std::move( request_ ), psession_ );
+      if(pserver)
+      {
+         return pserver->RouteCommand(stringTarget, stringBody, std::move(request_), psession_);
+      }
+      else
+      {  // @DEPRECATED [tag: server, application] [description: Handle case where server pointer is null, should not happen if application is properly initialized]
+         CServer server_(papplication_g);
+         return server_.RouteCommand(stringTarget, stringBody, std::move(request_), psession_);
+      }
    }
 
    // ## Request path must be absolute and not contain ".."...................
@@ -144,12 +175,15 @@ boost::beast::http::message_generator
    auto uPosition = stringPath.find('?');
    if( uPosition != std::string::npos ) { stringPath = stringPath.substr( 0, uPosition ); }
 
-   CServer* pserver = papplication_g->GetServer();
+   //CServer* pserver = papplication_g->GetServer();
 
    // ## Check if server is in blocking mode, if it is, check if file is blocked
-   if( pserver != nullptr && pserver->IsBlock() == true )
+   if( pserver != nullptr && pserver->IsIgnore() == true )
    {
-
+      if( pserver->IsBlocked(stringPath) == true )
+      {
+         return error_( std::format( "The resource '{}' is blocked.", stringTarget ) );
+      }
    }
 
    // ## Attempt to open the file
@@ -275,6 +309,32 @@ assert( false );
    // auto result_ = phttpserver->Execute( vectorCommand, pcommand, &presponse );
 
    return { true, "" };
+}
+
+/**
+ * @brief Checks if a given file path is blocked based on the server's ignore-extension settings
+ */
+bool CServer::IsBlocked(std::string_view stringPath) const
+{
+   std::string_view stringIgnoreExtension = GetValue(eIndexSettingsIgnoreExtension);               assert(stringIgnoreExtension.empty() == false);
+
+   // ## extract file extension from path
+   auto uPosition = stringPath.rfind('.');
+   if(uPosition == std::string_view::npos) { return false; }
+
+   std::string_view stringExtension = stringPath.substr(uPosition + 1);
+
+   std::array<std::string_view, 32> arrayString;   // adjust 32 as needed
+   auto uCount = gd::utf8::split(stringIgnoreExtension, ',', arrayString, gd::utf8::tag_stack{});
+
+   // ## check if file extension is in ignore list
+   for(std::size_t u = 0; u < uCount; ++u)
+   {
+      if(stringExtension == arrayString[u]) { return true; }
+   }
+   
+
+   return false;
 }
 
 
