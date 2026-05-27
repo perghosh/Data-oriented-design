@@ -311,12 +311,19 @@ assert( false );
    return { true, "" };
 }
 
-/**
+/** --------------------------------------------------------------------------- @API [tag: server, http, block] [summary: Checks if a given file path is blocked based on the server's ignore-extension settings]
  * @brief Checks if a given file path is blocked based on the server's ignore-extension settings
+ * This method determines if a file should be blocked from being served based 
+ * on its extension. It retrieves the list of ignored extensions from the
+ * server's settings, extracts the extension from the provided file path, and
+ * checks if it matches any of the ignored extensions.
+ * 
+ * @param stringPath The file path to check for blocking
+ * @return true if the file is blocked (i.e., its extension is in the ignore list)
  */
 bool CServer::IsBlocked(std::string_view stringPath) const
 {
-   std::string_view stringIgnoreExtension = GetValue(eIndexSettingsIgnoreExtension);               assert(stringIgnoreExtension.empty() == false);
+   std::string_view stringIgnoreExtension = GetPropertyValue(eIndexSettingsIgnoreExtension);       assert(stringIgnoreExtension.empty() == false);
 
    // ## extract file extension from path
    auto uPosition = stringPath.rfind('.');
@@ -333,7 +340,6 @@ bool CServer::IsBlocked(std::string_view stringPath) const
       if(stringExtension == arrayString[u]) { return true; }
    }
    
-
    return false;
 }
 

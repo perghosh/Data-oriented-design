@@ -116,8 +116,8 @@ public:
    std::shared_ptr<listener> GetListener() const;
    void SetListener( std::shared_ptr<listener> plistener );
 
-   std::string_view GetValue(std::size_t uIndex) const { assert(uIndex < 3); return m_argumentIndexSettings.get_argument(m_argumentSettings, m_uIndexSettings[uIndex]).as_string_view(); }
-   std::string_view GetValue(std::string_view stringName) const { std::size_t uIndex = ValueIndex_s(stringName); return uIndex != std::size_t(-1) ? GetValue(uIndex) : std::string_view(); }
+   std::string_view GetPropertyValue(std::size_t uIndex) const { assert(uIndex < 3); return m_argumentIndexSettings.get_argument(m_argumentSettings, m_uIndexSettings[uIndex]).as_string_view(); }
+   std::string_view GetPropertyValue(std::string_view stringName) const { std::size_t uIndex = ValueIndex_s(stringName); return uIndex != std::size_t(-1) ? GetPropertyValue(uIndex) : std::string_view(); }
 
 // @API [tag: operation]
 
