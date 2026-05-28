@@ -73,6 +73,9 @@ public:
       eIndexSettingsIgnoreExtension = 0, ///< index for ignore-extension setting, this is used to quickly access ignore-extension setting without searching by name
       eIndexSettingsWebroot,             ///< index for webroot setting, this is used to quickly access webroot setting without searching by name
       eIndexSettingsPath,                ///< index for path setting, this is used to quickly access path setting without searching by name
+      eIndexSettingsSSRComment,          ///< index for SSR comment setting, this is used to quickly access SSR comment setting without searching by name
+      eIndexSettingsSSRExtension,        ///< index for SSR extension setting, this is used to quickly access SSR extension setting without searching by name
+      eIndexSettingsMAX,                 ///< index for maximum number of settings
    };
 
 // ## construction -------------------------------------------------------------
@@ -157,7 +160,7 @@ public:
 
    gd::argument::arguments m_argumentSettings; ///< settings from application and other server related information.
    gd::argument::arguments_index_t m_argumentIndexSettings; ///< index for settings arguments, this is used to quickly access settings arguments without searching by name, need to be fast
-   std::size_t m_uIndexSettings[3]{}; ///< index for settings arguments, this is used to quickly access settings arguments without searching by name
+   std::size_t m_uIndexSettings[eIndexSettingsMAX]{}; ///< index for settings arguments, this is used to quickly access settings arguments without searching by name
 
 // ## free functions ------------------------------------------------------------
 public:
@@ -170,6 +173,8 @@ public:
       if(stringName == "ignore-extension") { return eIndexSettingsIgnoreExtension; }
       else if(stringName == "webroot") { return eIndexSettingsWebroot; }
       else if(stringName == "path") { return eIndexSettingsPath; }
+      else if(stringName == "ssr-comment") { return eIndexSettingsSSRComment; }
+      else if(stringName == "ssr-extension") { return eIndexSettingsSSRExtension; }
       else { return std::size_t(-1); }
    }
 

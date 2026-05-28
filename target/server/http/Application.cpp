@@ -585,6 +585,8 @@ void CApplication::PrepareOption_s(gd::cli::options& optionsApplication)
 
    // ## File settings
    optionsApplication.add({ "file-ignore-extension", "comma separated list of file extensions to ignore" });
+   optionsApplication.add({ "file-ssr-comment", "identifiers to check at top of file for server side render" });
+   optionsApplication.add({ "file-ssr-extensions", "comma separated list of file extensions to check for server side render" });
 
    // ## Folder settings
    optionsApplication.add({"path", "Global path variable used to find files in any of the folders if not found in selected folder, folders are separated by semicolon"});
