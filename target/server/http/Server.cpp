@@ -2,6 +2,11 @@
  * @file Server.cpp
  */
 
+/*
+ * NAVIGATE ==================================================================
+ * - `0TAG0handle_request` - Handle incoming HTTP requests and generate responses
+ */
+
 #include <array>
 #include <cctype>
 #include <fstream>
@@ -140,7 +145,7 @@ namespace
  * 8. If the request is a HEAD, returns headers only.
  * 9. If the request is a GET, returns the file contents.
  */
-boost::beast::http::message_generator 
+boost::beast::http::message_generator                                          // 0TAG0handle_request
    handle_request( boost::beast::string_view stringRoot,  boost::beast::http::request<boost::beast::http::string_body>&& request_, const session* psession_ )
 {
    // Returns a bad request response
@@ -239,7 +244,7 @@ boost::beast::http::message_generator
       if(bRender == true)
       {
          std::string stringRendered;
-         auto message_ = pserver->RenderPage(stringTarget, stringBody, stringPath, stringSSR, psession_ );
+         auto message_ = pserver->RenderPage(stringTarget, stringBody, stringPath, stringSSR, std::move(request_), psession_ );
 
       }
    }
@@ -352,19 +357,53 @@ boost::beast::http::message_generator CServer::RouteCommand( std::string_view st
    return response;
 }
 
-boost::beast::http::message_generator CServer::RenderPage(std::string_view stringTarget, std::string_view stringBody, std::string_view stringPath, std::string_view stringHeader, const session* psession_)
+boost::beast::http::message_generator CServer::RenderPage(
+   std::string_view stringTarget, 
+   std::string_view stringBody, 
+   std::string_view stringPath, 
+   std::string_view stringHeader, 
+   boost::beast::http::request<boost::beast::http::string_body>&& request_,
+   const session* psession_)
 {
    CRouter router_(papplication_g, stringTarget, stringBody, stringPath);
 
-   boost::beast::http::response<boost::beast::http::string_body> message_;
+   std::string stringPage; // string to hold rendered page
+   auto result_ = RenderPage(stringPath, stringPage);
+   if(result_.first == false)
+   {
+      std::string& stringError = result_.second;
+      auto response_ = PrepareResponse_s(request_, int(boost::beast::http::status::internal_server_error), "text/plain", stringError);
+      return response_;
+   }
 
-   return message_;
+   std::size_t uSize = stringPage.size();
+
+   // 1. Create a response object using string_body
+   boost::beast::http::response<boost::beast::http::string_body> response{ boost::beast::http::status::ok, request_.version() };
+
+   // 2. Set the body to page
+   response.body() = std::move(stringPage);                             // set response body, body is pased to client
+
+   // 3. Set other response parameters
+   response.set(boost::beast::http::field::server, BOOST_BEAST_VERSION_STRING);
+   response.set(boost::beast::http::field::content_type, mime_type_g(stringPath));
+   response.content_length(uSize);
+   response.keep_alive(request_.keep_alive());
+
+   return response;
 }
 
 std::pair<bool, std::string> CServer::RenderPage(std::string_view stringPath, std::string& stringRendered)
 {
+   enum enumLanguage { eLanguageNone = 0, eLanguageLua, eLanguageGD, eLanguageExpression };
    gd::parse::window::line lineBuffer(48 * 64, 64 * 64, gd::types::tag_create{});  // create line buffer 64 * 64 = 4096 bytes = 64 cache lines
    gd::expression::parse::state state_; // state is used to check what type of code part we are in
+
+   std::string stringPage;
+   std::string stringCode; // string to hold code found in page, this will be used to render page
+
+   stringPage.reserve(1024 * 8);                                              // reserve space for page
+   stringCode.reserve(1024);                                                  // reserve space for code
 
    std::ifstream file_(stringPath.data(), std::ios::binary);
    if(file_.is_open() == false) return { false, "Failed to open file: " + std::string(stringPath) };
@@ -374,7 +413,12 @@ std::pair<bool, std::string> CServer::RenderPage(std::string_view stringPath, st
    auto uReadSize = file_.gcount();                                           // get number of valid bytes read
    lineBuffer.update(uReadSize);                                              // Update valid size in line buffer
 
-   std::string stringLine;                                                     // string to hold line read from file
+   state_.add(std::string_view("SCRIPTCODE"), "[[lua", "]]");
+   state_.add(std::string_view("SCRIPTCODE"), "[[gd", "]]");
+   state_.add(std::string_view("EXPRESSION"), "[[=", "]]");
+
+   uint8_t uCharacter = 0;                                                    // character to hold current character
+
 
    // ## Scan file and read lines found in table
    while(lineBuffer.eof() == false)
@@ -382,45 +426,49 @@ std::pair<bool, std::string> CServer::RenderPage(std::string_view stringPath, st
       auto [first_, last_] = lineBuffer.range(gd::types::tag_pair{});         // get range of valid data in buffer
       for(auto it = first_; it < last_; it++)
       {
-         /*
-         if(*it == '\n')                                                     // count lines read from file
-         {
-            if(uFileReadLine == uReadRow)                                    // is we at the line we want to read
-            {
-               stringLine = gd::utf8::trim_to_string(stringLine);              // trim line
-               ptable_->cell_set(uRow, uColumnLine, stringLine);               // set line in table
+         uCharacter = *it;                                                    // get current character
 
-               // ## read next row from table and make sure it is larger than the previous row
-               auto uReadRowOld = uReadRow;
-               do {
-                  uRow++;
-                  if(uRow >= ptable_->get_row_count()) { return { true, "" }; } // if we reached end of table, return success
-                  uReadRow = ptable_->cell_get<uint64_t>(uRow, uColumnRow);    // get row from table
-               } while(uReadRow == uReadRowOld);
+         if(state_.in_state() == false)                                       // not in a state? that means we are reading page code
+         {
+            // ## check if we have found state ...............................
+            if(state_[uCharacter] != 0 && state_.exists(it) == true)
+            {
+               stringCode.clear();                                            // clear code string to start reading new code
+               auto uLength = state_.activate(it);                            // activate state
+               if(uLength > 1) it += (uLength - 1);                           // skip to end of state marker and if it is more than 1 character, skip to end of state
+
+               continue;                                                      // continue to next character, we will start reading code in next iteration
             }
 
-            stringLine.clear();
-            uFileReadLine++;
+            stringPage += uCharacter;                                         // add character to page string
          }
-         else if(uFileReadLine == uReadRow)                                  // found line to read
+         else
          {
-            stringLine += *it;
+            // ## check if we have found end of state
+            unsigned uLength;
+            if(state_.deactivate(it, &uLength) == true)
+            {
+               if(uLength > 1) it += (uLength - 1);                           // skip to end of state marker and if it is more than 1 character, skip to end of state
+               // @TODO execute code
+               continue;
+            }
+
+            stringCode += uCharacter;                                         // add character to code string
          }
-         */
       }
 
-      lineBuffer.rotate();                                                   // rotate buffer
+      lineBuffer.rotate();                                                    // rotate buffer
 
-      if(uReadSize > 0)                                                     // was it possible to read data last read, then more data is available
+      if(uReadSize > 0)                                                       // was it possible to read data last read, then more data is available
       {
-         auto uAvailable = lineBuffer.available();                           // get available space in buffer to be filled
-         file_.read((char*)lineBuffer.buffer(), lineBuffer.available());    // read more data into available space in buffer
+         auto uAvailable = lineBuffer.available();                            // get available space in buffer to be filled
+         file_.read((char*)lineBuffer.buffer(), lineBuffer.available());      // read more data into available space in buffer
          uReadSize = file_.gcount();
-         lineBuffer.update(uReadSize);                                       // update valid size in line buffer
+         lineBuffer.update(uReadSize);                                        // update valid size in line buffer
       }
    }
 
-
+   stringRendered = std::move(stringPage);                                    // for now we just return the page
 
    return { true, "" };
 }

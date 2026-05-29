@@ -134,7 +134,7 @@ public:
    boost::beast::http::message_generator RouteCommand( std::string_view stringTarget, std::string_view stringBody, boost::beast::http::request<boost::beast::http::string_body>&& request_, const session* psession_ );
 
    /// Render page on server side and return rendered html, this is used in SSR mode
-   boost::beast::http::message_generator RenderPage(std::string_view stringTarget, std::string_view stringBody, std::string_view stringPath, std::string_view stringHeader, const session* psession_);
+   boost::beast::http::message_generator RenderPage(std::string_view stringTarget, std::string_view stringBody, std::string_view stringPath, std::string_view stringHeader, boost::beast::http::request<boost::beast::http::string_body>&& request_, const session* psession_);
    std::pair<bool, std::string> RenderPage(std::string_view stringPath, std::string& stringRendered );
 
    std::pair<bool, std::string> Execute( const std::vector<std::string_view>& vectorCommand, gd::com::server::command_i* pcommand );
