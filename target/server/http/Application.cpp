@@ -504,6 +504,7 @@ std::pair<bool, std::string> CApplication::SERVER_Start(unsigned uIndex)
    auto plistener = std::make_shared<listener>( iocontext_,  tcp::endpoint{addressIP, uPort}, doc_root);
    plistener->run();
 
+   // ## Prepare server and initialize with settings .........................
    if( m_pserverBoost != nullptr )
    {
       m_pserverBoost->SetApplication( this );
@@ -513,6 +514,8 @@ std::pair<bool, std::string> CApplication::SERVER_Start(unsigned uIndex)
       arguments_["ignore-extension"] = PROPERTY_Get("file-ignore-extension").as_string();
       arguments_["webroot"] = stringRootFolder;
       arguments_["path"] = PROPERTY_Get("path").as_string();
+      arguments_["ssr-comment"] = PROPERTY_Get("file-ssr-comment").as_string();
+      arguments_["ssr-extension"] = PROPERTY_Get("file-ssr-extension").as_string();
       m_pserverBoost->Initialize( arguments_ );
    }
 
@@ -586,7 +589,7 @@ void CApplication::PrepareOption_s(gd::cli::options& optionsApplication)
    // ## File settings
    optionsApplication.add({ "file-ignore-extension", "comma separated list of file extensions to ignore" });
    optionsApplication.add({ "file-ssr-comment", "identifiers to check at top of file for server side render" });
-   optionsApplication.add({ "file-ssr-extensions", "comma separated list of file extensions to check for server side render" });
+   optionsApplication.add({ "file-ssr-extension", "comma separated list of file extensions to check for server side render" });
 
    // ## Folder settings
    optionsApplication.add({"path", "Global path variable used to find files in any of the folders if not found in selected folder, folders are separated by semicolon"});

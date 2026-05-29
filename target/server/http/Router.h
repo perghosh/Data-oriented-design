@@ -71,12 +71,13 @@ public:
 
 public:
    CRouter() {}
-   CRouter(CApplication* pApplication): m_context(pApplication) {}
-   CRouter(CApplication* pApplication, CDocument* pDocument): m_context(pApplication, pDocument) {}
-   CRouter(CApplication* pApplication, CDocument* pDocument, session* psession): m_context(pApplication, pDocument, psession) {}
+   CRouter( CApplication* pApplication): m_context(pApplication) {}
+   CRouter( CApplication* pApplication, CDocument* pDocument): m_context(pApplication, pDocument) {}
+   CRouter( CApplication* pApplication, CDocument* pDocument, session* psession): m_context(pApplication, pDocument, psession) {}
    CRouter( const std::string_view& stringQueryString ) : m_stringQueryString( stringQueryString ) {}
    CRouter( CApplication* pApplication, const std::string_view& stringQueryString ): m_context(pApplication), m_stringQueryString(stringQueryString) {}
    CRouter( CApplication* pApplication, const std::string_view& stringQueryString, std::string_view stringBody ): m_context(pApplication), m_stringQueryString(stringQueryString), m_stringBody(stringBody) {}
+   CRouter( CApplication* pApplication, const std::string_view& stringQueryString, std::string_view stringBody, std::string_view stringPage) : m_context(pApplication), m_stringQueryString(stringQueryString), m_stringBody(stringBody), m_stringPage(stringPage) {}
    // copy
    CRouter( const CRouter& o ) { common_construct( o ); }
    CRouter( CRouter&& o ) noexcept { common_construct( std::move( o ) ); }
@@ -104,6 +105,7 @@ public:
    bool IsPrepared() const { return ( m_uFlags & eFlagPrepared ) != 0; }
 
    bool IsBody() const { return m_stringBody.empty() == false; }
+   bool IsPage() const { return m_stringPage.empty() == false; }
    bool IsRequestFormatNone() const { return ( m_uFlags & eRequestFormatMask ) == 0; }
    bool IsRequestFormatXml() const { return ( m_uFlags & eRequestFormatMask ) == eRequestFormatXml; }
    bool IsRequestFormatJson() const { return ( m_uFlags & eRequestFormatMask ) == eRequestFormatJson; }
@@ -150,6 +152,7 @@ public:
 
    std::string m_stringQueryString;    ///< query string from url
    std::string_view m_stringBody;      ///< body from http request
+   std::string_view m_stringPage;      ///< page from url, first part of query string
    std::vector<std::string_view> m_vectorCommand; ///< list of commands parsed from query string
    std::unique_ptr<CDTOResponse> m_pdtoresponse;  ///< response dto object
    std::mutex m_mutexRouter;         ///< mutex for response dto object

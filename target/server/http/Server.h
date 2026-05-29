@@ -119,8 +119,12 @@ public:
    std::shared_ptr<listener> GetListener() const;
    void SetListener( std::shared_ptr<listener> plistener );
 
-   std::string_view GetPropertyValue(std::size_t uIndex) const { assert(uIndex < 3); return m_argumentIndexSettings.get_argument(m_argumentSettings, m_uIndexSettings[uIndex]).as_string_view(); }
+   // @API [tag: property] [description: manage server properties, these are used to set different settings for server, these are stored in arguments object and can be accessed by name or index, index is used for faster access to properties]
+
+   std::string_view GetPropertyValue(std::size_t uIndex) const { assert( m_puIndexSettings[uIndex] != std::size_t(-1) ); assert(uIndex < eIndexSettingsMAX); return m_argumentIndexSettings.get_argument(m_argumentSettings, m_puIndexSettings[uIndex]).as_string_view(); }
    std::string_view GetPropertyValue(std::string_view stringName) const { std::size_t uIndex = ValueIndex_s(stringName); return uIndex != std::size_t(-1) ? GetPropertyValue(uIndex) : std::string_view(); }
+   bool IsProperty(std::size_t uIndex) const { return uIndex < eIndexSettingsMAX && m_puIndexSettings[uIndex] != std::size_t(-1); }
+   bool IsProperty(std::string_view stringName) const { std::size_t uIndex = ValueIndex_s(stringName); return uIndex != std::size_t(-1) && m_puIndexSettings[uIndex] != std::size_t(-1); }
 
 // @API [tag: operation]
 
@@ -129,9 +133,19 @@ public:
    /// Route command
    boost::beast::http::message_generator RouteCommand( std::string_view stringTarget, std::string_view stringBody, boost::beast::http::request<boost::beast::http::string_body>&& request_, const session* psession_ );
 
+   /// Render page on server side and return rendered html, this is used in SSR mode
+   boost::beast::http::message_generator RenderPage(std::string_view stringTarget, std::string_view stringBody, std::string_view stringPath, std::string_view stringHeader, const session* psession_);
+   std::pair<bool, std::string> RenderPage(std::string_view stringPath, std::string& stringRendered );
+
    std::pair<bool, std::string> Execute( const std::vector<std::string_view>& vectorCommand, gd::com::server::command_i* pcommand );
 
-   bool IsBlocked(std::string_view stringPath) const;
+// @API [tag: check] [description: check if server have certain properties or settings]
+
+   bool IsIgnored(std::string_view stringPath) const;
+   bool IsSSRExtension(std::string_view stringPath) const;
+
+   /// Peek for server ssr comment to check if ssr replacement is needed
+   bool PeekSSRComment(std::string_view stringPath, std::string& stringComment) const;
 
 
 /** \name ROUTER
@@ -160,7 +174,7 @@ public:
 
    gd::argument::arguments m_argumentSettings; ///< settings from application and other server related information.
    gd::argument::arguments_index_t m_argumentIndexSettings; ///< index for settings arguments, this is used to quickly access settings arguments without searching by name, need to be fast
-   std::size_t m_uIndexSettings[eIndexSettingsMAX]{}; ///< index for settings arguments, this is used to quickly access settings arguments without searching by name
+   std::array<std::size_t, eIndexSettingsMAX> m_puIndexSettings{ InitializeBuffer_s() }; ///< index for settings arguments, this is used to quickly access settings arguments without searching by name
 
 // ## free functions ------------------------------------------------------------
 public:
@@ -176,6 +190,26 @@ public:
       else if(stringName == "ssr-comment") { return eIndexSettingsSSRComment; }
       else if(stringName == "ssr-extension") { return eIndexSettingsSSRExtension; }
       else { return std::size_t(-1); }
+   }
+
+   template<std::size_t uSize>
+   static consteval std::size_t ValueIndex_s(const char(&stringName)[uSize])
+   {
+      const std::string_view sv(stringName, uSize - 1); // strip null terminator
+      if(sv == "ignore-extension") { return eIndexSettingsIgnoreExtension; }
+      else if(sv == "webroot") { return eIndexSettingsWebroot; }
+      else if(sv == "path") { return eIndexSettingsPath; }
+      else if(sv == "ssr-comment") { return eIndexSettingsSSRComment; }
+      else if(sv == "ssr-extension") { return eIndexSettingsSSRExtension; }
+      else { return std::size_t(-1); }
+   }
+
+   /// Initialize buffer with -1
+   static consteval std::array<std::size_t, eIndexSettingsMAX> InitializeBuffer_s()
+   {
+      std::array<std::size_t, eIndexSettingsMAX> a;
+      a.fill(std::size_t(-1));
+      return a;
    }
 
 

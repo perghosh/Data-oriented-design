@@ -204,6 +204,15 @@ public: //0TAG0construct.arguments_index
 
    ~arguments_index() = default;
 
+   // ## @API [tag: operator] [description: overloaded operators for arguments_index]
+public: //0TAG0operator.arguments_index
+
+   /// Return the slot at `uIndex`; the slot can be passed to `slot::get(args)` for the value
+   [[nodiscard]] const slot& operator[](size_type uIndex) const;
+
+   /// Return the first slot matching `stringName`; returns an empty sentinel slot if not found
+   [[nodiscard]] const slot& operator[](std::string_view stringName) const;
+
 
 // ## @API [tag: build] [description: methods to build or populate the index from an arguments object]
 public: //0TAG0build.arguments_index
@@ -245,16 +254,8 @@ public: //0TAG0get.arguments_index
    /// Return the raw buffer pointer for the first slot matching `stringName`, or `nullptr`
    [[nodiscard]] const_pointer get_position(const ARGUMENTS& argumentsSource, std::string_view stringName) const;
 
-
-// ## @API [tag: operator] [description: overloaded operators for arguments_index]
-public: //0TAG0operator.arguments_index
-
-   /// Return the slot at `uIndex`; the slot can be passed to `slot::get(args)` for the value
-   [[nodiscard]] const slot& operator[](size_type uIndex) const;
-
-   /// Return the first slot matching `stringName`; returns an empty sentinel slot if not found
-   [[nodiscard]] const slot& operator[](std::string_view stringName) const;
-
+   /// Return the index of the first slot matching `stringName`, or -1 if not found
+   [[nodiscard]] int64_t get_index(std::string_view stringName) const;
 
 // ## @API [tag: utility] [description: utility and meta methods for arguments_index]
 public: //0TAG0utility.arguments_index
@@ -266,10 +267,10 @@ public: //0TAG0utility.arguments_index
    [[nodiscard]] bool empty() const noexcept { return m_vectorSlot.empty(); }
 
    /// True when a slot with the given name exists in the index
-   [[nodiscard]] bool contains(std::string_view stringName) const { return find_s(m_vectorSlot, stringName) != nullptr; }
+   [[nodiscard]] bool exists(std::string_view stringName) const { return find_s(m_vectorSlot, stringName) != nullptr; }
 
    /// True when positional index `uIndex` is within range
-   [[nodiscard]] bool contains(size_type uIndex) const { return uIndex < m_vectorSlot.size(); }
+   [[nodiscard]] bool exists(size_type uIndex) const { return uIndex < m_vectorSlot.size(); }
 
    /// Reserve capacity for `uCount` slots
    void reserve(size_type uCount) { m_vectorSlot.reserve(uCount); }
@@ -291,9 +292,9 @@ public:
 };
 
 
-// ================================================================================================
-// ============================================================= arguments_index implementation
-// ================================================================================================
+// ============================================================================
+// ============================================= arguments_index implementation
+// ============================================================================
 
 // ## slot methods
 
@@ -317,6 +318,26 @@ template<typename ARGUMENTS>
 arguments_index<ARGUMENTS>::arguments_index(const ARGUMENTS& argumentsSource)
 {
    build(argumentsSource);
+}
+
+// ## operator
+
+template<typename ARGUMENTS>
+const typename arguments_index<ARGUMENTS>::slot&
+arguments_index<ARGUMENTS>::operator[](size_type uIndex) const
+{
+   assert(uIndex < m_vectorSlot.size());
+   return m_vectorSlot[uIndex];
+}
+
+template<typename ARGUMENTS>
+const typename arguments_index<ARGUMENTS>::slot&
+arguments_index<ARGUMENTS>::operator[](std::string_view stringName) const
+{
+   const slot* pSlot = find_s(m_vectorSlot, stringName);
+   if(pSlot != nullptr) { return *pSlot; }
+   static const slot slotEmpty_;
+   return slotEmpty_;
 }
 
 // ## build
@@ -407,23 +428,15 @@ arguments_index<ARGUMENTS>::get_position(const ARGUMENTS& argumentsSource, std::
    return nullptr;
 }
 
-// ## operator
-
+/// Return the index of the first slot matching `stringName`, or -1 if not found
 template<typename ARGUMENTS>
-const typename arguments_index<ARGUMENTS>::slot&
-arguments_index<ARGUMENTS>::operator[](size_type uIndex) const
-{                                                                                                   assert( uIndex < m_vectorSlot.size() );
-   return m_vectorSlot[uIndex];
-}
-
-template<typename ARGUMENTS>
-const typename arguments_index<ARGUMENTS>::slot&
-arguments_index<ARGUMENTS>::operator[](std::string_view stringName) const
+int64_t arguments_index<ARGUMENTS>::get_index(std::string_view stringName) const
 {
-   const slot* pSlot = find_s(m_vectorSlot, stringName);
-   if( pSlot != nullptr ) { return *pSlot; }
-   static const slot slotEmpty_;
-   return slotEmpty_;
+   for(size_type u = 0; u < m_vectorSlot.size(); u++)
+   {
+      if(m_vectorSlot[u].name() == stringName) { return static_cast<int64_t>(u); }
+   }
+   return -1;
 }
 
 // ## internal

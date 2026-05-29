@@ -15,6 +15,7 @@ sample configuration for vote project
       <property key="port" value="8001" />
       <property key="proxy" value="caddy" />
 		<property key="file-ignore-extension" value="php,env" />
+		<property key="file-ssr-comment" value="ssr" />
       <property key="folder-root" value="C:\dev\home\web\web-vote\target\vote" />
       <property key="database-open" value="D:\temp\www\test.sqlite" />
       <property key="database-dialect" value="sqlite" />

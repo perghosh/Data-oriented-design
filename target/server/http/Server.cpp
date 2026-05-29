@@ -2,6 +2,14 @@
  * @file Server.cpp
  */
 
+#include <array>
+#include <cctype>
+#include <fstream>
+#include <filesystem>
+
+#include "gd/parse/gd_parse_window_line.h"
+#include "gd/expression/gd_expression_parse_state.h"
+
 #include "dto/DTOResponse.h"
 
 #include "Router.h"
@@ -37,29 +45,57 @@ void CServer::SetListener( std::shared_ptr<listener> plistener )
 
 std::pair<bool, std::string> CServer::Initialize( const gd::argument::arguments& arguments_ )
 {
+   std::string stringValue;
+
    // ## read file extensions to block .......................................
-   if(arguments_.exists("ignore-extension") == true) 
+   stringValue = arguments_["ignore-extension"].as_string();
+   if(stringValue.empty() == false)
    { 
-      auto strintgValue = arguments_["ignore-extension"].as_string();
-      if(strintgValue.empty() == false) { m_argumentSettings.append("ignore-extension", strintgValue); AddFlags(CServer::eFlagIgnore); }
+      m_argumentSettings.append("ignore-extension", stringValue); 
+      AddFlags(CServer::eFlagIgnore);
    }
 
    // ## read folder settings ................................................
-   if(arguments_.exists("webroot") == true)
+   stringValue = arguments_["webroot"].as_string();
+   if(stringValue.empty() == false)
    {
-      auto strintgValue = arguments_["webroot"].as_string();
-      if(strintgValue.empty() == false) { m_argumentSettings.append("webroot", strintgValue); AddFlags(CServer::eFlagRoot); }
+      m_argumentSettings.append("webroot", stringValue);
+      AddFlags(CServer::eFlagRoot);
    }
 
    // ## read folder settings ................................................
-   if(arguments_.exists("path") == true)
+   stringValue = arguments_["path"].as_string();
+   if(stringValue.empty() == false)
    {
-      auto strintgValue = arguments_["path"].as_string();
-      if( strintgValue.empty() == false ) { m_argumentSettings.append("path", strintgValue); AddFlags(CServer::eFlagPath); }
+      m_argumentSettings.append("path", stringValue);
+      AddFlags(CServer::eFlagPath);
+
    }
+
+   // ## read SSR comment settings ..........................................
+   stringValue = arguments_["ssr-comment"].as_string();
+   if(stringValue.empty() == false)
+   {
+      m_argumentSettings.append("ssr-comment", stringValue);
+      AddFlags(CServer::eFlagSSR);
+   }
+
+   // ## read SSR extension settings ..........................................
+   stringValue = arguments_["ssr-extension"].as_string();
+   if(stringValue.empty() == false)
+   {
+      m_argumentSettings.append("ssr-extension", stringValue);
+      AddFlags(CServer::eFlagSSR);
+   }
+
 
    // ## Build index for values in argument settings .........................
    m_argumentIndexSettings.build(m_argumentSettings);
+   m_puIndexSettings[ValueIndex_s("ignore-extension")] = m_argumentIndexSettings.get_index("ignore-extension"); // set index for ignore-extension setting
+   m_puIndexSettings[ValueIndex_s("webroot")] = m_argumentIndexSettings.get_index("webroot"); // set index for webroot setting
+   m_puIndexSettings[ValueIndex_s("path")] = m_argumentIndexSettings.get_index("path"); // set index for path setting
+   m_puIndexSettings[ValueIndex_s("ssr-comment")] = m_argumentIndexSettings.get_index("ssr-comment"); // set index for ssr-comment setting
+   m_puIndexSettings[ValueIndex_s("ssr-extension")] = m_argumentIndexSettings.get_index("ssr-extension"); // set index for ssr-extension setting   
 
    return { true, "" };
 }
@@ -177,10 +213,11 @@ boost::beast::http::message_generator
 
    //CServer* pserver = papplication_g->GetServer();
 
+   // ------------------------------------------------------------------------
    // ## Check if server is in blocking mode, if it is, check if file is blocked
    if( pserver != nullptr && pserver->IsIgnore() == true )
    {
-      if( pserver->IsBlocked(stringPath) == true )
+      if( pserver->IsIgnored(stringPath) == true )
       {
          return error_( std::format( "The resource '{}' is blocked.", stringTarget ) );
       }
@@ -190,6 +227,23 @@ boost::beast::http::message_generator
    boost::beast::error_code errorcode_;
    boost::beast::http::file_body::value_type body_;
    body_.open(stringPath.c_str(), boost::beast::file_mode::scan, errorcode_);
+
+   // ------------------------------------------------------------------------
+   // ## Check if server is in SSR mode, if it is, check if file is SSR extension and render it
+   if(pserver != nullptr && pserver->IsSSR() == true && pserver->IsSSRExtension(stringPath) )
+   {
+      bool bRender = false;
+      std::string stringSSR;
+      if( pserver->PeekSSRComment(stringPath, stringSSR) ) { bRender = true; }
+
+      if(bRender == true)
+      {
+         std::string stringRendered;
+         auto message_ = pserver->RenderPage(stringTarget, stringBody, stringPath, stringSSR, psession_ );
+
+      }
+   }
+
 
 
    if(errorcode_ == boost::beast::errc::no_such_file_or_directory) 
@@ -298,18 +352,79 @@ boost::beast::http::message_generator CServer::RouteCommand( std::string_view st
    return response;
 }
 
-// @DEPRICATED
-std::pair<bool, std::string> CServer::Execute(const std::vector<std::string_view>& vectorCommand, gd::com::server::command_i* pcommand)
-{                                                                                                  assert( vectorCommand.empty() == false );
-assert( false );
-//   CHttpServer* phttpserver = m_ppapplication->GetHttpServer();
+boost::beast::http::message_generator CServer::RenderPage(std::string_view stringTarget, std::string_view stringBody, std::string_view stringPath, std::string_view stringHeader, const session* psession_)
+{
+   CRouter router_(papplication_g, stringTarget, stringBody, stringPath);
 
-//   gd::com::server::response_i* presponse = nullptr;
+   boost::beast::http::response<boost::beast::http::string_body> message_;
 
-   // auto result_ = phttpserver->Execute( vectorCommand, pcommand, &presponse );
+   return message_;
+}
+
+std::pair<bool, std::string> CServer::RenderPage(std::string_view stringPath, std::string& stringRendered)
+{
+   gd::parse::window::line lineBuffer(48 * 64, 64 * 64, gd::types::tag_create{});  // create line buffer 64 * 64 = 4096 bytes = 64 cache lines
+   gd::expression::parse::state state_; // state is used to check what type of code part we are in
+
+   std::ifstream file_(stringPath.data(), std::ios::binary);
+   if(file_.is_open() == false) return { false, "Failed to open file: " + std::string(stringPath) };
+
+   auto uAvailable = lineBuffer.available();
+   file_.read((char*)lineBuffer.buffer(), uAvailable);
+   auto uReadSize = file_.gcount();                                           // get number of valid bytes read
+   lineBuffer.update(uReadSize);                                              // Update valid size in line buffer
+
+   std::string stringLine;                                                     // string to hold line read from file
+
+   // ## Scan file and read lines found in table
+   while(lineBuffer.eof() == false)
+   {
+      auto [first_, last_] = lineBuffer.range(gd::types::tag_pair{});         // get range of valid data in buffer
+      for(auto it = first_; it < last_; it++)
+      {
+         /*
+         if(*it == '\n')                                                     // count lines read from file
+         {
+            if(uFileReadLine == uReadRow)                                    // is we at the line we want to read
+            {
+               stringLine = gd::utf8::trim_to_string(stringLine);              // trim line
+               ptable_->cell_set(uRow, uColumnLine, stringLine);               // set line in table
+
+               // ## read next row from table and make sure it is larger than the previous row
+               auto uReadRowOld = uReadRow;
+               do {
+                  uRow++;
+                  if(uRow >= ptable_->get_row_count()) { return { true, "" }; } // if we reached end of table, return success
+                  uReadRow = ptable_->cell_get<uint64_t>(uRow, uColumnRow);    // get row from table
+               } while(uReadRow == uReadRowOld);
+            }
+
+            stringLine.clear();
+            uFileReadLine++;
+         }
+         else if(uFileReadLine == uReadRow)                                  // found line to read
+         {
+            stringLine += *it;
+         }
+         */
+      }
+
+      lineBuffer.rotate();                                                   // rotate buffer
+
+      if(uReadSize > 0)                                                     // was it possible to read data last read, then more data is available
+      {
+         auto uAvailable = lineBuffer.available();                           // get available space in buffer to be filled
+         file_.read((char*)lineBuffer.buffer(), lineBuffer.available());    // read more data into available space in buffer
+         uReadSize = file_.gcount();
+         lineBuffer.update(uReadSize);                                       // update valid size in line buffer
+      }
+   }
+
+
 
    return { true, "" };
 }
+
 
 /** --------------------------------------------------------------------------- @API [tag: server, http, block] [summary: Checks if a given file path is blocked based on the server's ignore-extension settings]
  * @brief Checks if a given file path is blocked based on the server's ignore-extension settings
@@ -321,7 +436,7 @@ assert( false );
  * @param stringPath The file path to check for blocking
  * @return true if the file is blocked (i.e., its extension is in the ignore list)
  */
-bool CServer::IsBlocked(std::string_view stringPath) const
+bool CServer::IsIgnored(std::string_view stringPath) const
 {
    std::string_view stringIgnoreExtension = GetPropertyValue(eIndexSettingsIgnoreExtension);       assert(stringIgnoreExtension.empty() == false);
 
@@ -340,6 +455,92 @@ bool CServer::IsBlocked(std::string_view stringPath) const
       if(stringExtension == arrayString[u]) { return true; }
    }
    
+   return false;
+}
+
+/** --------------------------------------------------------------------------- @API [tag: server, http, ssr] [summary: Checks if a file path has an SSR (Server-Side Rendering) extension]
+ * @brief Checks if a file path has an SSR (Server-Side Rendering) extension.
+ * 
+ * If no specific extensions is set only html pages are processed as SSR, otherwise the extensions set in settings are processed as SSR.
+ * 
+ * @param stringPath The file path to check for SSR extension.
+ * @return True if the file extension should be processed as SSR.
+ */
+bool CServer::IsSSRExtension(std::string_view stringPath) const                // @TODO [tag: server, http, ssr] [description: Implement SSR extension checking based on settings, currently only checks for .html extension]
+{
+   if(IsProperty(eIndexSettingsSSRExtension) == false)
+   {
+      // If no specific SSR extensions are set, default to treating .html files as SSR
+      auto uPosition = stringPath.rfind('.');
+      if(uPosition == std::string_view::npos) { return false; }
+      std::string_view stringExtension = stringPath.substr(uPosition + 1);
+      return stringExtension == "html";
+   }
+
+   std::string_view stringSSRExtension = GetPropertyValue(eIndexSettingsSSRExtension);             assert(stringSSRExtension.empty() == false);
+
+   // ## extract file extension from path ...................................
+   auto uPosition = stringPath.rfind('.');
+   if(uPosition == std::string_view::npos) { return false; }
+   std::string_view stringExtension = stringPath.substr(uPosition + 1);
+
+   std::array<std::string_view, 32> arrayString;   // adjust 32 as needed
+   auto uCount = gd::utf8::split(stringSSRExtension, ',', arrayString, gd::utf8::tag_stack{});
+   // ## check if file extension is in SSR list
+   for(std::size_t u = 0; u < uCount; ++u)
+   {
+      if(stringExtension == arrayString[u]) { return true; }
+   }
+
+   return false;
+}
+
+/** --------------------------------------------------------------------------- @API [tag: server, http, ssr, file] [summary: Detects SSR marker comments near the start of a file]
+ * @brief Reads the file head and checks whether any configured SSR identifier exists.
+ *
+ * Uses the `eIndexSettingsSSRComment` property as a comma-separated identifier list.
+ * The method reads only a small fixed-size prefix from the file to keep detection cheap.
+ *
+ * @param stringPath Path to the file that may contain an SSR marker comment.
+ * @param stringComment Output value set to the matched SSR identifier when found.
+ * @return `true` if a configured SSR identifier is found in the file head; otherwise `false`.
+ */
+bool CServer::PeekSSRComment(std::string_view stringPath, std::string& stringComment) const
+{
+   constexpr std::size_t uMaxCommentLength = 16;
+   stringComment.clear();
+
+   std::string_view stringSSRComment = GetPropertyValue(eIndexSettingsSSRComment);                 assert( stringSSRComment.empty() == false );
+   if(stringSSRComment.empty() == true) { return false; }
+
+   // ## split ssr comment setting into array of comments ....................
+   std::array<std::string_view, 16> arrayIdentifier;
+   std::size_t uCommentCount = gd::utf8::split(stringSSRComment, ',', arrayIdentifier, gd::utf8::tag_stack{});
+   if(uCommentCount == 0) { return false; }
+
+   // ## Read the first 16 characters in file and check for ssr comment ......
+   std::string stringHead;
+   stringHead.resize(uMaxCommentLength);
+   std::ifstream ifstreamFile(std::string(stringPath), std::ios::binary);
+   if(ifstreamFile.is_open() == false) { return false; }
+   ifstreamFile.read(stringHead.data(), static_cast<std::streamsize>(stringHead.size()));
+
+   std::size_t uReadCount = static_cast<std::size_t>(ifstreamFile.gcount());
+   if(uReadCount == 0) { return false; }
+
+   std::string_view stringHeadView(stringHead.data(), uReadCount);
+
+   for(std::size_t u = 0; u < uCommentCount; ++u)
+   {
+      const std::string_view stringIdentifier = arrayIdentifier[u];
+      if(stringIdentifier.empty() == true) { continue; }
+      if(stringHeadView.find(stringIdentifier) != std::string_view::npos)
+      {
+         stringComment.assign(stringIdentifier);
+         return true;
+      }
+   }
+
    return false;
 }
 
