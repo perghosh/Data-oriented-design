@@ -92,6 +92,7 @@ private:
       m_papplication    = std::exchange( o.m_papplication, nullptr );
       m_pdocument       = std::exchange( o.m_pdocument,    nullptr );
       m_psession        = std::exchange( o.m_psession,     nullptr );
+      m_pdatabase       = std::exchange( o.m_pdatabase,    nullptr);
       m_objects         = std::move( o.m_objects );
       m_argumentsGlobal = std::move( o.m_argumentsGlobal );
       m_stringLastError = std::move( o.m_stringLastError );
