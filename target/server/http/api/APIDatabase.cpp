@@ -334,15 +334,14 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
 
    gd::com::pointer<gd::database::cursor_i> pcursor;
    pdatabase->get_cursor( &pcursor );
-//#if(TARGET_COMPILE_MODE_ & FLAG_MODE_DEVELOPER_)
-#if(TARGET_COMPILE_MODE_ & 1)
+#if(TARGET_COMPILE_MODE_ & 1)                                                 // @DEBUG [tag: debug] [summary: if compiled as debug it is possible to return select statement as argument for debugging purposes]
    auto debug_ = GetArgument("debug");
    if(debug_.is_true() == true)
    {
       gd::argument::arguments* parguments_ = new gd::argument::arguments(); parguments_->reserve(128);
-      parguments_->append("sql", stringSelect);
+      parguments_->append("sql", stringSelect);                               // add select statement as argument for debugging purposes
       Objects().Add(parguments_);
-      Objects()["name"] = "debug";
+      Objects()["name"] = "debug";                                            // name in <result name="???"> in response to debug
    }
 #endif // (TARGET_COMPILE_MODE_ & FLAG_MODE_DEVELOPER_)
 

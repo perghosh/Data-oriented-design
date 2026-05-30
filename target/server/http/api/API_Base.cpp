@@ -279,8 +279,7 @@ bool CAPI_Base::Exists( const std::string_view& stringName ) const
 std::pair<bool, std::string> CAPI_Base::PrepareStatement( std::variant<size_t, std::string_view> statement_id_, std::string& stringSelectAddTo )
 {
    std::string stringQuery;
-   std::string stringSelect;
-   uint64_t uStatementRow;
+   uint64_t uStatementRow; // resolved statement row index, this to speed up access to statement
    CDocument* pdocument = GetDocument();                                                           assert( pdocument != nullptr );
 
    // ## Get statement row index ............................................
@@ -356,7 +355,9 @@ std::pair<bool, std::string> CAPI_Base::PrepareStatement( std::variant<size_t, s
 
    result_ = sql_.ValidateColumnValues();                                                          if( result_.first == false ) { return result_; }
 
-   stringSelect.clear();
+   std::string stringSelect; //Final rendered SQL statement, ready to execute. 
+   stringSelect.reserve(stringSelectTemplate.size());
+   // @NOTE [tag: sql, statement] [summary: render SQL statement from template]
    result_ = sql_.ToSqlFromTemplate( stringSelectTemplate, stringSelect );                         if( result_.first == false ) { return result_; }
 
    if( stringSelectAddTo.empty() == true ) { stringSelectAddTo = std::move( stringSelect ); }

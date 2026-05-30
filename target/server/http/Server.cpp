@@ -16,6 +16,7 @@
 #include "gd/expression/gd_expression_parse_state.h"
 
 #include "dto/DTOResponse.h"
+#include "render/RENDERHtml.h"
 
 #include "Router.h"
 
@@ -216,8 +217,6 @@ boost::beast::http::message_generator                                          /
    auto uPosition = stringPath.find('?');
    if( uPosition != std::string::npos ) { stringPath = stringPath.substr( 0, uPosition ); }
 
-   //CServer* pserver = papplication_g->GetServer();
-
    // ------------------------------------------------------------------------
    // ## Check if server is in blocking mode, if it is, check if file is blocked
    if( pserver != nullptr && pserver->IsIgnore() == true )
@@ -367,8 +366,14 @@ boost::beast::http::message_generator CServer::RenderPage(
 {
    CRouter router_(papplication_g, stringTarget, stringBody, stringPath);
 
+   CRENDERHtml render_(stringPath); // create render object for rendering page, render will use router to execute code found in page
+
+
    std::string stringPage; // string to hold rendered page
-   auto result_ = RenderPage(stringPath, stringPage);
+
+   auto result_ = render_.Render(stringPage); // render page, this will execute code found in page and return rendered page as string
+
+   // auto result_ = RenderPage(stringPath, stringPage);
    if(result_.first == false)
    {
       std::string& stringError = result_.second;
@@ -393,85 +398,6 @@ boost::beast::http::message_generator CServer::RenderPage(
    return response;
 }
 
-std::pair<bool, std::string> CServer::RenderPage(std::string_view stringPath, std::string& stringRendered)
-{
-   enum enumLanguage { eLanguageNone = 0, eLanguageLua, eLanguageGD, eLanguageExpression };
-   gd::parse::window::line lineBuffer(48 * 64, 64 * 64, gd::types::tag_create{});  // create line buffer 64 * 64 = 4096 bytes = 64 cache lines
-   gd::expression::parse::state state_; // state is used to check what type of code part we are in
-
-   std::string stringPage;
-   std::string stringCode; // string to hold code found in page, this will be used to render page
-
-   stringPage.reserve(1024 * 8);                                              // reserve space for page
-   stringCode.reserve(1024);                                                  // reserve space for code
-
-   std::ifstream file_(stringPath.data(), std::ios::binary);
-   if(file_.is_open() == false) return { false, "Failed to open file: " + std::string(stringPath) };
-
-   auto uAvailable = lineBuffer.available();
-   file_.read((char*)lineBuffer.buffer(), uAvailable);
-   auto uReadSize = file_.gcount();                                           // get number of valid bytes read
-   lineBuffer.update(uReadSize);                                              // Update valid size in line buffer
-
-   state_.add(std::string_view("SCRIPTCODE"), "[[lua", "]]");
-   state_.add(std::string_view("SCRIPTCODE"), "[[gd", "]]");
-   state_.add(std::string_view("EXPRESSION"), "[[=", "]]");
-
-   uint8_t uCharacter = 0;                                                    // character to hold current character
-
-
-   // ## Scan file and read lines found in table
-   while(lineBuffer.eof() == false)
-   {
-      auto [first_, last_] = lineBuffer.range(gd::types::tag_pair{});         // get range of valid data in buffer
-      for(auto it = first_; it < last_; it++)
-      {
-         uCharacter = *it;                                                    // get current character
-
-         if(state_.in_state() == false)                                       // not in a state? that means we are reading page code
-         {
-            // ## check if we have found state ...............................
-            if(state_[uCharacter] != 0 && state_.exists(it) == true)
-            {
-               stringCode.clear();                                            // clear code string to start reading new code
-               auto uLength = state_.activate(it);                            // activate state
-               if(uLength > 1) it += (uLength - 1);                           // skip to end of state marker and if it is more than 1 character, skip to end of state
-
-               continue;                                                      // continue to next character, we will start reading code in next iteration
-            }
-
-            stringPage += uCharacter;                                         // add character to page string
-         }
-         else
-         {
-            // ## check if we have found end of state
-            unsigned uLength;
-            if(state_.deactivate(it, &uLength) == true)
-            {
-               if(uLength > 1) it += (uLength - 1);                           // skip to end of state marker and if it is more than 1 character, skip to end of state
-               // @TODO execute code
-               continue;
-            }
-
-            stringCode += uCharacter;                                         // add character to code string
-         }
-      }
-
-      lineBuffer.rotate();                                                    // rotate buffer
-
-      if(uReadSize > 0)                                                       // was it possible to read data last read, then more data is available
-      {
-         auto uAvailable = lineBuffer.available();                            // get available space in buffer to be filled
-         file_.read((char*)lineBuffer.buffer(), lineBuffer.available());      // read more data into available space in buffer
-         uReadSize = file_.gcount();
-         lineBuffer.update(uReadSize);                                        // update valid size in line buffer
-      }
-   }
-
-   stringRendered = std::move(stringPage);                                    // for now we just return the page
-
-   return { true, "" };
-}
 
 
 /** --------------------------------------------------------------------------- @API [tag: server, http, block] [summary: Checks if a given file path is blocked based on the server's ignore-extension settings]
