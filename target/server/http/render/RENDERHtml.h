@@ -27,6 +27,9 @@ public:
    CRENDERHtml() {}
    explicit CRENDERHtml(std::string_view stringPath) : m_stringPath(stringPath) {}
    CRENDERHtml(std::string_view stringPath, std::string_view stringPage) : m_stringPath(stringPath), m_stringPage(stringPage) {}
+   CRENDERHtml(const CAPIContext* papicontext) : m_papicontext(papicontext) {}
+   CRENDERHtml(const CAPIContext* papicontext, std::string_view stringPath) : m_papicontext(papicontext), m_stringPath(stringPath) {}
+   CRENDERHtml(const CAPIContext* papicontext, std::string_view stringPath, std::string_view stringPage) : m_papicontext(papicontext), m_stringPath(stringPath), m_stringPage(stringPage) {}
     
    // copy
    CRENDERHtml(const CRENDERHtml& o) { common_construct(o); }
@@ -51,6 +54,8 @@ public:
 
 // @API [tag: operation]
    std::pair<bool, std::string> Render(std::string& stringRendered);
+
+   std::pair<bool, std::string> Run(std::string_view stringType, std::string_view stringCode, std::string* pstringPage);
 
 
 protected:

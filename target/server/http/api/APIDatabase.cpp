@@ -73,6 +73,11 @@ std::pair<bool, std::string> CAPIDatabase::Execute()
 
    if( m_vectorCommand.empty() == true ) return { true, "No commands"};
 
+   // ## Check for database connection and if not connected, try to connect to database
+   CDocument* pdocument = GetDocument();                                                           if(pdocument == nullptr) { return { false, GetLastError() }; }
+   auto* pdatabase = pdocument->GetDatabase();                                                     if(pdatabase == nullptr) return { false, "no database" };
+   if(GetContext()->GetDatabase() == nullptr) { GetContext()->SetDatabase(pdatabase); }
+
    std::pair<bool, std::string> result_(true,"");
 
    //CRouter::Encode_s( m_argumentsParameter, { "query", "values" } );
@@ -314,10 +319,8 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
    gd::argument::arguments argumentsOptional( buffer_ );
    std::string stringSelect;
 
-   CDocument* pdocument = GetDocument();                                                           if( pdocument == nullptr ) return { false, GetLastError() };
-   auto* pdatabase = pdocument->GetDatabase();                                                     if( pdatabase == nullptr ) return { false, "no database" };
-   
-   if( GetContext()->GetDatabase() == nullptr ) { GetContext()->SetDatabase(pdatabase); }
+   CDocument* pdocument = GetDocument();                                      assert(pdocument != nullptr && "no document");
+   auto* pdatabase = GetContext()->GetDatabase();                             assert(pdatabase != nullptr && "no database connection");
 
    std::string stringQuery = GetNextArgument( "query" ).as_string();          // get query to execute
    if( stringQuery.empty() == false )
@@ -440,12 +443,10 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Ask()
  */
 std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
 {
-   CDocument* pdocument = GetDocument();                                                           if( pdocument == nullptr ) { return { false, GetLastError() }; }
-   auto* pdatabase = pdocument->GetDatabase();                                                     if( pdatabase == nullptr ) return { false, "no database" };
    std::string stringInsert;
+   CDocument* pdocument = GetDocument();
+   auto* pdatabase = GetContext()->GetDatabase();                             assert(pdatabase != nullptr && "no database connection");
    
-   if( GetContext()->GetDatabase() == nullptr ) { GetContext()->SetDatabase(pdatabase); }
-
    std::string stringQuery = GetNextArgument( "query" ).as_string();          // get query to execute
    if( stringQuery.empty() == false )                                         // if query then process it
    {
@@ -513,11 +514,8 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
  */
 std::pair<bool, std::string> CAPIDatabase::Execute_Update()
 {
-   CDocument* pdocument = GetDocument();
-   if( pdocument == nullptr ) { return { false, GetLastError() }; }
-
-   auto* pdatabase = pdocument->GetDatabase();
-   if( pdatabase == nullptr ) return { false, "no database connection in document: " + std::string( pdocument->GetName() ) };
+   CDocument* pdocument = GetDocument();                                      assert(pdocument != nullptr && "no document");
+   auto* pdatabase = GetContext()->GetDatabase();                             assert(pdatabase != nullptr && "no database connection");
 
    // ## Prepare SQL statement ................................................
    std::string stringExecute;
@@ -547,11 +545,8 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Update()
  */
 std::pair<bool, std::string> CAPIDatabase::Execute_Delete()
 {
-   CDocument* pdocument = GetDocument();
-   if( pdocument == nullptr ) { return { false, GetLastError() }; }
-
-   auto* pdatabase = pdocument->GetDatabase();
-   if( pdatabase == nullptr ) return { false, "no database connection in document: " + std::string( pdocument->GetName() ) };
+   CDocument* pdocument = GetDocument();                                      assert(pdocument != nullptr && "no document");
+   auto* pdatabase = GetContext()->GetDatabase();                             assert(pdatabase != nullptr && "no database connection");
 
    // ## Prepare SQL statement ................................................
    std::string stringExecute;

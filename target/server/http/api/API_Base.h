@@ -26,22 +26,16 @@ class CRENDERSql;
 /**
  * @brief Client context object that carries per-request identity and result state across API sections.
  *
- * CAPIContext separates the two orthogonal concerns that were previously mixed inside CAPI_Base:
+ * CAPIContext manages the user related state for API execution. 
  *
- *  - **Execution state** (command path, index, parameters) belongs to each API handler and lives
- *    in CAPI_Base / the concrete subclass.
- *
- *  - **Client context** (who is calling, which document/application they are bound to, accumulated
- *    result objects, shared global arguments, and last error) belongs here.
- *
- * This lets chained or packed endpoints share one context without reconstructing the heavier
+ * CAPIContext acts as a handle that lets endpoints access important objjects without need to reconstruct
  * execution machinery. A context can be passed by pointer into each API section so objects
  * accumulate naturally across the chain, and so the final response has everything it needs.
  *
  * Ownership model
  * ---------------
  * - CAPIContext owns m_objects (result accumulator) and m_argumentsGlobal.
- * - m_papplication and m_pdocument are non-owning raw pointers; their lifetimes are
+ * - m_psession, m_papplication and m_pdocument are non-owning raw pointers; their lifetimes are
  *   managed by the server/session layer that created them.
  *
  * State flags

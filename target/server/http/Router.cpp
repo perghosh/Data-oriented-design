@@ -55,6 +55,16 @@ CRouter::~CRouter()
 }
 
 
+/** @CRITICAL [tag: router, parse] [description: Parse query string to determine if it's a command and extract command path and arguments]
+ * @brief Parses the query string into internal arguments that hold parameters.
+ * 
+ * Parse the query string to determine if it represents a command and extract the
+ * command path and arguments. The method checks if the query string starts with '!' to 
+ * identify it as a command, then removes the '!' prefix and sets the appropriate flag.
+ * It also prepares the query string for further processing by command execution.
+ * 
+ * @return A pair with true if parsing was successful, and an error message if it was not.
+ */
 std::pair<bool, std::string> CRouter::Parse()
 {                                                                                                   assert( m_stringQueryString.empty() == false );
    std::string_view stringQueryStringView = m_stringQueryString;

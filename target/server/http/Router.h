@@ -45,11 +45,14 @@ class CDocument;
 class CRouter
 {
 public:
+   /**
+    * @brief Flags used to indicate the state of the router. 
+    */
    enum enumFlag
    {
       eFlagNone               = 0x00000000,
-      eFlagCommand            = 0x00000001,
-      eFlagPrepared           = 0x00000002,
+      eFlagCommand            = 0x00000001, ///< Indicates that the query string represents a command (starts with '!')
+      eFlagPrepared           = 0x00000002, ///< Indicates that the router has been prepared for execution (e.g., command handler found and ready)
    };
 
    enum enumResultFormat

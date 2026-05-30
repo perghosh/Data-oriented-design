@@ -356,6 +356,22 @@ boost::beast::http::message_generator CServer::RouteCommand( std::string_view st
    return response;
 }
 
+/** --------------------------------------------------------------------------- RenderPage
+ * @brief Renders an HTML page and returns it as an HTTP response message.
+ *
+ * Creates a `CRouter` context for request-scoped routing data, executes HTML
+ * rendering through `CRENDERHtml`, and maps the render result to an HTTP response.
+ * If rendering fails, the method returns **500 Internal Server Error** with the
+ * renderer error text as `text/plain`.
+ *
+ * @param stringTarget Request target used to initialize routing context.
+ * @param stringBody Request body used to initialize routing context.
+ * @param stringPath Physical/virtual page path to render.
+ * @param stringHeader Header input for page rendering context.
+ * @param request_ Incoming HTTP request moved into response preparation path.
+ * @param psession_ Optional session pointer for request context (currently unused in this method).
+ * @return boost::beast::http::message_generator Generated HTTP response containing rendered HTML or an error response if rendering fails.
+ */
 boost::beast::http::message_generator CServer::RenderPage(
    std::string_view stringTarget, 
    std::string_view stringBody, 
@@ -364,9 +380,13 @@ boost::beast::http::message_generator CServer::RenderPage(
    boost::beast::http::request<boost::beast::http::string_body>&& request_,
    const session* psession_)
 {
-   CRouter router_(papplication_g, stringTarget, stringBody, stringPath);
+   //CRouter router_(papplication_g, stringTarget, stringBody, stringPath);
 
-   CRENDERHtml render_(stringPath); // create render object for rendering page, render will use router to execute code found in page
+   auto* pdocument = papplication_g->GetDocument();
+
+   auto pcontext = std::make_unique<CAPIContext>(papplication_g, pdocument, psession_);
+
+   CRENDERHtml render_(pcontext.get(), stringPath); // create render object for rendering page, render will use router to execute code found in page
 
 
    std::string stringPage; // string to hold rendered page

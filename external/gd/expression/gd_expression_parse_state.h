@@ -347,6 +347,8 @@ public:
    int get_rule_index(const char* piText) const;
    const std::array<uint8_t, 256>& get_marker_hint() const { return m_arrayMarkerHint; } ///< get marker hint
    const rule& get_rule(size_t uIndex) const { assert(uIndex < m_vectorRule.size()); return m_vectorRule[uIndex]; } ///< get rule at index
+   const rule& get_active_rule() const { assert(m_iActive != -1); return m_vectorRule[m_iActive]; } ///< get active rule
+   const rule* get_active_rule_pointer() const { return (m_iActive != -1) ? &m_vectorRule[m_iActive] : nullptr; } ///< get pointer to active rule, this will return nullptr if not in state
 
    bool is_string() const { return get_state() & eGroupString; } ///< check if rule is string
    bool is_comment() const { return get_state() & eGroupComment; } ///< check if rule is comment

@@ -43,14 +43,17 @@
 /* ## SCRIPTING
 @PROJECT [name: scripting] [tag: script, lua, python, gdscript] [description: Script logic inside web server]
 
-@TASK [project: scripting] [tag: script, lua, python, gdscript] [status: open] [user: per]
-[summary: Ip logic in lua scripts]
-[description: Logic to get user ip and session information in lua scripts, this is needed for security and to make it possible to write scripts that can use this information]
+@TASK [project: scripting] [tag: lua, ssr] [status: open] [user: per]
+[summary: lua in SSR]
+[description: run lua scripts in server-side rendering context]
 
-@TASK [project: scripting] [tag: lua, cli, configuration] [status: done] [user: per]
-[summary: initialize lua scripting for webserver]
-[description: lua engines are store in a lua pool and this pool has to be initialized at startup]
-[sample: http script-pool]
+@TASK [project: scripting] [tag: lua, ssr] [status: open] [user: per]
+[summary: access variables in lua for ssr]
+[description: running lua scripts in server-side rendering that are able to access and manipulate variables]
+
+@TASK [project: scripting] [tag: lua, ssr, session] [status: open] [user: per]
+[summary: access session in lua for ssr]
+[description: running lua scripts in server-side rendering that are able to access and manipulate session data]
 
 
 */

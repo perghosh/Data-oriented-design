@@ -18,6 +18,7 @@ std::pair<bool, std::string> CRENDERHtml::Render( std::string& stringRendered )
    enum enumLanguage { eLanguageNone = 0, eLanguageLua, eLanguageGD, eLanguageExpression };
    gd::parse::window::line lineBuffer(48 * 64, 64 * 64, gd::types::tag_create{});  // create line buffer 64 * 64 = 4096 bytes = 64 cache lines
    gd::expression::parse::state state_; // state is used to check what type of code part we are in
+   const gd::expression::parse::state::rule* pruleActive = nullptr; // pointer to active rule, this is used to check what type of code part we are in and to get end marker for code part
 
    std::string stringPage;
    std::string stringCode; // string to hold code found in page, this will be used to render page
@@ -56,7 +57,7 @@ std::pair<bool, std::string> CRENDERHtml::Render( std::string& stringRendered )
                stringCode.clear();                                            // clear code string to start reading new code
                auto uLength = state_.activate(it);                            // activate state
                if(uLength > 1) it += (uLength - 1);                           // skip to end of state marker and if it is more than 1 character, skip to end of state
-
+               pruleActive = state_.get_active_rule_pointer();                // get pointer to active rule, this will be used to check for end of state
                continue;                                                      // continue to next character, we will start reading code in next iteration
             }
 
@@ -69,7 +70,13 @@ std::pair<bool, std::string> CRENDERHtml::Render( std::string& stringRendered )
             if(state_.deactivate(it, &uLength) == true)
             {
                if(uLength > 1) it += (uLength - 1);                           // skip to end of state marker and if it is more than 1 character, skip to end of state
-               // @TODO execute code
+
+               if(stringCode.empty() == false)
+               {                                                              assert( pruleActive != nullptr);
+                  auto stringType = std::string_view(pruleActive->get_start()).substr(2);// get code type from start marker, this will be used to determine how to render code
+                  auto reult_ = Run(stringType, stringCode, &stringPage);      // run code and get result, this will be used to render page
+               }
+               pruleActive = nullptr;
                continue;
             }
 
@@ -90,5 +97,20 @@ std::pair<bool, std::string> CRENDERHtml::Render( std::string& stringRendered )
 
    stringRendered = std::move(stringPage);                                    // for now we just return the page
 
+   return { true, "" };
+}
+
+std::pair<bool, std::string> CRENDERHtml::Run(std::string_view stringType, std::string_view stringCode, std::string* pstringPage)
+{
+   enum enumLanguage { eLanguageNone = 0, eLanguageLua, eLanguageGD, eLanguageExpression };
+   enumLanguage eLanguage = eLanguageNone;
+
+   if(stringType == "lua") { eLanguage = eLanguageLua; }
+   else if(stringType == "gd") { eLanguage = eLanguageGD; }
+   else if(stringType == "=") { eLanguage = eLanguageExpression; }
+   else { return { false, "Unknown code type: " + std::string(stringType) }; }
+
+
+   
    return { true, "" };
 }
