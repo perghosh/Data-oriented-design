@@ -53,6 +53,7 @@ public:
       eFlagNone               = 0x00000000,
       eFlagCommand            = 0x00000001, ///< Indicates that the query string represents a command (starts with '!')
       eFlagPrepared           = 0x00000002, ///< Indicates that the router has been prepared for execution (e.g., command handler found and ready)
+      eFlagNoResponse         = 0x00000004, ///< Indicates that no response should be sent back to the client (e.g., for fire-and-forget commands)
    };
 
    enum enumResultFormat
@@ -72,7 +73,7 @@ public:
       eRequestFormatMask      = 0x00030000,
    };
 
-   using Configure_call = std::function<void(CAPI_Base*, std::string_view)>;
+   using Configure_call = std::function<void(CAPI_Base*, std::string_view, std::string_view)>;
 
 public:
    CRouter() {}
@@ -105,7 +106,7 @@ public:
    void ClearFlag( unsigned uFlag ) { m_uFlags &= ~uFlag; }
    void SetFlags( unsigned uFlags ) { m_uFlags = uFlags; }
    void SetFlags( unsigned uSet, unsigned uClear ) { m_uFlags = ( m_uFlags | uSet ) & ~uClear; }
-   void SetConfigure(Configure_call&& functionConfigure) { m_functionConfigure = std::move(functionConfigure); }
+   void SetConfigureCallback(Configure_call&& functionConfigure) { m_functionConfigure = std::move(functionConfigure); }
 
    bool IsCommand() const { return (m_uFlags & eFlagCommand) != 0; }
    bool IsPrepared() const { return ( m_uFlags & eFlagPrepared ) != 0; }
@@ -138,6 +139,7 @@ public:
    std::pair<bool, std::string> Parse();
    std::pair<bool, std::string> Run( const std::vector<std::string_view>& vectorCommand, gd::argument::arguments& argumentsParameter );
    std::pair<bool, std::string> Run();
+   std::pair<bool, std::string> Run( std::string_view stringQueryString );
 
    /// Check if router has result to deliver to client
    bool HasResult();

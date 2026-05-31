@@ -15,6 +15,8 @@
 #include "gd/parse/gd_parse_window_line.h"
 #include "gd/expression/gd_expression_parse_state.h"
 
+#include "api/APIView.h"
+
 #include "dto/DTOResponse.h"
 #include "render/RENDERHtml.h"
 
@@ -383,47 +385,41 @@ boost::beast::http::message_generator CServer::RenderPage(
    CRouter router_(papplication_g, stringTarget, stringBody);                 // create router for the target, router is a simple command router to handle commands
    router_.SetSession(psession_);
 
-   CRouter::Configure_call callConfigure = [&]( CAPI_Base* papiObject, std::string_view stringObject ) {
-      if( stringObject == "view" ) 
+   std::string stringSSRPage;
+   CRouter::Configure_call configure_ = [&]( CAPI_Base* papiObject, std::string_view stringObjectType, std::string_view stringEventStage  ) {
+      if(stringEventStage == "before")
       {
-         CAPIView* papiview = reinterpret_cast<CAPIView*>( papiObject );
-         papiview->SetPath( stringPath );
-       
+         if(stringObjectType == "view")
+         {
+            CAPIView* papiview = reinterpret_cast<CAPIView*>(papiObject);
+            papiview->SetPath(stringPath);
+         }
+      }
+      else if(stringEventStage == "after")
+      {
+         if(stringObjectType == "view")
+         {
+            CAPIView* papiview = reinterpret_cast<CAPIView*>(papiObject);
+            stringSSRPage = std::move(papiview->GetSSRPage());
+         }
       }
    };
-   //router_.SetConfigure( 
 
+   router_.SetConfigureCallback(std::move( configure_ ));
    auto result_ = router_.Parse();                                            // parse the target to get command and parameters
    if(result_.first == false) { return server_error_s(request_, result_.second); }
 
+   router_.SetFlag(CRouter::eFlagCommand | CRouter::eFlagNoResponse);
+   result_ = router_.Run( "view/ssr" );
+   if(result_.first == false) { return server_error_s(request_, result_.second); }
 
-
-   auto* pdocument = papplication_g->GetDocument();
-
-   auto pcontext = std::make_unique<CAPIContext>(papplication_g, pdocument, psession_);
-
-   CRENDERHtml render_(pcontext.get(), stringPath); // create render object for rendering page, render will use router to execute code found in page
-
-
-   std::string stringPage; // string to hold rendered page
-
-   result_ = render_.Render(stringPage); // render page, this will execute code found in page and return rendered page as string
-
-   // auto result_ = RenderPage(stringPath, stringPage);
-   if(result_.first == false)
-   {
-      std::string& stringError = result_.second;
-      auto response_ = PrepareResponse_s(request_, int(boost::beast::http::status::internal_server_error), "text/plain", stringError);
-      return response_;
-   }
-
-   std::size_t uSize = stringPage.size();
+   std::size_t uSize = stringSSRPage.size();
 
    // 1. Create a response object using string_body
    boost::beast::http::response<boost::beast::http::string_body> response{ boost::beast::http::status::ok, request_.version() };
 
    // 2. Set the body to page
-   response.body() = std::move(stringPage);                             // set response body, body is pased to client
+   response.body() = std::move(stringSSRPage);                                // set response body, body is pased to client
 
    // 3. Set other response parameters
    response.set(boost::beast::http::field::server, BOOST_BEAST_VERSION_STRING);

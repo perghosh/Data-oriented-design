@@ -84,21 +84,20 @@ std::pair<bool, std::string> CRouter::Parse()
 }
 
 
-//template<typename APIObject>
-template<typename APIObject, typename Customize>
-std::pair<bool, std::string> CRouter::ExecuteCommand_( const std::vector<std::string_view>& vectorPath, const gd::argument::arguments& arguments_, unsigned& uCommandIndex, Customize&& customize )
+template<typename APIObject, typename Configure>
+std::pair<bool, std::string> CRouter::ExecuteCommand_( const std::vector<std::string_view>& vectorPath, const gd::argument::arguments& arguments_, unsigned& uCommandIndex, Configure&& configure )
 {
    // [CONTEXT] Construct handler with shared context instead of raw application pointer.
    APIObject apiobject_( m_context, vectorPath, arguments_, uCommandIndex );
 
-   if constexpr(!std::is_same_v<std::decay_t<Customize>, std::monostate>)
+   if constexpr(!std::is_same_v<std::decay_t<Configure>, std::monostate>)
    {
-      std::forward<Customize>(customize)(static_cast<CAPI_Base&>(apiobject_));
+      std::forward<Configure>(configure)(static_cast<CAPI_Base&>(apiobject_));
    }
 
    if(m_functionConfigure)
    {
-      m_functionConfigure(&apiobject_, vectorPath[uCommandIndex]);
+      m_functionConfigure(&apiobject_, vectorPath[uCommandIndex], "before");
    }
  
    auto result_ = apiobject_.Execute();
@@ -116,19 +115,30 @@ std::pair<bool, std::string> CRouter::ExecuteCommand_( const std::vector<std::st
          result_ = m_pdtoresponse->AddTransfer( pobjectsResult );
       }
    }
+
+   if(m_functionConfigure)
+   {
+      m_functionConfigure(&apiobject_, vectorPath[uCommandIndex], "after");
+   }
+
  
    uCommandIndex = apiobject_.GetCommandIndex();
    return result_;
 }
 
 
+std::pair<bool, std::string> CRouter::Run()
+{
+   return Run(m_stringQueryString);
+}
+
 /** @CRITICAL [tag: router, command] [description: Execute command from parsed query string]
  * 
  * @brief 
  * @return 
  */
-std::pair<bool, std::string> CRouter::Run()
-{
+std::pair<bool, std::string> CRouter::Run( std::string_view stringQueryString )
+{                                                                                                  assert( stringQueryString.empty() == false );
    std::pair<bool, std::string> result_;
 
    result_ = Prepare();                                                       // prepare for running command to ensure that all necessary data is ready and in correct format
@@ -137,8 +147,8 @@ std::pair<bool, std::string> CRouter::Run()
    if( IsCommand() == true )
    {
       // ## parse command path and query arguments and prepare important variables
-      auto [vectorPath, arguments_] = gd::parse::uri::parse_path_and_query( m_stringQueryString ); 
-      if( vectorPath.empty() == true ) { return { false, "No command found in query string: " + m_stringQueryString }; }
+      auto [vectorPath, arguments_] = gd::parse::uri::parse_path_and_query(stringQueryString);
+      if( vectorPath.empty() == true ) { return { false, std::string( "No command found in query string: " + std::string(stringQueryString) ) }; }
 #ifndef NDEBUG
       std::string stringArguments_d = gd::argument::debug::print( arguments_ );
 #endif // NDEBUG

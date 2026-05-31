@@ -28,9 +28,9 @@ std::pair<bool, std::string> CAPIView::Execute()
       m_uCommandIndex = static_cast<unsigned>(uIndex);
       std::string_view stringCommand = m_vectorCommand[uIndex];
 
-      if(stringCommand == "ssr") continue;
+      if(stringCommand == "view") continue;
 
-      if(stringCommand == "page")
+      if(stringCommand == "ssr")
       {
          std::string stringPage;
          result_ = Execute_RenderPage( stringPage );
@@ -47,7 +47,7 @@ std::pair<bool, std::string> CAPIView::Execute()
 }
 
 std::pair<bool, std::string> CAPIView::Execute_RenderPage( std::string& stringRendered )
-{
+{                                                                                                  assert(m_stringPath.empty() == false );
    enum enumLanguage { eLanguageNone = 0, eLanguageLua, eLanguageGD, eLanguageExpression };
    gd::parse::window::line lineBuffer(48 * 64, 64 * 64, gd::types::tag_create{});  // create line buffer 64 * 64 = 4096 bytes = 64 cache lines
    gd::expression::parse::state state_; // state is used to check what type of code part we are in
@@ -129,8 +129,7 @@ std::pair<bool, std::string> CAPIView::Execute_RenderPage( std::string& stringRe
       }
    }
 
-   stringRendered = std::move(stringPage);                                    // for now we just return the page
-
+   m_stringSSRPage = std::move(stringPage);                                    // for now we just return the page
 
    return { true, "" };
 }

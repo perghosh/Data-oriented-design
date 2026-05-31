@@ -53,9 +53,11 @@ public:
 // ## methods ------------------------------------------------------------------
 public:
 // @API [tag: get, set]
-   void SetPage(std::string stringPage) { m_stringPage = stringPage; }
-   void SetPage( std::string&& stringPage) { m_stringPage = std::move(stringPage); }
-   void SetPath(std::string stringPath) { m_stringPath = stringPath; }
+   void SetPath(std::string_view stringPath) { m_stringPath = stringPath; }
+   void SetSSRPage(std::string_view stringSSRPage) { m_stringSSRPage = stringSSRPage; }
+   void SetSSRPage( std::string&& stringSSRPage) { m_stringSSRPage = std::move(stringSSRPage); }
+
+   std::string&& GetSSRPage() { return std::move(m_stringSSRPage); }
 
 // @API [tag: operation]
    std::pair<bool, std::string> Execute() override;
@@ -70,8 +72,8 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
-   std::string m_stringPage;
    std::string m_stringPath;
+   std::string m_stringSSRPage;
 
 
 // @API [tag: free-functions]
