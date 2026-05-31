@@ -383,6 +383,16 @@ boost::beast::http::message_generator CServer::RenderPage(
    CRouter router_(papplication_g, stringTarget, stringBody);                 // create router for the target, router is a simple command router to handle commands
    router_.SetSession(psession_);
 
+   CRouter::Configure_call callConfigure = [&]( CAPI_Base* papiObject, std::string_view stringObject ) {
+      if( stringObject == "view" ) 
+      {
+         CAPIView* papiview = reinterpret_cast<CAPIView*>( papiObject );
+         papiview->SetPath( stringPath );
+       
+      }
+   };
+   //router_.SetConfigure( 
+
    auto result_ = router_.Parse();                                            // parse the target to get command and parameters
    if(result_.first == false) { return server_error_s(request_, result_.second); }
 

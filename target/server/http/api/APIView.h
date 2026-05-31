@@ -53,6 +53,9 @@ public:
 // ## methods ------------------------------------------------------------------
 public:
 // @API [tag: get, set]
+   void SetPage(std::string stringPage) { m_stringPage = stringPage; }
+   void SetPage( std::string&& stringPage) { m_stringPage = std::move(stringPage); }
+   void SetPath(std::string stringPath) { m_stringPath = stringPath; }
 
 // @API [tag: operation]
    std::pair<bool, std::string> Execute() override;

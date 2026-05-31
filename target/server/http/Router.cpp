@@ -98,7 +98,7 @@ std::pair<bool, std::string> CRouter::ExecuteCommand_( const std::vector<std::st
 
    if(m_functionConfigure)
    {
-      m_functionConfigure(apiobject_, vectorPath[uCommandIndex]);
+      m_functionConfigure(&apiobject_, vectorPath[uCommandIndex]);
    }
  
    auto result_ = apiobject_.Execute();

@@ -72,7 +72,7 @@ public:
       eRequestFormatMask      = 0x00030000,
    };
 
-   using Configure_call = std::function<void(CAPI_Base&, std::string_view)>;
+   using Configure_call = std::function<void(CAPI_Base*, std::string_view)>;
 
 public:
    CRouter() {}
