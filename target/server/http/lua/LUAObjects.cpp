@@ -1510,4 +1510,38 @@ void Response::Message( std::variant<std::string_view, sol::table> message_, std
    }
 }
 
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------- View
+// ----------------------------------------------------------------------------
+
+void View::Echo(sol::variadic_args variadicargs)
+{
+   sol::state_view stateLua(variadicargs.lua_state());
+   sol::protected_function functionToString = stateLua["tostring"];
+
+   std::string stringMessage;
+   bool bHasPreviousValue = false;
+
+   for(const sol::object& objectValue : variadicargs)
+   {
+      if(bHasPreviousValue == true) { stringMessage += ' '; }
+      bHasPreviousValue = true;
+
+      sol::protected_function_result resultToString = functionToString(objectValue);
+      if(resultToString.valid() == false)
+      {
+         stringMessage += "<tostring-error>";
+         continue;
+      }
+
+      sol::optional<std::string> stringConvertedValue = resultToString;
+      if(stringConvertedValue.has_value() == true) { stringMessage += stringConvertedValue.value(); }
+      else { stringMessage += "<non-string>"; }
+   }
+
+   m_stringView += stringMessage;
+
+   if(m_pstringPage != nullptr) { *m_pstringPage += stringMessage; }
+}
+
 LUA_END

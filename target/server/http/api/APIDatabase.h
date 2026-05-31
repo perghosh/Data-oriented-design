@@ -40,7 +40,6 @@ public:
       : CAPI_Base( context, vectorCommand, argumentsParameter, uCommandIndex ) {}
    CAPIDatabase( CAPIContext& context, std::vector<std::string_view>&& vectorCommand, gd::argument::arguments&& argumentsParameter )
       : CAPI_Base( context, std::move( vectorCommand ), std::move( argumentsParameter ) ) {}
-
    CAPIDatabase( const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsParameter )
       : CAPI_Base( vectorCommand, argumentsParameter ) {}
    CAPIDatabase( const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsParameter, unsigned uCommandIndex )

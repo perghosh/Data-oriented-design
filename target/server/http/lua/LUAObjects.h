@@ -435,4 +435,19 @@ public:
    CAPIContext* m_papicontext = nullptr; ///< pointer to API context, used to access request and response objects, and other information about current request
 };
 
+class View
+{
+// ## construction -------------------------------------------------------------
+public:
+   View() {}
+   View( std::string_view stringView ) : m_stringView( stringView ) {}
+
+   void Echo(sol::variadic_args variadicargs);
+
+// ## attributes ----------------------------------------------------------------
+public:
+   std::string m_stringView;
+   std::string* m_pstringPage = nullptr;
+};
+
 LUA_END

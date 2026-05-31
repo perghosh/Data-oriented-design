@@ -10,6 +10,7 @@
 #include "api/APIDatabase.h"
 #include "api/APISql.h"
 #include "api/APISystem.h"
+#include "api/APIView.h"
 
 
 #include "Router.h"
@@ -83,11 +84,22 @@ std::pair<bool, std::string> CRouter::Parse()
 }
 
 
-template<typename APIObject>
-std::pair<bool, std::string> CRouter::ExecuteCommand_( const std::vector<std::string_view>& vectorPath,  const gd::argument::arguments& arguments_,   unsigned& uCommandIndex )
+//template<typename APIObject>
+template<typename APIObject, typename Customize>
+std::pair<bool, std::string> CRouter::ExecuteCommand_( const std::vector<std::string_view>& vectorPath, const gd::argument::arguments& arguments_, unsigned& uCommandIndex, Customize&& customize )
 {
    // [CONTEXT] Construct handler with shared context instead of raw application pointer.
    APIObject apiobject_( m_context, vectorPath, arguments_, uCommandIndex );
+
+   if constexpr(!std::is_same_v<std::decay_t<Customize>, std::monostate>)
+   {
+      std::forward<Customize>(customize)(static_cast<CAPI_Base&>(apiobject_));
+   }
+
+   if(m_functionConfigure)
+   {
+      m_functionConfigure(apiobject_, vectorPath[uCommandIndex]);
+   }
  
    auto result_ = apiobject_.Execute();
  
@@ -118,8 +130,6 @@ std::pair<bool, std::string> CRouter::ExecuteCommand_( const std::vector<std::st
 std::pair<bool, std::string> CRouter::Run()
 {
    std::pair<bool, std::string> result_;
-
-
 
    result_ = Prepare();                                                       // prepare for running command to ensure that all necessary data is ready and in correct format
    if( result_.first == false ) { return result_; }
@@ -178,6 +188,14 @@ std::pair<bool, std::string> CRouter::Run()
          else if( stringCommand == "sys" )                                       // system related commands, thing that affects the complete system
          {
             result_ = ExecuteCommand_<CAPISystem>( vectorPath, arguments_, uCommandIndex );
+         }
+         else if( stringCommand == "view" )
+         {
+            result_ = ExecuteCommand_<CAPIView>(vectorPath, arguments_, uCommandIndex);
+         }
+         else
+         {
+            return { false, "Unknown command: " + std::string(stringCommand) };
          }
 
          uCommandIndex++;

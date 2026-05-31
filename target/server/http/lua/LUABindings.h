@@ -21,6 +21,7 @@ void RegisterCursor( sol::state& stateLua );
 void RegisterSql( sol::state& stateLua );
 void RegisterExpression( sol::state& stateLua );
 void RegisterTable( sol::state& stateLua );
+void RegisterView(sol::state& stateLua);
 
 
 LUA_END

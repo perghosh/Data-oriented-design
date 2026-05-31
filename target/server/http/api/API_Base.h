@@ -427,6 +427,8 @@ public:
 
    std::pair<bool, std::string> Lua_Execute( uint64_t uStatementRow, CDocument* pdocument, CRENDERSql* psql_ );
 
+   //std::pair<bool, std::string> Lua_Execute(  );
+
 
    // -- pure virtual interface ----------------------------------------------
 

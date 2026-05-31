@@ -1184,6 +1184,7 @@ std::pair<bool, std::string> CApplication::LUA_Initialize(const gd::argument::ar
          LUA::RegisterSql( state_ );
          LUA::RegisterExpression( state_ );
          LUA::RegisterTable( state_ );
+         LUA::RegisterView(state_);
       }, LUA::LuaStatePool::eLuaFeatureCore );
    }
 

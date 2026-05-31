@@ -131,4 +131,12 @@ void RegisterTable( sol::state& stateLua )
       );
 }
 
+void RegisterView(sol::state& stateLua)
+{
+   stateLua.new_usertype<View>(
+      "View", sol::constructors<View()>(),
+      "Echo", &View::Echo
+   );
+}
+
 LUA_END

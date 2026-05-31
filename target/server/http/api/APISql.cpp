@@ -33,7 +33,7 @@ std::pair<bool, std::string> CAPISql::Execute()
 
    std::pair<bool, std::string> result_(true,"");
 
-   CRouter::Encode_s( m_argumentsQS, { "query" } );
+   //CRouter::Encode_s( m_argumentsQS, { "query" } );
 
    for( std::size_t uIndex = 0; uIndex < m_vectorCommand.size(); ++uIndex )
    {

@@ -380,7 +380,13 @@ boost::beast::http::message_generator CServer::RenderPage(
    boost::beast::http::request<boost::beast::http::string_body>&& request_,
    const session* psession_)
 {
-   //CRouter router_(papplication_g, stringTarget, stringBody, stringPath);
+   CRouter router_(papplication_g, stringTarget, stringBody);                 // create router for the target, router is a simple command router to handle commands
+   router_.SetSession(psession_);
+
+   auto result_ = router_.Parse();                                            // parse the target to get command and parameters
+   if(result_.first == false) { return server_error_s(request_, result_.second); }
+
+
 
    auto* pdocument = papplication_g->GetDocument();
 
@@ -391,7 +397,7 @@ boost::beast::http::message_generator CServer::RenderPage(
 
    std::string stringPage; // string to hold rendered page
 
-   auto result_ = render_.Render(stringPage); // render page, this will execute code found in page and return rendered page as string
+   result_ = render_.Render(stringPage); // render page, this will execute code found in page and return rendered page as string
 
    // auto result_ = RenderPage(stringPath, stringPage);
    if(result_.first == false)

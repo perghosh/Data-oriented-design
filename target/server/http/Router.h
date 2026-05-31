@@ -72,6 +72,8 @@ public:
       eRequestFormatMask      = 0x00030000,
    };
 
+   using Configure_call = std::function<void(CAPI_Base&, std::string_view)>;
+
 public:
    CRouter() {}
    CRouter( CApplication* pApplication): m_context(pApplication) {}
@@ -103,6 +105,7 @@ public:
    void ClearFlag( unsigned uFlag ) { m_uFlags &= ~uFlag; }
    void SetFlags( unsigned uFlags ) { m_uFlags = uFlags; }
    void SetFlags( unsigned uSet, unsigned uClear ) { m_uFlags = ( m_uFlags | uSet ) & ~uClear; }
+   void SetConfigure(Configure_call&& functionConfigure) { m_functionConfigure = std::move(functionConfigure); }
 
    bool IsCommand() const { return (m_uFlags & eFlagCommand) != 0; }
    bool IsPrepared() const { return ( m_uFlags & eFlagPrepared ) != 0; }
@@ -143,8 +146,8 @@ public:
 
    std::pair<bool, std::string> PrintResponseXml( std::string& stringXml, const gd::argument::arguments* parguments_ );
 
-   template<typename APIObject>
-   std::pair<bool, std::string> ExecuteCommand_( const std::vector<std::string_view>& vectorPath, const gd::argument::arguments& arguments_, unsigned& uCommandIndex);
+   template<typename APIObject, typename Customize = std::monostate>
+   std::pair<bool, std::string> ExecuteCommand_( const std::vector<std::string_view>& vectorPath, const gd::argument::arguments& arguments_, unsigned& uCommandIndex, Customize&& customize = {} );
 
 // ## attributes ----------------------------------------------------------------
 public:
@@ -160,6 +163,7 @@ public:
    std::unique_ptr<CDTOResponse> m_pdtoresponse;  ///< response dto object
    std::mutex m_mutexRouter;         ///< mutex for response dto object
    std::pair<unsigned, void*> m_pairRequestData{ 0, nullptr }; ///< pair of request data, first is type and second is pointer to data
+   Configure_call m_functionConfigure;
 
 // ## free functions ------------------------------------------------------------
 public:
