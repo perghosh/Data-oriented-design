@@ -94,4 +94,63 @@ std::pair<bool, std::string> LuaRequestExecute( const std::vector<gd::variant_vi
    return { true, "" };
 }
 
+std::pair<bool, std::string> LuaSSRExecute(std::string_view stringScript, CAPIContext* pcontext_, std::string* pstringSSRPage, callback_lua_state callback_)
+{ 
+   CApplication* papplication_ = pcontext_->GetApplication();                                      assert(papplication_ != nullptr && "LuaSSRExecute requires valid application in context");
+
+   LUA::LuaStatePool* pluastatepool = papplication_->LUA_GetPool();
+   if(pluastatepool == nullptr || pluastatepool->Empty() == true) { return { false, "lua pool is not initialized" }; }
+
+   LUA::LuaStatePool::borrow borrowLuaState = pluastatepool->Acquire("core");// acquire "core" lua state from pool to execute code, released in destructor and cleaned up
+   auto& stateLua = borrowLuaState.get_luastate();                            // get reference to sol::state for code execution
+
+   auto* pdatabase_ = pcontext_->GetDatabase();                               // the database connection is prepared for current context, it mau be null if no database connection is needed current situation
+   auto* pdocument_ = pcontext_->GetDocument();                               // get document from context, important to use this because how documents work is different and this should be prepared before running method
+   std::unique_ptr<LUA::Application> papplication = std::make_unique<LUA::Application>(papplication_, pdatabase_); // applicaiton information
+   stateLua["app"] = std::move(papplication);
+   std::unique_ptr<LUA::Document> pdocument = std::make_unique<LUA::Document>(pdocument_, pcontext_); // document information, note that the database isn't same as database inside document, this is the global database.
+   stateLua["doc"] = std::move(pdocument);
+   std::unique_ptr<LUA::Request> prequest = std::make_unique<LUA::Request>(pcontext_); // request information, holds user data etc for current request to server.
+   stateLua["request"] = std::move(prequest);
+
+   std::unique_ptr<LUA::View> pview = std::make_unique<LUA::View>(pstringSSRPage); // view information, holds SSR page for current request to server.
+   stateLua["view"] = std::move(pview);
+
+   // ## Callback is used to modify the lua state before executing the script, this can be used to set up the environment for the script
+   if(callback_)
+   {
+      auto result_ = callback_(&stateLua, pcontext_);
+      if(result_.first == false) { return result_; }
+   }
+
+   std::pair<bool, std::string> result_{ true, "" };
+
+   try
+   {
+      stateLua.safe_script(stringScript);
+   }
+   catch(const sol::error& errorLua)
+   {
+      std::string stringError = errorLua.what();
+      result_ = { false, stringError };
+   }
+   catch(const std::exception& exception_)
+   {
+      std::string stringError = exception_.what();
+      result_ = { false, stringError };
+   }
+
+   if(result_.first == false)
+   {
+      borrowLuaState.reset({ "app", "doc", "request", "view"}, true);
+      return result_;
+   }
+
+   borrowLuaState.reset({ "app", "doc", "request", "view" }, true);
+   return { true, "" };
+
+
+   return { true, "" };
+}
+
 SCRIPT_END

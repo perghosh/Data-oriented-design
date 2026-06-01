@@ -23,5 +23,6 @@ using callback_lua_state = std::function<std::pair<bool, std::string>( sol::stat
 std::pair<bool, std::string> LuaRequestExecute( std::string_view stringScript, CAPIContext* pcontext_, CRENDERSql* psql, callback_lua_state callback = nullptr );
 std::pair<bool, std::string> LuaRequestExecute( const std::vector<gd::variant_view>& vectorScript, CAPIContext* pcontext_, CRENDERSql* psql, callback_lua_state callback = nullptr );
 
+std::pair<bool, std::string> LuaSSRExecute(std::string_view stringScript, CAPIContext* pcontext_, std::string* pstringSSRPage, callback_lua_state callback_ = nullptr);
 
 SCRIPT_END

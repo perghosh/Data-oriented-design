@@ -246,7 +246,7 @@ boost::beast::http::message_generator                                          /
       {
          std::string stringRendered;
          auto message_ = pserver->RenderPage(stringTarget, stringBody, stringPath, stringSSR, std::move(request_), psession_ );
-
+         return message_;
       }
    }
 

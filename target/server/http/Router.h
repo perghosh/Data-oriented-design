@@ -77,13 +77,13 @@ public:
 
 public:
    CRouter() {}
-   CRouter( CApplication* pApplication): m_context(pApplication) {}
-   CRouter( CApplication* pApplication, CDocument* pDocument): m_context(pApplication, pDocument) {}
-   CRouter( CApplication* pApplication, CDocument* pDocument, session* psession): m_context(pApplication, pDocument, psession) {}
+   CRouter( CApplication* papplication): m_context(papplication, papplication->GetDocument()) {}
+   CRouter( CApplication* papplication, CDocument* pDocument): m_context(papplication, pDocument) {}
+   CRouter( CApplication* papplication, CDocument* pDocument, session* psession): m_context(papplication, pDocument, psession) {}
    CRouter( const std::string_view& stringQueryString ) : m_stringQueryString( stringQueryString ) {}
-   CRouter( CApplication* pApplication, const std::string_view& stringQueryString ): m_context(pApplication), m_stringQueryString(stringQueryString) {}
-   CRouter( CApplication* pApplication, const std::string_view& stringQueryString, std::string_view stringBody ): m_context(pApplication), m_stringQueryString(stringQueryString), m_stringBody(stringBody) {}
-   CRouter( CApplication* pApplication, const std::string_view& stringQueryString, std::string_view stringBody, std::string_view stringPage) : m_context(pApplication), m_stringQueryString(stringQueryString), m_stringBody(stringBody), m_stringPage(stringPage) {}
+   CRouter( CApplication* papplication, const std::string_view& stringQueryString ): m_context(papplication), m_stringQueryString(stringQueryString) {}
+   CRouter( CApplication* papplication, const std::string_view& stringQueryString, std::string_view stringBody ): m_context(papplication, papplication->GetDocument()), m_stringQueryString(stringQueryString), m_stringBody(stringBody) {}
+   CRouter( CApplication* papplication, const std::string_view& stringQueryString, std::string_view stringBody, std::string_view stringPage) : m_context(papplication), m_stringQueryString(stringQueryString), m_stringBody(stringBody), m_stringPage(stringPage) {}
    // copy
    CRouter( const CRouter& o ) { common_construct( o ); }
    CRouter( CRouter&& o ) noexcept { common_construct( std::move( o ) ); }

@@ -15,7 +15,7 @@
 #include "../Document.h"
 #include "../Application.h"
 
-
+#include "API_Scripting.h"
 #include "APIView.h"
 
 std::pair<bool, std::string> CAPIView::Execute()
@@ -108,7 +108,11 @@ std::pair<bool, std::string> CAPIView::Execute_RenderPage( std::string& stringRe
                {
                   assert(pruleActive != nullptr);
                   auto stringType = std::string_view(pruleActive->get_start()).substr(2);// get code type from start marker, this will be used to determine how to render code
-                  //auto reult_ = Run(stringType, stringCode, &stringPage);      // run code and get result, this will be used to render page
+                  if(stringType == "lua" )
+                  {
+                     auto result_ = SCRIPT::LuaSSRExecute(std::string_view(stringCode), GetContext(), &stringPage); // run Lua code and insert text to page
+                     if(result_.first == false) { return result_; }
+                  }
                }
                pruleActive = nullptr;
                continue;

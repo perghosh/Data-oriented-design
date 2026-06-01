@@ -1539,9 +1539,9 @@ void View::Echo(sol::variadic_args variadicargs)
       else { stringMessage += "<non-string>"; }
    }
 
-   m_stringView += stringMessage;
+   // stringMessage;
 
-   if(m_pstringPage != nullptr) { *m_pstringPage += stringMessage; }
+   if(m_pstringSSRPage != nullptr) { *m_pstringSSRPage += stringMessage; }
 }
 
 LUA_END

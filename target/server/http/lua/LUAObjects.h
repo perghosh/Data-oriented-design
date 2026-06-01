@@ -441,13 +441,14 @@ class View
 public:
    View() {}
    View( std::string_view stringView ) : m_stringView( stringView ) {}
+   View(std::string* pstringSSRPage) : m_pstringSSRPage(pstringSSRPage) {}
 
    void Echo(sol::variadic_args variadicargs);
 
 // ## attributes ----------------------------------------------------------------
 public:
    std::string m_stringView;
-   std::string* m_pstringPage = nullptr;
+   std::string* m_pstringSSRPage = nullptr;
 };
 
 LUA_END
