@@ -55,6 +55,9 @@ std::pair<bool, std::string> CAPIView::Execute_RenderPage( std::string& stringRe
    const gd::expression::parse::state::rule* pruleActive = nullptr; // pointer to active rule, this is used to check what type of code part we are in and to get end marker for code part
 
    auto pdocument = GetContext()->GetDocument();                                                   assert(pdocument != nullptr);
+   auto* pdatabase = pdocument->GetDatabase();                                                     if(pdatabase == nullptr) return { false, "no database" };
+   if(GetContext()->GetDatabase() == nullptr) { GetContext()->SetDatabase(pdatabase); }
+
 
    // ## CRENDERSql as container that handle query sting values, this because it has more logic compared to just a key value container.
    gd::sql::enumSqlDialect eDialect = static_cast<gd::sql::enumSqlDialect>(pdocument->DATABASE_Get()->GetDialect());
