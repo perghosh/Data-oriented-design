@@ -323,7 +323,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
    auto* pdatabase = GetContext()->GetDatabase();                             assert(pdatabase != nullptr && "no database connection");
 
    std::string stringQuery = GetNextArgument( "query" ).as_string();          // get query to execute
-   if( stringQuery.empty() == false )
+   if(stringQuery.empty() == false)                                           // if query statement is to be used
    {
       auto result_ = PrepareStatement( stringQuery, stringSelect );
       if( result_.first == false ) { return result_; }

@@ -94,7 +94,7 @@ std::pair<bool, std::string> LuaRequestExecute( const std::vector<gd::variant_vi
    return { true, "" };
 }
 
-std::pair<bool, std::string> LuaSSRExecute(std::string_view stringScript, CAPIContext* pcontext_, std::string* pstringSSRPage, callback_lua_state callback_)
+std::pair<bool, std::string> LuaSSRExecute(std::string_view stringScript, CAPIContext* pcontext_, CRENDERSql* psql, std::string* pstringSSRPage, callback_lua_state callback_)
 { 
    CApplication* papplication_ = pcontext_->GetApplication();                                      assert(papplication_ != nullptr && "LuaSSRExecute requires valid application in context");
 
@@ -110,7 +110,7 @@ std::pair<bool, std::string> LuaSSRExecute(std::string_view stringScript, CAPICo
    stateLua["app"] = std::move(papplication);
    std::unique_ptr<LUA::Document> pdocument = std::make_unique<LUA::Document>(pdocument_, pcontext_); // document information, note that the database isn't same as database inside document, this is the global database.
    stateLua["doc"] = std::move(pdocument);
-   std::unique_ptr<LUA::Request> prequest = std::make_unique<LUA::Request>(pcontext_); // request information, holds user data etc for current request to server.
+   std::unique_ptr<LUA::Request> prequest = std::make_unique<LUA::Request>(pcontext_, psql); // request information, holds user data etc for current request to server.
    stateLua["request"] = std::move(prequest);
 
    std::unique_ptr<LUA::View> pview = std::make_unique<LUA::View>(pstringSSRPage); // view information, holds SSR page for current request to server.

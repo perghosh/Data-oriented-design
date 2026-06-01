@@ -15,6 +15,7 @@
 #include "../Document.h"
 #include "../Application.h"
 
+#include "../render/RENDERSql.h"
 #include "API_Scripting.h"
 #include "APIView.h"
 
@@ -52,6 +53,15 @@ std::pair<bool, std::string> CAPIView::Execute_RenderPage( std::string& stringRe
    gd::parse::window::line lineBuffer(48 * 64, 64 * 64, gd::types::tag_create{});  // create line buffer 64 * 64 = 4096 bytes = 64 cache lines
    gd::expression::parse::state state_; // state is used to check what type of code part we are in
    const gd::expression::parse::state::rule* pruleActive = nullptr; // pointer to active rule, this is used to check what type of code part we are in and to get end marker for code part
+
+   auto pdocument = GetContext()->GetDocument();                                                   assert(pdocument != nullptr);
+
+   // ## CRENDERSql as container that handle query sting values, this because it has more logic compared to just a key value container.
+   gd::sql::enumSqlDialect eDialect = static_cast<gd::sql::enumSqlDialect>(pdocument->DATABASE_Get()->GetDialect());
+   CRENDERSql sql_(GetContext(), eDialect );
+   sql_.Initialize();
+   sql_.AddValues(m_argumentsQS);
+
 
    std::string stringPage;
    std::string stringCode; // string to hold code found in page, this will be used to render page
@@ -110,7 +120,7 @@ std::pair<bool, std::string> CAPIView::Execute_RenderPage( std::string& stringRe
                   auto stringType = std::string_view(pruleActive->get_start()).substr(2);// get code type from start marker, this will be used to determine how to render code
                   if(stringType == "lua" )
                   {
-                     auto result_ = SCRIPT::LuaSSRExecute(std::string_view(stringCode), GetContext(), &stringPage); // run Lua code and insert text to page
+                     auto result_ = SCRIPT::LuaSSRExecute(std::string_view(stringCode), GetContext(), &sql_, &stringPage); // run Lua code and insert text to page
                      if(result_.first == false) { return result_; }
                   }
                }

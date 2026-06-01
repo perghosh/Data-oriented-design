@@ -389,7 +389,7 @@ boost::beast::http::message_generator CServer::RenderPage(
    CRouter::Configure_call configure_ = [&]( CAPI_Base* papiObject, std::string_view stringObjectType, std::string_view stringEventStage  ) {
       if(stringEventStage == "before")
       {
-         if(stringObjectType == "view")
+         if(stringObjectType == "view")                                       // if adding view object then set the path for file (html file) that is rendered
          {
             CAPIView* papiview = reinterpret_cast<CAPIView*>(papiObject);
             papiview->SetPath(stringPath);
@@ -397,7 +397,7 @@ boost::beast::http::message_generator CServer::RenderPage(
       }
       else if(stringEventStage == "after")
       {
-         if(stringObjectType == "view")
+         if(stringObjectType == "view")                                       // if view then return the rendered page as string, this is used to set the response body for the http response
          {
             CAPIView* papiview = reinterpret_cast<CAPIView*>(papiObject);
             stringSSRPage = std::move(papiview->GetSSRPage());

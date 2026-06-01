@@ -129,7 +129,7 @@ std::pair<bool, std::string> CRouter::ExecuteCommand_( const std::vector<std::st
 
 std::pair<bool, std::string> CRouter::Run()
 {
-   return Run(m_stringQueryString);
+   return Run(m_stringQueryString, true);
 }
 
 /** @CRITICAL [tag: router, command] [description: Execute command from parsed query string]
@@ -137,18 +137,31 @@ std::pair<bool, std::string> CRouter::Run()
  * @brief 
  * @return 
  */
-std::pair<bool, std::string> CRouter::Run( std::string_view stringQueryString )
+std::pair<bool, std::string> CRouter::Run( std::string_view stringQueryString, bool bInternal )
 {                                                                                                  assert( stringQueryString.empty() == false );
    std::pair<bool, std::string> result_;
 
    result_ = Prepare();                                                       // prepare for running command to ensure that all necessary data is ready and in correct format
    if( result_.first == false ) { return result_; }
 
-   if( IsCommand() == true )
+   if(IsCommand() == true)
    {
       // ## parse command path and query arguments and prepare important variables
       auto [vectorPath, arguments_] = gd::parse::uri::parse_path_and_query(stringQueryString);
-      if( vectorPath.empty() == true ) { return { false, std::string( "No command found in query string: " + std::string(stringQueryString) ) }; }
+      if(vectorPath.empty() == true) { return { false, std::string("No command found in query string: " + std::string(stringQueryString)) }; }
+
+      // ## If nog arguments, then check if member query string differ and parse that for arguments.
+      if(arguments_.empty() == true && m_stringQueryString.empty() == false && bInternal == false)
+      {
+         // move to ? and extract string view from there, if not found then parse all
+         std::string_view stringQueryView = m_stringQueryString;
+         std::size_t uPosition = stringQueryView.find('?');
+         if(uPosition != std::string_view::npos) { stringQueryView.remove_prefix(uPosition + 1); }
+
+         result_ = gd::parse::uri::parse_query(stringQueryView, arguments_);// if query parsing did not find any arguments, try parsing query string as arguments directly
+         if(result_.first == false) { return result_; }
+      }        
+
 #ifndef NDEBUG
       std::string stringArguments_d = gd::argument::debug::print( arguments_ );
 #endif // NDEBUG

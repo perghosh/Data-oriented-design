@@ -139,7 +139,7 @@ public:
    std::pair<bool, std::string> Parse();
    std::pair<bool, std::string> Run( const std::vector<std::string_view>& vectorCommand, gd::argument::arguments& argumentsParameter );
    std::pair<bool, std::string> Run();
-   std::pair<bool, std::string> Run( std::string_view stringQueryString );
+   std::pair<bool, std::string> Run( std::string_view stringQueryString, bool bInternal = false );
 
    /// Check if router has result to deliver to client
    bool HasResult();
