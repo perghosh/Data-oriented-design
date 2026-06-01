@@ -3,13 +3,16 @@
 ## What is this HTTP Server?
 
 This is a **stateful, high-performance web server** designed for modern web applications that require persistent user sessions and efficient data handling. Built with a strong focus on speed and scalability, this server simplifies web development by maintaining state information for each user, eliminating the need to pass complete user data with every request.
+Staeful do not mean that the server is not stateless, it can of course be stateless also.
 
 ### Key Characteristics
 
 **Performance & Scalability**
-- Optimized for high concurrency with a target of handling approximately **50,000 concurrent users** on a single computer with 64GB RAM
+- Optimized for high concurrency with a target of handling approximately **100,000 concurrent users** on a single computer with 32GB RAM
 - Designed to serve as a high-performance cache layer for other solutions
 - Lightweight architecture that maximizes hardware efficiency
+- Intelligent caching mechanisms to reduce database load and improve response times
+- Fast server-side rendering (SSR) capabilities for dynamic content generation
 
 **Database Integration**
 - Compatible with **any SQL database** and SQLite
@@ -33,9 +36,10 @@ The server is built around several core components that work together to deliver
 
 ### Extensibility & Customization
 
-**Upcoming Features**
-- **Lua scripting** for creating flexible endpoints and custom logic
-- **Python scripting** integration for advanced customization
+**Scripting**
+- **Lua** for creating flexible endpoints and custom logic
+- **Python** integration for advanced customization and data processing (upcomming)
+- **gdscript** gdscript is a highly optimized scripting language for fast execution of expressions and smaller tasks.
 - Ability to execute server-side logic to handle edge cases and complex business rules
 
 These scripting capabilities will allow developers to extend the server's functionality without modifying the core codebase, making it adaptable to a wide range of use cases.
@@ -48,6 +52,7 @@ This HTTP server is ideal for:
 - **Real-time applications** that benefit from stateful connections
 - **Data-intensive applications** with complex SQL requirements
 - **High-traffic web services** that need to maximize server resources
+- **Weak servers need to handle more users** Servers with limited resources can benefit and manage more users by using this server.
 
 
 
@@ -85,9 +90,11 @@ This HTTP server is ideal for:
 |   Session.*
 |
 +-- api
+|   |   APIBase.*
 |   |   APIDatabase.*
 |   |   APISql.*
 |   |   APISystem.*
+|   |   APIView.*
 |
 +-- cli
 |   |   CLIHttp.*
@@ -97,6 +104,11 @@ This HTTP server is ideal for:
 |
 +-- dto
 |   |   DTOResponse.*
+|
++-- lua
+|   |   LUABindings.*
+|   |   LUAObjects.*
+|   |   LUAStatePool.*
 |
 +-- meta
 |   |   METADatabase.*
@@ -139,3 +151,19 @@ the url Router can identify which module should handle the request.
 ### Session
 **Session** represents a single client connection to the server. It manages the lifecycle of conected clients. Http server is a **stateful** server, the session
 holds unique keys for each client so the server can identify clients between requests.
+
+### API Modules
+
+- `APIBase.*`: Contains the base class for all API modules. This is core for handling API and it has the `CAPIContext` where connections for request are found. Also data from client and data returned. Note that there are logic to derive from this doing specific things.
+- `APIDatabase.*`: Contains the API module for database operations. Often use statements and scripting to customize the database operations. 
+- `APISql.*`: Manages API requests for SQL statements, adding, deleting, or updating statements. Statements are often used in database operations found in `APIDatabase`.
+- `APISystem.*`: Handles system-related API requests. The system is the webserver.
+- `APIView.*`: Manages API requests related to rendering views like SSR (server side rendering).
+
+### DTO Modules
+- `DTOResponse.*`: Contains data transfer logic used for structuring HTTP responses. Internaly data is moved using objects in gd library and these are converted to client ffriendly format using this module. This is the only module that should be used to convert data to client friendly format.
+
+### Lua Scripting
+- `LUABindings.*`: Contains bindings for Lua scripting, allowing interaction between Lua scripts and the server.
+- `LUAObjects.*`: Manages Lua objects and their lifecycle within the server.
+- `LUAStatePool.*`: Handles the pooling of Lua states for efficient script execution. Server is heavily threaded and using Lua scripting in a multi-threaded environment so pooling Lua states is a common solution to manage resources effectively.

@@ -71,7 +71,7 @@ void AddContext( std::string_view stringName, gd::variant_view value_ );
 
 std::pair<bool, std::string> AddTransfer( Types::Objects* pobjects_ );
 
-std::pair<bool, std::string> PrintXml( std::string& stringXml, const gd::argument::arguments* parguments_ );
+std::pair<bool, std::string> PrintXml(std::string& stringXml, const gd::argument::arguments* parguments_); // @CRITICAL [tag: response] [description: Print response as XML, this will be used as response body]
 
 /// Check if response body is empty
 bool Empty() const noexcept { return m_tableBody.size() == 0; }
