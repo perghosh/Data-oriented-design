@@ -41,6 +41,7 @@ void RegisterDatabase( sol::state& stateLua )
 		"Execute", &Database::Execute,
       "ExecuteReturn", &Database::ExecuteReturn,
       "Ask", &Database::Ask,
+      "AskRow", &Database::AskRow,
       "Close", &Database::Close
    );
 }

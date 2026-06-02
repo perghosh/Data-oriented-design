@@ -188,6 +188,7 @@ public:
    void Execute( const std::string_view& stringSql );
    std::variant<int64_t, std::string, double, bool, sol::table, sol::lua_nil_t> ExecuteReturn( const std::string_view& stringSql );
    std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> Ask( const std::string_view& stringSql, std::optional<std::string> type_ );
+   sol::object AskRow(sol::this_state state_, const std::string_view& stringSql);
    void Close();
 //@}
 

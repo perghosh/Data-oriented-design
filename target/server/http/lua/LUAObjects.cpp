@@ -1049,6 +1049,45 @@ std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> Database::Ask( 
    return ConvertToAny_g( variantValue );
 }
 
+/**  -------------------------------------------------------------------------- AskRow
+ * @brief Execute SQL query and return first row as a table
+ *
+ * Executes a SQL query against the database and returns the first row's columns
+ * as a Lua table. Each column name is a key and column value is the table value.
+ * Returns `nil` if no rows are returned.
+ *
+ * @param state_ Lua state handle for creating return objects
+ * @param stringSql SQL query string to execute
+ * @return sol::object Lua table representing first row, or `nil` if no rows found
+ *
+ * @throws sol::error If query execution fails
+ */
+sol::object Database::AskRow(sol::this_state state_, const std::string_view& stringSql)
+{                                                                                                  assert(m_pdatabase != nullptr);
+   gd::com::pointer<gd::database::cursor_i> pcursor; // cursor for result
+   m_pdatabase->get_cursor(&pcursor);                                         // create cursor for query
+
+   auto [bOk, stringError] = pcursor->open(stringSql);                        // execute query
+   if(bOk == false) { throw sol::error(stringError); }                        // no result ?
+
+   sol::state_view stateLua(state_);
+   sol::table tableRow = stateLua.create_table();
+
+   if(pcursor->is_valid_row() == false) { return sol::make_object(stateLua, sol::lua_nil); }
+
+   const gd::database::record* precordRow = pcursor->get_record();                                 assert(precordRow != nullptr);
+   auto uColumnCount = precordRow->size();
+
+   for(decltype(uColumnCount) uColumn = 0; uColumn < uColumnCount; uColumn++)
+   {
+      const std::string_view stringColumnName = precordRow->name_get(static_cast<unsigned>(uColumn));
+      const gd::variant variantValue = precordRow->get_variant(static_cast<unsigned>(uColumn));
+      tableRow[stringColumnName] = ConvertToAny_g(variantValue);
+   }
+
+   return sol::make_object(stateLua, tableRow);
+}
+
 /// Close connection if open
 void Database::Close()
 {
