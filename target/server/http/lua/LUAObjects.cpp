@@ -125,6 +125,7 @@ std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> ConvertToAny_g(
    else if( value_.is_string() == true )  { return value_.as_string(); }
    else if( value_.is_decimal() == true ) { return value_.as_double(); }
    else if( value_.is_bool() == true )    { return value_.as_bool(); }
+   else if( value_.is_binary() == true)   { return value_.as_string(); }
    return sol::lua_nil;
 }
 
@@ -168,6 +169,8 @@ std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> ConvertToAny_g(
    if( value_.is_integer() == true )      { return value_.as_int64(); }
    else if( value_.is_string() == true )  { return value_.as_string(); }
    else if( value_.is_decimal() == true ) { return value_.as_double(); }
+   else if( value_.is_binary() == true)   { return value_.as_string(); }
+   else if( value_.is_bool() == true)     { return value_.as_bool(); }
    return sol::lua_nil;
 }
 
@@ -1081,14 +1084,22 @@ sol::object Database::AskRow(sol::this_state state_, const std::string_view& str
    for(decltype(uColumnCount) uColumn = 0; uColumn < uColumnCount; uColumn++)
    {
       const std::string_view stringColumnName = precordRow->name_get(static_cast<unsigned>(uColumn));
-      const gd::variant variantValue = precordRow->get_variant(static_cast<unsigned>(uColumn));
-      tableRow[stringColumnName] = ConvertToAny_g(variantValue);
+      const gd::variant_view variantviewValue = precordRow->get_variant_view(static_cast<unsigned>(uColumn));
+      tableRow[stringColumnName] = ConvertToAny_g(variantviewValue);
+      //const gd::variant variantValue = precordRow->get_variant(static_cast<unsigned>(uColumn));
+      //tableRow[stringColumnName] = ConvertToAny_g(variantValue);
    }
 
    return sol::make_object(stateLua, tableRow);
 }
 
-/// Close connection if open
+/**  -------------------------------------------------------------------------- Close
+ * @brief Close database connection if owned
+ *
+ * Releases the database connection if this `Database` object owns it. Sets the
+ * internal database pointer to `nullptr` after cleanup. If not the owner, only
+ * clears the pointer without calling `release()`.
+ */
 void Database::Close()
 {
    if( m_pdatabase != nullptr && m_bOwner == true )
@@ -1104,6 +1115,21 @@ void Database::Close()
 // --------------------------------------------------------------------- Cursor
 // ----------------------------------------------------------------------------
 
+/**  -------------------------------------------------------------------------- Open
+ * @brief Open SQL query cursor with optional prepared statement parameters
+ *
+ * Opens a database cursor for executing a SQL query. Supports two modes:
+ * - **Without parameters**: Directly opens the SQL string as a query
+ * - **With parameters**: Prepares the statement with variant parameters, then opens
+ *
+ * Parameters are provided as a Lua table and converted to `gd::variant_view` values.
+ *
+ * @param stringSql SQL query string or prepared statement template
+ * @param params_ Optional Lua table of parameter values for prepared statement
+ * @return void
+ *
+ * @throws sol::error If query open or prepare operation fails
+ */
 void Cursor::Open( const std::string_view& stringSql, const sol::optional<sol::table>& params_ )
 {
    if( params_.has_value() == false )
@@ -1420,6 +1446,15 @@ Sql Request::CreateSql()
    return Sql( m_psql );
 }
 
+/// @brief Check if client value exists in current SQL object, this can be used to check if value exists before trying to get it
+bool Request::HasClientValue(std::string_view stringName)
+{
+   if(m_psql == nullptr) { throw sol::error("SQL object not initialized"); }
+   auto iRow = m_psql->FindRowForColumnName(stringName);                    // check if column name exists, if not exception is thrown
+   return iRow >= 0;
+}
+
+/// @brief Get client value from current SQL object, this can be used to get value that client has sent, for example in insert or update statement
 std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> Request::GetClientValue( std::string_view stringName, std::optional<std::string> type_)
 {
    if( m_psql == nullptr ) { throw sol::error( "SQL object not initialized" ); }
@@ -1581,6 +1616,103 @@ void View::Echo(sol::variadic_args variadicargs)
    // stringMessage;
 
    if(m_pstringSSRPage != nullptr) { *m_pstringSSRPage += stringMessage; }
+}
+
+// -- <meta property="og:description" content="En guide till de bästa SEO-taggarna.">
+// if sDescription and #sDescription > 0 then view::Html("meta", { property = "og:description", content = sDescription }) end
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Flexible HTML element renderer for SSR
+ *
+ * Rules:
+ *   - If stringElement starts with '/'  → Close tag:      EchoHtml("/div")          → </div>
+ *   - If stringElement ends with '/'    → Empty element:  EchoHtml("div/")         → <div></div>
+ *   - If stringContent has value        → Full element:   EchoHtml("h1", {}, "Title") → <h1>Title</h1>
+ *   - Otherwise                         → Open element:   EchoHtml("div", attrs)    → <div class="...">
+ *
+ * Special case:
+ *   - EchoHtml("", { attr = "value" })  → Outputs only attributes (useful for some edge cases)
+ *
+ * @param stringElement     Element name, or "/element" to close, or "element/" for empty pair
+ * @param tableAttributes   Optional attributes table
+ * @param stringContent     Optional content (makes it a full closed element)
+ */
+void View::EchoHtml(std::string stringElement, std::optional<const sol::table> tableAttributes, std::optional<std::string> stringContent)
+{
+   if(stringElement.empty() && !tableAttributes.has_value())  return; // nothing to do
+
+   std::string stringHtml;
+
+   // ## 1. Closing tag: "/div" ..............................................
+   if(!stringElement.empty() && stringElement[0] == '/')
+   {
+      stringHtml += "</";
+      stringHtml += stringElement.substr(1);
+      stringHtml += ">";
+   }
+
+   // ## 2. Empty element pair: "div/"  → <div></div> ........................
+   else if(!stringElement.empty() && stringElement.back() == '/')
+   {
+      std::string stringTagName = stringElement.substr(0, stringElement.size() - 1);
+
+      stringHtml += "<";
+      stringHtml += stringTagName;
+
+      if(tableAttributes.has_value()) { AppendAttributes_s(stringHtml, tableAttributes.value()); }
+
+      stringHtml += "></";
+      stringHtml += stringTagName;
+      stringHtml += ">";
+   }
+
+   // ## 3. Normal element ...................................................
+   else
+   {
+      stringHtml += "<";
+      stringHtml += stringElement;
+
+      if(tableAttributes.has_value()) { AppendAttributes_s(stringHtml, tableAttributes.value()); }
+
+      if(stringContent.has_value())
+      {
+         stringHtml += ">";
+         stringHtml += stringContent.value();
+         stringHtml += "</";
+         stringHtml += stringElement;
+         stringHtml += ">";
+      }
+      else
+      {
+         stringHtml += ">";           // open tag only
+      }
+   }
+
+   if(m_pstringSSRPage != nullptr) { *m_pstringSSRPage += stringHtml; }
+}
+
+/// @brief Helper to append HTML attributes from a Lua table to an HTML string
+void View::AppendAttributes_s(std::string& stringHtml, const sol::table& table)
+{
+   for(const auto& it : table)
+   {
+      std::string stringKey = it.first.as<std::string>();
+      const sol::object& value = it.second;
+
+      if(value.get_type() == sol::type::lua_nil) continue;
+
+      std::string stringValue;
+      if(value.is<std::string>()) stringValue = value.as<std::string>();
+      else if(value.is<bool>()) stringValue = value.as<bool>() ? "true" : "false";
+      else if(value.is<double>() || value.is<int>() || value.is<float>()) stringValue = std::to_string(value.as<double>());
+
+      stringHtml += " ";
+      stringHtml += stringKey;
+      stringHtml += "=\"";
+      stringHtml += stringValue;
+      stringHtml += "\"";
+   }
 }
 
 LUA_END

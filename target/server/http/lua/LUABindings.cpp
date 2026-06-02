@@ -60,6 +60,7 @@ void RegisterRequest( sol::state& stateLua )
       "GetResponse", &Request::GetResponse,                                   // Get the response object associated with this request
       "GetScriptValue", &Request::GetScriptValue,                             // Get script value, variables that is not transfered to created SQL object but may be used in this request
       "GetSessionId", &Request::GetSessionId,                                 // Get the session ID associated with this request
+      "HasClientValue", &Request::HasClientValue,                             // Check if a client value exists by name or table of matching properties for value
       "RemoveClientValue", &Request::RemoveClientValue,                       // Remove a client value by name or table of matching properties for value
       "SetScriptValue", &Request::SetScriptValue,                             // Set a script value by name. Script values are added in script and is used there
       "SetStatus", &Request::SetStatus                                        // Set http status for currect request
@@ -136,7 +137,8 @@ void RegisterView(sol::state& stateLua)
 {
    stateLua.new_usertype<View>(
       "View", sol::constructors<View()>(),
-      "Echo", &View::Echo
+      "Echo", &View::Echo,
+      "EchoHtml", &View::EchoHtml
    );
 }
 

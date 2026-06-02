@@ -390,6 +390,7 @@ public:
 
    Sql CreateSql(); ///< Create SQL object for current request, this can be used to build SQL queries
 
+   bool HasClientValue(std::string_view stringName); ///< Check if SQL object for current request has value for name
    std::variant<int64_t, std::string, double, bool, sol::lua_nil_t>
       GetClientValue( std::string_view stringName, std::optional<std::string> type_ = std::nullopt ); ///< Get value from SQL object for current request
    void AddClientValue( std::variant<std::string_view, sol::table> column_, std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> value_ ); ///< Add value to SQL object for current request
@@ -445,11 +446,20 @@ public:
    View(std::string* pstringSSRPage) : m_pstringSSRPage(pstringSSRPage) {}
 
    void Echo(sol::variadic_args variadicargs);
+   // -- <meta property="og:description" content="En guide till de bästa SEO-taggarna.">
+   // if sDescription and #sDescription > 0 then view::Html("meta", { property = "og:description", content = sDescription }) end
+
+   void EchoHtml(std::string stringElement, std::optional<const sol::table> tableAttributes = std::nullopt, std::optional<std::string> stringContent = std::nullopt);
 
 // ## attributes ----------------------------------------------------------------
 public:
    std::string m_stringView;
    std::string* m_pstringSSRPage = nullptr;
+
+// ## free functions --------------------------------------------------------
+public:
+   void AppendAttributes_s(std::string& html, const sol::table& table);
+
 };
 
 LUA_END
