@@ -1777,7 +1777,11 @@ std::pair<bool, std::string> CRENDERSql::ValidateColumnValues() const
          }
       }
 
-      if( bIsValueValid == false ) { return { false, std::format( "Invalid value for column: {}", itRow.cell_get_variant_view( eColumnFieldName ).as_string() ) }; }
+      if( bIsValueValid == false ) 
+      { 
+         std::string stringError = std::format("Invalid value - column: {}, value: {}", itRow.cell_get_variant_view(eColumnFieldName).as_string(), itRow.cell_get_variant_view(eColumnFieldValue).as_string());
+         return { false, stringError }; 
+      }
    }
    return { true, "" };
 }
