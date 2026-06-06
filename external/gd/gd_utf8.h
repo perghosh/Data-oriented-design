@@ -779,8 +779,8 @@ namespace gd {
          }
 
 
-         auto* puLast = puEnd;
-         while( puLast != puFirst )
+         auto* puLast = puEnd - 1;                                            assert(puLast >= puText); // check for proper order and realistic value
+         while( puLast > puFirst )
          {
             if( *puLast > ' ' ) break;
             puLast--;
@@ -855,7 +855,7 @@ namespace gd {
          return std::string(first_, last_);
       }
       inline std::string trim_left_to_string(const uint8_t* puText) { return trim_left_to_string(puText, puText + std::strlen((const char*)puText)); }
-      inline std::string trim_left_to_string(const std::string_view& stringText) { return trim_left_to_string((const uint8_t*)stringText.data(), (const uint8_t*)stringText.data() + stringText.length()); }
+      inline std::string trim_left_to_string(std::string_view stringText) { return trim_left_to_string((const uint8_t*)stringText.data(), (const uint8_t*)stringText.data() + stringText.length()); }
 
       inline std::string trim_right_to_string(const uint8_t* puText, const uint8_t* puEnd)
       {
@@ -863,11 +863,11 @@ namespace gd {
          return std::string(first_, last_);
       }
       inline std::string trim_right_to_string(const uint8_t* puText) { return trim_right_to_string(puText, puText + std::strlen((const char*)puText)); }
-      inline std::string trim_right_to_string(const std::string_view& stringText) { return trim_right_to_string((const uint8_t*)stringText.data(), (const uint8_t*)stringText.data() + stringText.length()); }
+      inline std::string trim_right_to_string(std::string_view stringText) { return trim_right_to_string((const uint8_t*)stringText.data(), (const uint8_t*)stringText.data() + stringText.length()); }
 
       // ## Quote string value
-      std::string quoted( const std::string_view& stringToQuote );
-      std::string quoted_if_text( const std::string_view& stringToQuote );
+      std::string quoted( std::string_view stringToQuote );
+      std::string quoted_if_text( std::string_view stringToQuote );
 
 
       // ## @API [tag: utf8, split] [description: split string into parts]

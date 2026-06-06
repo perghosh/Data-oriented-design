@@ -2774,7 +2774,7 @@ namespace gd {
 namespace gd {
    namespace utf8 {
 
-      std::string quoted( const std::string_view& stringToQuote )
+      std::string quoted( std::string_view stringToQuote )
       {
          std::string stringQuoted;
          stringQuoted += '\"';
@@ -2783,7 +2783,7 @@ namespace gd {
          return stringQuoted;
       }
 
-      std::string quoted_if_text( const std::string_view& stringToQuote )
+      std::string quoted_if_text( std::string_view stringToQuote )
       {
          bool bIsText = false;
          for( auto it = std::begin( stringToQuote ), itEnd = std::end( stringToQuote ); bIsText == false && it != itEnd; it++ )

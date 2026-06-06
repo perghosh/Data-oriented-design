@@ -789,7 +789,8 @@ void session::Read( uint64_t uRequestItems )
                // Extrahera endast den första IP-adressen om det är en kommaseparerad lista
                auto uCommaPos = stringRealIp.find(',');
                if( uCommaPos != std::string_view::npos ) { stringRealIp = stringRealIp.substr( 0, uCommaPos ); }
-
+               
+               stringRealIp = gd::utf8::trim_to_string(stringRealIp);          // trim stringRealIp if it contains leading or trailing whitespace
                m_argument.append( "ip", stringRealIp );
                return;
             }
@@ -798,6 +799,9 @@ void session::Read( uint64_t uRequestItems )
 
          auto endpoint_ = m_tcpstream.socket().remote_endpoint();
          auto stringIp = endpoint_.address().to_string();
+
+         
+         stringIp = gd::utf8::trim_to_string(stringIp);                       // trim stringIp if it contains leading or trailing whitespace
          m_argument.append( "ip", stringIp );
       }
       catch( const std::exception& e )
