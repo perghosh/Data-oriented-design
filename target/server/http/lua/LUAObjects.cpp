@@ -1446,6 +1446,14 @@ Sql Request::CreateSql()
    return Sql( m_psql );
 }
 
+
+/// @brief Get number of client values in current SQL object, this can be used to check if there is any client value before trying to get it
+uint64_t Request::GetClientValueCount()
+{
+   if( m_psql == nullptr ) { throw sol::error( "SQL object not initialized" ); }
+   return m_psql->Size();
+}
+
 /// @brief Check if client value exists in current SQL object, this can be used to check if value exists before trying to get it
 bool Request::HasClientValue(std::string_view stringName)
 {
@@ -1455,11 +1463,23 @@ bool Request::HasClientValue(std::string_view stringName)
 }
 
 /// @brief Get client value from current SQL object, this can be used to get value that client has sent, for example in insert or update statement
-std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> Request::GetClientValue( std::string_view stringName, std::optional<std::string> type_)
+std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> Request::GetClientValue(const std::variant<uint64_t, std::string_view>& row_, std::optional<std::string> type_)
 {
    if( m_psql == nullptr ) { throw sol::error( "SQL object not initialized" ); }
-   auto iRow = m_psql->FindRowForColumnName( stringName );                    // check if column name exists, if not exception is thrown
-   if( iRow < 0 ) { throw sol::error( std::format( "column name not found: {}", stringName ) ); }
+
+   int64_t iRow = -1;
+   if(row_.index() == 1)
+   {
+      std::string_view stringName = std::get<1>(row_);
+      iRow = m_psql->FindRowForColumnName(stringName);                        // check if column name exists, if not exception is thrown
+      if(iRow < 0) { throw sol::error(std::format("column name not found: {}", stringName)); }
+   }
+   else
+   {
+      uint64_t uRow = std::get<0>(row_);
+      if(uRow >= m_psql->Size()) { throw sol::error(std::format("index out of range: {}, max: {}", uRow, m_psql->Size() - 1)); }
+      iRow = (int)uRow;
+   }
 
    std::string_view stringValue = m_psql->GetValue( iRow );
    if( type_.has_value() == true )

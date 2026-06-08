@@ -306,7 +306,7 @@ std::pair<bool, std::string> CAPI_Base::PrepareStatement( std::variant<size_t, s
    if( Exists("xml") == true)                                                 // read "xml" values
    {
       pugi::xml_document* pdocument = reinterpret_cast<pugi::xml_document*>(GetArgument("xml").as_void());
-      auto result_ = sql_.ColumnsAdd(pdocument, {{"element", "where"}});
+      auto result_ = sql_.ColumnsAdd(pdocument, { {"element", "value,where"} });// @NOTE [tag: xml] [summary: add columns from XML document, using "value" for column values and "where" for conditions]
       if( result_.first == false ) { return result_; }
    }
 

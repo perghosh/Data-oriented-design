@@ -390,9 +390,10 @@ public:
 
    Sql CreateSql(); ///< Create SQL object for current request, this can be used to build SQL queries
 
+   uint64_t GetClientValueCount(); ///< Get the count of client values for the current request
    bool HasClientValue(std::string_view stringName); ///< Check if SQL object for current request has value for name
    std::variant<int64_t, std::string, double, bool, sol::lua_nil_t>
-      GetClientValue( std::string_view stringName, std::optional<std::string> type_ = std::nullopt ); ///< Get value from SQL object for current request
+      GetClientValue( const std::variant<uint64_t,std::string_view>& row_, std::optional<std::string> type_ = std::nullopt ); ///< Get value from SQL object for current request
    void AddClientValue( std::variant<std::string_view, sol::table> column_, std::variant<int64_t, std::string, double, bool, sol::lua_nil_t> value_ ); ///< Add value to SQL object for current request
    void RemoveClientValue( std::variant<std::string_view, sol::table> value_id_ ); ///< Remove value for selected id
 
