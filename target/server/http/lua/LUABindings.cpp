@@ -54,6 +54,7 @@ void RegisterRequest( sol::state& stateLua )
       "CreateSql", &Request::CreateSql,                                       // Create SQL object, will add sql values if request has them
       "GetApplication", &Request::GetApplication,                             // Get the application object associated with this request
       "GetClientValue", &Request::GetClientValue,                             // Get a client value by name, client values are passed from client
+      "GetClientValueCount", &Request::GetClientValueCount,                   // Get the number of client values, client values are passed from client
       "GetDocument", &Request::GetDocument,                                   // Get the document object associated with this request
       "GetDatabase", &Request::GetDatabase,                                   // Get the database object associated with this request
       "GetIpAddress", &Request::GetIpAddress,                                 // Get the IP address of the client making the request
