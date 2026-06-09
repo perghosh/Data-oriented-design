@@ -26,6 +26,7 @@
 
 class CApplication;
 class CDocument;
+namespace pugi { class xml_document; }
 
 
 /** @CLASS [tag: router, http] [description: Router class for http server] [name: CRouter]
@@ -137,9 +138,10 @@ public:
 // ## methods ------------------------------------------------------------------
 public:
    std::pair<bool, std::string> Parse();
-   std::pair<bool, std::string> Run( const std::vector<std::string_view>& vectorCommand, gd::argument::arguments& argumentsParameter );
    std::pair<bool, std::string> Run();
    std::pair<bool, std::string> Run( std::string_view stringQueryString, bool bInternal = false );
+   std::pair<bool, std::string> Run(const std::vector<std::string_view>& vectorpath, const gd::argument::arguments& argumentsParameter);
+   std::pair<bool, std::string> RunXml(pugi::xml_document* pxmldocument_);
 
    /// Check if router has result to deliver to client
    bool HasResult();

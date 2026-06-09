@@ -132,11 +132,18 @@ std::pair<bool, std::string> CRouter::Run()
    return Run(m_stringQueryString, true);
 }
 
-/** @CRITICAL [tag: router, command] [description: Execute command from parsed query string]
- * 
- * @brief 
- * @return 
- */
+ /**  -------------------------------------------------------------------------- Run
+  * @CRITICAL [tag: router, command, query] [summary: Execute command chain from query string]
+  * @brief Execute route commands parsed from `stringQueryString`.
+  *
+  * Parse command path and query arguments, optionally reuse fallback query arguments when
+  * `bInternal` is `false`, attach parsed body payload objects (`xml`/`json`) to arguments,
+  * and dispatch each command segment to its matching API handler.
+  *
+  * @param stringQueryString Route and query text to parse and execute.
+  * @param bInternal Internal-call marker that disables fallback argument parsing.
+  * @return std::pair<bool, std::string> `first` is success; `second` contains an error message on failure.
+  */
 std::pair<bool, std::string> CRouter::Run( std::string_view stringQueryString, bool bInternal )
 {                                                                                                  assert( stringQueryString.empty() == false );
    std::pair<bool, std::string> result_;
@@ -197,24 +204,32 @@ std::pair<bool, std::string> CRouter::Run( std::string_view stringQueryString, b
       // ### Check for echo, echo is used to return information to client and this is sent fron client 
       if( arguments_.exists("echo") == true ) { m_pdtoresponse->AddContext( "echo", arguments_["echo"].as_variant_view() ); }
 
+      result_ = Run(vectorPath, arguments_);                                   // run command with parsed path and arguments, this will execute the command chain and fill response data in m_pdtoresponse
+
+      /*
       while( uCommandIndex < vectorPath.size() )
       {
          std::string_view stringCommand = vectorPath[uCommandIndex];
-         if( stringCommand == "db" )                                             // database related commands, select, create, delete, open, close database
+         if( stringCommand == "db" )                                           // database related commands, select, create, delete, open, close database
          {
             result_ = ExecuteCommand_<CAPIDatabase>( vectorPath, arguments_, uCommandIndex );
          } 
-         else if( stringCommand == "sql" )                                       // sql commands are logic related to sql queries, adding, remove or edit sql queries
+         else if( stringCommand == "sql" )                                     // sql commands are logic related to sql queries, adding, remove or edit sql queries
          {
             result_ = ExecuteCommand_<CAPISql>( vectorPath, arguments_, uCommandIndex );
          }
-         else if( stringCommand == "sys" )                                       // system related commands, thing that affects the complete system
+         else if( stringCommand == "sys" )                                     // system related commands, thing that affects the complete system
          {
             result_ = ExecuteCommand_<CAPISystem>( vectorPath, arguments_, uCommandIndex );
          }
-         else if( stringCommand == "view" )
+         else if(stringCommand == "view")                                      // view related commands, like server side rendering, generating html, etc.
          {
             result_ = ExecuteCommand_<CAPIView>(vectorPath, arguments_, uCommandIndex);
+         }
+         else if(stringCommand == "xml")                                       // commands are packed in xml, this to enable more complex commands that can not be easily represented in url
+         {
+            // @TODO [tag: router, command, xml] [description: Implement XML related commands and their execution logic]
+            result_ = { false, "XML related commands are not implemented yet." };
          }
          else
          {
@@ -225,9 +240,116 @@ std::pair<bool, std::string> CRouter::Run( std::string_view stringQueryString, b
 
          if( result_.first == false ) { return result_; }
       }
+      */
+   }
+
+   return { true, "" };
+}
+
+std::pair<bool, std::string> CRouter::Run( const std::vector<std::string_view>& vectorPath, const gd::argument::arguments& arguments_ )
+{
+   unsigned uCommandIndex = 0;
+   std::pair<bool, std::string> result_(true, "");
+
+   while(uCommandIndex < vectorPath.size())
+   {
+      std::string_view stringCommand = vectorPath[uCommandIndex];
+      if(stringCommand == "db")                                           // database related commands, select, create, delete, open, close database
+      {
+         result_ = ExecuteCommand_<CAPIDatabase>(vectorPath, arguments_, uCommandIndex);
+      }
+      else if(stringCommand == "sql")                                     // sql commands are logic related to sql queries, adding, remove or edit sql queries
+      {
+         result_ = ExecuteCommand_<CAPISql>(vectorPath, arguments_, uCommandIndex);
+      }
+      else if(stringCommand == "sys")                                     // system related commands, thing that affects the complete system
+      {
+         result_ = ExecuteCommand_<CAPISystem>(vectorPath, arguments_, uCommandIndex);
+      }
+      else if(stringCommand == "view")                                      // view related commands, like server side rendering, generating html, etc.
+      {
+         result_ = ExecuteCommand_<CAPIView>(vectorPath, arguments_, uCommandIndex);
+      }
+      else if(stringCommand == "xml")                                       // commands are packed in xml, this to enable more complex commands that can not be easily represented in url
+      {
+         auto* pxmldocument_ = arguments_["xml"].get_pointer<pugi::xml_document>();
+         result_ = RunXml(pxmldocument_);
+      }
+      else
+      {
+         return { false, "Unknown command: " + std::string(stringCommand) };
+      }
+
+      uCommandIndex++;
+
+      if(result_.first == false) { return result_; }
+   }
+
+   return { true, "" };
+}
+
+std::pair<bool, std::string> CRouter::RunXml(pugi::xml_document* pxmldocument_)
+{                                                                                                  assert( pxmldocument_ != nullptr );
+
+   auto run_command_ = [this, pxmldocument_](pugi::xml_node& xmlnodeCommand) -> std::pair<bool, std::string>
+   {
+      // ## run command from xml node, this will execute the command and fill response data in m_pdtoresponse
+
+      // ### get the qs attribute from command node, this will be used as query string for command execution
+      pugi::xml_attribute xmlattributeQs = xmlnodeCommand.attribute("qs");
+      if(!xmlattributeQs) 
+      { 
+         xmlattributeQs = xmlnodeCommand.attribute("querystring"); 
+         if(!xmlattributeQs) { return { false, "No qs attribute found in command node" }; }
+      }
+
+      std::string_view stringQueryString = xmlattributeQs.value();
+      
+      auto [vectorPath, arguments_] = gd::parse::uri::parse_path_and_query(stringQueryString);
+      if(vectorPath.empty() == true) { return { false, std::string("No command found in query string: " + std::string(stringQueryString)) }; }
+
+      // check if command node has child nodes
+      if(xmlnodeCommand.first_child().empty() == false)
+      {
+         arguments_.append("xml", (void*)pxmldocument_);
+         arguments_.append("xml_command", (void*)&xmlnodeCommand);
+      }
+
+      auto result_ = Run(vectorPath, arguments_);                              // run command with parsed path and arguments, this will execute the command chain and fill response data in m_pdtoresponse
+
+      return { true, "" };
+   }; 
+
+   // ## Get all "commands" elements from xml, they are direct bellow the root node
+   pugi::xml_node xmlnodeRoot = pxmldocument_->document_element();
+   if(!xmlnodeRoot) { return { false, "No root element found" }; }
+
+   if(std::string(xmlnodeRoot.name()) == "commands")
+   {
+      for(pugi::xml_node xmlnodeCommand : xmlnodeRoot.children("command"))
+      {
+         auto result_ = run_command_(xmlnodeCommand);
+         if(result_.first == false) { return result_; }
+      }
+   }
+   else if(std::string(xmlnodeRoot.name()) == "command")
+   {
+      auto result_ = run_command_(xmlnodeRoot);
+      if(result_.first == false) { return result_; }
+   }
+   else // check for commands children
+   {
+      // multiple commands in root, this is to support sending multiple commands in one request without wrapping them in <commands> element
+      for(pugi::xml_node xmlnodeCommands : xmlnodeRoot.children("commands"))
+      {
+         for(pugi::xml_node xmlnodeCommand : xmlnodeCommands.children("command"))
+         {
+            auto result_ = run_command_(xmlnodeCommand);
+            if(result_.first == false) { return result_; }
+         }
+      }
    }
    
-
    return { true, "" };
 }
 
@@ -243,6 +365,11 @@ std::pair<bool, std::string> CRouter::Prepare()
    /// ### Prepare request data if sent with request
    if( m_stringBody.empty() == false )
    {
+#ifndef NDEBUG
+      const char* piBody_d = m_stringBody.data();
+#endif // NDEBUG
+
+
       if( IsRequestFormatXml() == true )
       {
          pugi::xml_document* pdocument = new pugi::xml_document;
@@ -271,13 +398,6 @@ std::pair<bool, std::string> CRouter::Prepare()
          SetResponseData( eRequestFormatJson, pjson );                        // store parsed json in response data to be used later in command execution
       }
    }
-
-   return { true, "" };
-}
-
-std::pair<bool, std::string> CRouter::Run( const std::vector<std::string_view>& vectorCommand, gd::argument::arguments& argumentsParameter )
-{
-   // ## run commands from vectorCommand with argumentsParameter
 
    return { true, "" };
 }

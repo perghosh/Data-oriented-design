@@ -299,6 +299,9 @@ struct tag_parse {};
 /// tag dispatcher used to copy data from one type to another 
 struct tag_copy {}; 
 
+/// tag dispatcher used to copy data from one type to another, only primary members. for facades and other objects the "children" members are not copied
+struct tag_copy_shallow {};
+
 /// methods used for some sort of debug related logic
 struct tag_debug {};
 

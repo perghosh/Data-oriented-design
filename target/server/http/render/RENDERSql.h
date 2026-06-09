@@ -123,6 +123,7 @@ public:
    CRENDERSql( const CAPIContext* papicontext, std::string_view stringDialect ): m_papicontext(papicontext), m_eSqlDialect( gd::sql::sql_get_dialect_g(stringDialect) ), m_tableField(8, gd::table::tag_full_meta{}) {}
    // copy
    CRENDERSql( const CRENDERSql& o ) { common_construct( o ); }
+   CRENDERSql( const CRENDERSql& o, gd::types::tag_copy_shallow) { common_construct( o, gd::types::tag_copy_shallow{} ); }
    CRENDERSql( CRENDERSql&& o ) noexcept { common_construct( std::move( o ) ); }
    // assign
    CRENDERSql& operator=( const CRENDERSql& o ) { common_construct( o ); return *this; }
@@ -132,6 +133,7 @@ public:
 private:
    // common copy
    void common_construct( const CRENDERSql& o );
+   void common_construct(const CRENDERSql& o, gd::types::tag_copy_shallow);
    void common_construct( CRENDERSql&& o ) noexcept;
 
 // @API [tag: operator]
@@ -260,6 +262,8 @@ public:
 
    std::string MetaGetTable() const;
 
+   CRENDERSql* Child_Clone();
+
    //std::string Dump() const;
 protected:
 // @API [tag: internal]
@@ -276,6 +280,8 @@ public:
    gd::table::arguments::table m_tableField;   ///< Values or Names used to produce query
    std::vector<gd::argument::arguments> m_vectorCondition; ///< arguments used for condition fields
    gd::argument::shared::arguments m_argumentsProperty; ///< arguments used for specific properties of query, this is used for example to store table name, where conditions, etc. as arguments instead of columns in table
+
+   std::vector< std::unique_ptr<CRENDERSql> > m_vectorSql; ///< for use when more than one query is executed.
 
    inline static gd::table::detail::columns* m_pcolumnsField_s = nullptr; ///< static columns for body
    static constexpr unsigned m_uMaxStringBufferLength_s = 16; ///< Maximum length for string names if not placed as arguments in table

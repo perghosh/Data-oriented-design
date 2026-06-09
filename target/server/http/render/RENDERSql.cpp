@@ -93,16 +93,35 @@ void CRENDERSql::common_construct( const CRENDERSql& o )
 {
    m_papicontext = o.m_papicontext;
    m_eSqlDialect = o.m_eSqlDialect;
+   m_iRowStatement = o.m_iRowStatement;
    m_tableField = o.m_tableField;
    m_argumentsProperty = o.m_argumentsProperty;
+   m_vectorCondition = o.m_vectorCondition;
+   for(const auto& p_ : o.m_vectorSql) {                                                           assert(p_);
+      m_vectorSql.push_back(std::make_unique<CRENDERSql>(*p_));
+   }
+}
+
+/// @brief common copy but do not copy child sql objects
+void CRENDERSql::common_construct(const CRENDERSql& o, gd::types::tag_copy_shallow)
+{
+   m_papicontext = o.m_papicontext;
+   m_eSqlDialect = o.m_eSqlDialect;
+   m_iRowStatement = o.m_iRowStatement;
+   m_tableField = o.m_tableField;
+   m_argumentsProperty = o.m_argumentsProperty;
+   m_vectorCondition = o.m_vectorCondition;
 }
 
 void CRENDERSql::common_construct( CRENDERSql&& o ) noexcept 
 {
-   m_papicontext = o.m_papicontext;
+   m_papicontext = std::exchange(o.m_papicontext, nullptr);
    m_eSqlDialect = o.m_eSqlDialect;
+   m_iRowStatement = o.m_iRowStatement;
    m_tableField = std::move(o.m_tableField);
    m_argumentsProperty = std::move(o.m_argumentsProperty);
+   m_vectorCondition = std::move(o.m_vectorCondition);
+   m_vectorSql = std::move(o.m_vectorSql);   
 }
 
 inline const CDocument* CRENDERSql::GetDocument() const
@@ -1149,12 +1168,28 @@ void CRENDERSql::FillColumn( enumColumnField eColumnField, gd::variant_view vari
    }
 }
 
+/** -------------------------------------------------------------------------- Query_AddFields
+ * @brief Adds fields from the internal field table to a SQL query object
+ *
+ * Iterates through all rows in `m_tableField` and adds each field to the query.
+ * Handles special part types (ORDER BY, LIMIT) and expressions separately. For regular
+ * fields, builds argument structures containing field name, value, and type before
+ * adding them to the query. Supports fields with or without explicit table references.
+ *
+ * @param pquery Pointer to the SQL query object where fields will be added
+ * @return std::pair<bool, std::string> Pair containing success status and error message
+ *         Returns {true, ""} on success, or {false, "error message"} on failure
+ *
+ * @code
+ * gd::sql::query querySelect;
+ * auto [bSuccess, stringError] = render.Query_AddFields(&querySelect);
+ * if(!bSuccess) { /* handle error: stringError * / }
+ *@endcode
+ */
 std::pair<bool, std::string> CRENDERSql::Query_AddFields( gd::sql::query* pquery )
 {
    std::array<std::byte, 256> buffer_;
    gd::argument::arguments arguments_( buffer_ );
-
-   //if( pquery->table_size() == 0 ) { pquery->table_add( "_default_table_" ); }
 
    std::vector< std::pair<uint32_t, gd::variant_view> > vectorValue;
    for( auto itRow = m_tableField.row_begin(); itRow != m_tableField.row_end(); ++itRow )
@@ -1797,6 +1832,14 @@ std::string CRENDERSql::MetaGetTable() const
       stringTable = pqueries->GetTable( uRowStatement );
    }
    return stringTable;
+}
+
+CRENDERSql* CRENDERSql::Child_Clone()
+{
+   auto p_ = std::make_unique<CRENDERSql>(*this, gd::types::tag_copy_shallow{});
+   CRENDERSql* prender_ = p_.get(); // copy construct
+   m_vectorSql.push_back( std::move(p_) ); // add to vector of child renders
+   return prender_;
 }
 
 
