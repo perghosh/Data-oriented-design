@@ -200,61 +200,107 @@ std::pair<bool, std::string> CQueries::Load_s( std::string_view stringFilename, 
    pugi::xml_parse_result xmlparseresult = xmldocument.load_file( stringFilename.data() );
    if( !xmlparseresult ) { return { false, "XML parsing error: " + std::string( xmlparseresult.description() ) }; }
 
-   std::string stringStatementText; // Temporary variable to hold statement text
-
-   // query statements nodes
-   for( pugi::xml_node xmlnodeStatements : xmldocument.document_element().children( "statements" ) )
-   {
-      for( pugi::xml_node xmlnodeStatement : xmlnodeStatements.children( "statement" ) )
+   auto read_statement_ = [](pugi::xml_node xmlnodeStatement, gd::argument::arguments& argumentsStatement) -> std::pair<bool, std::string>
       {
-         argumentsStatement.clear();
+         std::string stringStatementText; // Temporary variable to hold statement text
 
          // ## Attributes (always present) ...................................
-         argumentsStatement["uuid"] = xmlnodeStatement.attribute( "id" ).value();
-         argumentsStatement["name"] = xmlnodeStatement.attribute( "name" ).value();
-         argumentsStatement["type"] = xmlnodeStatement.attribute( "type" ).value();
-         argumentsStatement["format"] = xmlnodeStatement.attribute( "format" ).value();
-         argumentsStatement["table"] = xmlnodeStatement.attribute( "table" ).value();
-         argumentsStatement["description"] = xmlnodeStatement.attribute( "description" ).value();
+         std::string_view stringName = xmlnodeStatement.attribute("name").value();
+         if(stringName.empty() == false)
+         {
+            if(argumentsStatement.exists("prefix") == true)
+            {
+               std::string_view stringPrefix = argumentsStatement["prefix"].get<std::string_view>();
+               if(stringPrefix.empty() == false) { argumentsStatement["name"] = std::string(stringPrefix) + std::string(stringName); }
+               else { argumentsStatement["name"] = stringName; }
+            }
+            else { argumentsStatement["name"] = stringName; }
+         }
 
+         argumentsStatement["uuid"] = xmlnodeStatement.attribute("id").value();
+         
+         argumentsStatement["type"] = xmlnodeStatement.attribute("type").value();
+         argumentsStatement["format"] = xmlnodeStatement.attribute("format").value();
+         argumentsStatement["table"] = xmlnodeStatement.attribute("table").value();
+         argumentsStatement["description"] = xmlnodeStatement.attribute("description").value();
          // ## Handle 'ui' attribute or child element (optional) .............
-         pugi::xml_attribute xmlattrbuteUi = xmlnodeStatement.attribute( "ui" );
-         if( xmlattrbuteUi ) { argumentsStatement["ui"] = xmlattrbuteUi.value(); }
+         pugi::xml_attribute xmlattrbuteUi = xmlnodeStatement.attribute("ui");
+         if(xmlattrbuteUi) { argumentsStatement["ui"] = xmlattrbuteUi.value(); }
          else
          {  // ### fallback to <ui> child element ............................
-            pugi::xml_node xmlnodeUi = xmlnodeStatement.child( "ui" );
-            if( xmlnodeUi ) { argumentsStatement["ui"] = xmlnodeUi.child_value(); }
+            pugi::xml_node xmlnodeUi = xmlnodeStatement.child("ui");
+            if(xmlnodeUi) { argumentsStatement["ui"] = xmlnodeUi.child_value(); }
          }
-
          // ## Handle 'code' attribute or child element (optional) ...........
-         pugi::xml_attribute xmlattrbuteCode = xmlnodeStatement.attribute( "code" );
-         if( xmlattrbuteCode ) { argumentsStatement["code"] = xmlattrbuteCode.value(); }
+         pugi::xml_attribute xmlattrbuteCode = xmlnodeStatement.attribute("code");
+         if(xmlattrbuteCode) { argumentsStatement["code"] = xmlattrbuteCode.value(); }
          else
          {  // ### fallback to <code> child element
-            pugi::xml_node xmlnodeCode = xmlnodeStatement.child( "code" );
-            if( xmlnodeCode ) { argumentsStatement["code"] = xmlnodeCode.child_value(); }
+            pugi::xml_node xmlnodeCode = xmlnodeStatement.child("code");
+            if(xmlnodeCode) { argumentsStatement["code"] = xmlnodeCode.child_value(); }
          }
-
-         // ## Handle statement text (optional) ................................
-
-         pugi::xml_node xmlnodeStatementChild = xmlnodeStatement.child( "statement" );
-         if( xmlnodeStatementChild ) 
-         { 
-            stringStatementText = xmlnodeStatementChild.child_value(); 
+         // ## Handle statement text (optional) ..............................
+         pugi::xml_node xmlnodeStatementChild = xmlnodeStatement.child("statement");
+         if(xmlnodeStatementChild)
+         {
+            stringStatementText = xmlnodeStatementChild.child_value();
          }
          else
          {
             stringStatementText = xmlnodeStatement.text().get();              // get element text, this will include CDATA content if present
          }
-
-         if( stringStatementText.empty() == false )                           // if statement text is present, add it to arguments with key "statement"
-         { 
+         if(stringStatementText.empty() == false)                           // if statement text is present,
+         {
             argumentsStatement["statement"] = stringStatementText;
             stringStatementText.clear();
          }
 
-         auto result_ = statement_.add( argumentsStatement, { "ui", "code"});
-         if( result_.first == false ) { return { false, "Error adding statement: " + result_.second }; }
+         return { true, "" };
+      };
+
+
+   // ## Then query individual statement nodes that are not part of any group
+   for( pugi::xml_node xmlnodeStatements : xmldocument.document_element().children( "statements" ) )
+   {
+      // ## Query statement-group nodes first, these can contain multiple statements with shared attributes
+      for(pugi::xml_node xmlnodeGroup : xmlnodeStatements.children("statements-group"))
+      {
+         for(pugi::xml_node xmlnodeStatement : xmlnodeGroup.children("statement"))
+         {
+            argumentsStatement.clear();
+
+            std::string_view stringPrefix = xmlnodeGroup.attribute("prefix").value();
+            if(stringPrefix.empty() == false) { argumentsStatement["prefix"] = stringPrefix; } // set prefix
+
+            std::string_view stringGroup = xmlnodeGroup.attribute("name").value();
+            if(stringGroup.empty() == false) { argumentsStatement["group"] = stringGroup; } // set "group"
+
+            auto result_ = read_statement_(xmlnodeStatement, argumentsStatement);
+            if(result_.first == false) { return { false, "Error reading statement: " + result_.second }; }
+
+            result_ = statement_.add(argumentsStatement, { "ui", "code" });
+            if(result_.first == false) { return { false, "Error adding statement: " + result_.second }; }
+
+#ifndef NDEBUG
+            auto uLastRow_d = statement_.size() - 1;
+            auto parguments_d = statement_.get_arguments(uLastRow_d);
+            if(parguments_d != nullptr) {
+               [[maybe_unused]] auto uCount_d = parguments_d->count();
+            }
+#endif // NDEBUG
+         }
+      }
+
+
+      for( pugi::xml_node xmlnodeStatement : xmlnodeStatements.children( "statement" ) )
+      {
+         argumentsStatement.clear();
+
+         auto result_ = read_statement_(xmlnodeStatement, argumentsStatement);
+         if(result_.first == false) { return { false, "Error reading statement: " + result_.second }; }
+
+         result_ = statement_.add(argumentsStatement, { "ui", "code" });
+         if(result_.first == false) { return { false, "Error adding statement: " + result_.second }; }
 
 #ifndef NDEBUG
          auto uLastRow_d = statement_.size() - 1;
@@ -262,9 +308,7 @@ std::pair<bool, std::string> CQueries::Load_s( std::string_view stringFilename, 
          if( parguments_d != nullptr ) { 
             [[maybe_unused]] auto uCount_d = parguments_d->count();
          }
-   
 #endif // NDEBUG
-
       }
    }
    return { true, "" };

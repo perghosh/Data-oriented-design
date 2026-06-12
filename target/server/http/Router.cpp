@@ -187,8 +187,7 @@ std::pair<bool, std::string> CRouter::Run( std::string_view stringQueryString, b
          }
       }
 
-      unsigned uCommandIndex = 0;
-
+      // ## Prepare the response object for request, here result data is placed
       if( !m_pdtoresponse )
       {
          // ## double checked locking pattern to ensure that response object is created only once and is thread safe
@@ -205,42 +204,6 @@ std::pair<bool, std::string> CRouter::Run( std::string_view stringQueryString, b
       if( arguments_.exists("echo") == true ) { m_pdtoresponse->AddContext( "echo", arguments_["echo"].as_variant_view() ); }
 
       result_ = Run(vectorPath, arguments_);                                   // run command with parsed path and arguments, this will execute the command chain and fill response data in m_pdtoresponse
-
-      /*
-      while( uCommandIndex < vectorPath.size() )
-      {
-         std::string_view stringCommand = vectorPath[uCommandIndex];
-         if( stringCommand == "db" )                                           // database related commands, select, create, delete, open, close database
-         {
-            result_ = ExecuteCommand_<CAPIDatabase>( vectorPath, arguments_, uCommandIndex );
-         } 
-         else if( stringCommand == "sql" )                                     // sql commands are logic related to sql queries, adding, remove or edit sql queries
-         {
-            result_ = ExecuteCommand_<CAPISql>( vectorPath, arguments_, uCommandIndex );
-         }
-         else if( stringCommand == "sys" )                                     // system related commands, thing that affects the complete system
-         {
-            result_ = ExecuteCommand_<CAPISystem>( vectorPath, arguments_, uCommandIndex );
-         }
-         else if(stringCommand == "view")                                      // view related commands, like server side rendering, generating html, etc.
-         {
-            result_ = ExecuteCommand_<CAPIView>(vectorPath, arguments_, uCommandIndex);
-         }
-         else if(stringCommand == "xml")                                       // commands are packed in xml, this to enable more complex commands that can not be easily represented in url
-         {
-            // @TODO [tag: router, command, xml] [description: Implement XML related commands and their execution logic]
-            result_ = { false, "XML related commands are not implemented yet." };
-         }
-         else
-         {
-            return { false, "Unknown command: " + std::string(stringCommand) };
-         }
-
-         uCommandIndex++;
-
-         if( result_.first == false ) { return result_; }
-      }
-      */
    }
 
    return { true, "" };
@@ -288,6 +251,28 @@ std::pair<bool, std::string> CRouter::Run( const std::vector<std::string_view>& 
    return { true, "" };
 }
 
+
+/**  -------------------------------------------------------------------------- RunXml
+ * @brief Execute one or more route commands stored in an XML request document.
+ *
+ * Accept a parsed XML document in `pxmldocument_`, locate `<command>` entries,
+ * read each command query string from the `qs` or `querystring` attribute,
+ * convert that query into path segments and arguments, and dispatch the command
+ * through `Run( vectorPath, arguments_ )`.
+ *
+ * If a command node contains nested XML content, pointers to the full XML
+ * document and the current command node are attached to the command arguments
+ * so downstream handlers can inspect command-specific payload data.
+ *
+ * Supported layouts are:
+ * - a root `<commands>` element with multiple `<command>` children
+ * - a root `<command>` element
+ * - a wrapper root that contains one or more `<commands>` elements
+ *
+ * @param pxmldocument_ Parsed XML request document to execute.
+ * @return std::pair<bool, std::string> `first` is `true` on success; `second`
+ *         contains an error message if parsing or command execution fails.
+ */
 std::pair<bool, std::string> CRouter::RunXml(pugi::xml_document* pxmldocument_)
 {                                                                                                  assert( pxmldocument_ != nullptr );
 

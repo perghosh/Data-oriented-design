@@ -95,7 +95,7 @@ enum enumFormat {
 enum enumType { eTypeUnknown = 0, eTypeSelect = 1, eTypeInsert = 2, eTypeUpdate = 3, eTypeDelete = 4, eTypeAsk = 5, eTypeBatch = 6, eTypeMAX = 7 };
 
 /// Column indexes for fixed columns in statement table
-enum enumColumn { eColumnKey, eColumnUuid, eColumnName, eColumnType, eColumnFormat, eColumnRule, eColumnStatement, eColumnTable, eColumnDescription };
+enum enumColumn { eColumnKey, eColumnUuid, eColumnName, eColumnType, eColumnFormat, eColumnRule, eColumnStatement, eColumnTable, eColumnDescription, eColumnGroup };
 
 // @API [tag: construction]
 public:

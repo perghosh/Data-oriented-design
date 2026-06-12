@@ -44,16 +44,34 @@
 @PROJECT [name: scripting] [tag: script, lua, python, gdscript] [description: Script logic inside web server]
 
 @TASK [project: scripting] [tag: lua, ssr] [status: open] [user: per]
-[summary: lua in SSR]
-[description: run lua scripts in server-side rendering context]
-
-@TASK [project: scripting] [tag: lua, ssr] [status: open] [user: per]
 [summary: access variables in lua for ssr]
 [description: running lua scripts in server-side rendering that are able to access and manipulate variables]
 
 @TASK [project: scripting] [tag: lua, ssr, session] [status: open] [user: per]
 [summary: access session in lua for ssr]
 [description: running lua scripts in server-side rendering that are able to access and manipulate session data]
+
+
+*/
+
+
+/* ## multiple database command packed in xml
+@PROJECT [name: command-packing] [tag: xml] [description: Pack commands in xml]
+
+@TASK [project: command-packing] [tag: xml] [status: open] [user: per]
+[summary: multiple endoints inside xml]
+[description: add js method that takes raw string for endpoint and then object that is converted to string that mimics arguments]
+
+@TASK [project: command-packing] [tag: xml] [status: open] [user: per]
+[summary: multiple endoints inside xml]
+[description: run lua scripts in server-side rendering context]
+
+
+
+
+@TASK [project: command-packing] [tag: xml] [status: open] [user: per]
+[summary: delete poll and related data]
+[description: delete poll record and its related data using command packing]
 
 
 */

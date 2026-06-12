@@ -1299,7 +1299,7 @@ inline uint8_t* table::row_get_arguments_meta( uint64_t uRow ) const noexcept { 
  */
 inline void table::row_set_arguments_meta_null( uint64_t uRow ) noexcept {                         assert( uRow < m_uReservedRowCount ); assert( is_rowarguments() == true );
    gd::argument::shared::arguments* parguments_ = row_find_arguments_pointer( uRow );
-   *(intptr_t*)parguments_= 0; // set arguments pointer to null
+   if(parguments_ != nullptr) { *(intptr_t*)parguments_ = 0; } // set arguments pointer to null
 }
 
 

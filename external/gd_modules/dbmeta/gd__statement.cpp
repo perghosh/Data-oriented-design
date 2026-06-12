@@ -257,6 +257,7 @@ void statement::create_statement_s( gd::table::arguments::table& tableStatement 
       { "rstring",  0, "statement"   }, // raw data for statement, this is used to store the actual sql statement template, this can also be used to store other types of statements if needed
       { "rstring",  0, "table"   }, //  // involved tables in statement if needed, description for how to use this column is not defined yet, for now single table name works
       { "rstring",  0, "description" }, // optional description for statement, this can be used to provide additional information about statement, like what it does, or how to use it
+      { "rstring",  0, "group"       }, // optional group for statement, this can be used to group statements together, like by functionality or by module, this is just a placeholder for future use
    }, gd::table::tag_type_name{});
    tableStatement.prepare();
 }

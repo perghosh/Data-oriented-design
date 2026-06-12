@@ -319,10 +319,10 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
    gd::argument::arguments argumentsOptional( buffer_ );
    std::string stringSelect;
 
-   CDocument* pdocument = GetDocument();                                      assert(pdocument != nullptr && "no document");
-   auto* pdatabase = GetContext()->GetDatabase();                             assert(pdatabase != nullptr && "no database connection");
+   CDocument* pdocument = GetDocument();                                                           assert(pdocument != nullptr && "no document");
+   auto* pdatabase = GetContext()->GetDatabase();                                                  assert(pdatabase != nullptr && "no database connection");
 
-   std::string stringQuery = GetNextArgument( "query" ).as_string();          // get query to execute
+   std::string stringQuery = GetNextArgument( "query" ).as_string();          // get query name to find query to execute
    if(stringQuery.empty() == false)                                           // if query statement is to be used
    {
       auto result_ = PrepareStatement( stringQuery, stringSelect );
@@ -395,8 +395,6 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
 
 std::pair<bool, std::string> CAPIDatabase::Execute_Ask()
 {
-   //gd::database::database_i* pdatabaseOpen = nullptr;
-
    CDocument* pdocument = GetDocument();                                                           if( pdocument == nullptr ) { return { false, GetLastError() }; }
 
    auto* pdatabase = pdocument->GetDatabase();
@@ -468,7 +466,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
       std::string stringTable = GetQSArguments()["table"].as_string(); // get table from query string
       if( stringTable.empty() == false ) { argumentsOptions["table"] = stringTable; }
 
-      argumentsOptions["form"] = "attribute";
+      argumentsOptions["form"] = "attribute";                                  // insert values where attribute name match field name and attribute value is the value
       gd::argument::arguments argumentsReturn;
       argumentsReturn.reserve( 128 );
       pugi::xml_document* pxmldocument = GetQSArguments()["xml"].get_pointer<pugi::xml_document>(); // get pointer to xml pointer that is prepared
@@ -545,15 +543,28 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Update()
  */
 std::pair<bool, std::string> CAPIDatabase::Execute_Delete()
 {
-   CDocument* pdocument = GetDocument();                                      assert(pdocument != nullptr && "no document");
-   auto* pdatabase = GetContext()->GetDatabase();                             assert(pdatabase != nullptr && "no database connection");
-
-   // ## Prepare SQL statement ................................................
    std::string stringExecute;
-   auto result_ = Sql_Prepare(stringExecute);
-   if( result_.first == false ) { return result_; }
+   CDocument* pdocument = GetDocument();                                                           assert(pdocument != nullptr && "no document");
+   auto* pdatabase = GetContext()->GetDatabase();                                                  assert(pdatabase != nullptr && "no database connection");
 
-   result_ = Database_Execute( pdatabase, stringExecute );
+   std::string stringQuery = GetNextArgument("query").as_string();            // get query name to find query to execute
+   if(stringQuery.empty() == false)                                           // if query then process it
+   {
+      if(stringQuery[0u] == '#') { stringQuery.erase(0, 1); }
+      auto result_ = PrepareStatement(stringQuery, stringExecute);
+      if(result_.first == false)
+      {                                                                                            LOG_ERROR("PrepareStatement for insert query " & stringQuery & " returned error: " & result_.second);
+         return result_;
+      }
+   }
+   else
+   {
+      // ## Prepare SQL statement ............................................
+      auto result_ = Sql_Prepare(stringExecute);
+      if(result_.first == false) { return result_; }
+   }
+                                                                                                   assert(stringExecute.empty() == false);
+   auto result_ = Database_Execute( pdatabase, stringExecute );
    if( result_.first == false ) { return result_; }
    
    // ## Find out number of rows affected ....................................
