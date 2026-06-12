@@ -320,6 +320,12 @@ std::pair<bool, std::string> CAPI_Base::PrepareStatement( std::variant<size_t, s
    {
       auto stringValues = GetNextArgument( "values" ).as_string();
       if( stringValues.empty() == false ) { sql_.ColumnAddValues( stringValues, gd::types::tag_json{}); }
+
+      if(Exists("table") == true)
+      {
+         auto stringTable = GetNextArgument("table").as_string();
+         if(stringTable.empty() == false) { sql_.FillColumn(CRENDERSql::eColumnFieldTable, stringTable); }
+      }
    }
 
    // @NOTE [tag: order, limit] [summary: prepare to set order and limit for SQL query]

@@ -1,5 +1,12 @@
 # API folder
 
+
+## API arguments
+- `values` - List of key-value pairs. Key match field name and may have
+   multiple values. These are used to replace template arguments or generate sql.
+   Format for key: `TPoll.PollK` = table and column, `PollK` = column only.
+- `table` - Name of the table to operate on. When most values are connected to a single table, this is used to avoid repeat.
+
 ## CAPIDatabase
 Simple logic for handling CAPIDatabase requests. This may be used to work with from terminals.
 You do not need to have a user and are able to work with databases directly.
@@ -31,3 +38,4 @@ System related APIs. This are things like work with internal data inside webserv
 - `sys/session/exists` — Check if a session exists.
 - `sys/session/delete` — Delete a session.
 - `sys/session/list` — List active sessions.
+****

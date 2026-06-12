@@ -2,6 +2,7 @@
 
 /*
 
+
 */
 
 #pragma once
@@ -27,13 +28,24 @@
 class CDocument;
 class CAPIContext;
 
-/** @CLASS [name: CRENDERSql] [description:  ]
- * \brief
+/** @CLASS [name: CRENDERSql] [description: Builds dialect-aware SQL from structured column/condition metadata.]
+ * \brief SQL query renderer used to prepare, validate, and generate statements.
  *
+ * Collects field values, conditions, expressions, and modifiers in internal argument/table storage,
+ * then renders SQL for supported query types such as `select`, `insert`, `update`, `delete`, and `count`.
+ * 
+ * `gd::sql::query` Are used to generate sql. Stored metadata and value data is transferred to query 
+ * object and based on that query object sql statement is generated.
+ * 
+ * Lifecycle:
+ * 1. `Initialize()`
+ * 2. Add columns/conditions/modifiers
+ * 3. `Prepare()` and `Validate()`
+ * 4. `GetQuery()` or `ToSql*()`
  *
- *
- \code
- \endcode
+ * \code
+ * // Typical flow: Initialize -> ColumnAdd/ConditionAdd -> Prepare/Validate -> GetQuery/ToSql*
+ * \endcode
  */
 class CRENDERSql
 {
@@ -55,11 +67,14 @@ public:
       enumPartType_Max
    };
 
+   /**
+    * @brief State of SQL rendering process, used to control flow of operations and make sure that operations are called in correct order
+    */
    enum enumSqlRenderState
    {
-      eSqlRenderStateInitial,
-      eSqlRenderStatePrepared,
-      eSqlRenderStateValidated,
+      eSqlRenderStateInitial,    ///< initial state, no data is added to render
+      eSqlRenderStatePrepared,   ///< state after data is prepared
+      eSqlRenderStateValidated,  ///< state after data is validated
       enumSqlRenderState_Max
    };
 
