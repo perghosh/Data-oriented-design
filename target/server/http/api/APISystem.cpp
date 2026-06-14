@@ -141,6 +141,13 @@ std::pair<bool, std::string> CAPISystem::Execute()
          return { false, "unknown database command: " + std::string(stringCommand) };
       }
 
+      // ## Set command name if result and echo if sent from client
+      if(Objects().Empty() == false)
+      {
+         Objects()["command"] = stringCommand;
+         if(Exists("echo") == true) { Objects()["echo"] = GetQSArguments()["echo"].as_string_view(); }
+      }
+
       SetCommandIndex( uIndex );
 
       if( result_.first == false ) { return result_; }

@@ -119,7 +119,12 @@ std::pair<bool, std::string> CAPIDatabase::Execute()
       [[maybe_unused]] auto uObjectCount_d = Objects().Size();
 #endif // NDEBUG
       
-      if( Objects().Empty() == false ) { Objects()["command"] = stringCommand; }
+      // ## Set command name if result and echo if sent from client
+      if( Objects().Empty() == false )
+      { 
+         Objects()["command"] = stringCommand;
+         if(Exists("echo") == true) { Objects()["echo"] = GetQSArguments()["echo"].as_string_view(); }
+      }
    }
 
    SetCommandIndex( static_cast<unsigned>( uIndex ) );

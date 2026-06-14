@@ -199,9 +199,6 @@ std::pair<bool, std::string> CRouter::Run( std::string_view stringQueryString, b
             m_pdtoresponse->Initialize();
          }
       }
-      
-      // ### Check for echo, echo is used to return information to client and this is sent fron client 
-      if( arguments_.exists("echo") == true ) { m_pdtoresponse->AddContext( "echo", arguments_["echo"].as_variant_view() ); }
 
       result_ = Run(vectorPath, arguments_);                                   // run command with parsed path and arguments, this will execute the command chain and fill response data in m_pdtoresponse
    }
