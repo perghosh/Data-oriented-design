@@ -2203,9 +2203,9 @@ struct iterator_named
    // Dereference operators - returns name-value pair
    value_type operator*() const {                                                                  assert(m_parguments->verify_d(buffer_offset()));
       auto position_ = buffer_offset();
-      auto name = ARGUMENTS::is_name_s(position_) ? ARGUMENTS::get_name_s(position_) : std::string_view{};
-      auto arg = ARGUMENTS::get_argument_s(position_);
-      return std::make_pair(name, arg);
+      auto stringName = ARGUMENTS::is_name_s(position_) ? ARGUMENTS::get_name_s(position_) : std::string_view{};
+      auto value_ = ARGUMENTS::get_argument_s(position_);
+      return std::make_pair(stringName, value_);
    }
 
    // For pointer-like access

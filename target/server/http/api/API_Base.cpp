@@ -165,7 +165,7 @@ gd::variant_view CAPI_Base::GetNextArgument( std::string_view stringName )
    gd::variant_view value_; // value for this occurrence of the argument
 
    size_t uIndex = GetArgumentIndex( stringName );                            // get the current use-count for this argument name
-   if( uIndex == 0 ) value_ = GetArgument( stringName );                      // first occurrence: look up by name only
+   if( uIndex == 0 ) value_ = QS_GetArgument( stringName );                   // first occurrence: look up by name only
    else              value_ = ( *this )[{stringName, uIndex}];                // subsequent occurrence: look up by name and index (e.g. "xml", "xml[2]", etc.)
 
    if( value_.is_null() == false )
@@ -219,6 +219,17 @@ size_t CAPI_Base::GetArgumentIndex( const std::string_view& stringFirst,
    return uCount;
 }
 
+/** -------------------------------------------------------------------------- CAPI_Base::Exists
+ * @brief Check whether a named argument exists in the per-request query string.
+ *
+ * @param stringName  Argument name to test.
+ * @return            True if present in m_argumentsQS.
+ */
+bool CAPI_Base::QS_Exists(const std::string_view& stringName) const
+{
+   return m_argumentsQS.exists(stringName);
+}
+
 /** -------------------------------------------------------------------------- CAPI_Base::IncrementArgumentCounter
  * @brief Increment the internal use-count for a named argument.
  *
@@ -242,18 +253,6 @@ void CAPI_Base::IncrementArgumentCounter( std::string_view stringName )
       m_argumentsArgumentCount.set( stringName, uCount );
    }
 }
-
-/** -------------------------------------------------------------------------- CAPI_Base::Exists
- * @brief Check whether a named argument exists in the per-request query string.
- *
- * @param stringName  Argument name to test.
- * @return            True if present in m_argumentsQS.
- */
-bool CAPI_Base::Exists( const std::string_view& stringName ) const
-{
-   return m_argumentsQS.exists( stringName );
-}
-
 
 /** -------------------------------------------------------------------------- CAPI_Base::PrepareStatement
  * @brief Resolve, preprocess, and prepare a SQL statement, then append it to `stringSelectAddTo`.
@@ -303,25 +302,25 @@ std::pair<bool, std::string> CAPI_Base::PrepareStatement( std::variant<size_t, s
    CRENDERSql sql_( m_pcontext, uStatementRow );
    sql_.Initialize();
 
-   if( Exists("xml") == true)                                                 // read "xml" values
+   if( QS_Exists("xml") == true)                                                 // read "xml" values
    {
-      pugi::xml_document* pdocument = reinterpret_cast<pugi::xml_document*>(GetArgument("xml").as_void());
+      pugi::xml_document* pdocument = reinterpret_cast<pugi::xml_document*>(QS_GetArgument("xml").as_void());
       auto result_ = sql_.ColumnsAdd(pdocument, { {"element", "value,where"} });// @NOTE [tag: xml] [summary: add columns from XML document, using "value" for column values and "where" for conditions]
       if( result_.first == false ) { return result_; }
    }
 
-   if( Exists( "columns" ) == true )                                          // read "columns"
+   if( QS_Exists( "columns" ) == true )                                          // read "columns"
    {
       auto stringColumns = GetNextArgument( "columns" ).as_string();
       if( stringColumns.empty() == false ) { sql_.ColumnsAdd( stringColumns, gd::types::tag_json{}); }
    }
 
-   if( Exists( "values" ) == true )                                           // read "values" 
+   if( QS_Exists( "values" ) == true )                                           // read "values" 
    {
       auto stringValues = GetNextArgument( "values" ).as_string();
       if( stringValues.empty() == false ) { sql_.ColumnAddValues( stringValues, gd::types::tag_json{}); }
 
-      if(Exists("table") == true)
+      if(QS_Exists("table") == true)
       {
          auto stringTable = GetNextArgument("table").as_string();
          if(stringTable.empty() == false) { sql_.FillColumn(CRENDERSql::eColumnFieldTable, stringTable); }
@@ -329,7 +328,7 @@ std::pair<bool, std::string> CAPI_Base::PrepareStatement( std::variant<size_t, s
    }
 
    // @NOTE [tag: order, limit] [summary: prepare to set order and limit for SQL query]
-   if( Exists( "modifiers" ) == true )                                           // read query "modifiers" for distinct, order and limit
+   if( QS_Exists( "modifiers" ) == true )                                           // read query "modifiers" for distinct, order and limit
    {
       auto stringModifiers = GetNextArgument( "modifiers" ).as_string();
       if( stringModifiers.empty() == false )

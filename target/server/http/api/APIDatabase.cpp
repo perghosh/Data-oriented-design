@@ -123,7 +123,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute()
       if( Objects().Empty() == false )
       { 
          Objects()["command"] = stringCommand;
-         if(Exists("echo") == true) { Objects()["echo"] = GetQSArguments()["echo"].as_string_view(); }
+         if(QS_Exists("echo") == true) { Objects()["echo"] = QS_GetArguments()["echo"].as_string_view(); }
       }
    }
 
@@ -138,19 +138,19 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Execute()
    std::array<std::byte, 128> buffer_;
    gd::argument::arguments argumentsOptions(buffer_);
 
-   std::string stringName = GetQSArguments()["name"].as_string();
-   std::string stringFormat = GetQSArguments()["format"].as_string();
+   std::string stringName = QS_GetArguments()["name"].as_string();
+   std::string stringFormat = QS_GetArguments()["format"].as_string();
    CDocument* pdocument = GetDocument();
 
-   if( Exists( "xml" ) )
+   if( QS_Exists( "xml" ) )
    {
-      std::string stringTable = GetQSArguments()["table"].as_string();
+      std::string stringTable = QS_GetArguments()["table"].as_string();
       if( stringTable.empty() == false ) { argumentsOptions["table"] = stringTable; }
 
       argumentsOptions["form"] = "attribute";
       gd::argument::arguments argumentsReturn;
       argumentsReturn.reserve( 64 );
-      pugi::xml_document* pxmldocument = GetQSArguments()["xml"].get_pointer<pugi::xml_document>(); // get pointer to xml pointer that is prepared
+      pugi::xml_document* pxmldocument = QS_GetArguments()["xml"].get_pointer<pugi::xml_document>(); // get pointer to xml pointer that is prepared
       XML_BulkExecute( argumentsOptions, pxmldocument, pdocument, &argumentsReturn );
       Objects().Add( argumentsReturn );
    }
@@ -343,7 +343,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
    gd::com::pointer<gd::database::cursor_i> pcursor;
    pdatabase->get_cursor( &pcursor );
 #if(TARGET_COMPILE_MODE_ & 1)                                                 // @DEBUG [tag: debug] [summary: if compiled as debug it is possible to return select statement as argument for debugging purposes]
-   auto debug_ = GetArgument("debug");
+   auto debug_ = QS_GetArgument("debug");
    if(debug_.is_true() == true)
    {
       gd::argument::arguments* parguments_ = new gd::argument::arguments(); parguments_->reserve(128);
@@ -462,19 +462,19 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
    }
 
    // ## check for statement logic and xml data .............................
-   else if( Exists( "xml" ) )
+   else if( QS_Exists( "xml" ) )
    {
       std::array<std::byte, 128> buffer_;
       gd::argument::arguments argumentsOptions(buffer_);
       argumentsOptions["query"] = stringQuery;
 
-      std::string stringTable = GetQSArguments()["table"].as_string(); // get table from query string
+      std::string stringTable = QS_GetArguments()["table"].as_string(); // get table from query string
       if( stringTable.empty() == false ) { argumentsOptions["table"] = stringTable; }
 
       argumentsOptions["form"] = "attribute";                                  // insert values where attribute name match field name and attribute value is the value
       gd::argument::arguments argumentsReturn;
       argumentsReturn.reserve( 128 );
-      pugi::xml_document* pxmldocument = GetQSArguments()["xml"].get_pointer<pugi::xml_document>(); // get pointer to xml pointer that is prepared
+      pugi::xml_document* pxmldocument = QS_GetArguments()["xml"].get_pointer<pugi::xml_document>(); // get pointer to xml pointer that is prepared
       auto result_ = XML_BulkExecute( argumentsOptions, pxmldocument, pdocument, &argumentsReturn );if( result_.first == false ) { return result_; }
       Objects().Add( argumentsReturn );
 
@@ -600,12 +600,12 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql, g
    std::string stringQueryTemplate;
    auto uDialect = pdocument->DATABASE_Get()->GetDialect(); // get database dialect to use for sql building
 
-   if( Exists( "xml" ) == true )
+   if( QS_Exists( "xml" ) == true )
    {
       auto stringCommand = GetCommand();                                      // get current command being processed, this is the command at m_uCommandIndex and should match sql statements like select, insert, update or delete
       CRENDERSql sql_( GetContext(), gd::sql::enumSqlDialect(uDialect));
       sql_.Initialize();
-      pugi::xml_document* pdocument = reinterpret_cast<pugi::xml_document*>( GetArgument("xml").as_void() );
+      pugi::xml_document* pdocument = reinterpret_cast<pugi::xml_document*>( QS_Get("xml").as_void() );
 
       // ## Query values in pdocument xml using xpath ........................
       pugi::xpath_node_set xpathnodesetValues = pdocument->select_nodes("//values");
@@ -643,13 +643,13 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql, g
 
       IncrementArgumentCounter( "xml" );                                     // increamet index for xml argument to support multiple xml arguments 
    }
-   else if( Exists( "json" ) == true )
+   else if( QS_Exists( "json" ) == true )
    {
 
    }
-   else if( Exists("values") == true )
+   else if( QS_Exists("values") == true )
    {
-      std::string stringValues = GetArgument("values").as_string();
+      std::string stringValues = QS_Get("values").as_string();
       gd::argument::shared::arguments argumentsValues;
       argumentsValues.reserve( 128 );
       auto result_ = gd::parse::json::parse_shallow_object_g( stringValues, argumentsValues, false );
@@ -667,9 +667,9 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql, g
 
       sqlbuilder = argumentsValues;
    }
-   else if( Exists( "record" ) == true )
+   else if( QS_Exists( "record" ) == true )
    {
-      std::string stringRecord = GetArgument("record").as_string();
+      std::string stringRecord = QS_Get("record").as_string();
       IncrementArgumentCounter( "record" );                                   // @TODO: this is a bit hacky way to support multiple query arguments but it works for now, can be improved (refactor to one single method)
 
       if( GetCommand() == "insert" )
@@ -734,7 +734,7 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql, g
    if( sqlbuilder.IsSqlReady() == false )
    {
       auto uIndex = GetArgumentIndex( "query" );
-      if( uIndex == 0 ) stringQueryTemplate = GetArgument("query").as_string();
+      if( uIndex == 0 ) stringQueryTemplate = QS_GetArgument("query").as_string();
       else { stringQueryTemplate = (*this)[{"query", uIndex}].as_string(); }
       IncrementArgumentCounter( "query" );                                    // @TODO: this is a bit hacky way to support multiple query arguments but it works for now, can be improved (refactor to one single method)
    

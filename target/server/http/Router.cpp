@@ -298,8 +298,7 @@ std::pair<bool, std::string> CRouter::RunXml(pugi::xml_document* pxmldocument_)
       }
 
       auto result_ = Run(vectorPath, arguments_);                              // run command with parsed path and arguments, this will execute the command chain and fill response data in m_pdtoresponse
-
-      return { true, "" };
+      return result_;
    }; 
 
    // ## Get all "commands" elements from xml, they are direct bellow the root node

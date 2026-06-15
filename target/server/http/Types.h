@@ -178,6 +178,11 @@ struct Objects
    void AddAttribute( const Attribute& attribute ) { m_vectorAttributes.push_back( attribute ); }
    void AddAttribute( Attribute&& attribute ) { m_vectorAttributes.push_back( std::move(attribute) ); }
 
+   void SetAttribute(std::string_view stringName, gd::variant_view value_ ) { 
+      Object& object_ = m_vectorObjects[GetLastIndex()];
+      object_.arguments().set(stringName, value_);
+   }
+
    const Attribute* GetAttribute( size_t uIndex ) const;
 
 

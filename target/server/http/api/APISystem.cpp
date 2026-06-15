@@ -144,8 +144,9 @@ std::pair<bool, std::string> CAPISystem::Execute()
       // ## Set command name if result and echo if sent from client
       if(Objects().Empty() == false)
       {
-         Objects()["command"] = stringCommand;
-         if(Exists("echo") == true) { Objects()["echo"] = GetQSArguments()["echo"].as_string_view(); }
+         //Objects()["command"] = stringCommand;
+         Objects().SetAttribute("command", gd::variant_view(stringCommand));                    // set command name that is added to response
+         if(QS_Exists("echo") == true) { Objects()["echo"] = QS_GetArguments()["echo"].as_string_view(); }
       }
 
       SetCommandIndex( uIndex );
@@ -266,11 +267,11 @@ std::pair<bool, std::string> CAPISystem::Execute_FileExists()
  */
 std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryAdd()
 {
-   std::string stringName = Get("name").as_string();      // Name for query
-   std::string stringType = Get("type").as_string();      // type of query
-   std::string stringFormat = Get("format").as_string();  // query format, type of format information is stored in like text, xml, json etc
-   std::string stringQuery = Get("query").as_string();    // query
-   if( stringQuery.empty() == true ) { stringQuery = Get("statement").as_string(); }
+   std::string stringName = QS_Get("name").as_string();      // Name for query
+   std::string stringType = QS_Get("type").as_string();      // type of query
+   std::string stringFormat = QS_Get("format").as_string();  // query format, type of format information is stored in like text, xml, json etc
+   std::string stringQuery = QS_Get("query").as_string();    // query
+   if( stringQuery.empty() == true ) { stringQuery = QS_Get("statement").as_string(); }
 
    CDocument* pdocument = GetDocument();
    META::CQueries* pqueries = pdocument->QUERIES_Get();                                            assert( pqueries );
@@ -300,8 +301,8 @@ std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryAdd()
  */
 std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryDelete()
 {
-   std::string stringId = Get("id").as_string();
-   std::string stringKey = Get("key").as_string();
+   std::string stringId = QS_Get("id").as_string();
+   std::string stringKey = QS_Get("key").as_string();
 
    CDocument* pdocument = GetDocument();
    META::CQueries* pqueries = pdocument->QUERIES_Get();                                            assert( pqueries );
@@ -328,14 +329,14 @@ std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryCount()
 
    uint64_t uCount = pqueries->Size();
 
-   std::string stringName = Get("name").as_string();
+   std::string stringName = QS_Get("name").as_string();
    if( stringName.empty() == false )
    {
       uCount = pqueries->Size();
    }
    else
    {
-      std::string stringUuid = Get("uuid").as_string();
+      std::string stringUuid = QS_Get("uuid").as_string();
       if( stringUuid.empty() == false )
       {
          gd::types::uuid uuidValue;
@@ -365,7 +366,7 @@ std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryCount()
  */
 std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryExists()
 {
-   std::string stringName = Get("name").as_string();
+   std::string stringName = QS_Get("name").as_string();
 
    if( stringName.empty() == true ) { return { false, "Missing parameter 'name'" }; }
 
@@ -407,8 +408,8 @@ std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryExists()
 std::pair<bool, std::string> CAPISystem::Execute_MetadataDBField()
 {
    using namespace gd::table::dto;
-   std::string stringTable = Get( "table" ).as_string();                      // Table name field belongs to
-   std::string stringField = Get( "field" ).as_string();                      // Return information about field or fields if comma separated list
+   std::string stringTable = QS_Get( "table" ).as_string();                   // Table name field belongs to
+   std::string stringField = QS_Get( "field" ).as_string();                   // Return information about field or fields if comma separated list
 
    auto vectorField = gd::utf8::split( std::string_view( stringField ), ',' );
 
@@ -484,7 +485,7 @@ std::pair<bool, std::string> CAPISystem::Execute_SessionAdd()
 /// @brief remove session by value or by index
 std::pair<bool, std::string> CAPISystem::Execute_SessionDelete()
 {
-   if( Exists("session") == true )
+   if( QS_Exists("session") == true )
    {
       std::string stringSession = m_argumentsQS["session"].as_string(); // get session to delete
       
@@ -500,9 +501,9 @@ std::pair<bool, std::string> CAPISystem::Execute_SessionDelete()
       
       pdocument->SESSION_Delete( uuid );
    }
-   else if( Exists("index") == true )
+   else if( QS_Exists("index") == true )
    {
-      uint64_t uIndex = m_argumentsQS["index"].as_uint64();
+      uint64_t uIndex = QS_Get("index").as_uint64();
       
       CDocument* pdocument = GetDocument();
       

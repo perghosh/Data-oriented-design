@@ -70,19 +70,21 @@ std::pair<bool, std::string> CDTOResponse::AddTransfer( Types::Objects* pobjects
       // ## Check for default values in arguments ...........................
 
       const auto& arguments_ = object_.arguments();
-      for( const auto [key_, value_] : arguments_.named() )
+      if( arguments_.empty() == false )
       {
-         if( key_ == "command" || key_ == "echo" )
-         {                                                                                         assert( value_.length() < 12 );
-            m_tableBody.cell_set( uRow, key_, value_.as_string_view() );
-         }
-         else
+         for( const auto [key_, value_] : arguments_.named() )
          {
-            // ## @OPTIMIZED [tag: if] [description: check if value is string and use string_view to avoid unnecessary copy]
-            if( value_.is_string() == true ) { m_tableBody.cell_set_argument( uRow, key_, value_.as_string_view() ); }
-            else { m_tableBody.cell_set_argument( uRow, key_, value_.as_string() ); }
+            if( key_ == "command" || key_ == "echo" )
+            {                                                                                      assert( value_.length() < 12 );
+               m_tableBody.cell_set( uRow, key_, value_.as_string_view() );
+            }
+            else
+            {
+               // ## @OPTIMIZED [tag: if] [description: check if value is string and use string_view to avoid unnecessary copy]
+               if( value_.is_string() == true ) { m_tableBody.cell_set_argument( uRow, key_, value_.as_string_view() ); }
+               else { m_tableBody.cell_set_argument( uRow, key_, value_.as_string() ); }
+            }
          }
-
       }
 
    }

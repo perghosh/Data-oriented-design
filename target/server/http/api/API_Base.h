@@ -383,9 +383,14 @@ public:
 
    // @API [tag: parameter] [description: Accessors for per-request parameters parsed from the URL query string]
 
-   gd::variant_view Get( std::string_view stringName ) const { return m_argumentsQS.get_argument( stringName ); }
+   /// Get the first value for parameter name from the URL query string; returns empty variant if not found
+   gd::variant_view QS_Get( std::string_view stringName ) const { return m_argumentsQS.get_argument( stringName ); }
+   gd::variant_view QS_GetArgument( std::string_view stringName ) const { return m_argumentsQS.get_argument( stringName ); }
+   /// True if the named argument exists in m_argumentsQS
+   bool QS_Exists(const std::string_view& stringName) const;
+   /// Get all arguments parsed from the URL query string
+   const gd::argument::arguments& QS_GetArguments() const { return m_argumentsQS; }
 
-   gd::variant_view GetArgument( std::string_view stringName ) const { return m_argumentsQS.get_argument( stringName ); }
    gd::variant_view GetNextArgument( std::string_view stringName );
 
    /// Count the uses of a keyed argument based on current command index
@@ -397,11 +402,6 @@ public:
    /// occurrences of the same key across chained operations)
    void IncrementArgumentCounter( std::string_view stringName );
 
-   /// True if the named argument exists in m_argumentsQS
-   bool Exists( const std::string_view& stringName ) const;
-
-
-   const gd::argument::arguments& GetQSArguments() const { return m_argumentsQS; }
 
    // -- global argument helpers (forwarded to context) ----------------------
 
