@@ -122,8 +122,14 @@ std::pair<bool, std::string> CAPIDatabase::Execute()
       // ## Set command name if result and echo if sent from client
       if( Objects().Empty() == false )
       { 
-         Objects()["command"] = stringCommand;
-         if(QS_Exists("echo") == true) { Objects()["echo"] = QS_GetArguments()["echo"].as_string_view(); }
+         //Objects()["command"] = stringCommand;
+         Objects().SetAttribute("command", stringCommand);                   // set command as attribute for latest command name
+         //if(QS_Exists("echo") == true) { Objects()["echo"] = QS_GetArguments()["echo"].as_string_view(); }
+         if(QS_Exists("echo") == true) 
+         { 
+            auto stringEcho = QS_GetArguments()["echo"].as_string();
+            Objects().SetAttribute("echo", stringEcho );
+         }
       }
    }
 
