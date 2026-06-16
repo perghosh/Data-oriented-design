@@ -305,7 +305,9 @@ std::pair<bool, std::string> CRouter::RunXml(pugi::xml_document* pxmldocument_)
    pugi::xml_node xmlnodeRoot = pxmldocument_->document_element();
    if(!xmlnodeRoot) { return { false, "No root element found" }; }
 
-   if(std::string(xmlnodeRoot.name()) == "commands")
+   std::string stringRoot(xmlnodeRoot.name());
+
+   if(stringRoot == "commands")
    {
       for(pugi::xml_node xmlnodeCommand : xmlnodeRoot.children("command"))
       {
@@ -313,14 +315,14 @@ std::pair<bool, std::string> CRouter::RunXml(pugi::xml_document* pxmldocument_)
          if(result_.first == false) { return result_; }
       }
    }
-   else if(std::string(xmlnodeRoot.name()) == "command")
+   else if(stringRoot == "command")
    {
       auto result_ = run_command_(xmlnodeRoot);
       if(result_.first == false) { return result_; }
    }
    else // check for commands children
    {
-      // multiple commands in root, this is to support sending multiple commands in one request without wrapping them in <commands> element
+      // ## multiple commands in root, this is to support sending multiple commands in one request without wrapping them in <commands> element
       for(pugi::xml_node xmlnodeCommands : xmlnodeRoot.children("commands"))
       {
          for(pugi::xml_node xmlnodeCommand : xmlnodeCommands.children("command"))
@@ -328,6 +330,13 @@ std::pair<bool, std::string> CRouter::RunXml(pugi::xml_document* pxmldocument_)
             auto result_ = run_command_(xmlnodeCommand);
             if(result_.first == false) { return result_; }
          }
+      }
+
+      // ## scan all command children ........................................
+      for(pugi::xml_node xmlnodeCommand : xmlnodeRoot.children("command"))
+      {
+         auto result_ = run_command_(xmlnodeCommand);
+         if(result_.first == false) { return result_; }
       }
    }
    
