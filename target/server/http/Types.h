@@ -137,6 +137,8 @@ struct Attribute
    gd::argument::arguments argumentsAttribute; ///< attributes for object at index
 };
 
+struct Decorate; // forward declare for use in Objects
+
 /** ==========================================================================
  * @CLASS [tag: http,objects] [summary: Objects used to build response body]
  * @brief Manages a collection of result `Object` instances with associated metadata
@@ -173,6 +175,8 @@ struct Objects
    bool Empty() const noexcept { return m_vectorObjects.empty(); }
    void Clear() noexcept { m_vectorObjects.clear(); }
 
+   // @API [tag: attribute] [description: Add attributes for objects, these are stored in m_vectorAttributes and can be used to store extra information for objects like custom data or configuration for specific endpoint command]
+
    void AddAttribute( const gd::argument::arguments& argumentsAttribute ) { m_vectorAttributes.push_back( Attribute{GetLastIndex(), argumentsAttribute} ); }
    void AddAttribute( size_t uIndex, const gd::argument::arguments& argumentsAttribute ) { m_vectorAttributes.push_back( Attribute{uIndex, argumentsAttribute} ); }
    void AddAttribute( const Attribute& attribute ) { m_vectorAttributes.push_back( attribute ); }
@@ -183,7 +187,11 @@ struct Objects
       object_.arguments().set(stringName, value_);
    }
 
-   const Attribute* GetAttribute( size_t uIndex ) const;
+   [[nodiscard]] const Attribute* GetAttribute( size_t uIndex ) const;
+
+   // @API [tag: decorate] [description: Decorate is used to add attributes to objects]
+
+   [[nodiscard]] Decorate BeginDecorate(std::string_view stringCommand);
 
 
    // ## attributes --------------------------------------------------------------
@@ -197,6 +205,40 @@ inline const Attribute* Objects::GetAttribute( size_t uIndex ) const
    for( const auto& attribute : m_vectorAttributes ) { if( attribute.uIndex == uIndex ) return &attribute;  }
    return nullptr;                                                            // No attribute found for the given index
 }
+
+
+struct Decorate
+{
+   Decorate(Objects& objects, std::string_view stringCommand)
+      : m_objects(objects), m_uObjectCountBefore(objects.Size()), m_stringCommand(stringCommand), m_bDismissed(false) {}
+
+   Decorate(const Decorate&) = delete;
+   Decorate& operator=(const Decorate&) = delete;
+   Decorate(Decorate&&) = delete;
+   Decorate& operator=(Decorate&&) = delete;
+
+   ~Decorate()
+   {
+      if(m_bDismissed == true) return;
+
+      const auto uObjectCountAfter = m_objects.Size();
+      if(m_uObjectCountBefore < uObjectCountAfter)
+      {
+         m_objects.SetAttribute("command", m_stringCommand);
+         if(!m_stringEcho.empty() == false ) { m_objects.SetAttribute("echo", m_stringEcho); }
+      }
+   }
+
+   void Dismiss() { m_bDismissed = true; }
+   void SetEcho(std::string_view stringEcho) { m_stringEcho = std::string(stringEcho); }
+
+   Objects& m_objects;
+   std::size_t m_uObjectCountBefore;
+   std::string m_stringCommand;
+   std::string m_stringEcho;
+   bool m_bDismissed;
+};
+
 
 
 

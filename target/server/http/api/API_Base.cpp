@@ -254,8 +254,9 @@ void CAPI_Base::IncrementArgumentCounter( std::string_view stringName )
    }
 }
 
+
 /** -------------------------------------------------------------------------- CAPI_Base::PrepareStatement
- * @brief Resolve, preprocess, and prepare a SQL statement, then append it to `stringSelectAddTo`.
+ * @brief Resolve, preprocess, and prepare a SQL statement, then append it to `stringSqlExecute`.
  *
  * Accepts `statement_id_` as either a numeric statement row (`size_t`) or a query
  * identifier (`std::string_view`) that is resolved through `Statement_Find`.
@@ -269,13 +270,13 @@ void CAPI_Base::IncrementArgumentCounter( std::string_view stringName )
  *   - `values` via `AddValues` (JSON format)
  * - preprocess template (`Preprocess`) and keep transformed text alive if changed
  * - finalize render state (`Prepare`) and build SQL (`ToSqlFromTemplate`)
- * - write SQL into `stringSelectAddTo` (assign if empty, otherwise append)
+ * - write SQL into `stringSqlExecute` (assign if empty, otherwise append)
  *
  * @param statement_id_ Statement selector: row index or named query identifier.
- * @param stringSelectAddTo Output SQL buffer; receives generated SQL by assign/append.
+ * @param stringSqlExecute Output SQL buffer; receives generated SQL by assign/append.
  * @return std::pair<bool, std::string> `first` is success; `second` is error text on failure.
  */
-std::pair<bool, std::string> CAPI_Base::PrepareStatement( std::variant<size_t, std::string_view> statement_id_, std::string& stringSelectAddTo )
+std::pair<bool, std::string> CAPI_Base::PrepareStatement( std::variant<size_t, std::string_view> statement_id_, std::string& stringSqlExecute )
 {
    std::string stringQuery;
    uint64_t uStatementRow; // resolved statement row index, this to speed up access to statement
@@ -347,6 +348,7 @@ std::pair<bool, std::string> CAPI_Base::PrepareStatement( std::variant<size_t, s
    std::string_view stringSelectTemplate = Statement_GetQuery( uStatementRow );
    if( stringSelectTemplate.empty() == true ) { return { false, "query statement is empty for: " + std::string( stringQuery ) }; }
 
+   /*
    std::string stringTemporary; // If preprocessing and it have modified query then we need to store it.
 
    result_ = sql_.Preprocess(stringSelectTemplate);                                              if(result_.first == false) { return result_; } // Preprocess is like a preprocessor for sql template.
@@ -357,16 +359,77 @@ std::pair<bool, std::string> CAPI_Base::PrepareStatement( std::variant<size_t, s
    }
 
    result_ = sql_.Prepare();                                                                       if( result_.first == false ) { return result_; }
-
    result_ = sql_.ValidateColumnValues();                                                          if( result_.first == false ) { return result_; }
 
-   std::string stringSelect; //Final rendered SQL statement, ready to execute. 
+   std::string stringSelect; // Final rendered SQL statement, ready to execute. 
    stringSelect.reserve(stringSelectTemplate.size());
    // @NOTE [tag: sql, statement] [summary: render SQL statement from template]
    result_ = sql_.ToSqlFromTemplate( stringSelectTemplate, stringSelect );                         if( result_.first == false ) { return result_; }
+   */
 
-   if( stringSelectAddTo.empty() == true ) { stringSelectAddTo = std::move( stringSelect ); }
-   else { stringSelectAddTo += stringSelect; }
+   stringQuery.clear();
+   result_ = FromTemplate_s(sql_, stringSelectTemplate, stringQuery);                             if(result_.first == false) { return result_; }
+
+   if( stringSqlExecute.empty() == true ) { stringSqlExecute = std::move(stringQuery); }
+   else { stringSqlExecute += stringQuery; }
+
+   return { true, "" };
+}
+
+std::pair<bool, std::string> CAPI_Base::PrepareStatement(std::variant<size_t, std::string_view> statement_id_, std::function< std::pair<bool, std::string>(std::string_view stringSql)> callback_)
+{
+   std::string stringQuery;
+   uint64_t uStatementRow; // resolved statement row index, this to speed up access to statement
+   CDocument* pdocument = GetDocument();                                                           assert(pdocument != nullptr);
+
+   // ## Get statement row index ............................................
+
+   if(std::holds_alternative<size_t>(statement_id_) == true) { uStatementRow = std::get<size_t>(statement_id_); } // sanity check for row index)
+   else
+   {
+      stringQuery = std::get<std::string_view>(statement_id_);
+
+      if(stringQuery.empty() == false)
+      {
+         int64_t iRow = Statement_Find(stringQuery);
+         if(iRow == -1) { return { false, std::string("query statement not found for: ") + std::string(stringQuery) }; }
+
+         uStatementRow = static_cast<uint64_t>(iRow);
+      }
+      else { return { false, "statement identifier is empty" }; }
+   }
+
+   std::string_view stringTemplate = Statement_GetQuery(uStatementRow);
+   if(stringTemplate.empty() == true) { return { false, "query statement is empty for: " + std::string(stringQuery) }; }
+
+   CRENDERSql sql_(m_pcontext, uStatementRow);
+   sql_.Initialize();
+
+   // ## Execute Lua setup code if any .......................................
+
+   auto result_ = Lua_Execute(uStatementRow, pdocument, &sql_);                                    LOG_ERROR_IF(result_.first == false, "Lua execution failed for statement row " + std::to_string(uStatementRow) + ": " + result_.second);
+   if(result_.first == false) { return result_; }
+
+   if(QS_Exists("xml") == true)                                                 // read "xml" values
+   {
+      pugi::xml_document* pxmldocument = reinterpret_cast<pugi::xml_document*>(QS_GetArgument("xml").as_void());
+      pugi::xml_node xmlnodeDocument = pxmldocument->document_element();
+
+      std::string stringContainer = "/*"; // select all nodes by default
+
+      pugi::xpath_node_set xpathnodesetValues = xmlnodeDocument.select_nodes(stringContainer.c_str());
+      for(auto& xpathnode_ : xpathnodesetValues)
+      {
+         sql_.Add(xpathnode_.node());
+
+         result_ = FromTemplate_s(sql_, stringTemplate, stringQuery);                             if(result_.first == false) { return result_; }
+
+         result_ = callback_(stringTemplate);                                                     if(result_.first == false) { return result_; }
+
+         sql_.Clear();                                                        // clear sql renderer 
+         stringQuery.clear();
+      }
+   }
 
    return { true, "" };
 }
@@ -462,3 +525,24 @@ std::pair<bool, std::string> CAPI_Base::Lua_Execute( uint64_t uStatementRow, CDo
 
    return { true, "" };
 }
+
+std::pair<bool, std::string> CAPI_Base::FromTemplate_s(CRENDERSql& sql_, std::string_view stringTemplate, std::string& stringSql)
+{
+   std::string stringTemporary; // If preprocessing and it have modified query then we need to store it.
+
+   auto result_ = sql_.Preprocess(stringTemplate);                                                if(result_.first == false) { return result_; } // Preprocess is like a preprocessor for sql template.
+   else if(result_.second.empty() == false)
+   {
+      stringTemporary = std::move(result_.second);
+      stringTemplate = stringTemporary;                                       // set to preprocessed query
+   }
+
+   result_ = sql_.Prepare();                                                                      if(result_.first == false) { return result_; }
+   result_ = sql_.ValidateColumnValues();                                                         if(result_.first == false) { return result_; }
+
+   // @NOTE [tag: sql, statement] [summary: render SQL statement from template]
+   result_ = sql_.ToSqlFromTemplate(stringTemplate, stringSql);                                   if(result_.first == false) { return result_; }
+
+   return { true, "" };
+}
+

@@ -511,6 +511,24 @@ void CRENDERSql::AddValues( const gd::argument::arguments& argumentsField )
    }
 }
 
+/** -------------------------------------------------------------------------- AddValues
+ * @brief Adds field values from an XML node to the internal field table.
+ * @param xmlnodeValues The XML node containing field values as attributes. 
+ */
+void CRENDERSql::AddValues(const pugi::xml_node& xmlnodeValues)
+{
+   std::array<std::byte, 128> buffer_; 
+   gd::argument::arguments argumentsField(buffer_);
+
+   // ## iterate over attributes and add them to argumentsField
+   for (auto attribute : xmlnodeValues.attributes())
+   {
+      argumentsField.append(attribute.name(), attribute.value());
+   }
+
+   AddValues(argumentsField);
+}
+
 /** -------------------------------------------------------------------------- AddExpression
  * @brief Adds one or more expressions as columns by parsing a comma-separated string of expressions.
  * 

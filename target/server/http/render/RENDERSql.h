@@ -195,6 +195,10 @@ public:
 
    /// Add multiple values for columns
    void AddValues( const gd::argument::arguments& argumentsField );
+   /// Add multiple values from attributes in node
+   void AddValues( const pugi::xml_node& xmlnodeValues );
+
+
    /// Adds one or more expression columns, this have a specific format to be able to specify expression
    void AddExpression( std::string_view stringExpression );
    /// Simple key value json format to add multiple columns, handy to add were all belongs to same table.
@@ -236,11 +240,13 @@ public:
 
    /// Fill up values in internal table where they are empty
    void FillColumn( enumColumnField eColumnField, gd::variant_view variantviewValue );
+   void FillTableColumn(std::string_view stringTable) { FillColumn(eColumnFieldTable, stringTable); }
 
    // @API [tag: utility] [description: Various utility functions]
 
    size_t Size() const { return m_tableField.size(); }
    bool Empty() const { return m_tableField.get_row_count() == 0u; }
+   void Clear() { m_tableField.row_clear(); m_vectorCondition.clear(); m_argumentsProperty.clear(); }
 
    // @API [tag: query] [description: prepare query object]
 

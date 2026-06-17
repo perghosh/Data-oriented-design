@@ -17,12 +17,27 @@
 std::pair<bool, std::string> ValidateSession_s(const std::string& stringSession);
 
 /** ------------------------------------------------------------------------- Execute
- * @brief Executes system commands based on the command vector and parameters.
- * 
- * *Sample endpoints*
- * 
- * 
- * @return A pair containing success status and an error message (empty on success).
+ * @brief Routes and executes `sys/...` command segments from `m_vectorCommand`.
+ *
+ * **Supported command groups**
+ * - `sys/file/{delete|directory|exists}`
+ * - `sys/meta/{query|sql}/{add|count|delete|exists}`
+ * - `sys/meta/db/fields`
+ * - `sys/session/{add|count|exists|delete|list}`
+ * - `sys/client/ip`
+ * - `sys/application/quit`
+ *
+ * **Execution flow**
+ * - Decodes `query` in `m_argumentsQS` before dispatch.
+ * - Iterates from `m_uCommandIndex` to support chained commands.
+ * - Calls the matching `Execute_*` handler for each command token.
+ * - Adds response metadata (`command`, optional `echo`) when objects are produced.
+ * - Updates the command cursor through `SetCommandIndex`.
+ *
+ * @param none This method takes no explicit parameters.
+ * @return `std::pair<bool, std::string>`
+ * - `first`: `true` when dispatch succeeds; otherwise `false`.
+ * - `second`: error text on failure; empty string on success.
  */
 std::pair<bool, std::string> CAPISystem::Execute()
 {                                                                                                  assert( m_vectorCommand.empty() == false && "No commands");
@@ -46,13 +61,12 @@ std::pair<bool, std::string> CAPISystem::Execute()
          for( ; uIndex < m_vectorCommand.size(); uIndex++ && result_.first == true )
          {
             stringCommand = m_vectorCommand[uIndex];
+            auto decorate_ = Objects().BeginDecorate(stringCommand);           // set decorate command name
 
             if( stringCommand == "delete" )        { result_ = Execute_FileDelete(); }
             else if( stringCommand == "directory" ){ result_ = Execute_FileDirectory(); }
             else if( stringCommand == "exists" )   { result_ = Execute_FileExists(); }
-            else break;
-
-            if( Objects().Empty() == false ) { Objects()["command"] = stringCommand; }
+            else { decorate_.Dismiss(); break; }
          }
       }
       else if( stringCommand == "meta" )
@@ -67,14 +81,13 @@ std::pair<bool, std::string> CAPISystem::Execute()
             for( ; uIndex < m_vectorCommand.size(); uIndex++ && result_.first == true )
             {
                stringCommand = m_vectorCommand[uIndex];
+               auto decorate_ = Objects().BeginDecorate(stringCommand);           // set decorate command name
 
                if( stringCommand == "add" )        { result_ = Execute_MetadataQueryAdd(); }       // add
                else if( stringCommand == "count" ) { result_ = Execute_MetadataQueryCount(); }     // count
                else if( stringCommand == "delete" ){ result_ = Execute_MetadataQueryDelete(); }    // delete
                else if( stringCommand == "exists" ){ result_ = Execute_MetadataQueryExists(); }    // exists
-               else break;
-
-               if( Objects().Empty() == false ) { Objects()["command"] = stringCommand; }
+               else { decorate_.Dismiss(); break; }
             }
          }
          else if(stringCommand == "db")
@@ -83,11 +96,10 @@ std::pair<bool, std::string> CAPISystem::Execute()
             for( ; uIndex < m_vectorCommand.size(); uIndex++ && result_.first == true )
             {
                stringCommand = m_vectorCommand[uIndex];
+               auto decorate_ = Objects().BeginDecorate(stringCommand);           // set decorate command name
 
                if( stringCommand == "fields" )     { result_ = Execute_MetadataDBField(); }
-               else break;
-
-               if( Objects().Empty() == false ) { Objects()["command"] = stringCommand; }
+               else { decorate_.Dismiss(); break; }
             }
          }
       }
@@ -97,6 +109,7 @@ std::pair<bool, std::string> CAPISystem::Execute()
          for( ; uIndex < m_vectorCommand.size(); uIndex++ && result_.first == true )
          {
             stringCommand = m_vectorCommand[uIndex];
+            auto decorate_ = Objects().BeginDecorate(stringCommand);           // set decorate command name
 
             if( stringCommand.empty() == true ) { break; }
          
@@ -105,9 +118,7 @@ std::pair<bool, std::string> CAPISystem::Execute()
             else if( stringCommand == "exists" )   { result_ = Execute_SessionExists(); }
             else if( stringCommand == "delete" )   { result_ = Execute_SessionDelete(); }
             else if( stringCommand == "list" )     { result_ = Execute_SessionList(); }
-            else break;
-
-            if( Objects().Empty() == false ) { Objects()["command"] = stringCommand; }
+            else { decorate_.Dismiss(); break; }
          }
       }
       else if( stringCommand == "client" )
@@ -116,11 +127,12 @@ std::pair<bool, std::string> CAPISystem::Execute()
          for( ; uIndex < m_vectorCommand.size(); uIndex++ && result_.first == true )
          {
             stringCommand = m_vectorCommand[uIndex];
+            auto decorate_ = Objects().BeginDecorate(stringCommand);           // set decorate command name
+
             if( stringCommand.empty() == true ) { break; }
 
             if( stringCommand == "ip" ) { result_ = Execute_ClientIP(); }
-            else break;
-            if( Objects().Empty() == false ) { Objects()["command"] = stringCommand; }
+            else { decorate_.Dismiss(); break; }
          }
       }
       else if( stringCommand == "application" )
@@ -129,11 +141,12 @@ std::pair<bool, std::string> CAPISystem::Execute()
          for( ; uIndex < m_vectorCommand.size(); uIndex++ && result_.first == true )
          {
             stringCommand = m_vectorCommand[uIndex];
+            auto decorate_ = Objects().BeginDecorate(stringCommand);           // set decorate command name
+
             if( stringCommand.empty() == true ) { break; }
 
             if( stringCommand == "quit" ) { result_ = Execute_ApplicationQuit(); }
-            else break;
-            if( Objects().Empty() == false ) { Objects()["command"] = stringCommand; }
+            else { decorate_.Dismiss(); break; }
          }
       }
       else

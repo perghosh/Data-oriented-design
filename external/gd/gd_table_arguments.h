@@ -643,7 +643,7 @@ public:
    /// clears all rows in table
    ///@{
    /// Clears all rows in table (just set the row count to 0)
-   void row_clear() { m_uRowCount = 0; }
+   void row_clear();
    ///@}
 
     /// @name row_delete

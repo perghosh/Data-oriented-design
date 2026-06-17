@@ -455,36 +455,45 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
    std::string stringInsert;
    CDocument* pdocument = GetDocument();
    auto* pdatabase = GetContext()->GetDatabase();                             assert(pdatabase != nullptr && "no database connection");
+
+   stringInsert.reserve(128);
    
    std::string stringQuery = GetNextArgument( "query" ).as_string();          // get query to execute
    if( stringQuery.empty() == false )                                         // if query then process it
    {
       if( stringQuery[0u] == '#' ) { stringQuery.erase(0, 1); }
-      auto result_ = PrepareStatement( stringQuery, stringInsert );                                
-      if( result_.first == false ) 
-      {                                                                                            LOG_ERROR( "PrepareStatement for insert query " & stringQuery & " returned error: " & result_.second );
-         return result_; 
+
+      std::string stringMode = QS_GetArguments()["mode"].as_string();
+
+      if(stringMode.empty() == true || stringMode == "single")
+      {
+         auto result_ = PrepareStatement(stringQuery, stringInsert);
+         if(result_.first == false)
+         {                                                                                         LOG_ERROR("PrepareStatement for insert query " & stringQuery & " returned error: " & result_.second);
+            return result_;
+         }
       }
-   }
+      else if(stringMode == "bulk")
+      {
+         std::size_t uInsertCount = 0;
+         auto result_ = PrepareStatement(stringQuery, [&pdatabase, &uInsertCount](std::string_view stringInsert) -> std::pair<bool, std::string>
+         { 
+            std::array<std::byte, 128> buffer_;
+            gd::argument::arguments argumentsKey(buffer_);
+            auto result_ = pdatabase->execute(stringInsert, [&argumentsKey](const auto* parguments_) { argumentsKey = *parguments_; return true; });
+            if(result_.first == false) { return result_; }
 
-   // ## check for statement logic and xml data .............................
-   else if( QS_Exists( "xml" ) )
-   {
-      std::array<std::byte, 128> buffer_;
-      gd::argument::arguments argumentsOptions(buffer_);
-      argumentsOptions["query"] = stringQuery;
+            uInsertCount++;
+            
+            return { true, "" }; 
+         });
 
-      std::string stringTable = QS_GetArguments()["table"].as_string(); // get table from query string
-      if( stringTable.empty() == false ) { argumentsOptions["table"] = stringTable; }
+         gd::argument::arguments* parguments_ = new gd::argument::arguments({ { "count", static_cast<int64_t>(uInsertCount) } });
+         Objects().Add(parguments_);
 
-      argumentsOptions["form"] = "attribute";                                  // insert values where attribute name match field name and attribute value is the value
-      gd::argument::arguments argumentsReturn;
-      argumentsReturn.reserve( 128 );
-      pugi::xml_document* pxmldocument = QS_GetArguments()["xml"].get_pointer<pugi::xml_document>(); // get pointer to xml pointer that is prepared
-      auto result_ = XML_BulkExecute( argumentsOptions, pxmldocument, pdocument, &argumentsReturn );if( result_.first == false ) { return result_; }
-      Objects().Add( argumentsReturn );
-
-      return { true, "" }; 
+         return result_;
+      }
+      else { return { false, "unknown insert mode: " + stringMode }; }
    }
 
    if(stringInsert.empty() == true)
@@ -906,7 +915,7 @@ std::pair<bool, std::string> CAPIDatabase::XML_BulkExecute( const gd::argument::
             argumentsFind.clear();
             argumentsFind.append( { {std::string_view("table"), stringTable}, {std::string_view("column"), stringName} }, gd::types::tag_view{});
             int64_t iRow = pdatabase_->Column_FindRow( argumentsFind ); 
-            if( iRow == -1 ) { return { false, "column not found in database: " + std::string(stringName) }; }
+            if( iRow == -1 ) { return { false, "column not found in database: Table " + std::string(stringTable) + ", Column " + std::string(stringName) }; }
 
             auto uType = pdatabase_->Column_GetType( iRow );
             queryInsert << field_g( stringTable, stringName, buffer_ ).value( stringValue ).type( uType );

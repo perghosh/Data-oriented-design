@@ -54,4 +54,9 @@ void Clear_g( unsigned uType, void* pobject_ )
 
 }
 
+Decorate Objects::BeginDecorate(std::string_view stringCommand) 
+{ 
+   return Decorate(*this, stringCommand); 
+}
+
 }

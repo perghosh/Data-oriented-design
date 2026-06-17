@@ -417,6 +417,7 @@ public:
    // @API [tag: format, template, statement] [description: Format logic to prepare information mixing values from endpoint to make it work in server]
 
    std::pair<bool, std::string> PrepareStatement( std::variant<size_t,std::string_view> statement_id_, std::string& stringSelectAddTo );
+   std::pair<bool, std::string> PrepareStatement(std::variant<size_t, std::string_view> statement_id_, std::function< std::pair<bool, std::string>( std::string_view stringSql )> callback_ );
 
    // @API [tag: query] [description: Query helpers]
 
@@ -456,6 +457,8 @@ private:
 
 // ## free functions ---------------------------------------------------------
 public:
+   static std::pair<bool, std::string> FromTemplate_s(CRENDERSql& sql_, std::string_view stringTemplate, std::string& stringSql );
+
 };
 
 
@@ -468,3 +471,4 @@ inline const CDocument* CAPI_Base::GetDocument() const
 {
    return m_pcontext->GetDocument();
 }
+

@@ -1578,6 +1578,16 @@ void table::row_set_range( uint64_t uRow, unsigned uBeginColumn, unsigned uCount
    }
 }
 
+/** ---------------------------------------------------------------------------
+*@brief Clear all rows in table, this does not change reserved memory for rows
+*/
+void table::row_clear()
+{
+   erase_arguments_s(*this, true);
+
+   m_uRowCount = 0;
+}
+
 void table::reserve(uint64_t uCount)
 {
    if( uCount > m_uReservedRowCount )
