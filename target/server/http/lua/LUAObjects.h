@@ -1,5 +1,43 @@
 // @FILE [tag: lua, objects] [summary: Header file for LUA objects and utility functions] [type: header] [name: LUAObjects]
 
+/**
+ * \file LUAObjects.h
+ * \brief Header file for Lua bindings, wrapper classes, and utility functions.
+ *
+ * ## Overview
+ * This file provides the C++ to Lua bridge (using `sol2`) for a server-side environment. 
+ * It contains wrapper classes that expose core server components (such as Database, Request, 
+ * Application, etc.) to Lua scripts, as well as utility functions for converting data 
+ * between Lua types (`sol::table`, `sol::variant`) and internal C++ types (`gd::variant`, 
+ * `gd::argument::arguments`).
+ *
+ * ## Utility Functions
+ * - **ConvertTo_g**: Converts `sol::table` to C++ vectors (`std::vector<std::string>`, `std::vector<gd::variant>`, etc.).
+ * - **ConvertToArguments_g**: Converts `sol::table` to `gd::argument::arguments` objects.
+ * - **ConvertToAny_g / ConvertFromAny_g**: Converts between `gd::variant` and `std::variant` (supporting int64, string, double, bool, and Lua nil).
+ *
+ * ## Class Documentation
+ *
+ * ### Data & Expressions
+ * - **Table**: Wraps `gd::table::table_column_buffer`. Handles the creation, manipulation, and retrieval of structured tabular data (rows, columns, cell values, and attributes).
+ * - **Expression**: Evaluates string-based expressions, optionally substituting values from a Lua table.
+ *
+ * ### Database & SQL
+ * - **Sql**: Wraps `CRENDERSql`. Dynamically builds SQL queries (e.g., SELECT, INSERT) by adding columns, conditions, and values.
+ * - **Database**: Wraps `gd::database::database_i`. Manages database connections, executes raw SQL statements, and retrieves results.
+ * - **Cursor**: Wraps `gd::database::cursor_i`. Iterates over the result set of a database query row-by-row.
+ *
+ * ### Server Context
+ * - **Application**: Wraps `CApplication`. Represents the global application state. Manages properties, logging levels, and provides access to the Document and Database.
+ * - **Document**: Wraps `CDocument`. Represents the current document context, providing access to its specific database and SQL creation.
+ * - **Request**: Wraps the HTTP/API request context (`CAPIContext`). Provides access to request metadata (IP, Session ID), client values, script variables, and creates Response/Sql objects.
+ * - **Response**: Wraps the HTTP/API response context. Used to append messages or data to the outgoing response body.
+ *
+ * ### Rendering
+ * - **View**: Handles Server-Side Rendering (SSR) and HTML generation. Provides methods to echo text and generate HTML tags with attributes.
+ */
+
+
 #pragma once
 
 #include "lua/sol.hpp"
