@@ -157,6 +157,7 @@ void CRENDERSql::Initialize()
       p->add( "uint32", 0, "type" );                                          // type of value
       p->add( "uint32", 0, "type_part" );                                     // part type of value, this same as sql part like select, where    
       p->add( "rstring", 0, "raw" );                                          // raw sql stamement for column
+      p->add( "uint32", 0, "flags");                                          // part type of value, this same as sql part like select, where    
       p->add_reference();
 
       CRENDERSql::m_pcolumnsField_s = p; // assign to static member for use in other instances of CRENDERSql
@@ -172,6 +173,16 @@ void CRENDERSql::Initialize()
    m_tableField.prepare();
 }
 
+/** -------------------------------------------------------------------------- Add
+ * @brief Parses an XML node and appends SQL part fields to the internal column table.
+ *
+ * Reads child nodes such as `select`, `value`, `where`, `order`, `group`, `limit`,
+ * and `returning`, maps them to part types, and stores discovered attributes
+ * (`name`, `alias`, `type`, `value`, `table`) for later SQL generation.
+ *
+ * @param xmlnodeValues XML node containing SQL part children and optional default `table`.
+ * @return std::pair<bool, std::string> `{ true, "" }` when parsing completes.
+ */
 std::pair<bool, std::string> CRENDERSql::Add( const pugi::xml_node& xmlnodeValues )
 {                                                                                                  assert( m_pcolumnsField_s != nullptr );
    using namespace gd::types::detail;
@@ -453,7 +464,7 @@ int64_t CRENDERSql::Find( const gd::argument::arguments& argumentsColumn ) const
  * @param argumentsField The arguments containing field name-value pairs to add.
  */
 void CRENDERSql::AddValues( const gd::argument::arguments& argumentsField )
-{
+{                                                                                                  assert( argumentsField.empty() == false );
    std::string_view stringTable;
 
    if( m_iRowStatement != -1 )

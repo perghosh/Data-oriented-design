@@ -113,7 +113,14 @@ public:
       eColumnFieldPartType,      ///< sql part type for column, used to separate columns for select, value and where parts of query
                                  ///< This is used to be able to filter out columns for different parts of query, for example when creating insert query we only need value part, when creating select query we only need select part, etc.
       eColumnFieldRaw,           ///< raw sql statement for column, used when column value is not enough to specify what we want to do with column, for example when we want to specify that column should be used in group by or order by part of query, etc.
+      eColumnFlags,              ///< column flags, used to specify additional information about column, locked/
       eColumnField_Max
+   };
+
+   enum enumFlag 
+   {
+      eFlagNone = 0x00,
+      eFlagLocked = 0x01,        ///< column is locked, this means that column is used in some part of query and should not be modified, for example if column is used in where part of query it should be locked to prevent modification of column value that would affect where part of query
    };
 
    enum enumColumnFlag

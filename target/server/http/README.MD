@@ -25,6 +25,12 @@ Staeful do not mean that the server is not stateless, it can of course be statel
 - Simplifies development by eliminating the need to manage state manually on the client side
 - Reduces network overhead by keeping user context on the server
 
+**Atomic Operations**
+- Supports atomic operations to ensure data integrity and consistency
+- Packs multiple operations into a single request, reducing the number of round-trips between client and server
+- Only one entry point for all operations, simplifying the API and improving security and performance
+- Easy to learn and use, no need to learn multiple endpoints for different operations.
+
 ### Architecture Overview
 
 The server is built around several core components that work together to deliver a seamless experience:

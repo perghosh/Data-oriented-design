@@ -348,25 +348,6 @@ std::pair<bool, std::string> CAPI_Base::PrepareStatement( std::variant<size_t, s
    std::string_view stringSelectTemplate = Statement_GetQuery( uStatementRow );
    if( stringSelectTemplate.empty() == true ) { return { false, "query statement is empty for: " + std::string( stringQuery ) }; }
 
-   /*
-   std::string stringTemporary; // If preprocessing and it have modified query then we need to store it.
-
-   result_ = sql_.Preprocess(stringSelectTemplate);                                              if(result_.first == false) { return result_; } // Preprocess is like a preprocessor for sql template.
-   else if( result_.second.empty() == false ) 
-   { 
-      stringTemporary = std::move( result_.second ); 
-      stringSelectTemplate = stringTemporary;                                 // set to preprocessed query
-   }
-
-   result_ = sql_.Prepare();                                                                       if( result_.first == false ) { return result_; }
-   result_ = sql_.ValidateColumnValues();                                                          if( result_.first == false ) { return result_; }
-
-   std::string stringSelect; // Final rendered SQL statement, ready to execute. 
-   stringSelect.reserve(stringSelectTemplate.size());
-   // @NOTE [tag: sql, statement] [summary: render SQL statement from template]
-   result_ = sql_.ToSqlFromTemplate( stringSelectTemplate, stringSelect );                         if( result_.first == false ) { return result_; }
-   */
-
    stringQuery.clear();
    result_ = FromTemplate_s(sql_, stringSelectTemplate, stringQuery);                             if(result_.first == false) { return result_; }
 
@@ -376,6 +357,28 @@ std::pair<bool, std::string> CAPI_Base::PrepareStatement( std::variant<size_t, s
    return { true, "" };
 }
 
+/** -------------------------------------------------------------------------- PrepareStatement
+ * @brief Resolves and prepares a statement, then forwards each generated SQL chunk to `callback_`.
+ *
+ * `statement_id_` may be either:
+ * - a direct statement row index (`size_t`)
+ * - a named statement id (`std::string_view`) resolved through `Statement_Find`
+ *
+ * Processing flow:
+ * - resolve statement row
+ * - fetch SQL template with `Statement_GetQuery`
+ * - initialize `CRENDERSql`
+ * - merge request values (`values`, optional `table`)
+ * - execute Lua setup via `Lua_Execute`
+ * - when `xml` is provided, iterate `//values` nodes, inject values, render template,
+ *   invoke `callback_`, then clear renderer state for next node
+ *
+ * @param statement_id_ Statement selector (row index or statement name).
+ * @param callback_ Callback invoked for each prepared SQL segment.
+ * @return `std::pair<bool, std::string>` where:
+ * - `first` is `true` on success, `false` on error
+ * - `second` contains error text when `first == false`
+ */
 std::pair<bool, std::string> CAPI_Base::PrepareStatement(std::variant<size_t, std::string_view> statement_id_, std::function< std::pair<bool, std::string>(std::string_view stringSql)> callback_)
 {
    std::string stringQuery;
@@ -405,6 +408,20 @@ std::pair<bool, std::string> CAPI_Base::PrepareStatement(std::variant<size_t, st
    CRENDERSql sql_(m_pcontext, uStatementRow);
    sql_.Initialize();
 
+   // ## Add values from query string if any .................................
+
+   if(QS_Exists("values") == true)                                           // read "values" 
+   {
+      auto stringValues = GetNextArgument("values").as_string();
+      if(stringValues.empty() == false) { sql_.ColumnAddValues(stringValues, gd::types::tag_json{}); }
+
+      if(QS_Exists("table") == true)
+      {
+         auto stringTable = GetNextArgument("table").as_string();
+         if(stringTable.empty() == false) { sql_.FillColumn(CRENDERSql::eColumnFieldTable, stringTable); }
+      }
+   }
+
    // ## Execute Lua setup code if any .......................................
 
    auto result_ = Lua_Execute(uStatementRow, pdocument, &sql_);                                    LOG_ERROR_IF(result_.first == false, "Lua execution failed for statement row " + std::to_string(uStatementRow) + ": " + result_.second);
@@ -415,12 +432,30 @@ std::pair<bool, std::string> CAPI_Base::PrepareStatement(std::variant<size_t, st
       pugi::xml_document* pxmldocument = reinterpret_cast<pugi::xml_document*>(QS_GetArgument("xml").as_void());
       pugi::xml_node xmlnodeDocument = pxmldocument->document_element();
 
-      std::string stringContainer = "/*"; // select all nodes by default
+      std::string stringContainer = "//values"; // select all nodes by default
 
       pugi::xpath_node_set xpathnodesetValues = xmlnodeDocument.select_nodes(stringContainer.c_str());
-      for(auto& xpathnode_ : xpathnodesetValues)
-      {
-         sql_.Add(xpathnode_.node());
+
+#ifndef NDEBUG
+      std::size_t uNodeCount_d = xpathnodesetValues.size();
+      if(xpathnodesetValues.empty() == true) {
+         LOG_WARNING("No XML nodes found");
+      }
+#endif // NDEBUG
+
+      for(auto& xpathnode : xpathnodesetValues)
+      {  
+         const pugi::xml_node& xmlnode = xpathnode.node();
+#ifndef NDEBUG
+         const std::string_view stringNodeName_d = xmlnode.name();
+#endif // NDEBUG
+         sql_.AddValues(xmlnode);                                             // values are stored as attributes
+
+         auto argumentsGlobal = GetGlobalArguments();
+         if(argumentsGlobal.empty() == false) { sql_.AddValues(argumentsGlobal); } // add global arguments as values, this allows to use global arguments in xml templates
+
+         // @TODO [tag: xml] [description: add support for using node text as value, for example by using a special attribute name like "value" or "text"]
+         // [sample: <values><value name="example">123</value></values> or <values><value name="example" text="123"/></values>]
 
          result_ = FromTemplate_s(sql_, stringTemplate, stringQuery);                             if(result_.first == false) { return result_; }
 
