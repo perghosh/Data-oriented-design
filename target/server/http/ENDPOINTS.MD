@@ -1,42 +1,127 @@
+## HTTP Command Endpoint Model
 
+Command endpoints are routed only when the request target starts with `!`.
 
-## System
-System endpoints are mostly used for managing the server's system resources and configuration.
-These should be used with caution and not when the server used in public because you can do anything.
+- Example: `/!sys/session/count`
+- Static file requests do **not** use `!`.
 
-For development purposes, you can use these endpoints to test and debug your application.
+### Endpoint composition
 
-### System - File
-- `sys/file/delete (path)` - Delete file at specified path
-- `sys/file/directory (action, type, name/value)` - Get or set directory paths (action: get/set, type: folder type, name/value: for set)
-- `sys/file/exists (path)` - Check if file exists at specified path
+Endpoints are command chains.  
+Atomic operations are the final operation segment in each chain.
 
-### System - Session
-- `sys/session/add (session|new)` - Add session by value or generate new session
-- `sys/session/count ()` - Count number of active sessions
-- `sys/session/exists (session)` - Check if session exists and return its index
-- `sys/session/delete (session|index)` - Delete session by uuid or index
-- `sys/session/list ()` - List all active sessions
+- Chain example: `!db/open/select?...`
+  - `open` = atomic operation
+  - `select` = atomic operation
 
-### System - Metadata
+---
 
-- `sys/meta/add (query, id)` - Add session by value or generate new session
+## Atomic Endpoints
 
-## Database
+## System (`sys`)
 
-- `db/create (type, name)` - Create a new database with specified type and name, the format of name depends on type of database
-- `db/open (type, name)` - Delete database with specified type and name
-- `db/list ()` - List all databases
+### File
+- `sys/file/delete`  
+  - Query: `path`
+  - Deletes a file.
+- `sys/file/directory`  
+  - Query: `action=get|set`, `type`, `name|value` (for `set`)
+  - Gets or sets configured folder paths.
+- `sys/file/exists`  
+  - Query: `path`
+  - Checks whether a file exists.
 
-## Sql
+### Session
+- `sys/session/add`  
+  - Query: `session` **or** `new`
+  - Adds explicit session value or generates a new one.
+- `sys/session/count`  
+  - Returns active session count.
+- `sys/session/exists`  
+  - Query: `session`
+  - Returns session position/index if found.
+- `sys/session/delete`  
+  - Query: `session` **or** `index`
+  - Deletes a session.
+- `sys/session/list`  
+  - Returns all sessions.
 
+### Metadata
+- `sys/meta/query/add` (alias: `sys/meta/sql/add`)  
+  - Query: `name`, `type`, `format`, `query|statement`
+  - Adds stored query metadata.
+- `sys/meta/query/count` (alias: `sys/meta/sql/count`)  
+  - Query: optional `name` or `uuid`
+  - Counts query entries.
+- `sys/meta/query/delete` (alias: `sys/meta/sql/delete`)  
+  - Query: `id`, optional `key`
+  - Deletes query metadata.
+- `sys/meta/query/exists` (alias: `sys/meta/sql/exists`)  
+  - Query: `name`
+  - Checks if named query exists.
+- `sys/meta/db/fields`  
+  - Query: `table`, `field` (single or comma-separated)
+  - Returns field metadata.
 
-## LUA
-Endpoints for LUA integration and scripting.
+### Client / Application
+- `sys/client/ip`  
+  - Returns client IP address.
+- `sys/application/quit`  
+  - Stops server process.
 
-## Python
-Endpoints for Python integration and scripting.
+---
 
+## Database (`db`)
+
+- `db/execute`  
+  - XML-driven bulk execution flow.
+- `db/create`  
+  - Query: `type` (default sqlite), `name`
+  - Creates database.
+- `db/open`  
+  - Query: `type` (default sqlite), `name`, optional `document|doc`
+  - Opens database connection for document.
+- `db/query`  
+  - Query: `query`
+  - Executes SQL (non-tabular response path).
+- `db/select`  
+  - Query: `query` or prepared-template inputs
+  - Executes SELECT and returns table result.
+- `db/ask`  
+  - Query: select-style inputs
+  - Returns first row as arguments object.
+- `db/insert`  
+  - Query: `query` or `values`/`record`/template inputs, optional `mode=single|bulk`
+  - Executes insert.
+- `db/update`  
+  - Query: update inputs via template or `record`
+  - Executes update and returns changed row count.
+- `db/delete`  
+  - Query: delete inputs via template or `record`
+  - Executes delete and returns changed row count.
+
+---
+
+## SQL (`sql`)
+
+- `sql/add`  
+  - Query: `query`
+  - Adds SQL query text to metadata store.
+
+---
+
+## View (`view`)
+
+- `view/ssr`  
+  - Server-side page render operation.
+
+---
+
+## Notes
+
+- Commands can be chained in one endpoint path.
+- Request body parsing supports XML/JSON based on `Content-Type`.
+- Default command response format is XML unless JSON result format is explicitly set by command handling.
 
 ```
 {

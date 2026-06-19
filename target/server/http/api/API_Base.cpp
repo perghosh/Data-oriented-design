@@ -443,6 +443,9 @@ std::pair<bool, std::string> CAPI_Base::PrepareStatement(std::variant<size_t, st
       }
 #endif // NDEBUG
 
+      std::string stringInsert; // string used to build the insert sql
+      stringInsert.reserve(stringTemplate.size());
+
       for(auto& xpathnode : xpathnodesetValues)
       {  
          const pugi::xml_node& xmlnode = xpathnode.node();
@@ -457,12 +460,12 @@ std::pair<bool, std::string> CAPI_Base::PrepareStatement(std::variant<size_t, st
          // @TODO [tag: xml] [description: add support for using node text as value, for example by using a special attribute name like "value" or "text"]
          // [sample: <values><value name="example">123</value></values> or <values><value name="example" text="123"/></values>]
 
-         result_ = FromTemplate_s(sql_, stringTemplate, stringQuery);                             if(result_.first == false) { return result_; }
+         result_ = FromTemplate_s(sql_, stringTemplate, stringInsert);                             if(result_.first == false) { return result_; }
 
-         result_ = callback_(stringTemplate);                                                     if(result_.first == false) { return result_; }
+         result_ = callback_(stringInsert);                                                        if(result_.first == false) { return result_; }
 
          sql_.Clear();                                                        // clear sql renderer 
-         stringQuery.clear();
+         stringInsert.clear();
       }
    }
 
