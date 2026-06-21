@@ -290,10 +290,10 @@ query::field* query::field_add_as_orderby( const gd::variant_view& variantTable,
  * \param variantValue condition value
  * \return condition* pointer to added condition
  */
-gd::sql::query::condition* query::condition_add(std::string_view stringName, const gd::variant_view& variantOperator, const gd::variant_view& variantValue)
+gd::sql::query::condition* query::condition_add(std::string_view stringName, const gd::variant_view& variantOperator, const gd::variant_view& variantValue, uint32_t uType)
 {                                                                                                  assert( m_vectorTable.empty() == false );
    auto ptable = table_get();                                                                      assert(ptable != nullptr);
-   return condition_add_(ptable, stringName, variantOperator, variantValue);
+   return condition_add_(ptable, stringName, variantOperator, variantValue, uType);
 }
 
 
@@ -305,10 +305,10 @@ gd::sql::query::condition* query::condition_add(std::string_view stringName, con
  * \param variantValue condition value
  * \return condition* pointer to added condition
  */
-gd::sql::query::condition* query::condition_add(const gd::variant_view& variantTable, std::string_view stringName, const gd::variant_view& variantOperator, const gd::variant_view& variantValue)
+gd::sql::query::condition* query::condition_add(const gd::variant_view& variantTable, std::string_view stringName, const gd::variant_view& variantOperator, const gd::variant_view& variantValue, uint32_t uType)
 {
    auto ptable = table_get(variantTable);                                                          assert(ptable != nullptr);
-   return condition_add_(ptable, stringName, variantOperator, variantValue);
+   return condition_add_(ptable, stringName, variantOperator, variantValue, uType);
 }
 
 /*----------------------------------------------------------------------------- condition_add */ /**
@@ -387,7 +387,7 @@ gd::sql::query::condition* query::condition_add( unsigned uTableKey, const gd::a
  * \param variantValue condition value
  * \return condition* pointer to added condition
  */
-gd::sql::query::condition* query::condition_add_(const table* ptable, std::string_view stringName, const gd::variant_view& variantOperator, const gd::variant_view& variantValue)
+gd::sql::query::condition* query::condition_add_(const table* ptable, std::string_view stringName, const gd::variant_view& variantOperator, const gd::variant_view& variantValue, uint32_t uType)
 {                                                                                                  assert( ptable != nullptr );
    condition conditionAdd(*ptable);                                            // create condition object that is added to query
    conditionAdd.append("name", stringName);
@@ -396,6 +396,7 @@ gd::sql::query::condition* query::condition_add_(const table* ptable, std::strin
    if( variantOperator.is_null() == false ) { eOperator = get_where_operator_number_s( variantOperator ); assert( eOperator != eOperatorError ); } 
    conditionAdd.append("operator", eOperator);
    if( variantValue.is_null() == false ) conditionAdd.append_argument("value", variantValue);
+   if( uType != 0 ) conditionAdd.append("type", uType);
 
    m_vectorCondition.push_back(std::move(conditionAdd));                       // add to list with fields
    return &m_vectorCondition.back();                                           // return pointer to added condition

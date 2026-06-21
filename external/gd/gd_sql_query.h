@@ -512,8 +512,9 @@ public:
    // ## @API [tag: condition] [summary: condition management] [description: methods to add and manage conditions in query]
 
    condition* condition_add(std::string_view stringName, const gd::variant_view& variantValue) { return condition_add( stringName, gd::variant_view(), variantValue ); }
-   condition* condition_add(std::string_view stringName, const gd::variant_view& variantOperator, const gd::variant_view& variantValue);
-   condition* condition_add(const gd::variant_view& variantTable, std::string_view stringName, const gd::variant_view& variantOperator, const gd::variant_view& variantValue);
+   condition* condition_add(std::string_view stringName, const gd::variant_view& variantOperator, const gd::variant_view& variantValue) { return  condition_add(stringName, variantOperator, variantValue, 0); }
+   condition* condition_add(std::string_view stringName, const gd::variant_view& variantOperator, const gd::variant_view& variantValue, uint32_t uType);
+   condition* condition_add(const gd::variant_view& variantTable, std::string_view stringName, const gd::variant_view& variantOperator, const gd::variant_view& variantValue, uint32_t uType = 0);
    condition* condition_add(const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorCondition) { return condition_add( gd::variant_view(0u), vectorCondition ); }
    condition* condition_add(const gd::variant_view& variantTable, const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorCondition );
    condition* condition_add( const condition& conditionAdd ) { m_vectorCondition.push_back( conditionAdd ); return &m_vectorCondition.back(); }
@@ -521,7 +522,7 @@ public:
    condition* condition_add( const gd::argument::arguments& argumentsCondition, tag_arguments );
    condition* condition_add( unsigned uTableKey, const gd::argument::arguments& argumentsCondition, tag_arguments );
 
-   condition* condition_add_(const table* ptable, std::string_view stringName, const gd::variant_view& variantOperator, const gd::variant_view& variantValue);
+   condition* condition_add_(const table* ptable, std::string_view stringName, const gd::variant_view& variantOperator, const gd::variant_view& variantValue, uint32_t uType = 0);
    condition* condition_add_raw(const gd::variant_view& variantTable, const std::string_view& stringCondition);
 
    bool condition_empty() const noexcept { return m_vectorCondition.empty(); }

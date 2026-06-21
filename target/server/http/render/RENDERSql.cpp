@@ -715,6 +715,8 @@ std::pair<bool, std::string> CRENDERSql::ColumnsAdd(pugi::xml_document* pxmldocu
       stringXpath = "//";
       stringXpath += element_;
 
+      std::string_view stringElementName = element_;
+
       pugi::xpath_node_set xpathnodeset_ = xmlnodeContainer.select_nodes(stringXpath.c_str());
       for(const pugi::xpath_node& xpathnode_ : xpathnodeset_)
       {
@@ -738,6 +740,8 @@ std::pair<bool, std::string> CRENDERSql::ColumnsAdd(pugi::xml_document* pxmldocu
             uint32_t uPartType = utility::get_part_type_from_string(value_);
             if(uPartType != 0) { arguments_.append("type_part", uPartType); }
          }
+         else if(stringElementName == "where") { arguments_.append("type_part", uint32_t(ePartTypeWhere)); }
+         else if(stringElementName == "returning") { arguments_.append("type_part", uint32_t(ePartTypeReturning)); }
 
          value_ = xpathnode_.node().attribute("value").value();
          if(value_.empty() == false) { arguments_.append("value", value_); }
@@ -1280,7 +1284,8 @@ std::pair<bool, std::string> CRENDERSql::Query_AddFields( gd::sql::query* pquery
             if(stringTable.empty() == true) { return { false, "Need table for where condition" }; }
             if(pquery->table_exists(stringTable) == false) { pquery->table_add(stringTable); }
             const auto value_ = itRow.cell_get_variant_view(eColumnFieldValue, gd::table::tag_not_null{});
-            pquery->condition_add( stringTable, stringName, "=", value_); // @TODO [summary: need to manage operators other than equal]
+            uint32_t uType = itRow.cell_get_variant_view(eColumnFieldType, gd::table::tag_not_null{});
+            pquery->condition_add( stringTable, stringName, "=", value_, uType ); 
             continue;
          }
          else if( uPartType == uint32_t( ePartTypeOrderBy ) )                 // ORDER BY
@@ -1879,7 +1884,15 @@ std::pair<bool, std::string> CRENDERSql::ValidateColumnValues() const
          {
             uint32_t uType = pdatabase_->Column_GetType(uRowMeta);             // get type for column from meta row
             auto value_ = itRow.cell_get_variant_view(eColumnFieldValue, gd::table::tag_not_null{});
-            if(value_.is_string() == true) { bIsValueValid = gd::sql::validate_value_g(value_.as_string_view(), uType); }
+            if(value_.is_string() == true) 
+            { 
+               bIsValueValid = gd::sql::validate_value_g(value_.as_string_view(), uType);
+               if(bIsValueValid == true && itRow.cell_is_null(eColumnFieldType) == true )
+               {
+                  auto uRow = itRow.get_row();
+                  m_tableField.cell_get_variant_view(uRow, eColumnFieldType, uType ); // set type for column in table field if not set yet
+               }
+            }
          }
       }
 
