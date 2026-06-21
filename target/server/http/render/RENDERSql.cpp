@@ -475,15 +475,30 @@ void CRENDERSql::AddValues( const gd::argument::arguments& argumentsField )
    }
 
    bool bHasDunder = false;
-   for( auto [key_, value_] : argumentsField.named() )
+   for(auto [key_, value_] : argumentsField.named())
    {
+      uint32_t uPartType = ePartTypeUnknown;
+
+      bool bTableInKey = false; // if key has . then it has table name in it
       // ## Check for dunder prefix, if key starts with __ it is used for internal purposes and should not be added to field table
-      if( key_.size() >= 2 && key_[0] == '_' && key_[1] == '_' ) { bHasDunder = true; continue; }
+      if(key_.size() >= 2 && key_[0] == '_')
+      {
+         if(key_[1] == '_') { bHasDunder = true; continue; }
+         else if(key_[1] == 'w') uPartType = ePartTypeWhere; // if key starts with _w it is used for where condition and should not be added to field table
+         else if(key_[1] == 'o') uPartType = ePartTypeOrderBy; // if key starts with _o it is used for order by and should not be added to field table
+         else if(key_[1] == 'g') uPartType = ePartTypeGroupBy; // if key starts with _g it is used for group by and should not be added to field table
+         else if(key_[1] == 'l') uPartType = ePartTypeLimit; // if key starts with _l it is used for limit and should not be added to field table
+         else if(key_[1] == 'r') uPartType = ePartTypeReturning; // if key starts with _r it is used for returning and should not be added to field table
+      }
 
       auto uRow = m_tableField.row_add_one();                                 // Add row to store field information
 
       // ## Check for table name in key, if key has . then split it and get table name
-      std::string_view stringKey( key_ );
+      std::string_view stringKey(key_);
+      
+      if(uPartType != ePartTypeUnknown) { stringKey = stringKey.substr(2); }  // if key has part type prefix, remove it to get actual key for column name or id
+
+
       std::size_t uPosition = stringKey.find( '.' );
       if( uPosition != std::string_view::npos )
       {
@@ -491,6 +506,7 @@ void CRENDERSql::AddValues( const gd::argument::arguments& argumentsField )
          std::string_view stringColumnName = stringKey.substr( uPosition + 1 );
          m_tableField.cell_set( uRow, eColumnFieldTable, stringTableName, gd::table::tag_spill{} );
          m_tableField.cell_set( uRow, eColumnFieldName, stringColumnName, gd::table::tag_spill{} );
+         bTableInKey = true;
       }
       else
       {
@@ -506,7 +522,12 @@ void CRENDERSql::AddValues( const gd::argument::arguments& argumentsField )
          m_tableField.cell_set( uRow, eColumnFieldValue, value_.as_string(), gd::table::tag_spill{});
       }
 
-      if( stringTable.empty() == false ) { m_tableField.cell_set( uRow, eColumnFieldTable, stringTable, gd::table::tag_spill{} ); }
+      if( stringTable.empty() == false && bTableInKey == false ) 
+      { 
+         m_tableField.cell_set( uRow, eColumnFieldTable, stringTable, gd::table::tag_spill{} ); 
+      }
+
+      if(uPartType != ePartTypeUnknown) { m_tableField.cell_set(uRow, eColumnFieldPartType, uPartType); }
    }
 
    if(bHasDunder == true)
@@ -1067,7 +1088,7 @@ std::pair<bool, std::string> CRENDERSql::Prepare()                              
 
          if(iRow > 0)                                                          // @CRITICAL [tag: type, column] [description: Sets column type, very important to know how to format field]
          {
-            uint32_t uType = pdatabase_->Column_GetType(iRow);
+            uint32_t uType = pdatabase_->Column_GetType(iRow);                 // get type for column from database metadata
             itRow.cell_set(eColumnFieldType, uType);                           // set type for column in table field
             itRow.cell_set(eColumnFieldMeta, static_cast<uint32_t>(iRow));     // set column meta row
             continue;
@@ -1217,6 +1238,9 @@ void CRENDERSql::FillColumn( enumColumnField eColumnField, gd::variant_view vari
  */
 std::pair<bool, std::string> CRENDERSql::Query_AddFields( gd::sql::query* pquery )
 {
+#ifndef NDEBUG
+   auto uRowCount_d = m_tableField.get_row_count();
+#endif // NDEBUG
    std::array<std::byte, 256> buffer_;
    gd::argument::arguments arguments_( buffer_ );
 
@@ -1242,7 +1266,24 @@ std::pair<bool, std::string> CRENDERSql::Query_AddFields( gd::sql::query* pquery
       uint32_t uPartType = itRow.cell_get_variant_view( eColumnFieldPartType ).as_uint();
       if( uPartType != 0 )
       {
-         if( uPartType == uint32_t( ePartTypeOrderBy ) )                      // ORDER BY
+         if( uPartType == uint32_t(ePartTypeWhere) )                          // WHERE condition
+         {
+            if(stringTable.empty() == true)                                   // no table check for table.column format in name
+            {
+               auto position_ = stringName.find('.');                         // table syntax is table.column
+               if(position_ != std::string_view::npos)
+               {
+                  stringTable = stringName.substr(0, position_);
+                  stringName = stringName.substr(position_ + 1);
+               }
+            }
+            if(stringTable.empty() == true) { return { false, "Need table for where condition" }; }
+            if(pquery->table_exists(stringTable) == false) { pquery->table_add(stringTable); }
+            const auto value_ = itRow.cell_get_variant_view(eColumnFieldValue, gd::table::tag_not_null{});
+            pquery->condition_add( stringTable, stringName, "=", value_); // @TODO [summary: need to manage operators other than equal]
+            continue;
+         }
+         else if( uPartType == uint32_t( ePartTypeOrderBy ) )                 // ORDER BY
          {
             if( stringTable.empty() == true )                                 // no table check for table.column format in name
             {
@@ -1305,6 +1346,7 @@ std::pair<bool, std::string> CRENDERSql::Query_AddFields( gd::sql::query* pquery
             else { uLimit = static_cast<std::size_t>(std::stoul(std::string(stringValue))); } // single value: just limit
 
             pquery->set_limit( uOffset, uLimit );
+            continue;
          }
       }
 

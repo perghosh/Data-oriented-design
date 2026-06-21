@@ -454,6 +454,7 @@ public:
 
       /// length in bytes for param
       unsigned int length() const;
+      unsigned int string_length() const;
       /// get param type
       // @TODO [tag: arguments] [description: this do not return the complete type (with length and array flags) and maybe this is ok but need to be checked, it should return the complete type including flags for size]
       arguments::enumType type() const { return arguments::enumType((unsigned)m_eType & ~eType_MASK); }
@@ -1122,7 +1123,7 @@ public:
    arguments& append(const std::string_view& stringName, const char8_t* v) { return append( stringName, (eTypeNumberUtf8String | eValueLength), (const_pointer)v, (unsigned int)strlen( (const char*)v ) + 1); }
    arguments& append(const std::string_view& stringName, const char8_t* v, unsigned uLength) { return append( stringName, (eTypeNumberUtf8String | eValueLength), (const_pointer)v, uLength + 1); }
    arguments& append(const std::string_view& stringName, void* v) { return append(stringName, (eTypeNumberPointer), (const_pointer)&v, sizeof(void*)); }
-
+   
    arguments& append(const std::string_view& stringName, param_type uType, const_pointer pBuffer, unsigned int uLength) { return append(stringName.data(), (uint32_t)stringName.length(), uType, pBuffer, uLength); }
    arguments& append(const char* pbszName, uint32_t uNameLength, param_type uType, const_pointer pBuffer, unsigned int uLength);
    template<typename POINTER>

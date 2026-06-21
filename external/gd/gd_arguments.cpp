@@ -1270,9 +1270,9 @@ arguments& arguments::append(const char* pbszName, uint32_t uNameLength, argumen
       return *this;
    }
 
-   *(uint32_t*)&m_pBuffer[m_uLength] = (uint32_t)uLength;                        // set length for data
+   *(uint32_t*)&m_pBuffer[m_uLength] = (uint32_t)uLength;                      // set length for data
    m_uLength += sizeof(uint32_t);
-   memcpy(&m_pBuffer[m_uLength], pBuffer, uLength);                              // copy data
+   memcpy(&m_pBuffer[m_uLength], pBuffer, uLength);                            // copy data
    m_uLength += uLength;                                                                           assert(m_uLength <= m_uBufferLength);
 
 #ifdef _DEBUG
@@ -2976,7 +2976,14 @@ bool arguments::compare_s(const argument& v1, const gd::variant_view v2)
    case arguments::eTypeNumberDouble: return v1.m_unionValue.d == v2.m_V.d;
    case arguments::eTypeNumberString:
    case arguments::eTypeNumberUtf8String:
-      return strcmp(v1.m_unionValue.pbsz, v2.m_V.pbsz) == 0;
+      {
+         const auto uLength1 = v1.length() - get_string_zero_terminate_length_s(v1.type());
+         const auto uLength2 = v2.length();
+         if(uLength1 == uLength2)
+         {
+            return memcmp(v1.m_unionValue.pbsz, v2.m_V.pbsz, uLength1) == 0;
+         }
+      }
       break;
    case arguments::eTypeNumberWString:
       return wcscmp(v1.m_unionValue.pwsz, v2.m_V.pwsz) == 0;
