@@ -1092,10 +1092,14 @@ std::string query::sql_get_update_from_after() const
    return stringFrom;
 }
 
-
-/*----------------------------------------------------------------------------- sql_get_where */ /**
- * Build "WHERE" text from conditions added to query
- * \return std::string
+/** -------------------------------------------------------------------------- sql_get_where
+ * @brief Build the SQL `WHERE` clause from the query conditions
+ *
+ * Conditions are emitted in order and joined with `AND`. Repeated equality
+ * and inequality comparisons for the same field are collapsed into `IN`
+ * and `NOT IN` expressions when possible.
+ *
+ * @return std::string Generated `WHERE` clause text
  */
 std::string query::sql_get_where() const
 {
@@ -1149,7 +1153,7 @@ std::string query::sql_get_where() const
                vectorCondition.push_back(&(*itCondition));
                for( auto it : vectorIndex ) { vectorCondition.push_back(&m_vectorCondition[it]); }
 
-               print_condition_values_s( vectorCondition, stringWhere );       // print condition values that is added to where text
+               print_condition_values_s( vectorCondition, m_eSqlDialect, stringWhere ); // print condition values that is added to where text
                
                stringWhere += ')';
                
@@ -2413,6 +2417,7 @@ std::string_view set_text(char* pbBuffer, const std::string_view& stringAdd)
 {
    memcpy( pbBuffer, stringAdd.data(), stringAdd.length() + 1 );
    return std::string_view(pbBuffer, stringAdd.length());
+
 }
 }
 
@@ -2473,12 +2478,27 @@ void query::print_condition_values_s( const std::vector<const condition*>& vecto
    unsigned uCount = 0;
    for( auto it : vectorCondition )
    {
+      auto uType = it->type();
       if( uCount > 0 ) stringValues += std::string_view{ ", " };
       auto value_ = it->value();
       value_get_s( value_, stringValues);
       uCount++;
    }
 }
+
+void query::print_condition_values_s(const std::vector<const condition*>& vectorCondition, enumSqlDialect eDialect, std::string& stringValues)
+{
+   unsigned uCount = 0;
+   for(auto it : vectorCondition)
+   {
+      auto uType = it->type();
+      if(uCount > 0) stringValues += std::string_view{ ", " };
+      auto value_ = it->value();
+      append_g(value_, uType, eDialect, stringValues);
+      uCount++;
+   }
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief Variant value in is converted to string in a format that works for sql 

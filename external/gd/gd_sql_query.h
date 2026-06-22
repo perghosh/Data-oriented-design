@@ -664,6 +664,7 @@ public:
    static unsigned get_where_operator_text_s(unsigned uOperator, char* pbBuffer);
    static bool operator_validate_s( int iOperator );
    static void print_condition_values_s( const std::vector<const condition*>& vectorCondition, std::string& stringValues );
+   static void print_condition_values_s( const std::vector<const condition*>& vectorCondition, enumSqlDialect eDialect, std::string& stringValues );
 
    // ## Condition methods
    /// Find all conditions for same field and same operator
