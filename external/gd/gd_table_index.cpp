@@ -44,6 +44,38 @@ std::pair<bool, uint64_t> index_int64::find( int64_t iFindValue ) const noexcept
    return { false, ( uint64_t )-1 };                                           // value not found, return invalid position
 }
 
+/** --------------------------------------------------------------------------
+ * @brief compact the index by removing duplicate int64 values (only first value with lowest row is kept)
+ *
+ * Note that this function assumes that the index is already sorted other wise the result will be undefined
+ */
+void index_int64::compact()
+{
+   if(m_vectorIndex.empty()) return;
+
+   auto it = m_vectorIndex.begin(); // start writing from the first element
+   auto itTail = std::next(m_vectorIndex.begin()); // start reading from the second element
+
+   for(; itTail != m_vectorIndex.end(); ++itTail)
+   {
+      if(itTail->first != it->first)
+      {  // ## We have a unique int64 value, we are keeping the lowest row value
+         ++it;                                                                // move to the next unique element
+         *it = *itTail;                                                       // copy the unique element to the next position
+      }
+      else
+      {  // ## We have a duplicate int64 value, we are keeping the lowest row value
+         if(itTail->second < it->second)
+         {
+            it->second = itTail->second;                                      // update the row value to the lowest one
+         }
+      }
+   }
+
+   m_vectorIndex.erase(std::next(it), m_vectorIndex.end());              // erase the duplicates after the last unique element
+}
+
+
 // ----------------------------------------------------------------------------
 // --------------------------------------------------------------- index_string
 // ----------------------------------------------------------------------------
@@ -52,7 +84,8 @@ void index_string::add( const gd::variant_view& variantviewValue, uint64_t uRow 
 {
    if( variantviewValue.is_string() )
    {
-      m_vectorIndex.push_back( std::make_pair( variantviewValue.get_string_view(), uRow ) );
+      std::string_view stringValue = variantviewValue.get_string_view();
+      m_vectorIndex.push_back( std::make_pair(stringValue, uRow ) );
    }
    else
    {                                                                                               assert( false );
@@ -77,6 +110,37 @@ std::pair<bool, uint64_t> index_string::find( const std::string_view& stringFind
    if( itFind != itEnd ) return { true, itFind->second };                      // found value? then return index to value
 
    return { false, ( uint64_t )-1 };                                           // value not found, return invalid position
+}
+
+/** --------------------------------------------------------------------------
+ * @brief compact the index by removing duplicate string values (only first value with lowest row is kept)
+ * 
+ * Note that this function assumes that the index is already sorted other wise the result will be undefined
+ */
+void index_string::compact()
+{
+  if(m_vectorIndex.empty()) return;
+
+   auto it = m_vectorIndex.begin(); // start writing from the first element
+   auto itTail = std::next(m_vectorIndex.begin()); // start reading from the second element
+
+   for(; itTail != m_vectorIndex.end(); ++itTail)
+   {
+      if(itTail->first != it->first)
+      {  // ## We have a unique int64 value, we are keeping the lowest row value
+         ++it;                                                                // move to the next unique element
+         *it = *itTail;                                                       // copy the unique element to the next position
+      }
+      else
+      {  // ## We have a duplicate int64 value, we are keeping the lowest row value
+         if(itTail->second < it->second)
+         {
+            it->second = itTail->second;                                      // update the row value to the lowest one
+         }
+      }
+   }
+
+   m_vectorIndex.erase(std::next(it), m_vectorIndex.end());                   // erase the duplicates after the last unique element
 }
 
 

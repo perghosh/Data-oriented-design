@@ -60,6 +60,9 @@ public:
    void sort();
    /// find row value based on sorted value
    std::pair<bool, uint64_t> find( int64_t iFindValue ) const noexcept;
+   /// compact the index by removing duplicate integer values (only first value with lowest row is kept)
+   void compact();
+
 //@}
 
 // ## attributes ----------------------------------------------------------------
@@ -79,10 +82,29 @@ public:
 /** ===========================================================================
  * \brief index to manage string values (works with byte string values)
  *
+ * 
+ * \code
+ * // Full example showing declaration, index creation, compaction, and lookup
+ * class metadata_cache
+ * {
+ * public:
+ *    const gd::table::table* m_ptableColumn = nullptr;    ///< non-owning metadata table source
+ *    gd::table::index_string m_indexstringTable;          ///< index for fast lookup by `table` name
  *
+ *    void BuildTableIndex()
+ *    {
+ *       auto uColumnTable = m_ptableColumn->column_find_index( "table" ); 
  *
- \code
- \endcode
+ *       m_indexstringTable = gd::table::create_index_g<gd::table::index_string>( *m_ptableColumn, uColumnTable );
+ *       m_indexstringTable.compact();
+ *    }
+ *
+ *    std::pair<bool, uint64_t> FindTableRow( std::string_view stringTableName ) const
+ *    {
+ *       return m_indexstringTable.find( stringTableName );
+ *    }
+ * };
+ * \endcode
  */
 class index_string : public index_base
 {
@@ -122,6 +144,8 @@ public:
    void sort();
    /// find row value based on sorted value
    std::pair<bool, uint64_t> find( const std::string_view& stringValue ) const noexcept;
+   /// compact the index by removing duplicate string values (only first value with lowest row is kept)
+   void compact();
 //@}
 
 // ## attributes ----------------------------------------------------------------
@@ -153,5 +177,7 @@ INDEX create_index_g( const TABlE& table, unsigned uColumn ) {
    index_.sort();
    return index_;
 }
+
+
 
 _GD_TABLE_END

@@ -135,6 +135,13 @@ std::pair<bool, std::string> CDatabase::Add( gd::table::dto::table& tableColumn,
       m_ptableColumn->row_add( argumentsRow, gd::table::tag_arguments{}, gd::table::tag_convert{});
    }
 
+   // ## Generate index for table name to be able to find table by name ......
+   // get column for table name
+   auto uColumnTable = m_ptableColumn->column_find_index("table");                                  assert(uColumnTable != (unsigned)-1 && "Column 'table' not found in table metadata");
+   m_indexstringTable = gd::table::create_index_g<gd::table::index_string>(*m_ptableColumn, uColumnTable);
+   m_indexstringTable.compact();                                              // compact index to remove duplicates, only first row with lowest index is kept  
+
+
    return { true, "" };
 }
 
@@ -344,6 +351,10 @@ int64_t CDatabase::Column_FindRow( const gd::argument::arguments& argumentsFind 
    {
       unsigned uColumn = m_ptableColumn->column_get_index( "table" );
       iRow = m_ptableColumn->find( uColumn, (uint64_t)iRow, stringTable );
+#ifndef NDEBUG
+      const auto [bFound_d, iIndexRow_d] = m_indexstringTable.find(stringTable);
+      assert(bFound_d == true && iIndexRow_d == iRow && "Index for table name does not match found row in column metadata table");
+#endif // NDEBUG
    }
 
    if( iRow != -1 && stringColumn.empty() == false )
