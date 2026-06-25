@@ -346,7 +346,7 @@ int64_t CDatabase::Column_FindRow( const gd::argument::arguments& argumentsFind 
    {
 
       const auto [bFound, iIndexRow] = m_indexstringTable.find(stringSchema, stringTable);
-      assert(bFound == true && iIndexRow == iRow && "Index for table name does not match found row in column metadata table");
+      if(bFound == false) { return -1; } // Not found
       iRow = iIndexRow;
 
 #ifndef NDEBUG
