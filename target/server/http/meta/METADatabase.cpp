@@ -137,8 +137,9 @@ std::pair<bool, std::string> CDatabase::Add( gd::table::dto::table& tableColumn,
 
    // ## Generate index for table name to be able to find table by name ......
    // get column for table name
+   auto uColumnSchema = m_ptableColumn->column_find_index("schema");                                assert(uColumnSchema != (unsigned)-1 && "Column 'schema' not found in table metadata");
    auto uColumnTable = m_ptableColumn->column_find_index("table");                                  assert(uColumnTable != (unsigned)-1 && "Column 'table' not found in table metadata");
-   m_indexstringTable = gd::table::create_index_g<gd::table::index_string>(*m_ptableColumn, uColumnTable);
+   m_indexstringTable = gd::table::create_index_g<gd::table::index_string_string>(*m_ptableColumn, uColumnSchema, uColumnTable);
    m_indexstringTable.compact();                                              // compact index to remove duplicates, only first row with lowest index is kept  
 
 
@@ -341,10 +342,43 @@ int64_t CDatabase::Column_FindRow( const gd::argument::arguments& argumentsFind 
    std::string_view stringColumn = argumentsFind["column"].as_string_view();  // Get column name from arguments
                                                                                                    assert( stringColumn.empty() == false && "Column name is required to find column metadata" );
 
+   if( stringSchema.empty() == false || stringTable.empty() == false )
+   {
+
+      const auto [bFound, iIndexRow] = m_indexstringTable.find(stringSchema, stringTable);
+      assert(bFound == true && iIndexRow == iRow && "Index for table name does not match found row in column metadata table");
+      iRow = iIndexRow;
+
+#ifndef NDEBUG
+      unsigned uColumnSchema = m_ptableColumn->column_get_index("schema");
+      unsigned uColumnTable = m_ptableColumn->column_get_index("table");
+
+      int64_t iRow_d = 0;
+
+      if(stringSchema.empty() == false)
+      {
+         iRow_d = m_ptableColumn->find(uColumnSchema, stringSchema);
+      }
+
+      if(iRow != -1 && stringTable.empty() == false)
+      {
+         iRow_d = m_ptableColumn->find(uColumnTable, (uint64_t)iRow_d, stringTable);
+      }
+      else
+      {
+         iRow_d = m_ptableColumn->find(uColumnTable, stringTable);
+      }
+
+      assert(iIndexRow == iRow_d && "Index for table name does not match found row in column metadata table");
+#endif // NDEBUG
+   }
+   /*
+   else
+
    if( stringSchema.empty() == false )
    {
       unsigned uColumn = m_ptableColumn->column_get_index( "schema" );
-      iRow = m_ptableColumn->find( uColumn, stringSchema );
+      iRow = m_ptableColumn->find( uColumn, stringSchema, stringSchema );
    }
 
    if( iRow != -1 && stringTable.empty() == false )
@@ -356,6 +390,7 @@ int64_t CDatabase::Column_FindRow( const gd::argument::arguments& argumentsFind 
       assert(bFound_d == true && iIndexRow_d == iRow && "Index for table name does not match found row in column metadata table");
 #endif // NDEBUG
    }
+   */
 
    if( iRow != -1 && stringColumn.empty() == false )
    {

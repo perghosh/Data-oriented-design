@@ -127,8 +127,8 @@ public:
    std::unique_ptr<gd::table::arguments::table> m_ptableColumn;  ///< table holding column information
    std::unique_ptr<gd::table::arguments::table> m_ptableJoin;  ///< table with connections between tables
    std::unique_ptr<gd::table::arguments::table> m_ptableComputed;  ///< table with computed columns
-   gd::table::index_string m_indexstringTable;
-   gd::table::index_string m_indexstringColumn;
+   gd::table::index_string_string m_indexstringTable; //< index for table names
+   //gd::table::index_string m_indexstringColumn; //< index for column names
 
    std::unique_ptr<gd::modules::dbmeta::database> m_pdatabase;  ///< database meta information
    std::unique_ptr<gd::modules::dbmeta::expression> m_pexpression;  ///< expression handler

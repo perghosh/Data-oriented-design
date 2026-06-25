@@ -72,7 +72,8 @@ void index_int64::compact()
       }
    }
 
-   m_vectorIndex.erase(std::next(it), m_vectorIndex.end());              // erase the duplicates after the last unique element
+   m_vectorIndex.erase(std::next(it), m_vectorIndex.end());                   // erase the duplicates after the last unique element
+   m_vectorIndex.shrink_to_fit();
 }
 
 
@@ -141,6 +142,7 @@ void index_string::compact()
    }
 
    m_vectorIndex.erase(std::next(it), m_vectorIndex.end());                   // erase the duplicates after the last unique element
+   m_vectorIndex.shrink_to_fit();
 }
 
 
