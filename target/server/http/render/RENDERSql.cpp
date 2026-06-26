@@ -154,6 +154,7 @@ void CRENDERSql::Initialize()
       p->add( "string", uSize, "name" );                                      // name for column in table
       p->add( "string", uSize, "alias" );                                     // alias for column in table
       p->add( "string", uSize * 2, "value" );                                 // value for column in table
+      p->add( "uint32", 0, "operator");                                       // operator for column, used for where part of query
       p->add( "uint32", 0, "type" );                                          // type of value
       p->add( "uint32", 0, "type_part" );                                     // part type of value, this same as sql part like select, where    
       p->add( "rstring", 0, "raw" );                                          // raw sql stamement for column
@@ -311,6 +312,16 @@ std::pair<bool, std::string> CRENDERSql::ColumnAdd( const gd::argument::argument
             m_tableField.cell_set( uRow, eColumnFieldPartType, uPartType );
          }
          else { m_tableField.cell_set( uRow, eColumnFieldPartType, value_.as_variant_view().as<uint32_t>() ); }
+      }
+      else if(key_ == "operator")
+      {
+         uint32_t uOperator = 0;
+         if( value_.is_string() == true ) { uOperator = gd::sql::query::get_where_operator_number_s( value_.as_string_view() ); }
+         else { uOperator = value_.as_variant_view().as<uint32_t>(); }
+
+         if(uOperator == gd::sql::eOperatorError) { return { false, std::format("Invalid operator: {}", value_.as_string_view()) }; }
+
+         m_tableField.cell_set( uRow, eColumnOperator, uOperator );
       }
       else
       {
@@ -740,7 +751,12 @@ std::pair<bool, std::string> CRENDERSql::ColumnsAdd(pugi::xml_document* pxmldocu
             uint32_t uPartType = utility::get_part_type_from_string(value_);
             if(uPartType != 0) { arguments_.append("type_part", uPartType); }
          }
-         else if(stringElementName == "where") { arguments_.append("type_part", uint32_t(ePartTypeWhere)); }
+         else if(stringElementName == "where") 
+         { 
+            arguments_.append("type_part", uint32_t(ePartTypeWhere)); 
+            value_ = xpathnode_.node().attribute("operator").value();
+            if(value_.empty() == false) { arguments_.append("operator", value_); }
+         }
          else if(stringElementName == "returning") { arguments_.append("type_part", uint32_t(ePartTypeReturning)); }
 
          value_ = xpathnode_.node().attribute("value").value();

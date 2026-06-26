@@ -525,6 +525,10 @@ public:
    condition* condition_add_(const table* ptable, std::string_view stringName, const gd::variant_view& variantOperator, const gd::variant_view& variantValue, uint32_t uType = 0);
    condition* condition_add_raw(const gd::variant_view& variantTable, const std::string_view& stringCondition);
 
+   condition* condition_get(std::string_view stringName);
+   const condition* condition_get(std::string_view stringName) const;
+   std::vector<gd::variant_view> condition_get_values(std::string_view stringName) const;
+
    bool condition_empty() const noexcept { return m_vectorCondition.empty(); }
    size_t condition_size() const noexcept { return m_vectorCondition.size(); }
    std::vector<condition>::iterator condition_begin() { return m_vectorCondition.begin();  }
@@ -859,12 +863,30 @@ inline query& query::add( const gd::variant_view& variantTable, const std::strin
    condition_add_raw( variantTable, stringCondition );  return *this;
 }
 
-/// Process sql template and replace parts to generate final query
+/// Process sql template and replace parts to generate final query -----------
 inline std::string query::sql_format( std::string_view stringTemplate, const gd::argument::arguments* pargumentsValues ) const {
    std::string stringSql;
    sql_format( stringTemplate, stringSql, pargumentsValues );
    return stringSql;
-}  
+}
+
+/// Return pointer to condition for name if found, nullptr if not found ------
+inline query::condition* query::condition_get(std::string_view stringName) {
+   for(auto it = m_vectorCondition.begin(); it != m_vectorCondition.end(); it++) {
+      const auto& stringConditionName = it->name();
+      if(stringConditionName == stringName) return &(*it);
+   }
+   return nullptr;
+}
+
+/// Return pointer to condition for name if found, nullptr if not found ------
+inline const query::condition* query::condition_get(std::string_view stringName) const {
+   for(auto it = m_vectorCondition.begin(); it != m_vectorCondition.end(); it++) {
+      const auto& stringConditionName = it->name();
+      if(stringConditionName == stringName) return &(*it);
+   }
+   return nullptr;
+}
 
 
 

@@ -109,6 +109,7 @@ public:
       eColumnFieldName,          ///< name for column in table
       eColumnFieldAlias,         ///< alias for column in table
       eColumnFieldValue,         ///< value for column in table
+      eColumnOperator,           ///< operator for column, used for where part of query
       eColumnFieldType,          ///< gd type value for column value
       eColumnFieldPartType,      ///< sql part type for column, used to separate columns for select, value and where parts of query
                                  ///< This is used to be able to filter out columns for different parts of query, for example when creating insert query we only need value part, when creating select query we only need select part, etc.

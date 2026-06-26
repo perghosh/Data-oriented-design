@@ -419,6 +419,20 @@ query::condition* query::condition_add_raw( const gd::variant_view& variantTable
    return &m_vectorCondition.back();                                           // return pointer to added condition
 }
 
+/** --------------------------------------------------------------------------
+ * @brief Get all values for a specific condition name
+ * @param stringName The name of the condition to search for
+ * @return A vector of `gd::variant_view` containing the values of all conditions that match the specified name
+ */
+std::vector<gd::variant_view> query::condition_get_values(std::string_view stringName) const
+{
+   std::vector<gd::variant_view> vectorValue;
+   for (const auto& condition_ : m_vectorCondition)
+   {
+      if(condition_.name() == stringName) { vectorValue.push_back(condition_.value()); }
+   }
+   return vectorValue;
+}
 
 /*----------------------------------------------------------------------------- condition_add */ /**
  * Add condition to query
@@ -2112,6 +2126,7 @@ std::pair<bool, std::string> query::sql_format( std::string_view stringTemplate,
       pit++;
       bool bRaw = false;         // {=name} raw insert, no escaping, no quotes
       bool bRequired = false;    // {*name} required value
+      bool bArray = false;       // {name[]} is array, if value is array then look for multiple values and append them as comma separated values, if value is not array then treat as single value
       bool bClause   = false;    // {+name} clause injection, clause means complete sql parts like, select, where etc
       bool bClauseWithKeyword = false; // {++name} or {+=name} clause injection with keyword
 
@@ -2142,6 +2157,9 @@ std::pair<bool, std::string> query::sql_format( std::string_view stringTemplate,
       {
          stringName = stringPlaceholder;
          stringFormat.clear();
+
+         // ## check for array suffix '[]' ...................................
+         if( stringName.length() > 2 && stringName.substr( stringName.length() - 2 ) == "[]" ) { bArray = true; stringName = stringName.substr( 0, stringName.length() - 2 ); }
       }
       else
       {
@@ -2154,6 +2172,27 @@ std::pair<bool, std::string> query::sql_format( std::string_view stringTemplate,
       std::string_view stringValue;
       bool bValueFound = false;
 
+      if(bArray == true)
+      {
+         const condition* pCondition = condition_get(stringName);
+         if(pCondition != nullptr)
+         {
+            unsigned uType = pCondition->type();
+            std::vector<gd::variant_view> vectorValue = condition_get_values(stringName);
+            bool bFirst = true;
+            for(const auto& value_ : vectorValue)
+            {
+               if(bFirst == true) bFirst = false;
+               else               stringSql += ", ";
+
+               if(bRaw == false) append_g(value_, uType, get_dialect(), stringSql, gd::types::tag_view{}); // format value for sql
+               else              append_g(value_, stringSql, gd::sql::tag_raw{}); // raw value, no formatting
+            }
+         }
+
+         continue; // @TODO: array handling is not implemented in this snippet, skip for now
+      }
+
       // ### positional index into pargumentsValues
       if( stringName.empty() == false && gd::types::is_ctype_g( stringName[0], "digit"_ctype ) ) // check for number
       {
@@ -2163,8 +2202,8 @@ std::pair<bool, std::string> query::sql_format( std::string_view stringTemplate,
             auto variantviewFound = (*pargumentsValues)[uIndex].as_variant_view();
             if( variantviewFound.is_null() == false )
             {
-               if( bRaw == false ) append_g( variantviewFound, 0u, get_dialect(), stringSql, gd::types::tag_view{} );
-               else                append_g( variantviewFound, stringSql, gd::sql::tag_raw{} );
+               if( bRaw == false ) append_g( variantviewFound, 0u, get_dialect(), stringSql, gd::types::tag_view{} ); // format value for sql
+               else                append_g( variantviewFound, stringSql, gd::sql::tag_raw{} ); // raw value, no formatting
                uArgumentIndex = uIndex + 1;
             }
             else if( bRequired == true ) { stringSql += '{'; stringSql += stringPlaceholder; stringSql += '}'; }
