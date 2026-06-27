@@ -2189,6 +2189,7 @@ std::pair<bool, std::string> query::sql_format( std::string_view stringTemplate,
                else              append_g(value_, stringSql, gd::sql::tag_raw{}); // raw value, no formatting
             }
          }
+         else if(bRequired == true) { stringSql += '{'; stringSql += stringPlaceholder; stringSql += '}'; } // required: keep placeholder
 
          continue; // @TODO: array handling is not implemented in this snippet, skip for now
       }
