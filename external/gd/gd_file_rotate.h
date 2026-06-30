@@ -210,6 +210,9 @@ public:
    static std::string time_now_s( tag_filename );
    static std::string year_now_s();
 
+   // ## process id functionality, get current process id as text
+   static std::string process_id_s();
+
    // ## helper methods
 
    /// test flag in value, true if flag is set, false if not 

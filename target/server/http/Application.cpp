@@ -231,6 +231,8 @@ std::pair<bool, std::string> CApplication::Initialize()
       // replace dashes in string
       std::replace( stringDate.begin(), stringDate.end(), '-', '_');
       stringLogFile += stringDate;
+      stringLogFile += "_";
+      stringLogFile += gd::file::rotate::backup_history::process_id_s();
       stringLogFile += ".log";
       PROPERTY_Set("file-log", stringLogFile);
 #ifndef NDEBUG

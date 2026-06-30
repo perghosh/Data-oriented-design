@@ -9,6 +9,12 @@
 #include <filesystem>
 #include <algorithm>
 
+#if defined(_WIN32)
+#   include <windows.h>
+#else
+#   include <unistd.h>
+#endif
+
 
 #include "gd_utf8.h"
 
@@ -28,6 +34,18 @@
 
 
 _GD_FILE_ROTATE_BEGIN
+
+namespace
+{
+   uint32_t get_process_identifier_s()
+   {
+#if defined(_WIN32)
+      return static_cast<uint32_t>(::GetCurrentProcessId());
+#else
+      return static_cast<uint32_t>(::getpid());
+#endif
+   }
+}
 
 
 void backup_history::common_construct(const backup_history& o)
@@ -474,6 +492,14 @@ std::string backup_history::year_now_s()
    return pbszTime;
 }
 
+/*----------------------------------------------------------------------------- process_id_s */ /**
+ * Get process id as string
+ * \return std::string process id as string
+ */
+std::string backup_history::process_id_s()
+{
+   return std::to_string(static_cast<unsigned long>(get_process_identifier_s()));
+}
 
 
 /*----------------------------------------------------------------------------- file_stash_log_s */ /**

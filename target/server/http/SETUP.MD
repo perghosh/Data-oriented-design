@@ -68,11 +68,9 @@ WantedBy=multi-user.target
 ### Enable and start instances
 
 ~~~bash
-sudo systemctl daemon-reload
-sudo systemctl enable --now http@test
-sudo systemctl enable --now http@kt
-sudo systemctl enable --now http@afs
-sudo systemctl enable --now http@as
+sudo systemctl start http@as
+sudo systemctl start http@demo
+sudo systemctl start http@kt
 ~~~
 
 ### Verify status and logs
