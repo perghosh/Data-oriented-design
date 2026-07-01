@@ -235,6 +235,15 @@ std::pair<bool, std::string> CApplication::Initialize()
       stringLogFile += gd::file::rotate::backup_history::process_id_s();
       stringLogFile += ".log";
       PROPERTY_Set("file-log", stringLogFile);
+
+      // ## check if log file exists, if not create it
+      if( std::filesystem::exists(stringLogFile) == true )
+      {
+         std::cout << "Log file '" << stringLogFile << "' already exists, and can't be created!" << std::endl;
+         PROPERTY_Set("file-log", "");
+         stringLogFile.clear();
+      }
+
 #ifndef NDEBUG
 #     ifdef _WIN32
       //plogger->append( std::make_unique<gd::log::printer_console>() );         // append printer to logger, this prints to console
@@ -272,7 +281,11 @@ std::pair<bool, std::string> CApplication::Initialize()
          }
       }
 
-      plogger->append( std::make_unique<gd::log::printer_file>(stringLogFile) );// append printer to logger, prints to file
+      // ## if log file is set then create log file printer
+      if(stringLogFile.empty() == false)
+      {
+         plogger->append(std::make_unique<gd::log::printer_file>(stringLogFile));// append printer to logger, prints to file
+      }
 #endif
 
 #ifndef NDEBUG
@@ -503,6 +516,7 @@ std::pair<bool, std::string> CApplication::SERVER_Start(unsigned uIndex)
    auto const doc_root = std::make_shared<std::string>(stringRootFolder);
                                                                                                    LOG_DEBUG_RAW("Starting server on http://" & stringIp + ":" & uPort & " with root folder '" & stringRootFolder & "'");
    // Create and launch a listening port
+   PrintMessage("Starting server on http://" + stringIp + ":" + std::to_string(uPort) + " with root folder '" + stringRootFolder + "'", gd::argument::arguments());
    auto plistener = std::make_shared<listener>( iocontext_,  tcp::endpoint{addressIP, uPort}, doc_root);
    plistener->run();
 
