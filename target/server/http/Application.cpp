@@ -155,7 +155,8 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
                auto stringConfigurationFile = ( *poptionsActive )["configuration"].as_string();
                if( stringConfigurationFile.empty() == false && std::filesystem::exists( stringConfigurationFile ) == true )
                {
-                  auto result_ = CONFIGURATION_Read( stringConfigurationFile );      // read configuration from configuration file
+                  PrintMessage("Reading configuration file '" + stringConfigurationFile + "'...", gd::argument::arguments());
+                  auto result_ = CONFIGURATION_Read( stringConfigurationFile );// read configuration from configuration file
                   if( result_.first == false ) { return result_; }
                }
                else
