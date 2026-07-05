@@ -473,33 +473,37 @@ std::pair< bool, std::string > CApplication::Execute( gd::cli::options& optionsC
    return std::pair<bool, std::string>( true, "" );
 }
 
-/** --------------------------------------------------------------------------- @API [tag: server] [summary: start server] [description: Start the web server] [type: member method]
- * @brief Start the web server
- * @return true if ok, false and error information on error
+/**  -------------------------------------------------------------------------- SERVER_Start @API [tag: server] [summary: start server] [description: Start the web server] [type: member method]
+ * @brief Start HTTP server for specified site configuration
+ *
+ * Initializes and starts the HTTP server using configuration from the site table.
+ * Sets up the io_context with specified thread count, creates TCP listener on the
+ * configured IP address and port, and starts worker threads to handle requests.
+ *
+ * @param uIndex Index of site configuration in `m_ptableSite` table
+ * @return std::pair<bool, std::string> Success flag and error message (empty on success)
  */
 std::pair<bool, std::string> CApplication::SERVER_Start(unsigned uIndex)
 {                                                                                                  assert(uIndex < m_ptableSite->size() && "You need at least one site to start server");
-   unsigned short uPort = 80;
-   std::string stringDefaultIp("127.0.0.1");
-   std::string stringIp;
-   std::string stringRoot;
+   unsigned short uPort = 80; // Default port to use if none is specified in site configuration
+   std::string stringDefaultIp("127.0.0.1"); // Default IP local address to use if none is specified in site configuration
+   std::string stringIp; // IP address to use for the listener
+   std::string stringRoot; // Root folder for the site on local disk 
 
    // ## site ...............................................................
    uPort = (unsigned short)m_ptableSite->cell_get_variant_view(uIndex, "port").as_uint();
    stringIp = m_ptableSite->cell_get_variant_view(uIndex, "ip").as_string();
    stringRoot = m_ptableSite->cell_get_variant_view(uIndex, "root").as_string();
 
-
    // ## Prepare ip address .................................................
-
-   if (PROPERTY_Get("ip").empty() == false) { stringIp = papplication_g->PROPERTY_Get("ip").as_string(); }
+   if (PROPERTY_Get("ip").empty() == false) { stringIp = papplication_g->PROPERTY_Get("ip").as_string(); } // If IP is set in properties, use it
    if( stringIp.empty() == true) { stringIp = stringDefaultIp; }
 
    // ## Prepare root folder for site on local disk .........................
    std::string stringRootFolder = FOLDER_GetRoot_s( "root/" );
    if( PROPERTY_Get("folder-root").empty() == false ) stringRootFolder = papplication_g->PROPERTY_Get("folder-root").as_string();
 
-   unsigned uThreadCount = 4;
+   unsigned uThreadCount = 4; // Default number of threads to use for the server
    if( PROPERTY_Get("system-threadcount").empty() == false ) uThreadCount = papplication_g->PROPERTY_Get("system-threadcount").as_uint();
 
 // #ifndef NDEBUG
@@ -510,7 +514,6 @@ std::pair<bool, std::string> CApplication::SERVER_Start(unsigned uIndex)
 // #endif
 
    boost::asio::io_context iocontext_( uThreadCount );
-
                                                                                                    assert( stringIp.empty() == false && "IP address can not be empty!" );
 
    const boost::asio::ip::address addressIP = net::ip::make_address(stringIp);
@@ -518,9 +521,24 @@ std::pair<bool, std::string> CApplication::SERVER_Start(unsigned uIndex)
                                                                                                    LOG_DEBUG_RAW("Starting server on http://" & stringIp + ":" & uPort & " with root folder '" & stringRootFolder & "'");
    // Create and launch a listening port
    PrintMessage("Starting server on http://" + stringIp + ":" + std::to_string(uPort) + " with root folder '" + stringRootFolder + "'", gd::argument::arguments());
-   auto plistener = std::make_shared<listener>( iocontext_,  tcp::endpoint{addressIP, uPort}, doc_root);
-   plistener->run();
 
+    std::shared_ptr<listener> plistener;
+   try 
+   {
+      plistener = std::make_shared<listener>( iocontext_,  tcp::endpoint{addressIP, uPort}, doc_root); // Start listening on the specified port
+      plistener->run();                                                        // Run the listener to accept incoming connections
+   }
+   catch(const boost::system::system_error& e) 
+   {
+      std::string stringError = "Failed to start server on port " + std::to_string(uPort) + ": " + e.what();           LOG_ERROR_RAW(stringError);
+      return { false, stringError };
+   }
+   catch(const std::exception& e) 
+   {
+      std::string stringError = std::string("Exception starting server: ") + e.what();                                 LOG_ERROR_RAW(stringError);
+      return { false, stringError };
+   }
+   
    // ## Prepare server and initialize with settings .........................
    if( m_pserverBoost != nullptr )
    {
