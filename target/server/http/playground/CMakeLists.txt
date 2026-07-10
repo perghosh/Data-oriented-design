@@ -128,7 +128,8 @@ if( USE_TEST_ )
    add_executable(${TEST_NAME_} ${GD_SOURCES_ALL}
       ${SOURCE_PLAYGROUND_}
       ${TARGET_SOURCE_FILES_} ${TARGET_PLAYGROUND_}
-      ${external_sqlite} ${external_catch2} ${external_pugixml}
+      ${GD_MODULES__DBMETA}
+      ${external_sqlite} ${external_catch2} ${external_pugixml} ${external_lua}
       "main.cpp" 
       "${TEST_NAME_}.cpp"
    )
@@ -138,6 +139,7 @@ if( USE_TEST_ )
    target_compile_definitions(${TEST_NAME_} PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN _CRT_SECURE_NO_WARNINGS)
    target_compile_definitions(${TEST_NAME_} PRIVATE GD_LOG_SIMPLE)
    target_compile_definitions(${TEST_NAME_} PRIVATE GD_DATABASE_SQLITE_USE )
+   target_compile_definitions(${TEST_NAME_} PRIVATE WIN32_LEAN_AND_MEAN)
 endif()
 
 set( USE_TEST_ ON )
