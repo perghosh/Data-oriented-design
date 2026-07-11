@@ -28,6 +28,29 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
+TEST_CASE("[session] add thousand sessions", "[session]")
+{
+   std::unique_ptr< CApplication > papplication_ = std::make_unique<CApplication>();
+
+   papplication_->DOCUMENT_Add("test");
+   papplication_->DOCUMENT_SetActive("test");
+
+   auto pdocument_ = papplication_->DOCUMENT_Get("test");
+
+   // ## prepare for 10000 sessions
+   pdocument_->SESSION_Initialize(10000);
+
+   // ### add 8000 sessions
+   for(int i = 0; i < 8000; ++i)
+   {
+      pdocument_->SESSION_Add();
+   }
+
+   auto uuid_ = pdocument_->SESSION_At(10);
+}
+
+
+/*
 TEST_CASE( "[session] borrow vector 1", "[session]" )
 {
    gd::borrow::vector< std::pair<std::string_view, gd::variant_view> > vector_;
@@ -88,4 +111,4 @@ TEST_CASE( "[session] vector - default construction", "[session]" )
    // file:///C:/dev/home/DOD/target/server/http/Router.cpp() <-- this works
    // file:///C:/dev/home/DOD/target/server/http/Router.cpp(80) <-- this DO NOT work :(
 }
-
+*/

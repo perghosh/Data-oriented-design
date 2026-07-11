@@ -83,7 +83,7 @@ public:
    std::pair<bool, std::string> Add( std::string_view stringUuid ); // thread safe
    std::pair<bool, std::string> Add( std::string_view stringUuid, uint64_t* puIndex ); // thread safe
    /// Find session by id, if not found return null uuid
-   gd::uuid At( size_t uIndex );
+   gd::uuid At( size_t uIndex ) const;
 
    /// Update time for session, set to current time
    void Update( size_t uIndex );

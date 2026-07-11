@@ -114,7 +114,7 @@ std::pair<bool, std::string> CSessions::Add( std::string_view stringUuid, uint64
 }
 
 /// Get the UUID at the specified index
-gd::uuid CSessions::At( size_t uIndex )
+gd::uuid CSessions::At( size_t uIndex ) const
 {                                                                                                  assert( uIndex < m_tableSession.size() );
    gd::uuid uuid_;
    const auto* pbValue = m_tableSession.cell_get( (uint64_t)uIndex, 0 );

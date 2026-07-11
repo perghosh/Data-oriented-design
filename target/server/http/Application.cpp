@@ -1124,7 +1124,7 @@ CDocument* CApplication::DOCUMENT_Get(const std::string_view& stringName)
  */
 CDocument* CApplication::DOCUMENT_Get(const std::string_view& stringName, bool bCreate)
 {
-   auto pdocument = DOCUMENT_Get(stringName);
+   CDocument* pdocument = DOCUMENT_Get(stringName);
    if( pdocument == nullptr && bCreate == true )
    {
       pdocument = DOCUMENT_Add(stringName);
@@ -1146,6 +1146,17 @@ void CApplication::DOCUMENT_Remove(const std::string_view& stringName)
             return doc->GetName() == stringName;
          }),
       m_vectorDocument.end());
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Sets the active document pointer using the provided document name.
+ *
+ * @param stringName The name of the document to activate.
+ * @return void No return value. `m_pdocumentActive` is set to the matching document or `nullptr` if not found.
+ */
+void CApplication::DOCUMENT_SetActive(std::string_view stringName)
+{                                                                                                  assert(DOCUMENT_Get(stringName) != nullptr && "Document not found");
+   m_pdocumentActive = DOCUMENT_Get(stringName);
 }
 
 /** ---------------------------------------------------------------------------

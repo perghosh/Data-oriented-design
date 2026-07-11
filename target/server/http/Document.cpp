@@ -418,6 +418,12 @@ void CDocument::MESSAGE_Progress(const std::string_view& stringMessage, const gd
    m_papplication->PrintProgress(stringMessage, argumentsMessage );           // display progress message in application
 }
 
+/// Add session to internal list of sessions ---------------------------------
+uint64_t CDocument::SESSION_Add()
+{
+   gd::types::uuid uuidRandom = gd::types::uuid_generate_g();  
+   return SESSION_Add(uuidRandom);
+}
 
 /// Add session to internal list of sessions
 uint64_t CDocument::SESSION_Add( const gd::types::uuid& uuidSession )
@@ -442,11 +448,24 @@ void CDocument::SESSION_Add( const std::vector<std::string>& vectorUuid )
    }
 }
 
-
 /// Delete session from internal list of sessions
 void CDocument::SESSION_Delete( const gd::types::uuid& uuidSession ) { m_psessions->Delete( uuidSession ); }
 /// Delete session from internal list of sessions based on index
 void CDocument::SESSION_Delete( uint64_t uIndex ) { m_psessions->Delete( uIndex ); }
+
+/// Get session from internal list of sessions based on index ................
+gd::types::uuid CDocument::SESSION_At(uint64_t uIndex) const
+{                                                                                                  assert( uIndex < m_psessions->SizeMax() && "Index out of range for sessions");
+   gd::types::uuid uuid;
+   uuid = (const uint8_t*)m_psessions->At(uIndex);
+   return uuid;
+}
+
+/// Find session in internal list of sessions, return index of session or -1 if not found
+int64_t CDocument::SESSION_Find(const gd::types::uuid& uuidSession) const
+{
+   return m_psessions->Find(uuidSession);
+}
 
 uint64_t CDocument::SESSION_Count() const
 {

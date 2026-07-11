@@ -159,6 +159,7 @@ public:
    void DOCUMENT_Remove(const std::string_view& stringName);
 
    // ## Document statistics and general operations
+   void DOCUMENT_SetActive(std::string_view stringName);
    size_t DOCUMENT_Size() const;
    bool DOCUMENT_Empty() const;
    void DOCUMENT_Clear();
