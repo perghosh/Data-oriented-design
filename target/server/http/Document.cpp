@@ -467,6 +467,14 @@ int64_t CDocument::SESSION_Find(const gd::types::uuid& uuidSession) const
    return m_psessions->Find(uuidSession);
 }
 
+/// Find session in internal list of sessions based on string uuid, return index of session or -1 if not found
+int64_t CDocument::SESSION_Find(std::string_view stringUuid) const
+{
+   gd::types::uuid uuid;
+   gd::binary_copy_uuid_g( uuid, stringUuid );
+   return SESSION_Find(uuid);
+}
+
 uint64_t CDocument::SESSION_Count() const
 {
    return m_psessions->CountActive();

@@ -214,6 +214,7 @@ public:
 
    gd::types::uuid SESSION_At(uint64_t uIndex) const;
    int64_t SESSION_Find(const gd::types::uuid& uuidSession) const;
+   int64_t SESSION_Find(std::string_view stringUuid) const;
 
    uint64_t SESSION_Count() const;
    bool SESSION_Empty() const { return m_psessions != nullptr && m_psessions->Empty() == false; }

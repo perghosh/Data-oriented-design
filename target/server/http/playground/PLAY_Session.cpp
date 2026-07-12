@@ -46,7 +46,13 @@ TEST_CASE("[session] add thousand sessions", "[session]")
       pdocument_->SESSION_Add();
    }
 
-   auto uuid_ = pdocument_->SESSION_At(10);
+   int64_t iPosition = 10;
+
+   auto uuid_ = pdocument_->SESSION_At(iPosition);
+   auto iFind = pdocument_->SESSION_Find(uuid_);                               REQUIRE(iFind == iPosition);
+
+   pdocument_->SESSION_Delete(iPosition);
+   iFind = pdocument_->SESSION_Find(uuid_);                                    REQUIRE(iFind == -1);
 }
 
 
