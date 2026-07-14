@@ -1270,7 +1270,8 @@ arguments& arguments::append(const char* pbszName, uint32_t uNameLength, argumen
       return *this;
    }
 
-   *(uint32_t*)&m_pBuffer[m_uLength] = (uint32_t)uLength;                      // set length for data
+   // *(uint32_t*)&m_pBuffer[m_uLength] = (uint32_t)uLength;                   // set length for data @TODO: this is not working on some platforms, so use memcpy instead
+   memcpy(&m_pBuffer[m_uLength], &uLength, sizeof(uint32_t));                  // set length for data
    m_uLength += sizeof(uint32_t);
    memcpy(&m_pBuffer[m_uLength], pBuffer, uLength);                            // copy data
    m_uLength += uLength;                                                                           assert(m_uLength <= m_uBufferLength);

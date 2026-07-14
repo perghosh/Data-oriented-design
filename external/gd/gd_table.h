@@ -209,7 +209,7 @@ template<typename TABLE>
 struct cell
 {
    cell(): m_uRow(0), m_uColumn(0), m_ptable(nullptr) {}
-   cell( TABLE* ptable, uint64_t uRow, unsigned uColumn ): m_ptable(ptable), m_uRow(uRow), m_uColumn(uColumn) {}
+   cell( TABLE* ptable, uint64_t uRow, unsigned uColumn ): m_ptable(ptable), m_uRow(uRow), m_uColumn(uColumn) { assert( m_ptable != nullptr ); assert( m_uRow < m_ptable->get_row_count() ); assert( m_uColumn < m_ptable->get_column_count() ); }
 
    cell& operator=( const gd::variant_view& variantviewValue ) { m_ptable->cell_set( m_uRow, m_uColumn, variantviewValue, tag_convert{} ); return *this; }
 

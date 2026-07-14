@@ -1370,14 +1370,25 @@ inline bool table::row_is_arguments(uint64_t uRow) const noexcept { assert(uRow 
 inline void table::row_set_null( uint64_t uRow ) { assert( uRow < m_uReservedRowCount ); assert( is_null() == true );
    auto puRow = row_get_null( uRow );
 
-   if( is_null32() ) { *(uint32_t*)puRow = ( (uint32_t)-1 ); puRow += eSpaceNull32Columns; }
-   else              { *(uint64_t*)puRow =((uint64_t)-1); puRow += eSpaceNull64Columns; }
+   if(is_null32() == true)
+   {
+      uint32_t uNull32 = (uint32_t)-1;
+      memcpy(puRow, &uNull32, sizeof(uint32_t));                               // strict aliasing
+      puRow += eSpaceNull32Columns;
+   }
+   else
+   {
+      uint64_t uNull64 = (uint64_t)-1;
+      memcpy(puRow, &uNull64, sizeof(uint64_t));                               // strict aliasing
+      puRow += eSpaceNull64Columns;
+   }
 
-   // ## if arguments then clearn the pointer to arguments object in row meta data
+   // ## if arguments then clear the pointer to arguments object in row meta data
    if( is_rowarguments() == true ) 
    {
-      puRow += ( m_uFlags & eTableFlagRowStatus ) ? eSpaceRowState : 0;// add row state size if used
-      *(intptr_t*)puRow = 0;                                                  // set arguments pointer to null
+      puRow += ( m_uFlags & eTableFlagRowStatus ) ? eSpaceRowState : 0;        // add row state size if used
+      intptr_t iZero = 0;
+      memcpy(puRow, &iZero, sizeof(intptr_t));
    } 
 }
 
