@@ -19,25 +19,6 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
-/*
-TEST_CASE("[table] custom columns", "[table]")
-{
-   gd::table::arguments::table table_( gd::table::tag_full_meta{} );
-   table_.column_prepare();
-   table_.column_add("rstring", 0, "path");
-   table_.column_add("rstring", 0, "name");
-   table_.column_add("uint64", 0, "size");
-   table_.prepare();
-
-   auto uRow = table_.row_add_one();
-   table_.row_set(uRow, { {"path", "C:\\test\\file.txt"}, {"name", "file.txt"}, {"size", 12345} }, gd::table::tag_convert{});
-
-   { auto b_ = table_.cell_get_variant_view(uRow, "path").as_string_view() == "C:\\test\\file.txt"; REQUIRE(b_); }
-
-   table_.cell_set(uRow, "path2", gd::variant_view("C:\\test\\file2.txt"));
-   { auto b_ = table_.cell_get_variant_view(uRow, "path2").as_string_view() == "C:\\test\\file2.txt"; REQUIRE(b_); }
-}
-*/
 TEST_CASE("[gd-table] custom columns", "[gd-table]")
 {
    {
