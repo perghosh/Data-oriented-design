@@ -2251,7 +2251,92 @@ void table::cell_set( uint64_t uRow, std::string_view stringName, const gd::vari
    }
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Set cell value in table, if type do not match or value do not fit adjust the value if column are not able to store everything
+ *
+ * If value type do not match the type used in column then value is converted to proper type
+ *
+ * @param uRow row index for cell
+ * @param uColumn column index for cell
+ * @param variantviewValue value set to cell and cell type need to match
+ * @param tag dispatch
+*/
+void table::cell_set(uint64_t uRow, unsigned uColumn, gd::variant_view variantviewValue, tag_adjust)
+{                                                                                                  assert(uRow < m_uReservedRowCount); assert(uColumn < m_pcolumns->size());
+   auto& columnSet = *m_pcolumns->get(uColumn);                                                    assert(columnSet.position() < m_uRowSize);
+   auto uValueType = variantviewValue.type_number();
+   auto uColumnType = columnSet.ctype_number();
 
+   if(uValueType == uColumnType)
+   {
+      if(columnSet.is_fixed()) { cell_set(uRow, uColumn, variantviewValue); }
+      else
+      {
+         if(columnSet.is_length() == true)
+         {
+            unsigned uMaxSize = columnSet.size();
+            unsigned uLength = gd::types::value_size_g(variantviewValue.type(), variantviewValue.length()); // value size in bytes (remember that non fixed value types starts with length information before actual value)
+            if(uLength >= uMaxSize)
+            {
+               auto variantAdjust = variantviewValue;
+               variantAdjust.adjust(uMaxSize);                                // adjust size to max size for column
+               cell_set(uRow, uColumn, variantAdjust);
+            }
+            else
+            {
+               cell_set(uRow, uColumn, variantviewValue);
+            }
+         }
+         else if(columnSet.is_reference() == true)
+         {
+            cell_set(uRow, uColumn, variantviewValue);
+         }
+      }
+   }
+   else
+   {
+      gd::variant variantConvertTo;
+      bool bOk = variantviewValue.convert_to(uColumnType, variantConvertTo);
+      if(bOk == true)
+      {
+         cell_set(uRow, uColumn, *(gd::variant_view*)&variantConvertTo, tag_adjust{}); // just cast to variant view, internal data is same just that varaiant view have different logic
+      }
+      else
+      {
+         if(variantviewValue.is_null() == true && is_null() == true)
+         {
+            cell_set_null(uRow, uColumn);
+         }
+      }
+   }
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Set cell value
+ * If value type do not match the type used in column then value is converted to proper type
+ * @param uRow row index for cell
+ * @param stringName column name (column has to have a name)
+ * @param variantviewValue value set to cell and cell type need to match
+*/
+void table::cell_set( uint64_t uRow, std::string_view stringName, gd::variant_view variantviewValue, tag_adjust )
+{                                                                                                  assert( uRow < m_uReservedRowCount ); assert( m_pcolumns != nullptr );
+   int iColumnIndex = column_find_index(stringName);
+   if(iColumnIndex != -1)
+   {
+      if(column_is_primitive(iColumnIndex) == true || column_is_reference(iColumnIndex) == false)
+      {
+         cell_set(uRow, (unsigned)iColumnIndex, variantviewValue, tag_adjust{});
+      }
+      else
+      {
+         cell_set(uRow, (unsigned)iColumnIndex, variantviewValue);
+      }
+   }
+   else
+   {                                                                          // column not found, set as argument
+      cell_set_argument(uRow, stringName, variantviewValue);
+   }
+}
 
 /** ---------------------------------------------------------------------------
  * @brief Set cell value in table, convert to proper value type used in column if value type do not match

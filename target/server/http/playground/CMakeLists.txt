@@ -84,7 +84,7 @@ if( USE_TEST_ )
 endif()
 
 
-set( USE_TEST_ ON )
+set( USE_TEST_ OFF )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_Endpoint")
    add_executable(${TEST_NAME_} ${GD_SOURCES_ALL}
@@ -103,6 +103,23 @@ if( USE_TEST_ )
 endif()
 
 set( USE_TEST_ ON )
+if( USE_TEST_ )
+   set(TEST_NAME_ "PLAY_GdTable")
+   add_executable(${TEST_NAME_} ${GD_SOURCES_ALL} 
+      ${external_catch2}
+      "main.cpp" 
+      "${TEST_NAME_}.cpp"
+   )
+   set_compiler_options()
+   target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
+   target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/source)
+   target_compile_definitions(${TEST_NAME_} PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN _CRT_SECURE_NO_WARNINGS)
+   if(WIN32)
+      target_compile_definitions(${TEST_NAME_} PRIVATE _WIN32_WINNT=0x0A00 WIN32_LEAN_AND_MEAN NOMINMAX ) # Windows 10/11 (was 0x0601 for Windows 7)
+   endif()
+endif()
+
+set( USE_TEST_ OFF )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_Lua")
    add_executable(${TEST_NAME_} ${GD_SOURCES_ALL} ${GD_MODULES__SOURCES_ALL}
@@ -214,4 +231,3 @@ if( USE_TEST_ )
    target_compile_definitions(${TEST_NAME_} PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN _CRT_SECURE_NO_WARNINGS)
    target_compile_definitions(${TEST_NAME_} PRIVATE GD_LOG_SIMPLE)
 endif()
-

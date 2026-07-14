@@ -194,9 +194,10 @@ void CDocument::CACHE_Add( std::unique_ptr< gd::table::dto::table > ptableAdd )
    m_vectorTableCache.push_back( std::move( ptableAdd ) );                     // insert table to vector
 }
 
-/** ---------------------------------------------------------------------------
+/** --------------------------------------------------------------------------- CACHE_Get
  * @brief Check if cache table with id exists
  * @param stringId id to check for
+ * @param ptable_ pointer to table that is returned if found
  * @return true if table with id exists
  */ 
 bool CDocument::CACHE_Get(const std::string_view& stringId, pointer_table_t& ptable_ )
@@ -206,12 +207,12 @@ bool CDocument::CACHE_Get(const std::string_view& stringId, pointer_table_t& pta
    for( auto it = std::begin( m_vectorTableCache ), itEnd = std::end( m_vectorTableCache ); it != itEnd; it++ )
    {
       // Use std::visit to check if the table has the same id
-      bool bFound = std::visit([&stringId, &ptable_](const auto& ptable__)
+      bool bFound = std::visit([&stringId, &ptable_](const auto& ptableFind)
       {
-         auto argumentId = ptable__->property_get("id");
+         auto argumentId = ptableFind->property_get("id");
          if( argumentId.is_string() && stringId == static_cast<const char*>(argumentId) ) 
          { 
-            ptable_ = ptable__.get(); 
+            ptable_ = ptableFind.get(); 
             return true; 
          }
          return false;
@@ -475,6 +476,14 @@ int64_t CDocument::SESSION_Find(std::string_view stringUuid) const
    return SESSION_Find(uuid);
 }
 
+/// Compare session at index with specified session uuid, return true if they match
+bool CDocument::SESSION_Compare(uint64_t uIndex, const gd::types::uuid& uuidSession) const
+{
+   gd::types::uuid uuidAtIndex = SESSION_At(uIndex);
+   return (uuidAtIndex == uuidSession);
+}
+
+/// Get the number of active sessions in the internal list of sessions
 uint64_t CDocument::SESSION_Count() const
 {
    return m_psessions->CountActive();

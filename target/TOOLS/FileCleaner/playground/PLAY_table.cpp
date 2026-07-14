@@ -582,10 +582,10 @@ TEST_CASE("[table] custom columns", "[table]")
    auto uRow = table_.row_add_one();
    table_.row_set(uRow, { {"path", "C:\\test\\file.txt"}, {"name", "file.txt"}, {"size", 12345} }, gd::table::tag_convert{});
 
-   { auto b_ = table_.cell_get_variant_view(uRow, "path"). as_string_view() == "C:\\test\\file.txt"; REQUIRE(b_); }
+   { auto b_ = table_.cell_get_variant_view(uRow, "path").as_string_view() == "C:\\test\\file.txt"; REQUIRE(b_); }
 
    table_.cell_set(uRow, "path2", gd::variant_view("C:\\test\\file2.txt"));
-   { auto b_ = table_.cell_get_variant_view(uRow, "path2"). as_string_view() == "C:\\test\\file2.txt"; REQUIRE(b_); }
+   { auto b_ = table_.cell_get_variant_view(uRow, "path2").as_string_view() == "C:\\test\\file2.txt"; REQUIRE(b_); }
 
    { auto b_ = table_.cell_get_variant_view(uRow, 3).as_string_view() == "C:\\test\\file2.txt"; REQUIRE(b_); }
 

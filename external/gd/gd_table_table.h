@@ -714,7 +714,7 @@ public:
    void cell_set( uint64_t uRow, unsigned uColumn, const gd::variant_view& variantviewValue, tag_convert );
    void cell_set( uint64_t uRow, unsigned uColumn, const gd::variant_view& variantviewValue, tag_adjust );
    void cell_set( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_convert );
-   void cell_set( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_adjust );
+   void cell_set( uint64_t uRow, std::string_view stringName, const gd::variant_view& variantviewValue, tag_adjust );
    void cell_set( uint64_t uRow, const std::string_view& stringAlias, const gd::variant_view& variantviewValue, tag_convert, tag_alias );
    void cell_set( uint64_t uRow, unsigned uColumn, const std::vector<gd::variant_view>& vectorValue );
    void cell_set( uint64_t uRow, unsigned uColumn, const std::vector<gd::variant_view>& vectorValue, tag_convert );

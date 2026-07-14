@@ -216,6 +216,8 @@ public:
    int64_t SESSION_Find(const gd::types::uuid& uuidSession) const;
    int64_t SESSION_Find(std::string_view stringUuid) const;
 
+   bool SESSION_Compare( uint64_t uIndex, const gd::types::uuid& uuidSession) const;
+
    uint64_t SESSION_Count() const;
    bool SESSION_Empty() const { return m_psessions != nullptr && m_psessions->Empty() == false; }
    CSessions* SESSION_Get() { return m_psessions.get(); }

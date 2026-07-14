@@ -2156,7 +2156,7 @@ void table::cell_set( uint64_t uRow, const std::string_view& stringName, const g
  * @param stringName column name (column has to have a name)
  * @param variantviewValue value set to cell and cell type need to match
 */
-void table::cell_set( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_adjust )
+void table::cell_set( uint64_t uRow, std::string_view stringName, const gd::variant_view& variantviewValue, tag_adjust )
 {                                                                                                  assert( uRow < m_uReservedRowCount ); assert( m_pcolumns != nullptr );
    unsigned uColumnIndex = column_get_index( stringName );                                         assert( uColumnIndex != (unsigned)-1 );
    cell_set( uRow, uColumnIndex, variantviewValue, tag_adjust{});
