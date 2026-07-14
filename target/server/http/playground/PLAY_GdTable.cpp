@@ -89,3 +89,33 @@ TEST_CASE("[gd-table] custom columns", "[gd-table]")
       std::cout << string_d << std::endl;
    }
 }
+
+TEST_CASE("[gd-table] index operator", "[gd-table]")
+{
+   {
+      gd::table::arguments::table tableFiles(gd::table::tag_full_meta{});
+      tableFiles.column_prepare();
+      tableFiles.column_add("rstring", 0, "path");
+      tableFiles.column_add("rstring", 0, "name");
+      tableFiles.column_add("uint64", 0, "size");
+      tableFiles.prepare();
+
+      for(unsigned uRowIndex = 0; uRowIndex < 100; ++uRowIndex)
+      {
+         const auto uRow = tableFiles.row_add_one();
+         tableFiles.row_set(uRow, { { "path", "C:\\data\\files\\entry.bin" }, { "name", "entry.bin" }, { "size", 1000 + uRowIndex } }, gd::table::tag_convert{});
+         tableFiles.cell_set(uRow, "custom_file_category", gd::variant_view((uRowIndex % 2) == 0 ? "binary" : "text"));
+         tableFiles.cell_set(uRow, "custom_file_region", gd::variant_view((uRowIndex % 3) == 0 ? "north" : "south"));
+      }
+
+      for(unsigned uRowIndex = 0; uRowIndex < 100; ++uRowIndex)
+      {
+         const auto bCategoryOk = tableFiles.cell_get_variant_view(uRowIndex, "custom_file_category").as_string_view() == ((uRowIndex % 2) == 0 ? "binary" : "text"); REQUIRE(bCategoryOk);
+         const auto bRegionOk = tableFiles.cell_get_variant_view(uRowIndex, "custom_file_region").as_string_view() == ((uRowIndex % 3) == 0 ? "north" : "south"); REQUIRE(bRegionOk);
+      }
+
+      tableFiles(0, 2) = 10;
+      tableFiles[1,  2] = 10;
+   }
+
+}

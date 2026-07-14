@@ -1,7 +1,7 @@
 // @FILE [tag: table, args, arguments] [description: Table arguments and metadata management, when you may need extra information for each row] [type: header] [name: gd_table_arguments.h]
 
 /**
- * \file gd_table_aggregate.h
+ * \file gd_table_arguments.h
  *
  * @brief If table may have extra columns, not just the fixed one then use `gd::table::arguments::table`. It not only stores declared columns but also store variable columns for each row.
  *
@@ -363,13 +363,36 @@ private:
 public:
    std::vector<gd::variant_view> operator[]( uint64_t uRow ) const { return row_get_variant_view( uRow ); }
 
-   gd::variant_view operator[]( const std::pair<unsigned, unsigned>& pairCell ) const { return cell_get_variant_view( pairCell.first, pairCell.second ); }
-   gd::variant_view operator[]( const std::pair<unsigned, const std::string_view>& pairCell ) const { return cell_get_variant_view( pairCell.first, pairCell.second ); }
-
    table& operator+=( const table& o ) { append( o ); return *this; }
 
    gd::variant_view operator()( uint64_t uRow, unsigned uColumn ) const { return cell_get_variant_view( uRow, uColumn ); }
    gd::variant_view operator()( uint64_t uRow, const std::string_view& stringName ) const { return cell_get_variant_view( uRow, stringName ); }
+
+   cell<table> operator[](const std::pair<uint64_t, unsigned>& pairCell) noexcept { return cell<table>(this, pairCell.first, pairCell.second); }
+   cell<table> operator[](const std::pair<uint64_t, unsigned>& pairCell) const noexcept { return cell<table>(const_cast<table*>(this), pairCell.first, pairCell.second); }
+   cell<table> operator[](const std::pair<uint64_t, std::string_view>& pairCell) noexcept {
+      auto column_ = column_get_index(pairCell.second);
+      return cell<table>(this, pairCell.first, column_);
+   }
+   cell<table> operator[](const std::pair<uint64_t, std::string_view>& pairCell) const noexcept {
+      auto column_ = column_get_index(pairCell.second);
+      return cell<table>(const_cast<table*>(this), pairCell.first, column_);
+   }
+
+#if defined( GD_COMPILER_HAS_CPP23_SUPPORT )
+   // ## multidimensional subscript operator used to access or set cell values in table, it is used like table( row, column ) or table( row, "column_name" )
+   cell<table> operator[](uint64_t uRow, unsigned uColumn) noexcept { return cell<table>(this, uRow, uColumn); }
+   cell<table> operator[](uint64_t uRow, unsigned uColumn) const noexcept { return cell<table>( const_cast<table*>( this ), uRow, uColumn); }
+
+   cell<table> operator[](uint64_t uRow, std::string_view stringColumnName) noexcept {
+      auto column_ = column_get_index(stringColumnName);
+      return cell<table>(this, uRow, column_);
+   }
+   cell<table> operator[](uint64_t uRow, std::string_view stringColumnName) const noexcept {
+      auto column_ = column_get_index(stringColumnName);
+      return cell<table>(const_cast<table*>(this), uRow, column_);
+   }
+#endif   
 
 
 // ## methods ------------------------------------------------------------------

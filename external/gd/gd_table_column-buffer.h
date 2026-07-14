@@ -535,13 +535,37 @@ private:
 public:
    std::vector<gd::variant_view> operator[]( uint64_t uRow ) const { return row_get_variant_view( uRow ); }
 
-   gd::variant_view operator[]( const std::pair<unsigned, unsigned>& pairCell ) const { return cell_get_variant_view( pairCell.first, pairCell.second ); }
-   gd::variant_view operator[]( const std::pair<unsigned, const std::string_view>& pairCell ) const { return cell_get_variant_view( pairCell.first, pairCell.second ); }
-
    table_column_buffer& operator+=( const table_column_buffer& o ) { append( o ); return *this; }
 
    gd::variant_view operator()( uint64_t uRow, unsigned uColumn ) const { return cell_get_variant_view( uRow, uColumn ); }
    gd::variant_view operator()( uint64_t uRow, const std::string_view& stringName ) const { return cell_get_variant_view( uRow, stringName ); }
+
+   cell<table_column_buffer> operator[](const std::pair<uint64_t, unsigned>& pairCell) noexcept { return cell<table_column_buffer>(this, pairCell.first, pairCell.second); }
+   cell<table_column_buffer> operator[](const std::pair<uint64_t, unsigned>& pairCell) const noexcept { return cell<table_column_buffer>(const_cast<table_column_buffer*>(this), pairCell.first, pairCell.second); }
+   cell<table_column_buffer> operator[](const std::pair<uint64_t, std::string_view>& pairCell) noexcept {
+      auto column_ = column_get_index(pairCell.second);
+      return cell<table_column_buffer>(this, pairCell.first, column_);
+   }
+   cell<table_column_buffer> operator[](const std::pair<uint64_t, std::string_view>& pairCell) const noexcept {
+      auto column_ = column_get_index(pairCell.second);
+      return cell<table_column_buffer>(const_cast<table_column_buffer*>(this), pairCell.first, column_);
+   }
+
+#if defined( GD_COMPILER_HAS_CPP23_SUPPORT )
+   // ## multidimensional subscript operator used to access or set cell values in table, it is used like table( row, column ) or table( row, "column_name" )
+   cell<table_column_buffer> operator[](uint64_t uRow, unsigned uColumn) noexcept { return cell<table_column_buffer>(this, uRow, uColumn); }
+   cell<table_column_buffer> operator[](uint64_t uRow, unsigned uColumn) const noexcept { return cell<table_column_buffer>(const_cast<table_column_buffer*>(this), uRow, uColumn); }
+
+   cell<table_column_buffer> operator[](uint64_t uRow, std::string_view stringColumnName) noexcept {
+      auto column_ = column_get_index(stringColumnName);
+      return cell<table_column_buffer>(this, uRow, column_);
+   }
+   cell<table_column_buffer> operator[](uint64_t uRow, std::string_view stringColumnName) const noexcept {
+      auto column_ = column_get_index(stringColumnName);
+      return cell<table_column_buffer>(const_cast<table_column_buffer*>(this), uRow, column_);
+   }
+#endif   
+
 
 
 // ## methods ------------------------------------------------------------------
