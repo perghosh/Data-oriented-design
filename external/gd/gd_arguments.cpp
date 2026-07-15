@@ -185,7 +185,7 @@ unsigned int arguments::argument::length() const
    {
       if( ctype() & eValueLength )
       {
-         auto uSize = *(uint32_t*)(m_unionValue.puch - 4);                                         assert(uSize < 0x00A00000); // realistic
+         auto uSize = gd::types::cast_g<uint32_t>( m_unionValue.puch - 4 );                        assert(uSize < 0x00A00000); // realistic
          return uSize;
       }
       else if( eTypeNumber == eTypeNumberWString ) return (unsigned int)wcslen(m_unionValue.pwsz) * 2 + 2;
@@ -1219,7 +1219,8 @@ arguments& arguments::append( argument_type uType, const_pointer pBuffer, unsign
       return *this;
    }
 
-   *(uint32_t*)&m_pBuffer[m_uLength] = (unsigned long)uLength;                 // set length in byte count
+   uint32_t uLengthValue = (uint32_t)uLength;
+   memcpy( &m_pBuffer[m_uLength], &uLengthValue, sizeof( uint32_t ) );          // set length in byte count
    m_uLength += sizeof(uint32_t);
    memcpy(&m_pBuffer[m_uLength], pBuffer, uLength);
    m_uLength += uLength;                                                                           assert(m_uLength < m_uBufferLength);
@@ -1595,15 +1596,16 @@ arguments& arguments::set(const char* pbszName, uint32_t uNameLength, param_type
       *pPosition = uType;
       pPosition++;
 
-      if( (uType & eValueLength) == 0 )                                          // if type doesn't have specified length flag then just copy data into buffer
+      if( (uType & eValueLength) == 0 )                                        // if type doesn't have specified length flag then just copy data into buffer
       {
          memcpy(pPosition, pBuffer, uLength);
       }
       else
       {
-         *(uint32_t*)pPosition = (uint32_t)uLength;                              // set length for data
+         uint32_t uLengthValue = (uint32_t)uLength;
+         memcpy( pPosition, &uLengthValue, sizeof( uint32_t ) );               // set length for data
          pPosition += sizeof(uint32_t);
-         memcpy(pPosition, pBuffer, uLength);                                    // copy data
+         memcpy(pPosition, pBuffer, uLength);                                  // copy data
       }
    }
 
@@ -1664,7 +1666,8 @@ arguments& arguments::set(pointer pPosition, param_type uType, const_pointer pBu
       }
       else
       {
-         *(uint32_t*)pPosition = (uint32_t)uLength;                              // set length for data
+         uint32_t uLengthValue = (uint32_t)uLength;
+         memcpy( pPosition, &uLengthValue, sizeof( uint32_t ) );                 // set length for data
          pPosition += sizeof(uint32_t);
          memcpy(pPosition, pBuffer, uLength);                                    // copy data
       }
@@ -3006,19 +3009,23 @@ arguments::argument arguments::get_argument_s(arguments::const_pointer pPosition
    switch( eCType )
    {
    case arguments::eTypeNumberUnknown: return arguments::argument();
-   case arguments::eTypeNumberBool: return arguments::argument(*(bool*)pPosition);
-   case arguments::eTypeNumberInt8: return arguments::argument(*(int8_t*)pPosition);
-   case arguments::eTypeNumberUInt8: return arguments::argument(*(uint8_t*)pPosition);
-   case arguments::eTypeNumberInt16: return arguments::argument(*(int16_t*)pPosition);
-   case arguments::eTypeNumberUInt16: return arguments::argument(*(uint16_t*)pPosition);
-   case arguments::eTypeNumberInt32: return arguments::argument(*(int32_t*)pPosition);
-   case arguments::eTypeNumberUInt32: return arguments::argument(*(uint32_t*)pPosition);
-   case arguments::eTypeNumberInt64: return arguments::argument(*(int64_t*)pPosition);
-   case arguments::eTypeNumberUInt64: return arguments::argument(*(uint64_t*)pPosition);
-   case arguments::eTypeNumberFloat: return arguments::argument(*(float*)pPosition);
-   case arguments::eTypeNumberDouble: return arguments::argument(*(double*)pPosition);
+   case arguments::eTypeNumberBool: return arguments::argument( gd::types::cast_g<bool>( pPosition ) );
+   case arguments::eTypeNumberInt8: return arguments::argument( gd::types::cast_g<int8_t>( pPosition ) );
+   case arguments::eTypeNumberUInt8: return arguments::argument( gd::types::cast_g<uint8_t>( pPosition ) );
+   case arguments::eTypeNumberInt16: return arguments::argument( gd::types::cast_g<int16_t>( pPosition ) );
+   case arguments::eTypeNumberUInt16: return arguments::argument( gd::types::cast_g<uint16_t>( pPosition ) );
+   case arguments::eTypeNumberInt32: return arguments::argument( gd::types::cast_g<int32_t>( pPosition ) );
+   case arguments::eTypeNumberUInt32: return arguments::argument( gd::types::cast_g<uint32_t>( pPosition ) );
+   case arguments::eTypeNumberInt64: return arguments::argument( gd::types::cast_g<int64_t>( pPosition ) );
+   case arguments::eTypeNumberUInt64: return arguments::argument( gd::types::cast_g<uint64_t>( pPosition ) );
+   case arguments::eTypeNumberFloat: return arguments::argument( gd::types::cast_g<float>( pPosition ) );
+   case arguments::eTypeNumberDouble: return arguments::argument( gd::types::cast_g<double>( pPosition ) );
 
-   case arguments::eTypeNumberPointer: return arguments::argument((void*)(*(size_t*)pPosition));
+   case arguments::eTypeNumberPointer:
+   {
+      size_t uPointerValue = gd::types::cast_g<size_t>( pPosition );
+      return arguments::argument( (void*)uPointerValue );
+   }
 
    case arguments::eTypeNumberGuid: return arguments::argument((const uint8_t*)pPosition, eTypeGuid);
 
@@ -3031,18 +3038,18 @@ arguments::argument arguments::get_argument_s(arguments::const_pointer pPosition
    case arguments::eTypeNumberBinary: return arguments::argument(eTypeGuid, (const uint8_t*)pPosition);
 
    case (arguments::eTypeNumberString | arguments::eValueLength): {
-      uint32_t uSize = *(uint32_t*)pPosition;
+      uint32_t uSize = gd::types::cast_g<uint32_t>( pPosition );
       const uint8_t* p_ = (const uint8_t*)pPosition + sizeof(uint32_t);
       return arguments::argument( p_, uSize, enumType(eTypeString | arguments::eValueLength) );
    }
    case (arguments::eTypeNumberUtf8String | arguments::eValueLength): {
-      uint32_t uSize = *(uint32_t*)pPosition;
+      uint32_t uSize = gd::types::cast_g<uint32_t>( pPosition );
       const uint8_t* p_ = (const uint8_t*)pPosition + sizeof(uint32_t);
       return arguments::argument( p_, uSize, enumType(eTypeUtf8String | arguments::eValueLength) );
    }
    case (arguments::eTypeNumberWString | arguments::eValueLength): return arguments::argument(eTypeWString | arguments::eValueLength, (const uint8_t*)(const wchar_t*)(pPosition + sizeof(uint32_t)));
    case (arguments::eTypeNumberBinary | arguments::eValueLength): {
-      uint32_t uSize = *(uint32_t*)pPosition;
+      uint32_t uSize = gd::types::cast_g<uint32_t>( pPosition );
       const uint8_t* p_ = (const uint8_t*)pPosition + sizeof(uint32_t);
       return arguments::argument( p_, uSize, enumType(eTypeBinary | arguments::eValueLength) );
    }
@@ -3217,7 +3224,7 @@ arguments::pointer arguments::next_s(pointer pPosition)
    {
       if( uType & eValueLength )
       {
-         uint32_t uLength = *(uint32_t*)pPosition;
+         uint32_t uLength = gd::types::cast_g<uint32_t>( pPosition );
          pPosition += sizeof(uint32_t);
          pPosition += uLength;
       }
@@ -3257,7 +3264,7 @@ arguments::const_pointer arguments::next_s(const_pointer pPosition)
    {
       if( uType & eValueLength )
       {
-         uint32_t uLength = *(uint32_t*)pPosition;
+         uint32_t uLength = gd::types::cast_g<uint32_t>( pPosition );
          pPosition += sizeof(uint32_t);
          pPosition += uLength;
       }
@@ -3956,7 +3963,7 @@ uint64_t arguments::memcpy_s( pointer pCopyTo,  argument_type uType, const_point
          uValueLength--;                                                       // remove the zero terminator for length
       }
 
-      *(uint32_t*)(pCopyTo + uPosition) = uValueLength;
+      memcpy( pCopyTo + uPosition, &uValueLength, sizeof( uint32_t ) );
       memcpy(&pCopyTo[uPosition + sizeof( uint32_t )], pBuffer, uLength);      // copy data
       uPosition += uTotalLength;                                               // move past data for value (length and data)
    }

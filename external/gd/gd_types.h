@@ -980,6 +980,14 @@ constexpr enumType type_g( tag_ask_compiler )
    //else static_assert( false, "Invalid type");
 }
 
+/// To fix the fucking issue with strict aliasing, we need to use memcpy to copy the value from one type to another.
+template <typename TYPE>
+inline TYPE cast_g(const void* pFrom) {                                                            static_assert( std::is_trivially_copyable_v<TYPE>, "cast_g requires trivially copyable TYPE" ); assert(pFrom != nullptr);
+   TYPE value_;
+   std::memcpy(&value_, pFrom, sizeof(TYPE));
+   return value_;
+}
+
 /**
  * \brief Used to help write compiler code where type gets a name
  *

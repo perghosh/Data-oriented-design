@@ -14,7 +14,7 @@
  * - `0TAG0print.arguments` - Find operations
  */
 
-
+#include <bit>
 #include <iterator>
 #include <cwchar>
 
@@ -67,7 +67,8 @@ inline uint64_t align32_g( uint64_t uLength )
  */
 arguments::pointer arguments::move_to_value_s(pointer pPosition)
 {                                                                                                  assert( pPosition != nullptr );
-   uint32_t u_ = *(uint32_t*)pPosition;
+   uint32_t u_;
+   memcpy(&u_, pPosition, sizeof(uint32_t));
    enumCType eType = (enumCType)(u_ >> 24);                                    // get section type
    if( eType == eType_ParameterName )
    {
@@ -87,7 +88,8 @@ arguments::pointer arguments::move_to_value_s(pointer pPosition)
 /// move past name to value data (dont use this if pointer is not on name for value)
 arguments::pointer arguments::move_to_value_data_s(pointer pPosition)
 {                                                                                                  assert( pPosition != nullptr );
-   uint32_t u_ = *(uint32_t*)pPosition;
+   uint32_t u_ = gd::types::cast_g<uint32_t>(pPosition);
+
    enumCType eType = (enumCType)(u_ >> 24);                                                        assert( ((unsigned)eType & ~eTypeNumber_MASK) == eType_ParameterName );
    pPosition += sizeof(uint32_t);
 
@@ -97,7 +99,7 @@ arguments::pointer arguments::move_to_value_data_s(pointer pPosition)
 /// move past name to value data (dont use this if pointer is not on name for value)
 arguments::const_pointer arguments::move_to_value_data_s(const_pointer pPosition)
 {                                                                                                  assert( pPosition != nullptr );
-   uint32_t u_ = *(uint32_t*)pPosition;
+   uint32_t u_ = gd::types::cast_g<uint32_t>(pPosition);
    enumCType eType = (enumCType)(u_ >> 24);                                                        assert( ((unsigned)eType & ~eTypeNumber_MASK) == eType_ParameterName );
    pPosition += sizeof(uint32_t);
 
@@ -115,7 +117,7 @@ arguments::const_pointer arguments::move_to_value_data_s(const_pointer pPosition
  */
 arguments::const_pointer arguments::move_to_value_s(const_pointer pPosition)
 {
-   uint32_t u_ = *(uint32_t*)pPosition;
+   uint32_t u_ = gd::types::cast_g<uint32_t>(pPosition);
    enumCType eType = (enumCType)(u_ >> 24);                                    // get section type
    if( eType == eType_ParameterName )
    {
@@ -125,7 +127,7 @@ arguments::const_pointer arguments::move_to_value_s(const_pointer pPosition)
       pPosition += sizeof( uint32_t ) + uLength;
    }
 #ifndef NDEBUG
-   u_ = *(uint32_t*)pPosition;
+   u_ = gd::types::cast_g<uint32_t>(pPosition);
    eType = (enumCType)(u_ >> 24);
    auto typename_d = gd::types::type_name_g( eType & ~eTypeNumber_MASK );
 #endif
