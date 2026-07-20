@@ -245,16 +245,25 @@ public:
 
    std::pair<bool, std::string> prepare( unsigned uValueSize, unsigned uStride );
 
+   /// return pointer to section holding null column information
+   uint8_t* row_get_null(uint64_t uRow) const noexcept;
+
+
    uint8_t* row_get( uint64_t uRow ) const noexcept {                                              assert(m_uPackCount == 4 || m_uPackCount == 8 && "Pack size must be 4 or 8");
-      uint64_t uRowPack = uRow / m_uPackCount;
+      uint64_t uRowPack = uRow / count_pack();
       return m_puData + uRowPack * m_uRowSize; 
    }
 
    void row_reserve_add(uint64_t uCount);
    void row_reserve_add() { row_reserve_add(1); }
 
-   void cell_set(uint64_t uRow, unsigned uColumn, uint32_t uValue);
-   void cell_set(uint64_t uRow, unsigned uColumn, uint64_t uValue);
+   void cell_set_value(uint64_t uRow, unsigned uColumn, uint32_t uValue);
+   void cell_set_value(uint64_t uRow, unsigned uColumn, uint64_t uValue);
+   void cell_set(uint64_t uRow, unsigned uColumn, gd::variant_view variantviewValue);
+   void cell_set(uint64_t uRow, unsigned uColumn, gd::variant_view variantviewValue, tag_convert);
+
+   void cell_set_null(uint64_t uRow, unsigned uColumn);
+   void cell_set_not_null(uint64_t uRow, unsigned uColumn);
 
 protected:
    unsigned count_pack() const noexcept { return m_uPackCount; }
@@ -298,6 +307,61 @@ inline unsigned table_base::size_row_meta() const noexcept {
 
    return uMetaDataSize;
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Return pointer to row null value section (flags in metadata marking cell null values)
+ * This is the first part of meta data for each row, if table is created to store null values for each column
+ * @param uRow index for row null value is returned for
+ * @return uint8_t* pointer to row null value section
+*/
+inline uint8_t* table_base::row_get_null( uint64_t uRow ) const noexcept {                         assert( uRow < (m_uRowReservedPackCount * count_pack())); assert( m_puMetaData != nullptr );
+   return reinterpret_cast<uint8_t*>( m_puMetaData + (uRow * m_uRowMetaSize) );
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Set value in column to null (marks null flag for column)
+ * @param uRow row where cell is
+ * @param uColumn cell column
+*/
+inline void table_base::cell_set_null(uint64_t uRow, unsigned uColumn) {                           assert(uRow < (m_uRowReservedPackCount * count_pack())); assert(m_uFlags & (eTableFlagNull32 | eTableFlagNull64));
+   auto puRow = row_get_null(uRow);
+
+#ifdef _DEBUG
+   uint64_t uNull_d = 0;
+   if(is_null32()) uNull_d = *(uint32_t*)puRow;
+   else              uNull_d = *(uint64_t*)puRow;
+#endif // _DEBUG
+
+   if(is_null32()) *(uint32_t*)puRow |= ((uint32_t)1 << uColumn);
+   else              *(uint64_t*)puRow |= ((uint64_t)1 << uColumn);
+
+#ifdef _DEBUG
+   if(is_null32()) uNull_d = *(uint32_t*)puRow;
+   else              uNull_d = *(uint64_t*)puRow;
+#endif // _DEBUG
+}
+
+inline void table_base::cell_set_not_null(uint64_t uRow, unsigned uColumn) {                       assert(uRow < (m_uRowReservedPackCount * count_pack())); assert(m_uFlags & (eTableFlagNull32 | eTableFlagNull64));
+   auto puRow = row_get_null(uRow);
+
+#ifdef _DEBUG
+   uint64_t uNull_d = 0;
+   if(is_null32()) uNull_d = *(uint32_t*)puRow;
+   else              uNull_d = *(uint64_t*)puRow;
+#endif // _DEBUG
+
+   if(is_null32()) *(uint32_t*)puRow &= ~((uint32_t)1 << uColumn);
+   else              *(uint64_t*)puRow &= ~((uint64_t)1 << uColumn);
+
+#ifdef _DEBUG
+   if(is_null32()) uNull_d = *(uint32_t*)puRow;
+   else              uNull_d = *(uint64_t*)puRow;
+#endif // _DEBUG
+
+}
+
+
 
 /** ===========================================================================
  * \brief simd table, optimized for simd operations using  AoSoA (Array of Structure of Arrays) layout.

@@ -277,7 +277,7 @@ void table_base::row_reserve_add(uint64_t uCount)
  * @param uColumn column index for cell
  * @param uValue value set to cell
  */
-void table_base::cell_set(uint64_t uRow, unsigned uColumn, uint32_t uValue)
+void table_base::cell_set_value(uint64_t uRow, unsigned uColumn, uint32_t uValue)
 {
                                                                                                    assert(size_value() == 4);
 #ifndef NDEBUG
@@ -290,7 +290,7 @@ void table_base::cell_set(uint64_t uRow, unsigned uColumn, uint32_t uValue)
    auto uRowOffset = offset(uRow, uColumn, tag_column{} );
    auto puRowValue = puRow + uRowOffset;
 
-   *(uint32_t*)puRowValue = uValue;
+   memcpy(puRowValue, &uValue, sizeof(uint32_t));
 }
 
 /** ---------------------------------------------------------------------------
@@ -299,7 +299,7 @@ void table_base::cell_set(uint64_t uRow, unsigned uColumn, uint32_t uValue)
  * @param uColumn column index for cell
  * @param uValue value set to cell
  */
-void table_base::cell_set(uint64_t uRow, unsigned uColumn, uint64_t uValue)
+void table_base::cell_set_value(uint64_t uRow, unsigned uColumn, uint64_t uValue)
 {                                                                                                  assert(size_value() == 8);
 #ifndef NDEBUG
    if( (uRow / m_uPackCount) >= m_uRowReservedPackCount || uColumn >= m_vectorColumn.size()) { assert(false); }
@@ -310,7 +310,122 @@ void table_base::cell_set(uint64_t uRow, unsigned uColumn, uint64_t uValue)
    auto uRowOffset = offset(uRow, uColumn, tag_column{});
    auto puRowValue = puRow + uRowOffset;
 
-   *(uint64_t*)puRowValue = uValue;
+   memcpy(puRowValue, &uValue, sizeof(uint64_t));
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Set cell value in table
+ * @param uRow row index for cell
+ * @param uColumn column index for cell
+ * @param variantviewValue value set to cell
+*/
+void table_base::cell_set(uint64_t uRow, unsigned uColumn, gd::variant_view variantviewValue)
+{                                                                                                  assert(uColumn < m_vectorColumn.size());
+   auto& columnSet = m_vectorColumn[uColumn];                                                      assert(columnSet.position() < m_uRowSize);
+   auto puRow = row_get(uRow);
+
+   if(variantviewValue.is_null() == false)
+   {
+#ifndef NDEBUG 
+      auto uValueType_d = variantviewValue.type_number();
+      auto uColumnType_d = columnSet.ctype_number();
+      if(uValueType_d != uColumnType_d) {                                    // check type, this has to match. You can't set value from type that differ from type in column
+         [[maybe_unused]] auto stringValueType_d = gd::types::type_name_g(uValueType_d);
+         [[maybe_unused]] auto stringColumnType_d = gd::types::type_name_g(uColumnType_d);
+         assert(uValueType_d == uColumnType_d || (variantviewValue.is_char_string() && variant::is_char_string_s(uColumnType_d) == true));
+      }
+#endif // !NDEBUG
+
+      auto puBuffer = variantviewValue.get_value_buffer();                     // get pointer to value buffer
+
+      auto puRowValue = puRow + columnSet.position();                          // get position to value in row
+
+      if(columnSet.is_fixed())
+      {
+         if(size_value() == 8) { cell_set_value(uRow, uColumn, variantviewValue.cast_as_uint64()); } 
+         else if(size_value() == 4) { cell_set_value(uRow, uColumn, variantviewValue.cast_as_uint32()); } 
+      }
+      else
+      {
+         if(columnSet.is_reference() == true)
+         {
+            // ## reference type            
+            int64_t iIndex;
+
+            if(is_duplicated_strings() == false)
+            {
+               // ### try to find value and store index for found value if it exists, if not add and store new index
+               iIndex = m_references.find(variantviewValue);
+               if(iIndex == -1)
+               {
+                  iIndex = (int64_t)m_references.add(variantviewValue);
+               }
+            }
+            else
+            {
+               iIndex = (int64_t)m_references.add(variantviewValue);           // skip to find existing value, just add new value
+            }
+
+            if(size_value() == 8) { cell_set_value(uRow, uColumn, static_cast<uint64_t>(iIndex)); }
+            else if(size_value() == 4) { cell_set_value(uRow, uColumn, static_cast<uint32_t>(iIndex)); }
+         }
+         else { assert(false); }
+      }
+
+
+
+      if(is_null() == true) { cell_set_not_null(uRow, uColumn); }          // set flag that cell has a value if table is using row status meta data
+   }
+   else
+   {
+      if(is_null() == true) { cell_set_null(uRow, uColumn); }              // cell is null, set null flag
+   }
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Set cell value in table, convert to proper value type used in column if value type do not match
+~~~(.cpp)
+using namespace gd::table;
+table_column_buffer table( 100 );
+table.column_add( { { "utf8", 50, "c1"}, { "string", 50, "c2"}, { "int32", 0, "c3"} }, gd::table::tag_type_name{} );
+table.prepare();
+table.row_add();
+table.cell_set( 0, 0, 10, tag_convert{} );
+table.cell_set( 0, 1, 20.5, tag_convert{} );
+table.cell_set( 0, 2, "20.5", tag_convert{} );
+~~~
+ * @param uRow row index for cell
+ * @param uColumn column index for cell
+ * @param variantviewValue value set to cell
+ * @param tag dispatch
+*/
+void table_base::cell_set(uint64_t uRow, unsigned uColumn, gd::variant_view variantviewValue, tag_convert)
+{                                                                                                  assert(uColumn < m_vectorColumn.size());
+   auto& columnSet = m_vectorColumn[uColumn];                                                      assert(columnSet.position() < m_uRowSize);
+   auto uValueType = variantviewValue.type_number();
+   auto uColumnType = columnSet.ctype_number();
+
+   if(uValueType == uColumnType)
+   {
+      cell_set(uRow, uColumn, variantviewValue);
+   }
+   else
+   {
+      gd::variant variantConvertTo;
+      bool bOk = variantviewValue.convert_to(uColumnType, variantConvertTo);
+      if(bOk == true)
+      {
+         cell_set(uRow, uColumn, *(gd::variant_view*)&variantConvertTo);     // just cast to variant view, internal data is same just that varaiant view have different logic
+      }
+      else
+      {
+         if(variantviewValue.is_null() == true && is_null() == true)
+         {
+            cell_set_null(uRow, uColumn);
+         }
+      }
+   }
 }
 
 
