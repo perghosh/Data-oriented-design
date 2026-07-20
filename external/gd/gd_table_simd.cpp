@@ -195,16 +195,16 @@ unsigned table_base::column_get_index(const std::string_view& stringWildcard, ta
 
 
 
-std::pair<bool, std::string> table_base::prepare( unsigned uValueSize, unsigned uStride )
+std::pair<bool, std::string> table_base::prepare( unsigned uValueSize, unsigned uPackCount )
 {                                                                                                  assert(m_vectorColumn.empty() == false && "Table must have at least one column");
                                                                                                    assert(m_puData == nullptr && "Table already prepared");
                                                                                                    assert((uValueSize == 4 || uValueSize == 8) && "Value size must be 4 or 8 bytes");
-                                                                                                   assert((uStride == 4 || uStride == 8 || uStride == 16) && "Stride must be 4, 8, or 16");
+                                                                                                   assert((uPackCount == 4 || uPackCount == 8 || uPackCount == 16) && "Pack count must be 4, 8, or 16");
    // ## calculate size for each row
    unsigned uRowSize = 0u; // 
    unsigned uColumnCount = (unsigned)m_vectorColumn.size();
 
-   uRowSize = uValueSize * uStride * uColumnCount;                            // calculate size for each row based on value size and count
+   uRowSize = uValueSize * uPackCount * uColumnCount;                            // calculate size for each row based on value size and count
 
    m_uRowSize = uRowSize;                                                     // final row sizes (not that each row containes a stride of columns)
 
@@ -214,7 +214,7 @@ std::pair<bool, std::string> table_base::prepare( unsigned uValueSize, unsigned 
 
    m_uRowMetaSize = uMetaDataSize;
 
-   uint64_t uTotalTableSize = (uRowSize + uMetaDataSize) * m_uReservedBlockCount;// calculate size storing table data
+   uint64_t uTotalTableSize = (uRowSize + uMetaDataSize) * m_uRowReservedPackCount;// calculate size storing table data
 
    m_puData = new uint8_t[uTotalTableSize];
 #ifdef _DEBUG
@@ -223,8 +223,8 @@ std::pair<bool, std::string> table_base::prepare( unsigned uValueSize, unsigned 
 
    if(uMetaDataSize > 0)
    {
-      m_puMetaData = m_puData + (m_uReservedBlockCount * uRowSize);              // set pointer to meta data section
-      memset(m_puMetaData, 0, m_uReservedBlockCount * uMetaDataSize);
+      m_puMetaData = m_puData + (m_uRowReservedPackCount * uRowSize);              // set pointer to meta data section
+      memset(m_puMetaData, 0, m_uRowReservedPackCount * uMetaDataSize);
    }
 
    return { true, "" };
@@ -236,7 +236,7 @@ std::pair<bool, std::string> table_base::prepare( unsigned uValueSize, unsigned 
 */
 void table_base::row_reserve_add(uint64_t uCount)
 {
-   uCount += m_uReservedBlockCount;
+   uCount += m_uRowReservedPackCount;
 
    // ## calculate size needed to store added row count and allocate memory
    uint64_t uTotalTableSize = size_reserved_total();                           // total table memory block size for table
@@ -246,7 +246,7 @@ void table_base::row_reserve_add(uint64_t uCount)
    uint64_t uTotalMetaSizeCopyTo = size_meta_total(uCount);                    // new meta block size
 
    uint64_t uCopyRowSize = uTotalTableSize - uTotalMetaSize;
-
+                                                                                                   assert(uTotalTableSizeCopyTo % 4 == 0 && "Total table size must be multiple of 4");
    uint8_t* puDataCopyTo = new uint8_t[uTotalTableSizeCopyTo];                // new buffer for table data (both data and meta data)
 
    if(m_puData != nullptr) memcpy(puDataCopyTo, m_puData, uCopyRowSize);      // copy row data
@@ -267,7 +267,50 @@ void table_base::row_reserve_add(uint64_t uCount)
    delete[] m_puData;
    m_puData = puDataCopyTo;
 
-   m_uReservedBlockCount = uCount;
+   m_uRowReservedPackCount = uCount;
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Set cell value in table
+ * @param uRow row index for cell
+ * @param uColumn column index for cell
+ * @param uValue value set to cell
+ */
+void table_base::cell_set(uint64_t uRow, unsigned uColumn, uint32_t uValue)
+{
+                                                                                                   assert(size_value() == 4);
+#ifndef NDEBUG
+   if(uRow >= m_uRowReservedPackCount || uColumn >= m_vectorColumn.size()) { assert(false); }
+#endif // !NDEBUG
+
+                                                                                                   assert(uRow < m_uRowReservedPackCount); assert(uColumn < m_vectorColumn.size());
+   auto& columnSet = m_vectorColumn[uColumn];                                                      assert(columnSet.position() < m_uRowSize);
+   auto puRow = row_get(uRow);
+   auto uRowOffset = offset(uRow, uColumn, tag_column{} );
+   auto puRowValue = puRow + uRowOffset;
+
+   *(uint32_t*)puRowValue = uValue;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Set cell value in table
+ * @param uRow row index for cell
+ * @param uColumn column index for cell
+ * @param uValue value set to cell
+ */
+void table_base::cell_set(uint64_t uRow, unsigned uColumn, uint64_t uValue)
+{                                                                                                  assert(size_value() == 8);
+#ifndef NDEBUG
+   if( (uRow / m_uPackCount) >= m_uRowReservedPackCount || uColumn >= m_vectorColumn.size()) { assert(false); }
+#endif // !NDEBUG
+                                                                                                   assert((uRow / m_uPackCount) < m_uRowReservedPackCount); assert(uColumn < m_vectorColumn.size());
+   auto& columnSet = m_vectorColumn[uColumn];                                                      assert(columnSet.position() < m_uRowSize);
+   auto puRow = row_get(uRow);
+   auto uRowOffset = offset(uRow, uColumn, tag_column{});
+   auto puRowValue = puRow + uRowOffset;
+
+   *(uint64_t*)puRowValue = uValue;
 }
 
 

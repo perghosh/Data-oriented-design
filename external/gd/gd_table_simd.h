@@ -179,12 +179,12 @@ public:
 
 // ## @API [tag: construct] [description: table construction, lots of constructors to simplify how to create new tables]
 public:
-   table_base() : m_uFlags(0), m_uRowSize(0), m_uRowCount(0), m_uReservedBlockCount(0), m_uRowGrowBy(0) {}
-   table_base(unsigned uRowCount) : m_uFlags(0), m_uRowSize(0), m_uRowCount(0), m_uReservedBlockCount(uRowCount), m_uRowGrowBy(0) {}
-   table_base(unsigned uRowCount, unsigned uFlags) : m_uFlags(uFlags), m_uRowSize(0), m_uRowCount(0), m_uReservedBlockCount(uRowCount), m_uRowGrowBy(0) { assert(m_uFlags < eTableFlagMAX); }
-   table_base(unsigned uRowCount, unsigned uFlags, unsigned uGrowBy) : m_uFlags(uFlags), m_uRowSize(0), m_uRowCount(0), m_uReservedBlockCount(uRowCount), m_uRowGrowBy(uGrowBy) { assert(m_uFlags < eTableFlagMAX); }
-   table_base(tag_null) : m_uFlags(eTableFlagNull64), m_uRowSize(0), m_uRowCount(0), m_uReservedBlockCount(0) { assert(m_uFlags < eTableFlagMAX); }
-   table_base(tag_full_meta) : m_uFlags(eTableFlagNull64 | eTableFlagRowStatus), m_uRowSize(0), m_uRowCount(0), m_uReservedBlockCount(0) { assert(m_uFlags < eTableFlagMAX); }
+   table_base() : m_uFlags(0), m_uRowSize(0), m_uRowCount(0), m_uPackCount(0), m_uRowGrowBy(0) {}
+   table_base(unsigned uRowCount) : m_uFlags(0), m_uRowSize(0), m_uRowCount(0), m_uRowReservedPackCount(uRowCount), m_uRowGrowBy(0) {}
+   table_base(unsigned uRowCount, unsigned uFlags) : m_uFlags(uFlags), m_uRowSize(0), m_uRowCount(0), m_uRowReservedPackCount(uRowCount), m_uRowGrowBy(0) { assert(m_uFlags < eTableFlagMAX); }
+   table_base(unsigned uRowCount, unsigned uFlags, unsigned uGrowBy) : m_uFlags(uFlags), m_uRowSize(0), m_uRowCount(0), m_uRowReservedPackCount(uRowCount), m_uRowGrowBy(uGrowBy) { assert(m_uFlags < eTableFlagMAX); }
+   table_base(tag_null) : m_uFlags(eTableFlagNull64), m_uRowSize(0), m_uRowCount(0), m_uRowReservedPackCount(0) { assert(m_uFlags < eTableFlagMAX); }
+   table_base(tag_full_meta) : m_uFlags(eTableFlagNull64 | eTableFlagRowStatus), m_uRowSize(0), m_uRowCount(0), m_uRowReservedPackCount(0) { assert(m_uFlags < eTableFlagMAX); }
 
    // ## methods ------------------------------------------------------------------
 public:
@@ -203,11 +203,11 @@ public:
    unsigned size_row() const noexcept { return m_uRowSize; }
    unsigned size_row_meta() const noexcept;
    /// get meta block size
-   uint64_t size_meta_total() const noexcept { return size_row_meta() * m_uReservedBlockCount; }
+   uint64_t size_meta_total() const noexcept { return size_row_meta() * m_uRowReservedPackCount; }
    /// get meta block size for rows
    uint64_t size_meta_total(uint64_t uRowCount) const noexcept { return size_row_meta() * uRowCount; }
    /// calc and return total allocated memory size
-   uint64_t size_reserved_total() const noexcept { return (m_uRowSize + size_row_meta()) * m_uReservedBlockCount; }
+   uint64_t size_reserved_total() const noexcept { return (m_uRowSize + size_row_meta()) * m_uRowReservedPackCount; }
    /// calc and return total allocated memory size for rows
    uint64_t size_reserved_total(uint64_t uRowCount) const noexcept { return (m_uRowSize + size_row_meta()) * uRowCount; }
 
@@ -245,8 +245,22 @@ public:
 
    std::pair<bool, std::string> prepare( unsigned uValueSize, unsigned uStride );
 
+   uint8_t* row_get( uint64_t uRow ) const noexcept {                                              assert(m_uPackCount == 4 || m_uPackCount == 8 && "Pack size must be 4 or 8");
+      uint64_t uRowPack = uRow / m_uPackCount;
+      return m_puData + uRowPack * m_uRowSize; 
+   }
+
    void row_reserve_add(uint64_t uCount);
    void row_reserve_add() { row_reserve_add(1); }
+
+   void cell_set(uint64_t uRow, unsigned uColumn, uint32_t uValue);
+   void cell_set(uint64_t uRow, unsigned uColumn, uint64_t uValue);
+
+protected:
+   unsigned count_pack() const noexcept { return m_uPackCount; }
+   unsigned size_value() const noexcept { return m_uValueSize; }
+   unsigned size_pack() const noexcept { return m_uPackCount * size_value(); }
+   unsigned offset(uint64_t uRow, unsigned uColumn, tag_column) const noexcept { return uColumn * size_pack() + (uRow % size_pack()) * size_value(); }
 
 
 // ## @API [tag: attribute, member] [description: member data to table]
@@ -257,9 +271,10 @@ public:
    unsigned m_uRowSize;                ///< row size in bytes
    unsigned m_uRowMetaSize;            ///< meta data size in bytes for each row
    unsigned m_uRowGrowBy = eSpaceRowGrowBy;///< if table needs more space, this holds number of rows to grow by
+   unsigned m_uValueSize;              ///< size of each value in bytes, used to calculate row size
+   unsigned m_uPackCount;               ///< number of values for each block/array, in AoSoA (Array of Structure of Arrays) layout
    uint64_t m_uRowCount;               ///< row count (row count * row size = total amount of bytes allocated)
-   uint64_t m_uRowBlockCount;          ///< number of row blocks allocated, as each block contains stride number of values
-   uint64_t m_uReservedBlockCount;     ///< reserved row block count, max number of row blocks that can be placed in allocated memory
+   uint64_t m_uRowReservedPackCount = eSpaceFirstAllocate; ///< reserved row block count, max number of row blocks that can be placed in allocated memory
    gd::argument::arguments m_argumentsProperty; ///< table properties
    references m_references;            ///< Stores blob data
    names m_namesColumn;                ///< names for columns in table. this works like a data store for const text values used to store column names and aliases
@@ -288,46 +303,56 @@ inline unsigned table_base::size_row_meta() const noexcept {
  * \brief simd table, optimized for simd operations using  AoSoA (Array of Structure of Arrays) layout.
  * 
  */
-template<std::size_t VALUESIZE = 8, std::size_t STRIDE = 8>
+template<std::size_t VALUESIZE = 8, std::size_t PACKCOUNT = 8>
 class table : public table_base
 {
 // ## @API [tag: construct] [description: table construction, lots of constructors to simplify how to create new tables]
 public:
-   table(): table_base() {}
-   table(unsigned uRowCount): table_base(uRowCount) {}
-   table(unsigned uRowCount, unsigned uFlags): table_base(uRowCount, uFlags) {}
-   table(unsigned uRowCount, unsigned uFlags, unsigned uGrowBy): table_base(uRowCount, uFlags, uGrowBy) {}
-   table(tag_null): table_base(tag_null{}) {}
-   table(tag_full_meta): table_base(tag_full_meta{}) {}
+   table(): table_base() { common_construct_set_simd(); }
+   table(unsigned uRowCount): table_base(uRowCount) { common_construct_set_simd(); }
+   table(unsigned uRowCount, unsigned uFlags): table_base(uRowCount, uFlags) { common_construct_set_simd(); }
+   table(unsigned uRowCount, unsigned uFlags, unsigned uGrowBy): table_base(uRowCount, uFlags, uGrowBy) { common_construct_set_simd(); }
+   table(tag_null): table_base(tag_null{}) { common_construct_set_simd(); }
+   table(tag_full_meta): table_base(tag_full_meta{}) { common_construct_set_simd(); }
+
+   void common_construct_set_simd() { m_uValueSize = VALUESIZE; m_uPackCount = PACKCOUNT; }
 
    void row_add(uint64_t uCount);
 
-   std::pair<bool, std::string> prepare() { return table_base::prepare(m_uValueSize_s, m_uStride_s); }
+   uint8_t* row_get(uint64_t uRow) const noexcept;
+
+
+   std::pair<bool, std::string> prepare() { return table_base::prepare(m_uValueSize_s, m_uPackCount_s); }
 
    static constexpr std::size_t m_uValueSize_s = VALUESIZE;
-   static constexpr std::size_t m_uStride_s = STRIDE;
+   static constexpr std::size_t m_uPackCount_s = PACKCOUNT;
 };
+
+template<std::size_t VALUESIZE, std::size_t PACKCOUNT>
+uint8_t* table<VALUESIZE, PACKCOUNT>::row_get(uint64_t uRow) const noexcept {
+   // ## actual row is result of dividing row index by pack count, because each row block contains PACKCOUNT number of rows
+   uint64_t uRowPack = uRow / PACKCOUNT;                                                           assert(uRowPack < m_uRowReservedPackCount );
+   return m_puData + uRowPack * m_uRowSize;
+}
 
 // ---------------------------------------------------------------------------
 ///  Add rows to table, this will increase the number of rows in table by uCount
-template<std::size_t VALUESIZE, std::size_t STRIDE>
-void table<VALUESIZE, STRIDE>::row_add(uint64_t uCount) {                                          assert(uCount > 0);
+template<std::size_t VALUESIZE, std::size_t PACKCOUNT>
+void table<VALUESIZE, PACKCOUNT>::row_add(uint64_t uCount) {                                        assert(uCount > 0);
    const uint64_t uRowCountNew = m_uRowCount + uCount;
 
    // ## Calculate number of row blocks needed for new row count, each block contains STRIDE number of rows
-   const uint64_t uRowBlockCountNew = (uRowCountNew + STRIDE - 1) / STRIDE;
+   const uint64_t uRowBlockCountNew = (uRowCountNew + PACKCOUNT - 1) / PACKCOUNT;
 
-   if(uRowBlockCountNew > m_uReservedBlockCount) 
+   if( uRowBlockCountNew > m_uRowReservedPackCount )
    {
-      m_uReservedBlockCount = uRowBlockCountNew;
+      row_reserve_add( uRowBlockCountNew - m_uRowReservedPackCount );
+      m_uRowReservedPackCount = uRowBlockCountNew;
    }
 
 
 
    m_uRowCount = uRowCountNew;
-
-   constexpr uint64_t uStride = static_cast<uint64_t>(STRIDE);
-   m_uRowBlockCount = (m_uRowCount + uStride - 1) / uStride;
 }
 
 

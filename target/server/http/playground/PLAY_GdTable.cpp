@@ -28,6 +28,15 @@ TEST_CASE("[gd-table] simd create", "[gd-table]")
    tableFiles.column_add({ { "uint64", 0, "count" }, { "uint64", 0, "size" } }, gd::table::tag_type_name{});
    tableFiles.prepare();
 
+   tableFiles.row_add(16);
+
+   // ## set 16 values on each row
+   for(unsigned uRowIndex = 0; uRowIndex < 16; ++uRowIndex)
+   {
+      tableFiles.cell_set(uRowIndex, 0, uint64_t( uRowIndex ));
+      tableFiles.cell_set(uRowIndex, 1, uint64_t( uRowIndex * 10 ));
+   }
+
 }
 
 /*
