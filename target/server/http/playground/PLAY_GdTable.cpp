@@ -6,19 +6,31 @@
 #include "gd/gd_arguments.h"
 #include "gd/gd_arguments_shared.h"
 #include "gd/gd_table_column-buffer.h"
+#include "gd/gd_table_simd.h"
 #include "gd/gd_table_arguments.h"
 #include "gd/gd_table_io.h"
 #include "gd/gd_sql_value.h"
 #include "gd/gd_parse.h"
 #include "gd/gd_uuid.h"
 
-#include "gd/gd_sql_query.h"
-#include "gd/gd_sql_query_builder.h"
+//#include "gd/gd_sql_query.h"
+//#include "gd/gd_sql_query_builder.h"
 
 #include "main.h"
 
 #include "catch2/catch_amalgamated.hpp"
 
+TEST_CASE("[gd-table] simd create", "[gd-table]")
+{
+   using namespace gd::table::simd;
+   table<8u, 8u> tableFiles;
+
+   tableFiles.column_add({ { "uint64", 0, "count" }, { "uint64", 0, "size" } }, gd::table::tag_type_name{});
+   tableFiles.prepare();
+
+}
+
+/*
 TEST_CASE("[gd-table] custom columns", "[gd-table]")
 {
    {
@@ -119,3 +131,4 @@ TEST_CASE("[gd-table] index operator", "[gd-table]")
    }
 
 }
+*/

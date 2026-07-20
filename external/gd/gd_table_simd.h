@@ -177,6 +177,15 @@ public:
       uintptr_t m_uData;   ///< custom data, use this to get some specific external logic
    };
 
+// ## @API [tag: construct] [description: table construction, lots of constructors to simplify how to create new tables]
+public:
+   table_base() : m_uFlags(0), m_uRowSize(0), m_uRowCount(0), m_uReservedBlockCount(0), m_uRowGrowBy(0) {}
+   table_base(unsigned uRowCount) : m_uFlags(0), m_uRowSize(0), m_uRowCount(0), m_uReservedBlockCount(uRowCount), m_uRowGrowBy(0) {}
+   table_base(unsigned uRowCount, unsigned uFlags) : m_uFlags(uFlags), m_uRowSize(0), m_uRowCount(0), m_uReservedBlockCount(uRowCount), m_uRowGrowBy(0) { assert(m_uFlags < eTableFlagMAX); }
+   table_base(unsigned uRowCount, unsigned uFlags, unsigned uGrowBy) : m_uFlags(uFlags), m_uRowSize(0), m_uRowCount(0), m_uReservedBlockCount(uRowCount), m_uRowGrowBy(uGrowBy) { assert(m_uFlags < eTableFlagMAX); }
+   table_base(tag_null) : m_uFlags(eTableFlagNull64), m_uRowSize(0), m_uRowCount(0), m_uReservedBlockCount(0) { assert(m_uFlags < eTableFlagMAX); }
+   table_base(tag_full_meta) : m_uFlags(eTableFlagNull64 | eTableFlagRowStatus), m_uRowSize(0), m_uRowCount(0), m_uReservedBlockCount(0) { assert(m_uFlags < eTableFlagMAX); }
+
    // ## methods ------------------------------------------------------------------
 public:
    /** \name GET/SET
@@ -194,11 +203,11 @@ public:
    unsigned size_row() const noexcept { return m_uRowSize; }
    unsigned size_row_meta() const noexcept;
    /// get meta block size
-   uint64_t size_meta_total() const noexcept { return size_row_meta() * m_uReservedRowCount; }
+   uint64_t size_meta_total() const noexcept { return size_row_meta() * m_uReservedBlockCount; }
    /// get meta block size for rows
    uint64_t size_meta_total(uint64_t uRowCount) const noexcept { return size_row_meta() * uRowCount; }
    /// calc and return total allocated memory size
-   uint64_t size_reserved_total() const noexcept { return (m_uRowSize + size_row_meta()) * m_uReservedRowCount; }
+   uint64_t size_reserved_total() const noexcept { return (m_uRowSize + size_row_meta()) * m_uReservedBlockCount; }
    /// calc and return total allocated memory size for rows
    uint64_t size_reserved_total(uint64_t uRowCount) const noexcept { return (m_uRowSize + size_row_meta()) * uRowCount; }
 
@@ -211,6 +220,35 @@ public:
 
 
 
+   table_base& column_add(const column& columnToAdd) { m_vectorColumn.push_back(columnToAdd); return *this; }
+   table_base& column_add(unsigned uColumnType, const std::string_view& stringName) { return column_add(uColumnType, 0, stringName); }
+   table_base& column_add(unsigned uColumnType, unsigned uSize);
+   table_base& column_add(unsigned uColumnType, unsigned uSize, std::string_view stringName);
+   table_base& column_add(std::string_view stringType) { return column_add(column((unsigned)gd::types::type_g(stringType))); }
+   table_base& column_add(std::string_view stringType, const std::string_view& stringName) { return column_add((unsigned)gd::types::type_g(stringType), 0, stringName); }
+   table_base& column_add(std::string_view stringType, unsigned uSize) { return column_add((unsigned)gd::types::type_g(stringType), uSize); }
+   table_base& column_add(std::string_view stringType, unsigned uSize, const std::string_view& stringName) { return column_add((unsigned)gd::types::type_g(stringType), uSize, stringName); }
+
+   table_base& column_add(const std::initializer_list< std::pair< std::string_view, unsigned > >& listType, tag_type_name);
+   table_base& column_add(const std::initializer_list< std::tuple< std::string_view, unsigned, std::string_view > >& listType, tag_type_name);
+   table_base& column_add(const std::initializer_list< std::pair< std::string_view, std::string_view > >& listType, tag_type_name);
+
+   /// @brief find column index for column name
+   int column_find_index(const std::string_view& stringName) const noexcept;
+   /// @brief find column index for column name with wildcard, wildcars like ? and * are supported
+   int column_find_index(const std::string_view& stringWildcard, tag_wildcard) const noexcept;
+   /// @brief get column index for column name, asserts if not found
+   unsigned column_get_index(const std::string_view& stringName) const noexcept;
+   /// @brief get column index for column name with wildcard, wildcars like ? and * are supported, asserts if not found
+   unsigned column_get_index(const std::string_view& stringName, tag_wildcard) const noexcept;
+
+
+   std::pair<bool, std::string> prepare( unsigned uValueSize, unsigned uStride );
+
+   void row_reserve_add(uint64_t uCount);
+   void row_reserve_add() { row_reserve_add(1); }
+
+
 // ## @API [tag: attribute, member] [description: member data to table]
 public:
    uint8_t* m_puData = nullptr;        ///< data to hold values in table
@@ -220,7 +258,8 @@ public:
    unsigned m_uRowMetaSize;            ///< meta data size in bytes for each row
    unsigned m_uRowGrowBy = eSpaceRowGrowBy;///< if table needs more space, this holds number of rows to grow by
    uint64_t m_uRowCount;               ///< row count (row count * row size = total amount of bytes allocated)
-   uint64_t m_uReservedRowCount;       ///< reserved row count, max number of rows that can be placed in allocated memory
+   uint64_t m_uRowBlockCount;          ///< number of row blocks allocated, as each block contains stride number of values
+   uint64_t m_uReservedBlockCount;     ///< reserved row block count, max number of row blocks that can be placed in allocated memory
    gd::argument::arguments m_argumentsProperty; ///< table properties
    references m_references;            ///< Stores blob data
    names m_namesColumn;                ///< names for columns in table. this works like a data store for const text values used to store column names and aliases
@@ -245,12 +284,51 @@ inline unsigned table_base::size_row_meta() const noexcept {
    return uMetaDataSize;
 }
 
-
+/** ===========================================================================
+ * \brief simd table, optimized for simd operations using  AoSoA (Array of Structure of Arrays) layout.
+ * 
+ */
+template<std::size_t VALUESIZE = 8, std::size_t STRIDE = 8>
 class table : public table_base
 {
+// ## @API [tag: construct] [description: table construction, lots of constructors to simplify how to create new tables]
+public:
+   table(): table_base() {}
+   table(unsigned uRowCount): table_base(uRowCount) {}
+   table(unsigned uRowCount, unsigned uFlags): table_base(uRowCount, uFlags) {}
+   table(unsigned uRowCount, unsigned uFlags, unsigned uGrowBy): table_base(uRowCount, uFlags, uGrowBy) {}
+   table(tag_null): table_base(tag_null{}) {}
+   table(tag_full_meta): table_base(tag_full_meta{}) {}
 
+   void row_add(uint64_t uCount);
+
+   std::pair<bool, std::string> prepare() { return table_base::prepare(m_uValueSize_s, m_uStride_s); }
+
+   static constexpr std::size_t m_uValueSize_s = VALUESIZE;
+   static constexpr std::size_t m_uStride_s = STRIDE;
 };
 
+// ---------------------------------------------------------------------------
+///  Add rows to table, this will increase the number of rows in table by uCount
+template<std::size_t VALUESIZE, std::size_t STRIDE>
+void table<VALUESIZE, STRIDE>::row_add(uint64_t uCount) {                                          assert(uCount > 0);
+   const uint64_t uRowCountNew = m_uRowCount + uCount;
+
+   // ## Calculate number of row blocks needed for new row count, each block contains STRIDE number of rows
+   const uint64_t uRowBlockCountNew = (uRowCountNew + STRIDE - 1) / STRIDE;
+
+   if(uRowBlockCountNew > m_uReservedBlockCount) 
+   {
+      m_uReservedBlockCount = uRowBlockCountNew;
+   }
+
+
+
+   m_uRowCount = uRowCountNew;
+
+   constexpr uint64_t uStride = static_cast<uint64_t>(STRIDE);
+   m_uRowBlockCount = (m_uRowCount + uStride - 1) / uStride;
+}
 
 
 _GD_TABLE_SIMD_END
