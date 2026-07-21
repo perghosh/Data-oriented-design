@@ -976,7 +976,7 @@ public:
 
 
 
-   // ## @API [tag: static] [description: static member methods]
+// ## @API [tag: static] [description: static member methods]
 public:
    /// Create columns object on heap
    static detail::columns* new_columns_s();

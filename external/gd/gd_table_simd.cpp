@@ -21,10 +21,9 @@ _GD_TABLE_SIMD_BEGIN
  * @return reference to table
 */
 table_base& table_base::column_add(unsigned uColumnType, unsigned uSize)
-{
-   assert(gd::types::validate_number_type_g(uColumnType)); assert(uSize < 0x1000'0000);
+{                                                                                                  assert(gd::types::validate_number_type_g(uColumnType)); assert(uSize < 0x1000'0000);
    if(gd::types::is_primitive_g(uColumnType) == false) uSize = gd::types::value_size_g(uColumnType, uSize);
-   return column_add({ uColumnType, uSize });
+   return column_add(detail::column(uColumnType, uSize));
 }
 
 
@@ -38,30 +37,25 @@ table_base& table_base::column_add(unsigned uColumnType, unsigned uSize)
  * @param stringAlias column alias
  * @return table_column_buffer& reference to table
 */
-table_base& table_base::column_add(unsigned uColumnType, unsigned uSize, std::string_view stringName)
-{                                                                                                  assert(uColumnType != 0); assert(gd::types::validate_number_type_g(uColumnType)); assert(uSize < 0x1000'0000);
-   column columnAdd;
+table_base& table_base::column_add(unsigned uColumnType, unsigned uSize, std::string_view stringName, std::string_view stringAlias)
+{                                                                                                  assert( gd::types::validate_number_type_g( uColumnType ) ); assert( uSize < 0x1000'0000 );
+   detail::column columnAdd;
 
-   columnAdd.type(uColumnType);
-   columnAdd.ctype(uColumnType);
-   columnAdd.primitive_size(gd::types::value_size_g(uColumnType));
+   columnAdd.type( uColumnType );
+   columnAdd.ctype( uColumnType );
+   columnAdd.primitive_size( gd::types::value_size_g( uColumnType ) );
+   columnAdd.name( stringName );
+   columnAdd.alias( stringAlias );
 
-   if(gd::types::is_primitive_g(uColumnType) == false && gd::types::is_reference_g(uColumnType) == false)
+   if( gd::types::is_primitive_g( uColumnType ) == false && gd::types::is_reference_g( uColumnType ) == false )
    {
-      uSize = gd::types::value_size_g(uColumnType, uSize);
+      uSize = gd::types::value_size_g( uColumnType, uSize );
    }
 
-   columnAdd.size(uSize);
+   columnAdd.size( uSize );
 
-   if(stringName.empty() == false)
-   {                                                                                               assert(m_namesColumn.empty() == true || column_find_index(stringName) == -1); // check if field name exists
-      // ## adds name to internal buffer and returns index in that buffer that is set 
-      auto uNameIndex = m_namesColumn.add(stringName);
-      columnAdd.name(uNameIndex);
-   }
-
-   m_vectorColumn.push_back(columnAdd);
-
+   m_pcolumns->add( columnAdd );
+   
    return *this;
 }
 
@@ -79,8 +73,7 @@ tableVariable.prepare();
  * @return reference to table_column_buffer to nest methods.
 */
 table_base& table_base::column_add(const std::initializer_list<std::pair<std::string_view, unsigned>>& listType, tag_type_name)
-{
-   assert(m_puData == nullptr);
+{                                                                                                  assert(m_puData == nullptr);
    for(auto it = std::begin(listType), itEnd = std::end(listType); it != itEnd; it++)
    {
       column_add(it->first, it->second);
@@ -103,8 +96,7 @@ tableVariable.prepare();
  * @return reference to table_column_buffer to nest methods.
 */
 table_base& table_base::column_add(const std::initializer_list<std::tuple<std::string_view, unsigned, std::string_view>>& listType, tag_type_name)
-{
-   assert(m_puData == nullptr);
+{                                                                                                  assert(m_puData == nullptr);
    for(auto it = std::begin(listType), itEnd = std::end(listType); it != itEnd; it++)
    {
       column_add(std::get<0>(*it), std::get<1>(*it), std::get<2>(*it));
@@ -140,15 +132,32 @@ table_base& table_base::column_add(const std::initializer_list< std::pair< std::
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief Add columns and used information from another table
+ * @param table_ table that column information is found
+ * @return reference to table_column_buffer to nest methods.
+*/
+table_base& table_base::column_add(const table_base* p_)
+{                                                                                                  assert(p_ != nullptr); assert(m_pcolumns != nullptr);
+   for(auto it = p_->column_begin(), itEnd = p_->column_end(); it != itEnd; it++)
+   {
+      detail::column columnAdd(*it); // copy column
+      m_pcolumns->add(std::move(columnAdd));
+   }
+
+   return *this;
+}
+
+
+/** ---------------------------------------------------------------------------
  * @brief find index to column for column name
  * @param stringName column name column index is returned for
  * @return int index to column for column name if found, -1 if not found
 */
 int table_base::column_find_index(const std::string_view& stringName) const noexcept
 {                                                                                                  assert(m_namesColumn.empty() == false);
-   for(auto it = std::begin(m_vectorColumn), itEnd = std::end(m_vectorColumn); it != itEnd; it++)
+   for(auto it = column_begin(), itEnd = column_end(); it != itEnd; it++)
    {
-      if(stringName == it->name(m_namesColumn)) return (int)std::distance(std::begin(m_vectorColumn), it);
+      if(stringName == it->name())  return (int)std::distance(column_begin(), it);
    }
    return -1;
 }
@@ -160,11 +169,11 @@ int table_base::column_find_index(const std::string_view& stringName) const noex
 */
 int table_base::column_find_index(const std::string_view& stringWildcard, tag_wildcard) const noexcept
 {                                                                                                  assert(m_namesColumn.empty() == false);
-   for(auto it = std::begin(m_vectorColumn), itEnd = std::end(m_vectorColumn); it != itEnd; it++)
+   for(auto it = column_begin(), itEnd = column_end(); it != itEnd; it++)
    {
-      if(gd::ascii::strcmp(it->name(m_namesColumn).data(), stringWildcard.data(), gd::utf8::tag_wildcard{}) == 0)
+      if(gd::ascii::strcmp(it->name(), stringWildcard.data(), gd::utf8::tag_wildcard{}) == 0)
       {
-         return (int)std::distance(std::begin(m_vectorColumn), it);
+         return (int)std::distance(column_begin(), it);
       }
    }
    return -1;
@@ -196,13 +205,13 @@ unsigned table_base::column_get_index(const std::string_view& stringWildcard, ta
 
 
 std::pair<bool, std::string> table_base::prepare( unsigned uValueSize, unsigned uPackCount )
-{                                                                                                  assert(m_vectorColumn.empty() == false && "Table must have at least one column");
+{                                                                                                  assert( m_pcolumns->empty() == false && "Table must have at least one column" ); assert( m_puData == nullptr && "Table already prepared" );
                                                                                                    assert(m_puData == nullptr && "Table already prepared");
                                                                                                    assert((uValueSize == 4 || uValueSize == 8) && "Value size must be 4 or 8 bytes");
                                                                                                    assert((uPackCount == 4 || uPackCount == 8 || uPackCount == 16) && "Pack count must be 4, 8, or 16");
    // ## calculate size for each row
    unsigned uRowSize = 0u; // 
-   unsigned uColumnCount = (unsigned)m_vectorColumn.size();
+   unsigned uColumnCount = (unsigned)m_pcolumns->size();
 
    uRowSize = uValueSize * uPackCount * uColumnCount;                            // calculate size for each row based on value size and count
 
@@ -279,13 +288,12 @@ void table_base::row_reserve_add(uint64_t uCount)
  */
 void table_base::cell_set_value(uint64_t uRow, unsigned uColumn, uint32_t uValue)
 {
-                                                                                                   assert(size_value() == 4);
+                                                                                                    assert(size_value() == 4);
 #ifndef NDEBUG
-   if(uRow >= m_uRowReservedPackCount || uColumn >= m_vectorColumn.size()) { assert(false); }
+   if(uRow >= m_uRowReservedPackCount || uColumn >= m_pcolumns->size()) { assert(false); }
 #endif // !NDEBUG
 
-                                                                                                   assert(uRow < m_uRowReservedPackCount); assert(uColumn < m_vectorColumn.size());
-   auto& columnSet = m_vectorColumn[uColumn];                                                      assert(columnSet.position() < m_uRowSize);
+                                                                                                   assert(uRow < m_uRowReservedPackCount); assert(uColumn < m_pcolumns->size());
    auto puRow = row_get(uRow);
    auto uRowOffset = offset(uRow, uColumn, tag_column{} );
    auto puRowValue = puRow + uRowOffset;
@@ -302,10 +310,9 @@ void table_base::cell_set_value(uint64_t uRow, unsigned uColumn, uint32_t uValue
 void table_base::cell_set_value(uint64_t uRow, unsigned uColumn, uint64_t uValue)
 {                                                                                                  assert(size_value() == 8);
 #ifndef NDEBUG
-   if( (uRow / m_uPackCount) >= m_uRowReservedPackCount || uColumn >= m_vectorColumn.size()) { assert(false); }
+   if( (uRow / m_uPackCount) >= m_uRowReservedPackCount || uColumn >= m_pcolumns->size()) { assert(false); }
 #endif // !NDEBUG
-                                                                                                   assert((uRow / m_uPackCount) < m_uRowReservedPackCount); assert(uColumn < m_vectorColumn.size());
-   auto& columnSet = m_vectorColumn[uColumn];                                                      assert(columnSet.position() < m_uRowSize);
+                                                                                                   assert((uRow / m_uPackCount) < m_uRowReservedPackCount); assert(uColumn < m_pcolumns->size());
    auto puRow = row_get(uRow);
    auto uRowOffset = offset(uRow, uColumn, tag_column{});
    auto puRowValue = puRow + uRowOffset;
@@ -320,8 +327,8 @@ void table_base::cell_set_value(uint64_t uRow, unsigned uColumn, uint64_t uValue
  * @param variantviewValue value set to cell
 */
 void table_base::cell_set(uint64_t uRow, unsigned uColumn, gd::variant_view variantviewValue)
-{                                                                                                  assert(uColumn < m_vectorColumn.size());
-   auto& columnSet = m_vectorColumn[uColumn];                                                      assert(columnSet.position() < m_uRowSize);
+{                                                                                                  assert(uColumn < m_pcolumns->size());
+   auto& columnSet = *m_pcolumns->get(uColumn);                                                    assert(columnSet.position() < m_uRowSize);
    auto puRow = row_get(uRow);
 
    if(variantviewValue.is_null() == false)
@@ -401,8 +408,8 @@ table.cell_set( 0, 2, "20.5", tag_convert{} );
  * @param tag dispatch
 */
 void table_base::cell_set(uint64_t uRow, unsigned uColumn, gd::variant_view variantviewValue, tag_convert)
-{                                                                                                  assert(uColumn < m_vectorColumn.size());
-   auto& columnSet = m_vectorColumn[uColumn];                                                      assert(columnSet.position() < m_uRowSize);
+{                                                                                                  assert(uColumn < m_pcolumns->size());
+   auto& columnSet = *m_pcolumns->get(uColumn);                                                    assert(columnSet.position() < m_uRowSize);
    auto uValueType = variantviewValue.type_number();
    auto uColumnType = columnSet.ctype_number();
 
@@ -427,6 +434,19 @@ void table_base::cell_set(uint64_t uRow, unsigned uColumn, gd::variant_view vari
       }
    }
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Allocate columns object on heap for table
+ * @return detail::columns* pointer to allocated  columns object.
+ */
+detail::columns* table_base::new_columns_s()
+{
+   detail::columns* pcolumns = new detail::columns{};
+   pcolumns->add_reference();
+
+   return pcolumns;
+}
+
 
 
 

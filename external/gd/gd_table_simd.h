@@ -32,6 +32,7 @@
 
 #include "gd_arguments.h"
 #include "gd_table.h"
+#include "gd_table_column.h"
 #include "gd_types.h"
 #include "gd_variant_view.h"
 
@@ -112,70 +113,6 @@ public:
    };
 
 public:
-   /** =======================================================================
-    * \brief Information about each column in record
-    *
-    * `column` has information needed to work with data for each column in record.
-    * Each column has a type, size, position (offset in buffer for row)
-    *
-    * Each column can have different types, one type and one ctype.
-    * The ctype is the C type used to to know how to handle the value in code.
-    * The type is the native type used to store the value. Often type and ctype are the same.
-    *
-    * column also has name and alias, both are stored as offset position in buffer.
-    * names m_namesColumn; in table_column_buffer is used to store names and aliases.
-    *
-    */
-   struct column
-   {
-      column() { memset(static_cast<void*>(this), 0, sizeof(column)); }
-      column(unsigned uCType) { memset(static_cast<void*>(this), 0, sizeof(column)); m_uCType = uCType; }
-      column(unsigned uCType, unsigned uSize) : m_uCType(uCType), m_uType(uCType), m_uState(0), m_uPosition(0), m_uSize(uSize), m_uPrimitiveSize(gd::types::value_size_g(uCType)), m_uNameOffset(0) {}
-      column(unsigned uCType, unsigned uType, unsigned uSize) : m_uCType(uCType), m_uType(uType), m_uState(0), m_uPosition(0), m_uSize(uSize), m_uPrimitiveSize(gd::types::value_size_g(uCType)), m_uNameOffset(0) {}
-      column(const column* pcolumn) { memcpy(static_cast<void*>(this), pcolumn, sizeof(column)); }
-
-      void state(unsigned uState) { m_uState = uState; }                     ///< Set column state flags
-      [[nodiscard]] unsigned state() const noexcept { return m_uState; }       ///< Get column state
-      void type(unsigned uType) { m_uType = uType; }                         ///< Set native type
-      [[nodiscard]] unsigned type() const noexcept { return m_uType; }
-      void ctype(unsigned uCType) { m_uCType = uCType; }                     ///< Set C type
-      [[nodiscard]] unsigned ctype() const noexcept { return m_uCType; }       ///< Get C type
-      /// extract the number type part from ctype
-      [[nodiscard]] unsigned ctype_number() const noexcept { return m_uCType & 0x0000'00ff; }
-      [[nodiscard]] unsigned ctype_group() const noexcept { return m_uCType & 0x0000'ff00; }
-      void position(unsigned uPosition) { m_uPosition = uPosition; }
-      [[nodiscard]] unsigned position() const noexcept { return m_uPosition; }
-      void size(unsigned uSize) { m_uSize = uSize; }
-      [[nodiscard]] unsigned size() const noexcept { return m_uSize; }
-      void primitive_size(unsigned uSize) { m_uPrimitiveSize = uSize; }
-      [[nodiscard]] unsigned primitive_size() const noexcept { return m_uPrimitiveSize; }
-      [[nodiscard]] unsigned name() const { return m_uNameOffset; }
-      [[nodiscard]] std::string_view name(const char* pbszBuffer) const {
-         auto p = &pbszBuffer[m_uNameOffset];
-         return m_uNameOffset > 0 ? std::string_view(p, (unsigned)*(uint16_t*)(p - sizeof(uint16_t))) : std::string_view(pbszNoName_g);
-      }
-      void name(unsigned iOffset) { m_uNameOffset = iOffset; }
-
-      void data(uintptr_t uData) { m_uData = uData; }
-      [[nodiscard]] uintptr_t data() const noexcept { return m_uData; }
-
-
-      // no size or reference value in buffer for value returns true, if size buffer (uint32_t) value is not fixed
-      bool is_fixed() const noexcept { return (m_uState & (eColumnStateLength | eColumnStateReference)) == 0; }
-      // if value holds value length as prefix in column buffer
-      bool is_length() const noexcept { return (m_uState & eColumnStateLength); }
-      // if column store value in as reference value
-      bool is_reference() const noexcept { return (m_uState & eColumnStateReference); }
-
-      unsigned m_uState;   ///< column state, like length, align
-      unsigned m_uType;    ///< native value type
-      unsigned m_uCType;   ///< c value type (lower byte has the number for type)
-      unsigned m_uPosition;///< position where value starts
-      unsigned m_uSize;    ///< max column size (also the internal buffer size), for fixed types this is 0
-      unsigned m_uPrimitiveSize;///< size in bytes for each C++ primitive type or some special types like uuid
-      unsigned m_uNameOffset;///< offset to location for name in buffer. offset can never be 0 because names always start with name length.
-      uintptr_t m_uData;   ///< custom data, use this to get some specific external logic
-   };
 
 // ## @API [tag: construct] [description: table construction, lots of constructors to simplify how to create new tables]
 public:
@@ -196,7 +133,7 @@ public:
    void set_state [[deprecated]] (tag_full_meta) noexcept { m_uFlags = eTableFlagRowStatus | eTableFlagNull64; }
    void set_flags(tag_full_meta) noexcept { m_uFlags = eTableFlagRowStatus | eTableFlagNull64; }
    void set_flags(uint32_t uSet, uint32_t uClear) noexcept { m_uFlags |= uSet; m_uFlags &= ~uClear; }
-   unsigned get_column_count() const noexcept { return (unsigned)m_vectorColumn.size(); }
+   unsigned get_column_count() const noexcept { return (unsigned)m_pcolumns->size(); }
    /// Get number of rows with values
    uint64_t get_row_count() const noexcept { return m_uRowCount; }
 
@@ -220,18 +157,46 @@ public:
 
 
 
-   table_base& column_add(const column& columnToAdd) { m_vectorColumn.push_back(columnToAdd); return *this; }
+   // ## @API [tag: column] [description: column management methods]
+
+/// prepare to store column information
+   void column_prepare() { if(m_pcolumns == nullptr) m_pcolumns = new_columns_s(); }
+
+   /// @name column_add
+   /// Add columns to table, this is typically done before adding values to table. Remember to call @see prepare before adding data
+   /// Parameters:
+   /// - `uColumnType` type of column to add @see: gd::types::enumType
+   /// - `stringType` type of columns as string name, will be converted to the type number
+   /// - `uSize` if type do not have a fixed size then size will have the maximum length for text
+   /// - `columnToAdd` has all column properties for column to add
+   /// - `stringName` name for column
+   /// - `stringAlias` alias name for column (column can have both name and alias)
+   ///@{
+   table_base& column_add(const detail::column& columnToAdd) { m_pcolumns->add(columnToAdd); return *this; }
    table_base& column_add(unsigned uColumnType, const std::string_view& stringName) { return column_add(uColumnType, 0, stringName); }
    table_base& column_add(unsigned uColumnType, unsigned uSize);
-   table_base& column_add(unsigned uColumnType, unsigned uSize, std::string_view stringName);
-   table_base& column_add(std::string_view stringType) { return column_add(column((unsigned)gd::types::type_g(stringType))); }
-   table_base& column_add(std::string_view stringType, const std::string_view& stringName) { return column_add((unsigned)gd::types::type_g(stringType), 0, stringName); }
-   table_base& column_add(std::string_view stringType, unsigned uSize) { return column_add((unsigned)gd::types::type_g(stringType), uSize); }
-   table_base& column_add(std::string_view stringType, unsigned uSize, const std::string_view& stringName) { return column_add((unsigned)gd::types::type_g(stringType), uSize, stringName); }
+   table_base& column_add(unsigned uColumnType, unsigned uSize, std::string_view stringName, std::string_view stringAlias);
+   table_base& column_add(unsigned uColumnType, unsigned uSize, std::string_view stringName) { return column_add(uColumnType, uSize, stringName, std::string_view{}); }
+   table_base& column_add(unsigned uColumnType, unsigned uSize, std::string_view stringAlias, tag_alias) { return column_add(uColumnType, uSize, std::string_view{}, stringAlias); }
+   table_base& column_add(const std::vector< std::tuple< unsigned, unsigned, std::string_view > >& vectorColumn);
+   table_base& column_add(const std::string_view& stringType) { return column_add(detail::column((unsigned)gd::types::type_g(stringType))); }
+   table_base& column_add(const std::string_view& stringType, const std::string_view& stringName) { return column_add((unsigned)gd::types::type_g(stringType), 0, stringName, std::string_view{}); }
+   table_base& column_add(const std::string_view& stringType, unsigned uSize) { return column_add((unsigned)gd::types::type_g(stringType), uSize); }
+   table_base& column_add(const std::string_view& stringType, unsigned uSize, const std::string_view& stringName) { return column_add((unsigned)gd::types::type_g(stringType), uSize, stringName, std::string_view{}); }
+   table_base& column_add(const std::string_view& stringType, unsigned uSize, const std::string_view& stringAlias, tag_alias) { return column_add((unsigned)gd::types::type_g(stringType), uSize, std::string_view{}, stringAlias); }
+   table_base& column_add(const std::string_view& stringType, unsigned uSize, const std::string_view& stringName, const std::string_view& stringAlias) { return column_add((unsigned)gd::types::type_g(stringType), uSize, stringName, stringAlias); }
 
-   table_base& column_add(const std::initializer_list< std::pair< std::string_view, unsigned > >& listType, tag_type_name);
-   table_base& column_add(const std::initializer_list< std::tuple< std::string_view, unsigned, std::string_view > >& listType, tag_type_name);
-   table_base& column_add(const std::initializer_list< std::pair< std::string_view, std::string_view > >& listType, tag_type_name);
+   table_base& column_add(const std::initializer_list<std::pair<std::string_view, unsigned>>& listType, tag_type_name);
+   table_base& column_add(const std::initializer_list<std::tuple<std::string_view, unsigned, std::string_view>>& listType, tag_type_name);
+
+   table_base& column_add(const std::vector< std::pair< std::string_view, unsigned > >& vectorType, tag_type_name);
+   table_base& column_add(const std::vector< std::tuple< std::string_view, unsigned, std::string_view > >& vectorType, tag_type_name);
+   table_base& column_add(const std::vector< std::tuple< std::string_view, unsigned, std::string_view, std::string_view > >& vectorType, tag_type_name);
+   table_base& column_add(const std::initializer_list< std::pair< std::string_view, std::string_view > >& vectorType, tag_type_name);
+   table_base& column_add(const std::vector< std::pair< std::string_view, std::string_view > >& vectorType, tag_type_name);
+   table_base& column_add(const std::vector< std::pair< unsigned, unsigned > >& vectorType, tag_type_constant);
+   table_base& column_add(const table_base* p_);
+   ///@}
 
    /// @brief find column index for column name
    int column_find_index(const std::string_view& stringName) const noexcept;
@@ -241,6 +206,14 @@ public:
    unsigned column_get_index(const std::string_view& stringName) const noexcept;
    /// @brief get column index for column name with wildcard, wildcars like ? and * are supported, asserts if not found
    unsigned column_get_index(const std::string_view& stringName, tag_wildcard) const noexcept;
+
+   auto column_begin() { return m_pcolumns->begin(); }
+   auto column_end() { return m_pcolumns->end(); }
+   auto column_begin() const { return m_pcolumns->begin(); }
+   auto column_end() const { return m_pcolumns->end(); }
+   auto column_cbegin() const { return m_pcolumns->cbegin(); }
+   auto column_cend() const { return m_pcolumns->cend(); }
+
 
 
    std::pair<bool, std::string> prepare( unsigned uValueSize, unsigned uStride );
@@ -287,7 +260,14 @@ public:
    gd::argument::arguments m_argumentsProperty; ///< table properties
    references m_references;            ///< Stores blob data
    names m_namesColumn;                ///< names for columns in table. this works like a data store for const text values used to store column names and aliases
-   std::vector<column> m_vectorColumn; ///< information about each column in table
+   detail::columns* m_pcolumns{nullptr};
+
+// ## @API [tag: static] [description: static member methods]
+public:
+   /// Create columns object on heap
+   static detail::columns* new_columns_s();
+
+
 
 };
 

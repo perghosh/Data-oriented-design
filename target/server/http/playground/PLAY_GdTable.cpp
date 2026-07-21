@@ -24,6 +24,7 @@ TEST_CASE("[gd-table] simd create", "[gd-table]")
 {
    using namespace gd::table::simd;
    table<8u, 8u> tableFiles;
+   tableFiles.column_prepare();
 
    tableFiles.column_add({ { "uint64", 0, "count" }, { "uint64", 0, "size" } }, gd::table::tag_type_name{});
    tableFiles.prepare();
