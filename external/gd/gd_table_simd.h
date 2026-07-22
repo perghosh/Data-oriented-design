@@ -274,6 +274,10 @@ public:
 
    bool cell_is_null(uint64_t uRow, unsigned uColumn) const noexcept;
    bool cell_is_null(uint64_t uRow, std::string_view stringName) const noexcept { return cell_is_null(uRow, column_get_index(stringName)); }
+   const reference* cell_get_reference(uint64_t uRow, unsigned uColumn) const noexcept;
+
+   uint32_t cell_get_value32(uint64_t uRow, unsigned uColumn) const noexcept;
+   uint64_t cell_get_value64(uint64_t uRow, unsigned uColumn) const noexcept;
 
    gd::variant_view cell_get_variant_view(uint64_t uRow, unsigned uColumn) const noexcept;
    gd::variant_view cell_get_variant_view(uint64_t uRow, const std::string_view& stringName) const noexcept;

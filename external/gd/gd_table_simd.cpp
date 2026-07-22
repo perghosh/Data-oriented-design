@@ -314,6 +314,57 @@ void table_base::row_reserve_add(uint64_t uCount)
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief Get pointer to reference for specified cell
+ * Get reference object to cell, make sure that cell has reference
+ * @param uRow row where cell value is
+ * @param uColumn column for cell
+ * @return pointer to reference object for cell if not null, if null then nullpointer is returned
+*/
+const reference* table_base::cell_get_reference( uint64_t uRow, unsigned uColumn ) const noexcept
+{
+   if( is_null() == true && cell_is_null( uRow, uColumn ) == true ) return nullptr;
+                                                                                                   assert( m_references.size() > 0 );
+   int64_t iIndex = -1;
+   if(size_value() == 8 )
+   {
+      auto uIndex = cell_get_value64(uRow, uColumn);                                               assert(uIndex < 0x1000'0000); assert(uIndex < m_references.size()); // realistic value?
+      iIndex = (int64_t)uIndex;
+   }
+   else
+   {
+      auto uIndex = cell_get_value32(uRow, uColumn);                                               assert(uIndex < 0x1000'0000); assert(uIndex < m_references.size()); // realistic value?
+      iIndex = (int64_t)uIndex;
+   }
+
+   if(iIndex < 0) return nullptr;
+   const reference* preference = m_references.at( iIndex );
+
+   return preference;
+}
+
+/// Get cell value as 32 bit unsigned integer (no checks, raw value)
+uint32_t table_base::cell_get_value32(uint64_t uRow, unsigned uColumn) const noexcept
+{
+   auto puRow = row_get( uRow ); // buffer to row
+   auto uRowOffset = offset(uRow, uColumn, tag_column{});
+   auto puRowValue = puRow + uRowOffset;
+
+   uint32_t uValue = gd::types::cast_g<uint32_t>(puRowValue);
+   return uValue;
+}
+
+/// Get cell value as 64 bit unsigned integer (no checks, raw value)
+uint64_t table_base::cell_get_value64(uint64_t uRow, unsigned uColumn) const noexcept
+{
+   auto puRow = row_get( uRow ); // buffer to row
+   auto uRowOffset = offset(uRow, uColumn, tag_column{});
+   auto puRowValue = puRow + uRowOffset;
+
+   uint64_t uValue = gd::types::cast_g<uint64_t>(puRowValue);
+   return uValue;
+}
+
+/** ---------------------------------------------------------------------------
  * @brief get cell value as variant_view item
  * @param uRow row index for cell
  * @param uColumn column index to cell
@@ -393,10 +444,6 @@ gd::variant_view table_base::cell_get_variant_view(uint64_t uRow, const std::str
  */
 void table_base::cell_set_value(uint64_t uRow, unsigned uColumn, uint32_t uValue)
 {                                                                                                  assert(size_value() == 4);
-#ifndef NDEBUG
-   if(uRow >= (m_uRowReservedPackCount * count_pack()) || uColumn >= m_pcolumns->size()) { assert(false); }
-#endif // !NDEBUG
-
                                                                                                    assert(uRow < (m_uRowReservedPackCount * count_pack())); assert(uColumn < m_pcolumns->size());
    auto puRow = row_get(uRow);
    auto uRowOffset = offset(uRow, uColumn, tag_column{} );
