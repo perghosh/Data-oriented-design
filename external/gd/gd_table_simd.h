@@ -113,6 +113,82 @@ public:
    };
 
 public:
+   /**
+    * @brief iterator to move trough rows in table
+    */
+   struct iterator_row                                                        // ## @API [tag: iterator] [description: row iterator for table]
+   {
+      iterator_row(): m_uRow(0), m_ptable(nullptr) {}
+      iterator_row( uint64_t uRow, table_base* ptable ): m_uRow(uRow), m_ptable(ptable ) {}
+
+      auto operator*() const { return gd::table::row<table_base>( m_ptable, m_uRow ); }
+
+      bool operator==( const iterator_row& o ) const { assert( o.m_ptable == m_ptable ); return o.m_uRow == m_uRow; }
+      bool operator!=( const iterator_row& o ) const { assert( o.m_ptable == m_ptable ); return o.m_uRow != m_uRow; }
+
+      uint64_t get_row() const noexcept { return m_uRow; }
+      int64_t get_irow() const noexcept { return (int64_t)m_uRow; }
+
+      const uint8_t* get( tag_raw ) const { return m_ptable->row_get(m_uRow); }
+
+      iterator_row& operator++() { m_uRow++; return *this; }
+      iterator_row operator++(int) { iterator_row it_ = *this; ++(*this); return it_; }
+      iterator_row& operator--() { m_uRow--; return *this; }
+      iterator_row operator--(int) { iterator_row it_ = *this; --(*this); return it_; }
+
+      auto operator+( std::ptrdiff_t iDistance ) { return iterator_row( (std::ptrdiff_t)m_uRow + iDistance, m_ptable ); }
+      auto operator-( std::ptrdiff_t iDistance ) { return iterator_row( (std::ptrdiff_t)m_uRow - iDistance, m_ptable ); }
+
+      gd::variant_view cell_get_variant_view( unsigned uIndex ) const { return m_ptable->cell_get_variant_view( m_uRow, uIndex ); }
+      gd::variant_view cell_get_variant_view( const std::string_view& stringName ) const { return m_ptable->cell_get_variant_view( m_uRow, stringName ); }
+      std::vector< gd::variant_view > cell_get_variant_view() const { return m_ptable->cell_get_variant_view( m_uRow ); }
+      std::vector< gd::variant_view > get_variant_view( const std::vector<unsigned>& vectorColumn ) const { return m_ptable->row_get_variant_view( m_uRow, vectorColumn ); }
+
+      gd::argument::arguments get_arguments() const { return m_ptable->row_get_arguments( m_uRow ); } 
+      void get_arguments( gd::argument::arguments& argumentsRow ) const { m_ptable->row_get_arguments( m_uRow, argumentsRow ); }
+
+      void cell_set( unsigned uColumn, const gd::variant_view& variantviewValue ) { m_ptable->cell_set( m_uRow, uColumn, variantviewValue ); }
+      void cell_set( const std::string_view& stringName, const gd::variant_view& variantviewValue ) { m_ptable->cell_set( m_uRow, stringName, variantviewValue ); }
+      void cell_set( unsigned uColumn, const gd::variant_view& variantviewValue, tag_convert ) { m_ptable->cell_set( m_uRow, uColumn, variantviewValue, tag_convert{} ); }
+      void cell_set( const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_convert ) { m_ptable->cell_set( m_uRow, stringName, variantviewValue, tag_convert{} ); }
+
+      uint64_t m_uRow;     ///< active row index
+      table_base* m_ptable; ///< pointer to table that owns the iterator
+   };
+
+   struct const_iterator_row
+   {
+      const_iterator_row(): m_uRow(0), m_ptable(nullptr) {}
+      const_iterator_row( uint64_t uRow, const table_base* ptable ): m_uRow(uRow), m_ptable(ptable) {}
+      const_iterator_row( int64_t iRow, const table_base* ptable ): m_uRow((uint64_t)iRow), m_ptable(ptable) {}
+
+      bool operator==( const const_iterator_row& o ) const { assert( o.m_ptable == m_ptable ); return o.m_uRow == m_uRow; }
+      bool operator!=( const const_iterator_row& o ) const { assert( o.m_ptable == m_ptable ); return o.m_uRow != m_uRow; }
+
+      uint64_t get_row() const noexcept { return m_uRow; }
+      int64_t get_irow() const noexcept { return (int64_t)m_uRow; }
+
+      const uint8_t* get( tag_raw ) const { return m_ptable->row_get(m_uRow); }
+
+      gd::variant_view cell_get_variant_view( unsigned uIndex ) const { return m_ptable->cell_get_variant_view( m_uRow, uIndex ); }
+      gd::variant_view cell_get_variant_view( const std::string_view& stringName ) const { return m_ptable->cell_get_variant_view( m_uRow, stringName ); }
+      std::vector< gd::variant_view > cell_get_variant_view() const { return m_ptable->cell_get_variant_view( m_uRow ); }
+      std::vector< gd::variant_view > get_variant_view( const std::vector<unsigned>& vectorColumn ) const { return m_ptable->row_get_variant_view( m_uRow, vectorColumn ); }
+
+      const_iterator_row& operator++() { m_uRow++; return *this; }
+      const_iterator_row operator++(int) { const_iterator_row it_ = *this; ++(*this); return it_; }
+      const_iterator_row& operator--() { m_uRow--; return *this; }
+      const_iterator_row operator--(int) { const_iterator_row it_ = *this; --(*this); return it_; }
+
+      const_iterator_row operator+( int64_t iDistance ) { return const_iterator_row( m_uRow + iDistance, m_ptable ); }
+      const_iterator_row operator-( int64_t iDistance ) { return const_iterator_row( m_uRow - iDistance, m_ptable ); }
+
+      uint64_t m_uRow;
+      const table_base* m_ptable;
+   };
+
+
+public:
 
 // ## @API [tag: construct] [description: table construction, lots of constructors to simplify how to create new tables]
 public:
@@ -235,11 +311,13 @@ public:
    ///@}
 
    /// @brief find column index for column name
-   int column_find_index(const std::string_view& stringName) const noexcept;
+   int column_find_index(std::string_view stringName) const noexcept;
+   int column_find_index(std::string_view stringAlias, tag_alias) const noexcept;
    /// @brief find column index for column name with wildcard, wildcars like ? and * are supported
    int column_find_index(const std::string_view& stringWildcard, tag_wildcard) const noexcept;
    /// @brief get column index for column name, asserts if not found
    unsigned column_get_index(const std::string_view& stringName) const noexcept;
+   unsigned column_get_index(const std::string_view& stringAlias, tag_alias) const noexcept;
    /// @brief get column index for column name with wildcard, wildcars like ? and * are supported, asserts if not found
    unsigned column_get_index(const std::string_view& stringName, tag_wildcard) const noexcept;
 
@@ -263,7 +341,19 @@ public:
       return m_puData + uRowPack * m_uRowSize; 
    }
 
+   void row_get_arguments(uint64_t uRow, gd::argument::arguments& argumentsValue) const;
+   gd::argument::arguments row_get_arguments(uint64_t uRow) const { gd::argument::arguments a_; row_get_arguments(uRow, a_); return a_; }
+   gd::argument::arguments row_get_arguments(uint64_t uRow, const unsigned* puIndex, unsigned uSize) const;
+   gd::argument::arguments row_get_arguments(uint64_t uRow, const std::vector<unsigned>& vectorIndex) const { return row_get_arguments(uRow, vectorIndex.data(), (unsigned)vectorIndex.size()); }
+
+
    std::vector<gd::variant_view> row_get_variant_view(uint64_t uRow) const;
+   std::vector<gd::variant_view> row_get_variant_view(uint64_t uRow, const unsigned* puIndex, unsigned uSize) const;
+   std::vector<gd::variant_view> row_get_variant_view(uint64_t uRow, const std::vector<unsigned>& vectorIndex) const { return row_get_variant_view(uRow, vectorIndex.data(), (unsigned)vectorIndex.size()); }
+   void row_get_variant_view(uint64_t uRow, std::vector<gd::variant_view>& vectorValue) const;
+   void row_get_variant_view(uint64_t uRow, unsigned uOffset, std::vector<gd::variant_view>& vectorValue) const;
+   void row_get_variant_view(uint64_t uRow, const unsigned* puIndex, unsigned uSize, std::vector<gd::variant_view>& vectorValue) const;
+   void row_get_variant_view(uint64_t uRow, const std::vector<unsigned>& vectorIndex, std::vector<gd::variant_view>& vectorValue) const { row_get_variant_view(uRow, vectorIndex.data(), (unsigned)vectorIndex.size(), vectorValue); }
 
    void row_add(uint64_t uCount);
    /// Simple add one row to table that is safe (if table have null values these are automatically set to null)
@@ -281,19 +371,38 @@ public:
 
    gd::variant_view cell_get_variant_view(uint64_t uRow, unsigned uColumn) const noexcept;
    gd::variant_view cell_get_variant_view(uint64_t uRow, const std::string_view& stringName) const noexcept;
+   std::vector< gd::variant_view > cell_get_variant_view(uint64_t uRow, unsigned uFromColumn, unsigned uToColumn) const;
+   std::vector< gd::variant_view > cell_get_variant_view(uint64_t uRow) const { return cell_get_variant_view(uRow, 0, get_column_count()); }
+
 
    void cell_set_value(uint64_t uRow, unsigned uColumn, uint32_t uValue);
    void cell_set_value(uint64_t uRow, unsigned uColumn, uint64_t uValue);
+
    void cell_set(uint64_t uRow, unsigned uColumn, gd::variant_view variantviewValue);
    void cell_set(uint64_t uRow, unsigned uColumn, gd::variant_view variantviewValue, tag_convert);
+   void cell_set(uint64_t uRow, const std::string_view& stringName, gd::variant_view variantviewValue);
+   void cell_set(uint64_t uRow, const std::string_view& stringAlias, gd::variant_view variantviewValue, tag_alias);
+   void cell_set(uint64_t uRow, const std::string_view& stringName, gd::variant_view variantviewValue, tag_convert);
+   void cell_set(uint64_t uRow, std::string_view stringName, gd::variant_view variantviewValue, tag_adjust);
+   void cell_set(uint64_t uRow, const std::string_view& stringAlias, gd::variant_view variantviewValue, tag_convert, tag_alias);
+   void cell_set(uint64_t uRow, unsigned uColumn, const std::vector<gd::variant_view>& vectorValue);
+   void cell_set(uint64_t uRow, unsigned uColumn, const std::vector<gd::variant_view>& vectorValue, tag_convert);
+
 
    void cell_set_null(uint64_t uRow, unsigned uColumn);
+   void cell_set_null(uint64_t uRow, std::string_view stringName);
    void cell_set_not_null(uint64_t uRow, unsigned uColumn);
 
 protected:
+   /// Counts number of values in each array (simd block)
    unsigned count_pack() const noexcept { return m_uPackCount; }
+   /// Counts number of rows that can be stored in allocated memory, this is the number of reserved rows
+   uint64_t count_reserved_row() const noexcept { return m_uRowReservedPackCount * count_pack(); }
+   /// Size of each value in bytes, all values in table have this size
    unsigned size_value() const noexcept { return m_uValueSize; }
+   /// Size of each block/array in bytes
    unsigned size_pack() const noexcept { return m_uPackCount * size_value(); }
+   /// Offset position for column in row. Use this to get the specific column value in row and array for AoSoA (Array of Structure of Arrays) layout
    unsigned offset(uint64_t uRow, unsigned uColumn, tag_column) const noexcept { return uColumn * size_pack() + (uRow % size_pack()) * size_value(); }
 
 
@@ -389,6 +498,17 @@ inline void table_base::cell_set_null(uint64_t uRow, unsigned uColumn) {        
    else              uNull_d = *(uint64_t*)puRow;
 #endif // _DEBUG
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Set value in column to null (marks null flag for column)
+ * @param uRow row where cell is
+ * @param stringName cell column name
+*/
+inline void table_base::cell_set_null( uint64_t uRow, std::string_view stringName ) {              assert(uRow < (m_uRowReservedPackCount * count_pack())); assert( m_uFlags & (eTableFlagNull32|eTableFlagNull64) );
+   unsigned uColumnIndex = column_get_index( stringName );
+   cell_set_null( uRow, uColumnIndex);
+}
+
 
 inline void table_base::cell_set_not_null(uint64_t uRow, unsigned uColumn) {                       assert(uRow < (m_uRowReservedPackCount * count_pack())); assert(m_uFlags & (eTableFlagNull32 | eTableFlagNull64));
    auto puRow = row_get_null(uRow);

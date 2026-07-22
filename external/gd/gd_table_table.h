@@ -452,12 +452,12 @@ public:
    ///@}
 
    // ### access column or find index for column/columns
-   int column_find_index( const std::string_view& stringName ) const noexcept;
-   int column_find_index( const std::string_view& stringAlias, tag_alias ) const noexcept;
-   int column_find_index( const std::string_view& stringWildcard, tag_wildcard ) const noexcept;
-   unsigned column_get_index( const std::string_view& stringName ) const noexcept;
-   unsigned column_get_index( const std::string_view& stringAlias, tag_alias ) const noexcept;
-   unsigned column_get_index( const std::string_view& stringName, tag_wildcard ) const noexcept;
+   int column_find_index( std::string_view stringName ) const noexcept;
+   int column_find_index( std::string_view stringAlias, tag_alias ) const noexcept;
+   int column_find_index( std::string_view stringWildcard, tag_wildcard ) const noexcept;
+   unsigned column_get_index( std::string_view stringName ) const noexcept;
+   unsigned column_get_index( std::string_view stringAlias, tag_alias ) const noexcept;
+   unsigned column_get_index( std::string_view stringName, tag_wildcard ) const noexcept;
    std::vector<uint32_t> column_get_index( std::initializer_list< std::string_view > listName ) const noexcept;
    std::vector<uint32_t> column_get_index( const std::vector< std::string_view >& vectorName ) const noexcept;
    unsigned column_get_index_for_alias( const std::string_view& stringAlias ) const noexcept { return column_get_index( stringAlias, tag_alias{}); }
@@ -733,7 +733,7 @@ public:
    void cell_set( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue );
    void cell_set( uint64_t uRow, const std::string_view& stringAlias, const gd::variant_view& variantviewValue, tag_alias );
    void cell_set_null( uint64_t uRow, unsigned uColumn );
-   void cell_set_null( uint64_t uRow, const std::string_view& stringName );
+   void cell_set_null( uint64_t uRow, std::string_view stringName );
    void cell_set_not_null( uint64_t uRow, unsigned uColumn );
    void cell_set( uint64_t uRow, unsigned uColumn, const gd::variant_view& variantviewValue, tag_convert );
    void cell_set( uint64_t uRow, unsigned uColumn, const gd::variant_view& variantviewValue, tag_adjust );
@@ -1330,7 +1330,7 @@ inline void table::cell_set_null( uint64_t uRow, unsigned uColumn ) { assert( uR
  * @param uRow row where cell is
  * @param stringName cell column name
 */
-inline void table::cell_set_null( uint64_t uRow, const std::string_view& stringName ) { assert( uRow < m_uReservedRowCount ); assert( m_uFlags & (eTableFlagNull32|eTableFlagNull64) );
+inline void table::cell_set_null( uint64_t uRow, std::string_view stringName ) {                   assert( uRow < m_uReservedRowCount ); assert( m_uFlags & (eTableFlagNull32|eTableFlagNull64) );
    unsigned uColumnIndex = column_get_index( stringName );
    cell_set_null( uRow, uColumnIndex);
 }

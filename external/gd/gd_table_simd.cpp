@@ -153,7 +153,7 @@ table_base& table_base::column_add(const table_base* p_)
  * @param stringName column name column index is returned for
  * @return int index to column for column name if found, -1 if not found
 */
-int table_base::column_find_index(const std::string_view& stringName) const noexcept
+int table_base::column_find_index(std::string_view stringName) const noexcept
 {                                                                                                  assert(m_namesColumn.empty() == false);
    for(auto it = column_begin(), itEnd = column_end(); it != itEnd; it++)
    {
@@ -161,6 +161,21 @@ int table_base::column_find_index(const std::string_view& stringName) const noex
    }
    return -1;
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief find index to column for column alias
+ * @param stringAlias column alias column index is returned for
+ * @return int index to column for column alias if foundm, -1 if not found
+*/
+int table_base::column_find_index( std::string_view stringAlias, tag_alias ) const noexcept
+{
+   for( auto it = m_pcolumns->begin(), itEnd = m_pcolumns->end(); it != itEnd; it++ )
+   {
+      if( stringAlias == it->alias() ) return (int)std::distance( m_pcolumns->begin(), it );
+   }
+   return -1;
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief find index to column for column name using wildcard match
@@ -189,6 +204,18 @@ unsigned table_base::column_get_index(const std::string_view& stringName) const 
    int iIndex = column_find_index(stringName);                                                     assert(iIndex != -1);
    return (unsigned)iIndex;
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief get index to column for column alias
+ * @param stringAlias column alias column index is returned for
+ * @return unsigned index to column for column alias
+*/
+unsigned table_base::column_get_index(const std::string_view& stringAlias, tag_alias) const noexcept
+{
+   int iIndex = column_find_index(stringAlias, tag_alias{});                                       assert(iIndex != -1);
+   return (unsigned)iIndex;
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief get index to column for column name using wildcard match
@@ -240,12 +267,29 @@ std::pair<bool, std::string> table_base::prepare( unsigned uValueSize, unsigned 
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief append values to arguments from a specific row in a table
+ * @param uRow index to row in table to add values from
+ * @return argumentsValue arguments values are added to
+*/
+void table_base::row_get_arguments( uint64_t uRow, gd::argument::arguments& argumentsValue ) const
+{                                                                                                  assert( uRow < 0x0100'0000 ); assert( uRow < count_reserved_row());
+   for( auto it = column_begin(), itEnd = column_end(); it != itEnd; it++ ) 
+   {
+      auto stringColumnName = it->name();
+      gd::variant_view variantValue = cell_get_variant_view(uRow, stringColumnName);
+      // check if the cell value isn't empty, and if not then add to arguments
+      if(variantValue.is_null() == false ) { argumentsValue.append_argument(stringColumnName, variantValue);  }
+   }
+}
+
+
+/** ---------------------------------------------------------------------------
  * @brief Return row values in vector as variant view items
  * @param uRow index to row values are returned from
  * @return std::vector<const gd::variant_view> vector holding row values
 */
 std::vector<gd::variant_view> table_base::row_get_variant_view( uint64_t uRow ) const
-{                                                                                                  assert( uRow < (m_uRowReservedPackCount * count_pack()));
+{                                                                                                  assert( uRow < count_reserved_row());
    std::vector<gd::variant_view> vectorValue;
 
    for( auto u = 0u, uMax = (unsigned)m_pcolumns->size(); u < uMax; u++ )
@@ -255,6 +299,63 @@ std::vector<gd::variant_view> table_base::row_get_variant_view( uint64_t uRow ) 
 
    return vectorValue;
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Return row values in vector as variant view items
+ * @param uRow index to row values are returned from
+ * @param puIndex pointer to array with column index values harvested into vector
+ * @param uSize number of values to harvest
+ * @return std::vector<gd::variant_view> values from row
+*/
+std::vector<gd::variant_view> table_base::row_get_variant_view( uint64_t uRow, const unsigned* puIndex, unsigned uSize ) const
+{
+   std::vector<gd::variant_view> vectorValue;
+   for( unsigned u = 0; u < uSize; u++ )
+   {                                                                                               assert( puIndex[u] < get_column_count() );
+      vectorValue.push_back( cell_get_variant_view( uRow, puIndex[u] ) );
+   }
+
+   return vectorValue;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Harvest row values in vector with variant view items
+ * @param uRow index to row values are returned from
+ * @param vectorValue row values are placed in vector
+*/
+void table_base::row_get_variant_view(uint64_t uRow, std::vector<gd::variant_view>& vectorValue) const
+{                                                                                                  assert(uRow < 0x0100'0000); assert(uRow < count_reserved_row());
+   for(auto u = 0u, uMax = (unsigned)m_pcolumns->size(); u < uMax; u++)
+   {
+      vectorValue.push_back(cell_get_variant_view(uRow, u));
+   }
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Harvest row values in vector with variant view items
+ * @param uRow index to row values are returned from
+ * @param uOffset start column to read values from
+ * @param vectorValue row values are placed in vector
+ */
+void table_base::row_get_variant_view(uint64_t uRow, unsigned uOffset, std::vector<gd::variant_view>& vectorValue) const
+{                                                                                                  assert(uRow < 0x0100'0000); assert(uRow < count_reserved_row());
+   for(auto u = uOffset, uMax = (unsigned)m_pcolumns->size(); u < uMax; u++)
+   {
+      vectorValue.push_back(cell_get_variant_view(uRow, u));
+   }
+}
+
+
+/// add row values for column indexes sent
+void table_base::row_get_variant_view(uint64_t uRow, const unsigned* puIndex, unsigned uSize, std::vector<gd::variant_view>& vectorValue) const
+{
+   for(unsigned u = 0; u < uSize; u++)
+   {                                                                                               assert(puIndex[u] < get_column_count());
+      vectorValue.push_back(cell_get_variant_view(uRow, puIndex[u]));
+   }
+}
+
+
 
 
 void table_base::row_add(uint64_t uCount)
@@ -428,11 +529,30 @@ gd::variant_view table_base::cell_get_variant_view( uint64_t uRow, unsigned uCol
  * @return variant_view value is returned in variant view
 */
 gd::variant_view table_base::cell_get_variant_view(uint64_t uRow, const std::string_view& stringName) const noexcept
-{                                                                                                  assert(uRow < (m_uRowReservedPackCount * count_pack()));
+{                                                                                                  assert(uRow < count_reserved_row());
    unsigned uColumnIndex = column_get_index(stringName);
    return cell_get_variant_view(uRow, uColumnIndex);
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief get cell values within specified column range in row
+ * @param uRow index to row where values are read from
+ * @param uFromColumn start column where to get values
+ * @param uToColumn end column
+ * @return std::vector<gd::variant_view> vector of values from
+*/
+std::vector<gd::variant_view> table_base::cell_get_variant_view( uint64_t uRow, unsigned uFromColumn, unsigned uToColumn ) const
+{                                                                                                  assert(uRow < count_reserved_row()); assert( uFromColumn < get_column_count() ); assert( uToColumn <= get_column_count() );
+   std::vector<gd::variant_view> vectorValue; // vector of values taken from row
+
+   for( unsigned u = uFromColumn; u < uToColumn; u++ )
+   {
+      auto value_ = cell_get_variant_view( uRow, u );
+      vectorValue.push_back( value_ );
+   }
+
+   return vectorValue;
+}
 
 
 
@@ -559,7 +679,7 @@ table.cell_set( 0, 2, "20.5", tag_convert{} );
  * @param tag dispatch
 */
 void table_base::cell_set(uint64_t uRow, unsigned uColumn, gd::variant_view variantviewValue, tag_convert)
-{                                                                                                  assert(uColumn < m_pcolumns->size());
+{                                                                                                  assert(uColumn < m_pcolumns->size()); assert(uRow < count_reserved_row());
    auto& columnSet = *m_pcolumns->get(uColumn);                                                    assert(columnSet.position() < m_uRowSize);
    auto uValueType = variantviewValue.type_number();
    auto uColumnType = columnSet.ctype_number();
@@ -585,6 +705,31 @@ void table_base::cell_set(uint64_t uRow, unsigned uColumn, gd::variant_view vari
       }
    }
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Set cell value
+ * @param uRow row index for cell
+ * @param stringName column name (column has to have a name)
+ * @param variantviewValue value set to cell and cell type need to match
+*/
+void table_base::cell_set( uint64_t uRow, const std::string_view& stringName, gd::variant_view variantviewValue )
+{                                                                                                  assert(uRow < count_reserved_row());
+   unsigned uColumnIndex = column_get_index( stringName );                                         assert( uColumnIndex != (unsigned)-1 );
+   cell_set( uRow, uColumnIndex, variantviewValue );
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Set cell value
+ * @param uRow row index for cell
+ * @param stringAlias column alias (column has to have a alias)
+ * @param variantviewValue value set to cell and cell type need to match
+*/
+void table_base::cell_set( uint64_t uRow, const std::string_view& stringAlias, gd::variant_view variantviewValue, tag_alias )
+{                                                                                                  assert(uRow < count_reserved_row());
+   unsigned uColumnIndex = column_get_index( stringAlias, tag_alias{});                            assert(uColumnIndex != ( unsigned )-1);
+   cell_set( uRow, uColumnIndex, variantviewValue );
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief Allocate columns object on heap for table

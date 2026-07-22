@@ -610,7 +610,7 @@ table& table::column_add( const table* p_ )
  * @param stringName column name column index is returned for
  * @return int index to column for column name if found, -1 if not found
 */
-int table::column_find_index( const std::string_view& stringName ) const noexcept
+int table::column_find_index( std::string_view stringName ) const noexcept
 {
    for( auto it = m_pcolumns->begin(), itEnd = m_pcolumns->end(); it != itEnd; it++ )
    {
@@ -625,7 +625,7 @@ int table::column_find_index( const std::string_view& stringName ) const noexcep
  * @param stringAlias column alias column index is returned for
  * @return int index to column for column alias if foundm, -1 if not found
 */
-int table::column_find_index( const std::string_view& stringAlias, tag_alias ) const noexcept
+int table::column_find_index( std::string_view stringAlias, tag_alias ) const noexcept
 {
    for( auto it = m_pcolumns->begin(), itEnd = m_pcolumns->end(); it != itEnd; it++ )
    {
@@ -639,7 +639,7 @@ int table::column_find_index( const std::string_view& stringAlias, tag_alias ) c
  * @param stringWildcard wildcard name column index is returned for
  * @return int index to column for column name if found, -1 if not found
 */
-int table::column_find_index( const std::string_view& stringWildcard, tag_wildcard ) const noexcept
+int table::column_find_index( std::string_view stringWildcard, tag_wildcard ) const noexcept
 {
    for( auto it = m_pcolumns->begin(), itEnd = m_pcolumns->end(); it != itEnd; it++ )
    {
@@ -656,7 +656,7 @@ int table::column_find_index( const std::string_view& stringWildcard, tag_wildca
  * @param stringName column name column index is returned for
  * @return unsigned index to column for column name
 */
-unsigned table::column_get_index( const std::string_view& stringName ) const noexcept
+unsigned table::column_get_index( std::string_view stringName ) const noexcept
 {   
    int iIndex = column_find_index( stringName );                                                   assert( iIndex != -1 );
    return (unsigned)iIndex;
@@ -667,7 +667,7 @@ unsigned table::column_get_index( const std::string_view& stringName ) const noe
  * @param stringAlias column alias column index is returned for
  * @return unsigned index to column for column alias
 */
-unsigned table::column_get_index( const std::string_view& stringAlias, tag_alias ) const noexcept
+unsigned table::column_get_index( std::string_view stringAlias, tag_alias ) const noexcept
 {
    int iIndex = column_find_index( stringAlias, tag_alias{});                                      assert(iIndex != -1);
    return (unsigned)iIndex;
@@ -678,7 +678,7 @@ unsigned table::column_get_index( const std::string_view& stringAlias, tag_alias
  * @param stringWildcard column name column index is returned for
  * @return unsigned index to column for column name
 */
-unsigned table::column_get_index( const std::string_view& stringWildcard, tag_wildcard ) const noexcept
+unsigned table::column_get_index( std::string_view stringWildcard, tag_wildcard ) const noexcept
 {
    int iIndex = column_find_index( stringWildcard, tag_wildcard{});                                assert(iIndex != -1);
    return (unsigned)iIndex;
