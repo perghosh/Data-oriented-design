@@ -123,6 +123,42 @@ public:
    table_base(tag_null) : m_uFlags(eTableFlagNull64), m_uRowSize(0), m_uRowCount(0), m_uRowReservedPackCount(0) { assert(m_uFlags < eTableFlagMAX); }
    table_base(tag_full_meta) : m_uFlags(eTableFlagNull64 | eTableFlagRowStatus), m_uRowSize(0), m_uRowCount(0), m_uRowReservedPackCount(0) { assert(m_uFlags < eTableFlagMAX); }
 
+   // ## @API [tag: operator] [description: table operators]
+public:
+   std::vector<gd::variant_view> operator[](uint64_t uRow) const { return row_get_variant_view(uRow); }
+
+   //table& operator+=(const table& o) { append(o); return *this; }
+
+   gd::variant_view operator()(uint64_t uRow, unsigned uColumn) const { return cell_get_variant_view(uRow, uColumn); }
+   gd::variant_view operator()(uint64_t uRow, const std::string_view& stringName) const { return cell_get_variant_view(uRow, stringName); }
+
+   cell<table_base> operator[](const std::pair<uint64_t, unsigned>& pairCell) noexcept { return cell<table_base>(this, pairCell.first, pairCell.second); }
+   cell<table_base> operator[](const std::pair<uint64_t, unsigned>& pairCell) const noexcept { return cell<table_base>(const_cast<table_base*>(this), pairCell.first, pairCell.second); }
+   cell<table_base> operator[](const std::pair<uint64_t, std::string_view>& pairCell) noexcept {
+      auto column_ = column_get_index(pairCell.second);
+      return cell<table_base>(this, pairCell.first, column_);
+   }
+   cell<table_base> operator[](const std::pair<uint64_t, std::string_view>& pairCell) const noexcept {
+      auto column_ = column_get_index(pairCell.second);
+      return cell<table_base>(const_cast<table_base*>(this), pairCell.first, column_);
+   }
+
+#if defined( GD_COMPILER_HAS_CPP23_SUPPORT )
+   // ## multidimensional subscript operator used to access or set cell values in table, it is used like table( row, column ) or table( row, "column_name" )
+   cell<table_base> operator[](uint64_t uRow, unsigned uColumn) noexcept { return cell<table_base>(this, uRow, uColumn); }
+   cell<table_base> operator[](uint64_t uRow, unsigned uColumn) const noexcept { return cell<table_base>(const_cast<table_base*>(this), uRow, uColumn); }
+
+   cell<table_base> operator[](uint64_t uRow, std::string_view stringColumnName) noexcept {
+      auto column_ = column_get_index(stringColumnName);
+      return cell<table_base>(this, uRow, column_);
+   }
+   cell<table_base> operator[](uint64_t uRow, std::string_view stringColumnName) const noexcept {
+      auto column_ = column_get_index(stringColumnName);
+      return cell<table_base>(const_cast<table_base*>(this), uRow, column_);
+   }
+#endif   
+
+
    // ## methods ------------------------------------------------------------------
 public:
    /** \name GET/SET
@@ -227,8 +263,20 @@ public:
       return m_puData + uRowPack * m_uRowSize; 
    }
 
+   std::vector<gd::variant_view> row_get_variant_view(uint64_t uRow) const;
+
+   void row_add(uint64_t uCount);
+   /// Simple add one row to table that is safe (if table have null values these are automatically set to null)
+   uint64_t row_add_one() { row_add(1); return m_uRowCount - 1; }
+
    void row_reserve_add(uint64_t uCount);
    void row_reserve_add() { row_reserve_add(1); }
+
+   bool cell_is_null(uint64_t uRow, unsigned uColumn) const noexcept;
+   bool cell_is_null(uint64_t uRow, std::string_view stringName) const noexcept { return cell_is_null(uRow, column_get_index(stringName)); }
+
+   gd::variant_view cell_get_variant_view(uint64_t uRow, unsigned uColumn) const noexcept;
+   gd::variant_view cell_get_variant_view(uint64_t uRow, const std::string_view& stringName) const noexcept;
 
    void cell_set_value(uint64_t uRow, unsigned uColumn, uint32_t uValue);
    void cell_set_value(uint64_t uRow, unsigned uColumn, uint64_t uValue);
@@ -298,6 +346,22 @@ inline uint8_t* table_base::row_get_null( uint64_t uRow ) const noexcept {      
    return reinterpret_cast<uint8_t*>( m_puMetaData + (uRow * m_uRowMetaSize) );
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Check if cell is null
+ * @param uRow row for cell
+ * @param uColumn index for cell column
+ * @return true if null, false if not null
+*/
+inline bool table_base::cell_is_null( uint64_t uRow, unsigned uColumn ) const noexcept {           assert( uRow < (m_uRowReservedPackCount * count_pack())); assert( m_uFlags & (eTableFlagNull32|eTableFlagNull64) );
+   uint64_t uNullRow = 0; // flags for null values in row
+   const auto* puRow = row_get_null( uRow );
+   if( is_null32() ) uNullRow = (uint64_t)*(uint32_t*)puRow;
+   else              uNullRow = *(uint64_t*)puRow;
+
+   return (uNullRow & (1ULL << uColumn)) != 0;
+}
+
+
 
 /** ---------------------------------------------------------------------------
  * @brief Set value in column to null (marks null flag for column)
@@ -361,7 +425,7 @@ public:
 
    void common_construct_set_simd() { m_uValueSize = VALUESIZE; m_uPackCount = PACKCOUNT; }
 
-   void row_add(uint64_t uCount);
+   //void row_add(uint64_t uCount);
 
    uint8_t* row_get(uint64_t uRow) const noexcept;
 
@@ -381,6 +445,7 @@ uint8_t* table<VALUESIZE, PACKCOUNT>::row_get(uint64_t uRow) const noexcept {
 
 // ---------------------------------------------------------------------------
 ///  Add rows to table, this will increase the number of rows in table by uCount
+/*
 template<std::size_t VALUESIZE, std::size_t PACKCOUNT>
 void table<VALUESIZE, PACKCOUNT>::row_add(uint64_t uCount) {                                        assert(uCount > 0);
    const uint64_t uRowCountNew = m_uRowCount + uCount;
@@ -398,6 +463,7 @@ void table<VALUESIZE, PACKCOUNT>::row_add(uint64_t uCount) {                    
 
    m_uRowCount = uRowCountNew;
 }
+*/
 
 
 _GD_TABLE_SIMD_END

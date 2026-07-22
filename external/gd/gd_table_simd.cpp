@@ -240,6 +240,40 @@ std::pair<bool, std::string> table_base::prepare( unsigned uValueSize, unsigned 
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief Return row values in vector as variant view items
+ * @param uRow index to row values are returned from
+ * @return std::vector<const gd::variant_view> vector holding row values
+*/
+std::vector<gd::variant_view> table_base::row_get_variant_view( uint64_t uRow ) const
+{                                                                                                  assert( uRow < (m_uRowReservedPackCount * count_pack()));
+   std::vector<gd::variant_view> vectorValue;
+
+   for( auto u = 0u, uMax = (unsigned)m_pcolumns->size(); u < uMax; u++ )
+   {
+      vectorValue.push_back( cell_get_variant_view( uRow, u ) );
+   }
+
+   return vectorValue;
+}
+
+
+void table_base::row_add(uint64_t uCount)
+{                                                                                                  assert( uCount > 0);
+   const uint64_t uRowCountNew = m_uRowCount + uCount;
+
+   // ## Calculate number of row blocks needed for new row count, each block contains STRIDE number of rows
+   const uint64_t uRowBlockCountNew = (uRowCountNew + count_pack() - 1) / count_pack();
+
+   if(uRowBlockCountNew > m_uRowReservedPackCount)
+   {
+      row_reserve_add(uRowBlockCountNew - m_uRowReservedPackCount);
+      m_uRowReservedPackCount = uRowBlockCountNew;
+   }
+
+   m_uRowCount = uRowCountNew;
+}
+
+/** ---------------------------------------------------------------------------
  * @brief adds more memory storing row/rows to table
  * @param uCount number of rows to add
 */
@@ -279,6 +313,77 @@ void table_base::row_reserve_add(uint64_t uCount)
    m_uRowReservedPackCount = uCount;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief get cell value as variant_view item
+ * @param uRow row index for cell
+ * @param uColumn column index to cell
+ * @return gd::variant_view cell value
+*/
+gd::variant_view table_base::cell_get_variant_view( uint64_t uRow, unsigned uColumn ) const noexcept
+{                                                                                                  assert( uRow < get_row_count() ); assert( uRow < (m_uRowReservedPackCount * count_pack())); assert( m_puData != nullptr );
+   const auto& columnGet = *m_pcolumns->get( uColumn );// column information for value
+   auto puRow = row_get( uRow ); // buffer to row
+
+   if( is_null() == false || cell_is_null( uRow, uColumn ) == false )
+   {
+      auto puRowValue = puRow + columnGet.position();
+
+      if( columnGet.is_fixed() == true )                                       // primitive type
+      {
+         unsigned uSize = gd::types::value_size_g( static_cast< gd::types::enumTypeNumber >(columnGet.ctype_number()) );
+         if( uSize > sizeof( uint64_t ) )
+         {
+            return gd::variant_view( columnGet.ctype(), puRowValue, uSize );
+         }
+         else
+         {
+            uint64_t uValue = 0;
+            if( uSize == sizeof( uint64_t ) ) uValue = *( uint64_t* )puRowValue;
+            else                              uValue = *( uint32_t* )puRowValue;
+
+            return gd::variant_view( columnGet.ctype(), uValue, 0 );
+         }
+      }
+      else
+      {
+         if( columnGet.is_length() == true )
+         {
+            uint32_t uLength = *( uint32_t* )puRowValue;
+            puRowValue += sizeof( uint32_t );
+            return gd::variant_view( columnGet.ctype(), puRowValue, uLength );
+         }
+         else if( columnGet.is_reference() == true )
+         {                                                                                         assert( m_references.size() > 0 ); // do we have reference values because they are needed
+            // get index number to string in among reference values
+            uint64_t uIndex = *(uint64_t*)puRowValue;                                              assert( uIndex < 0x1000'0000 ); // realistic value?
+                                                                                                   assert( uIndex < m_references.size() );
+            reference* preference = m_references.at( uIndex );
+            #if DEBUG_RELEASE > 0
+            preference->assert_valid_d();
+            #endif
+            return gd::variant_view( preference->ctype(), preference->data(), preference->length());
+         }
+         else { assert(false); }
+      }
+   }
+
+   return gd::variant_view();
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief get cell value
+ * @param uRow index to row where cell value is found
+ * @param stringName column name for column where cell value is found
+ * @return variant_view value is returned in variant view
+*/
+gd::variant_view table_base::cell_get_variant_view(uint64_t uRow, const std::string_view& stringName) const noexcept
+{                                                                                                  assert(uRow < (m_uRowReservedPackCount * count_pack()));
+   unsigned uColumnIndex = column_get_index(stringName);
+   return cell_get_variant_view(uRow, uColumnIndex);
+}
+
+
+
 
 /** ---------------------------------------------------------------------------
  * @brief Set cell value in table
@@ -287,13 +392,12 @@ void table_base::row_reserve_add(uint64_t uCount)
  * @param uValue value set to cell
  */
 void table_base::cell_set_value(uint64_t uRow, unsigned uColumn, uint32_t uValue)
-{
-                                                                                                    assert(size_value() == 4);
+{                                                                                                  assert(size_value() == 4);
 #ifndef NDEBUG
-   if(uRow >= m_uRowReservedPackCount || uColumn >= m_pcolumns->size()) { assert(false); }
+   if(uRow >= (m_uRowReservedPackCount * count_pack()) || uColumn >= m_pcolumns->size()) { assert(false); }
 #endif // !NDEBUG
 
-                                                                                                   assert(uRow < m_uRowReservedPackCount); assert(uColumn < m_pcolumns->size());
+                                                                                                   assert(uRow < (m_uRowReservedPackCount * count_pack())); assert(uColumn < m_pcolumns->size());
    auto puRow = row_get(uRow);
    auto uRowOffset = offset(uRow, uColumn, tag_column{} );
    auto puRowValue = puRow + uRowOffset;
@@ -312,7 +416,7 @@ void table_base::cell_set_value(uint64_t uRow, unsigned uColumn, uint64_t uValue
 #ifndef NDEBUG
    if( (uRow / m_uPackCount) >= m_uRowReservedPackCount || uColumn >= m_pcolumns->size()) { assert(false); }
 #endif // !NDEBUG
-                                                                                                   assert((uRow / m_uPackCount) < m_uRowReservedPackCount); assert(uColumn < m_pcolumns->size());
+                                                                                                   assert(uRow < (m_uRowReservedPackCount * count_pack())); assert(uColumn < m_pcolumns->size());
    auto puRow = row_get(uRow);
    auto uRowOffset = offset(uRow, uColumn, tag_column{});
    auto puRowValue = puRow + uRowOffset;

@@ -38,6 +38,20 @@ TEST_CASE("[gd-table] simd create", "[gd-table]")
       tableFiles.cell_set(uRowIndex, 1, uint64_t( uRowIndex * 10 ));
    }
 
+   for(unsigned uRowIndex = 0; uRowIndex < 16; ++uRowIndex)
+   {
+      auto uRow = tableFiles.row_add_one();
+      tableFiles.cell_set(uRow, 0, uint64_t(uRowIndex));
+      tableFiles.cell_set(uRow, 1, uint64_t(uRowIndex * 10));
+   }
+   
+   for(unsigned uRowIndex = 0; uRowIndex < 16; ++uRowIndex)
+   {
+      auto uRow = tableFiles.row_add_one();
+      tableFiles[uRow, 0]= uint64_t(uRowIndex);
+      tableFiles[uRow, 1]= uint64_t(uRowIndex * 10);
+   }
+
 }
 
 /*
