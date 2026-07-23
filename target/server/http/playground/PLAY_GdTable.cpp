@@ -20,6 +20,18 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
+TEST_CASE("[gd-table] create", "[gd-table]")
+{
+   {
+      using namespace gd::table::simd;
+      table<8u, 8u> tableFiles(1);
+      tableFiles.column_prepare();
+      tableFiles.column_add({ { "uint64", 0, "count" }, { "uint64", 0, "size" } }, gd::table::tag_type_name{});
+      tableFiles.prepare();
+   }
+}
+
+
 TEST_CASE("[gd-table] simd create simple", "[gd-table]")
 {
    using namespace gd::table::simd;
