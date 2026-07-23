@@ -20,10 +20,11 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
-TEST_CASE("[gd-table] simd create", "[gd-table]")
+/*
+TEST_CASE("[gd-table] simd create simple", "[gd-table]")
 {
    using namespace gd::table::simd;
-   table<8u, 8u> tableFiles;
+   table<8u, 8u> tableFiles(8);
    tableFiles.column_prepare();
 
    tableFiles.column_add({ { "uint64", 0, "count" }, { "uint64", 0, "size" } }, gd::table::tag_type_name{});
@@ -52,7 +53,58 @@ TEST_CASE("[gd-table] simd create", "[gd-table]")
       tableFiles[uRow, 1]= uint64_t(uRowIndex * 10);
    }
 
+   for(unsigned uRowIndex = 0; uRowIndex < 16000; ++uRowIndex)
+   {
+      auto uRow = tableFiles.row_add_one();
+      tableFiles[uRow, 0] = uint64_t(uRowIndex);
+      tableFiles[uRow, 1] = uint64_t(uRowIndex * 10);
+   }
 }
+*/
+
+TEST_CASE("[gd-table] simd create simple 32 bit", "[gd-table]")
+{
+   using namespace gd::table::simd;
+   table<4u, 4u> tableFiles(4);
+   tableFiles.column_prepare();
+
+   tableFiles.column_add("uint32", 0, "count");
+   tableFiles.column_add("uint32", 0, "size");
+
+   tableFiles.prepare();
+
+   tableFiles.row_add(8);
+
+   // ## set 8 values on each row
+   for(unsigned uRowIndex = 0; uRowIndex < 8; ++uRowIndex)
+   {
+      tableFiles.cell_set(uRowIndex, 0, uint32_t(uRowIndex));
+      tableFiles.cell_set(uRowIndex, 1, uint32_t(uRowIndex * 10));
+   }
+
+   for(unsigned uRowIndex = 0; uRowIndex < 8; ++uRowIndex)
+   {
+      auto uRow = tableFiles.row_add_one();
+      tableFiles.cell_set(uRow, 0, uint32_t(uRowIndex));
+      tableFiles.cell_set(uRow, 1, uint32_t(uRowIndex * 10));
+   }
+
+   for(unsigned uRowIndex = 0; uRowIndex < 8; ++uRowIndex)
+   {
+      auto uRow = tableFiles.row_add_one();
+      tableFiles[uRow, 0] = uint32_t(uRowIndex);
+      tableFiles[uRow, 1] = uint32_t(uRowIndex * 10);
+   }
+
+   for(unsigned uRowIndex = 0; uRowIndex < 8000; ++uRowIndex)
+   {
+      auto uRow = tableFiles.row_add_one();
+      tableFiles[uRow, 0] = uint32_t(uRowIndex);
+      tableFiles[uRow, 1] = uint32_t(uRowIndex * 10);
+   }
+
+}
+
 
 /*
 TEST_CASE("[gd-table] custom columns", "[gd-table]")

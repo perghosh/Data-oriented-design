@@ -630,6 +630,16 @@ namespace detail {
    {
       return hash_match_g( std::string_view(stringPattern), stringValue );
    }
+
+
+   // @API [tag: gd, size] [summary: find out size for value type]
+   constexpr bool is_size8_g(unsigned uType) { return (uType & eTypeGroupSize08) == eTypeGroupSize08; }
+   constexpr bool is_size16_g(unsigned uType) { return (uType & eTypeGroupSize16) == eTypeGroupSize16; }
+   constexpr bool is_size32_g(unsigned uType) { return (uType & eTypeGroupSize32) == eTypeGroupSize32; }
+   constexpr bool is_size64_g(unsigned uType) { return (uType & eTypeGroupSize64) == eTypeGroupSize64; }
+   constexpr bool is_size128_g(unsigned uType) { return (uType & eTypeGroupSize128) == eTypeGroupSize128; }
+   constexpr bool is_size256_g(unsigned uType) { return (uType & eTypeGroupSize256) == eTypeGroupSize256; }
+   constexpr bool is_size512_g(unsigned uType) { return (uType & eTypeGroupSize512) == eTypeGroupSize512; }
 }
 
 // ## helper methods used to check if type is of specific type

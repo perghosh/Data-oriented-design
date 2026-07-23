@@ -39,6 +39,16 @@ table_base& table_base::column_add(unsigned uColumnType, unsigned uSize)
 */
 table_base& table_base::column_add(unsigned uColumnType, unsigned uSize, std::string_view stringName, std::string_view stringAlias)
 {                                                                                                  assert( gd::types::validate_number_type_g( uColumnType ) ); assert( uSize < 0x1000'0000 );
+#ifndef NDEBUG
+// ## if size is 4 then check for not setting larger types ....................
+   if(size_value() == 4)
+   {
+      if(gd::types::is_primitive_g(uColumnType) == true)
+      {
+         assert(gd::types::detail::is_size64_g(uColumnType) == false);         // primitive types have a fixed size, no need to specify size for primitive types
+      }
+   }
+#endif // NDEBUG
    detail::column columnAdd;
 
    columnAdd.type( uColumnType );
@@ -390,7 +400,7 @@ void table_base::row_reserve_add(uint64_t uCount)
    uint64_t uTotalMetaSizeCopyTo = size_meta_total(uCount);                    // new meta block size
 
    uint64_t uCopyRowSize = uTotalTableSize - uTotalMetaSize;
-                                                                                                   assert(uTotalTableSizeCopyTo % 4 == 0 && "Total table size must be multiple of 4");
+                                                                                                   assert(((uTotalTableSizeCopyTo - uTotalMetaSizeCopyTo) % 4 == 0) && "Total table size must be multiple of 4");
    uint8_t* puDataCopyTo = new uint8_t[uTotalTableSizeCopyTo];                // new buffer for table data (both data and meta data)
 
    if(m_puData != nullptr) memcpy(puDataCopyTo, m_puData, uCopyRowSize);      // copy row data
@@ -566,7 +576,7 @@ void table_base::cell_set_value(uint64_t uRow, unsigned uColumn, uint32_t uValue
 {                                                                                                  assert(size_value() == 4);
                                                                                                    assert(uRow < (m_uRowReservedPackCount * count_pack())); assert(uColumn < m_pcolumns->size());
    auto puRow = row_get(uRow);
-   auto uRowOffset = offset(uRow, uColumn, tag_column{} );
+   auto uRowOffset = offset(uRow, uColumn, tag_column{});                                          assert(uRowOffset <= (m_uRowSize + size_value()));
    auto puRowValue = puRow + uRowOffset;
 
    memcpy(puRowValue, &uValue, sizeof(uint32_t));

@@ -258,7 +258,7 @@ public:
    /// calc and return total allocated memory size
    uint64_t size_reserved_total() const noexcept { return (m_uRowSize + size_row_meta()) * m_uRowReservedPackCount; }
    /// calc and return total allocated memory size for rows
-   uint64_t size_reserved_total(uint64_t uRowCount) const noexcept { return (m_uRowSize + size_row_meta()) * uRowCount; }
+   uint64_t size_reserved_total(uint64_t uRowCount) const noexcept { return (m_uRowSize * uRowCount) + (size_row_meta() * uRowCount); }
 
    bool is_null() const { return m_uFlags & (eTableFlagNull32 | eTableFlagNull64); }
    bool is_null32() const { return m_uFlags & eTableFlagNull32; }
@@ -291,12 +291,12 @@ public:
    table_base& column_add(unsigned uColumnType, unsigned uSize, std::string_view stringName) { return column_add(uColumnType, uSize, stringName, std::string_view{}); }
    table_base& column_add(unsigned uColumnType, unsigned uSize, std::string_view stringAlias, tag_alias) { return column_add(uColumnType, uSize, std::string_view{}, stringAlias); }
    table_base& column_add(const std::vector< std::tuple< unsigned, unsigned, std::string_view > >& vectorColumn);
-   table_base& column_add(const std::string_view& stringType) { return column_add(detail::column((unsigned)gd::types::type_g(stringType))); }
-   table_base& column_add(const std::string_view& stringType, const std::string_view& stringName) { return column_add((unsigned)gd::types::type_g(stringType), 0, stringName, std::string_view{}); }
-   table_base& column_add(const std::string_view& stringType, unsigned uSize) { return column_add((unsigned)gd::types::type_g(stringType), uSize); }
-   table_base& column_add(const std::string_view& stringType, unsigned uSize, const std::string_view& stringName) { return column_add((unsigned)gd::types::type_g(stringType), uSize, stringName, std::string_view{}); }
-   table_base& column_add(const std::string_view& stringType, unsigned uSize, const std::string_view& stringAlias, tag_alias) { return column_add((unsigned)gd::types::type_g(stringType), uSize, std::string_view{}, stringAlias); }
-   table_base& column_add(const std::string_view& stringType, unsigned uSize, const std::string_view& stringName, const std::string_view& stringAlias) { return column_add((unsigned)gd::types::type_g(stringType), uSize, stringName, stringAlias); }
+   table_base& column_add(std::string_view stringType) { return column_add(detail::column((unsigned)gd::types::type_g(stringType))); }
+   table_base& column_add(std::string_view stringType, std::string_view stringName) { return column_add((unsigned)gd::types::type_g(stringType), 0, stringName, std::string_view{}); }
+   table_base& column_add(std::string_view stringType, unsigned uSize) { return column_add((unsigned)gd::types::type_g(stringType), uSize); }
+   table_base& column_add(std::string_view stringType, unsigned uSize, std::string_view stringName) { return column_add((unsigned)gd::types::type_g(stringType), uSize, stringName, std::string_view{}); }
+   table_base& column_add(std::string_view stringType, unsigned uSize, std::string_view stringAlias, tag_alias) { return column_add((unsigned)gd::types::type_g(stringType), uSize, std::string_view{}, stringAlias); }
+   table_base& column_add(std::string_view stringType, unsigned uSize, std::string_view stringName, std::string_view stringAlias) { return column_add((unsigned)gd::types::type_g(stringType), uSize, stringName, stringAlias); }
 
    table_base& column_add(const std::initializer_list<std::pair<std::string_view, unsigned>>& listType, tag_type_name);
    table_base& column_add(const std::initializer_list<std::tuple<std::string_view, unsigned, std::string_view>>& listType, tag_type_name);
@@ -337,8 +337,8 @@ public:
 
 
    uint8_t* row_get( uint64_t uRow ) const noexcept {                                              assert(m_uPackCount == 4 || m_uPackCount == 8 && "Pack size must be 4 or 8");
-      uint64_t uRowPack = uRow / count_pack();
-      return m_puData + uRowPack * m_uRowSize; 
+      uint64_t uMemoryRow = uRow / count_pack();                               // get memory row index, each row holds array of values, each array is called pack, each pack holds 4 or 8 rows
+      return m_puData + uMemoryRow * m_uRowSize; 
    }
 
    void row_get_arguments(uint64_t uRow, gd::argument::arguments& argumentsValue) const;
@@ -403,7 +403,7 @@ protected:
    /// Size of each block/array in bytes
    unsigned size_pack() const noexcept { return m_uPackCount * size_value(); }
    /// Offset position for column in row. Use this to get the specific column value in row and array for AoSoA (Array of Structure of Arrays) layout
-   unsigned offset(uint64_t uRow, unsigned uColumn, tag_column) const noexcept { return uColumn * size_pack() + (uRow % size_pack()) * size_value(); }
+   unsigned offset(uint64_t uRow, unsigned uColumn, tag_column) const noexcept { return uColumn * size_pack() + (uRow % count_pack()) * size_value(); }
 
 
 // ## @API [tag: attribute, member] [description: member data to table]
@@ -583,7 +583,7 @@ void table<VALUESIZE, PACKCOUNT>::row_add(uint64_t uCount) {                    
       m_uRowReservedPackCount = uRowBlockCountNew;
    }
 
-
+222222222222222222222222222
 
    m_uRowCount = uRowCountNew;
 }
