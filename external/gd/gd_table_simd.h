@@ -567,27 +567,54 @@ uint8_t* table<VALUESIZE, PACKCOUNT>::row_get(uint64_t uRow) const noexcept {
    return m_puData + uRowPack * m_uRowSize;
 }
 
-// ---------------------------------------------------------------------------
-///  Add rows to table, this will increase the number of rows in table by uCount
 /*
-template<std::size_t VALUESIZE, std::size_t PACKCOUNT>
-void table<VALUESIZE, PACKCOUNT>::row_add(uint64_t uCount) {                                        assert(uCount > 0);
-   const uint64_t uRowCountNew = m_uRowCount + uCount;
+* 
+*  
+* 
+bulk insert
 
-   // ## Calculate number of row blocks needed for new row count, each block contains STRIDE number of rows
-   const uint64_t uRowBlockCountNew = (uRowCountNew + PACKCOUNT - 1) / PACKCOUNT;
 
-   if( uRowBlockCountNew > m_uRowReservedPackCount )
-   {
-      row_reserve_add( uRowBlockCountNew - m_uRowReservedPackCount );
-      m_uRowReservedPackCount = uRowBlockCountNew;
-   }
 
-222222222222222222222222222
+template<typename T>
+std::span<T> column_pack_span(uint64_t uRowPack, unsigned uColumn) noexcept {
+   uint8_t* puPackBase = m_puData + uRowPack * m_uRowSize;
+   T* pValues = reinterpret_cast<T*>(puPackBase + uColumn * size_pack());
+   return std::span<T>(pValues, count_pack());
+}
 
-   m_uRowCount = uRowCountNew;
+
+uint64_t uTotal = 0;
+for(uint64_t uPack = 0; uPack < uRowReservedPackCount; ++uPack) {
+   auto sp = tableFiles.column_pack_span<uint64_t>(uPack, 0);
+   uTotal += std::reduce(sp.begin(), sp.end());   // <numeric>, auto-vectorizes well over 4/8 contiguous values
+}
+
+auto sp = tableFiles.column_pack_span<uint64_t>(uPack, 0);
+__m256i v = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(sp.data())); // 4×uint64 for PACKCOUNT=4
+
+m_puData = static_cast<uint8_t*>(::operator new(uTotalTableSize, std::align_val_t(64)));
+// pair with ::operator delete(ptr, std::align_val_t(64))
+
+
+#include <span>
+
+void batch_read_columns(table<8u, 8u>& table, std::span<unsigned> columns,
+                        uint64_t startRow, size_t count) {
+    size_t rowStride = table.m_uRowSize;
+    uint8_t* pData = table.m_puData;
+
+    for (unsigned col : columns) {
+        // Process entire column span
+        for (size_t i = 0; i < count; ++i) {
+            uint64_t rowIdx = startRow + i;
+            uint8_t* rowPtr = pData + (rowIdx / 8) * rowStride + col * rowStride;
+            uint64_t* valuePtr = reinterpret_cast<uint64_t*>(rowPtr + (rowIdx % 8) * 8);
+            // Process value...
+        }
+    }
 }
 */
+
 
 
 _GD_TABLE_SIMD_END

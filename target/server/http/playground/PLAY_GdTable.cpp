@@ -20,7 +20,6 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
-/*
 TEST_CASE("[gd-table] simd create simple", "[gd-table]")
 {
    using namespace gd::table::simd;
@@ -60,7 +59,6 @@ TEST_CASE("[gd-table] simd create simple", "[gd-table]")
       tableFiles[uRow, 1] = uint64_t(uRowIndex * 10);
    }
 }
-*/
 
 TEST_CASE("[gd-table] simd create simple 32 bit", "[gd-table]")
 {
