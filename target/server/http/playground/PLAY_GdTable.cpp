@@ -28,6 +28,15 @@ TEST_CASE("[gd-table] create", "[gd-table]")
       tableFiles.column_prepare();
       tableFiles.column_add({ { "uint64", 0, "count" }, { "uint64", 0, "size" } }, gd::table::tag_type_name{});
       tableFiles.prepare();
+      tableFiles.pack_broadcast_value(0, 0, uint64_t(100));
+
+      std::array<uint64_t, 8> arrayValues;
+      tableFiles.pack_harvest<uint64_t>(0u, 0, arrayValues);
+
+      // sum array values
+      uint64_t uTotal = 0;
+      for(auto u : arrayValues) { uTotal += u; }
+      std::cout << "total: " << uTotal << std::endl;
    }
 }
 

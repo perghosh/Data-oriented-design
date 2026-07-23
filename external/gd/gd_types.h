@@ -1452,6 +1452,17 @@ struct binary
 };
 
 
+// ============================================================================
+// =================================================================== CONCEPTS
+// ============================================================================
+
+/// Concept to constrain template to RangeContainers with trivially copyable elements
+template<typename CONTAINER>
+concept concept_ArrayContainer = requires(const CONTAINER & container_) {
+   { container_.data() } -> std::convertible_to<const typename CONTAINER::value_type*>;
+   { container_.size() } -> std::convertible_to<std::size_t>;
+   std::is_trivially_copyable_v<typename CONTAINER::value_type>;
+} && (!std::is_same_v<std::remove_cv_t<CONTAINER>, std::string> && !std::is_same_v<std::remove_cv_t<CONTAINER>, std::wstring>);
 
 
 #if defined(__clang__)

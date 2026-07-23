@@ -197,9 +197,6 @@ struct tag_reference {};
 
 using tag_variadic = gd::types::tag_variadic;
 
-
-
-
 /**
  * \brief wrapper for cell objects owned by table
  *

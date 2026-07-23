@@ -21,6 +21,7 @@
 
 #pragma once
 
+#include <array>
 #include <algorithm>
 #include <cassert>
 #include <functional>
@@ -564,6 +565,11 @@ public:
    std::pair<bool, std::string> prepare() { return table_base::prepare(m_uValueSize_s, m_uPackCount_s); }
 
    void pack_set_value(uint64_t uRowPack, unsigned uColumn, const uint8_t* puValue) noexcept;
+   template <typename TYPE>
+   void pack_broadcast_value(uint64_t uRowPack, unsigned uColumn, TYPE value_) noexcept;
+
+   template <typename TYPE, gd::types::concept_ArrayContainer ARRAY>
+   void pack_harvest(uint64_t uRowPack, unsigned uColumn, ARRAY& array_) const noexcept;
 
    static constexpr std::size_t m_uValueSize_s = VALUESIZE;
    static constexpr std::size_t m_uPackCount_s = PACKCOUNT;
@@ -574,7 +580,7 @@ public:
    static constexpr unsigned count_pack_s() noexcept { return PACKCOUNT; }
 };
 
-/** ---------------------------------------------------------------------------
+/** --------------------------------------------------------------------------- row_get
  * @brief Get pointer to the row data for a specific row index
  * @param uRow The row index
  * @return Pointer to the row data
@@ -598,12 +604,51 @@ void table<VALUESIZE, PACKCOUNT>::pack_set_value(uint64_t uRowPack, unsigned uCo
    std::memcpy(puPackBase, puValue, VALUESIZE);
 }
 
+/** --------------------------------------------------------------------------- pack_broadcast_value
+ * @brief Broadcast a single value to all elements in a pack
+ * @tparam TYPE The value type
+ * @param uRowPack The row pack index
+ * @param uColumn The column index
+ * @param value_ Value to broadcast to all elements in the pack
+ *
+ * @note This is optimized for SIMD broadcast operations
+ * @note The compiler will auto-vectorize this to vbroadcast or equivalent
+ */
+template <std::size_t VALUESIZE, std::size_t PACKCOUNT>
+template<typename TYPE>
+inline void table<VALUESIZE, PACKCOUNT>::pack_broadcast_value(uint64_t uRowPack, unsigned uColumn, TYPE value_) noexcept { assert(uRowPack < m_uRowReservedPackCount); assert(uColumn < get_column_count()); assert((VALUESIZE == sizeof(TYPE)) && "Value size mismatch");
+   uint8_t* puPackBase = rowpack_get(uRowPack, uColumn);                       // Get pointer to the start of the column data for this pack
+   TYPE* pDestination_ = reinterpret_cast<TYPE*>(puPackBase);
+
+   for(size_t u = 0; u < count_pack_s(); ++u) { pDestination_[u] = value_; }
+}
+
+/** --------------------------------------------------------------------------- pack_harvest
+ * @brief Harvest values from a pack into an array
+ * @tparam TYPE The value type to interpret the data as
+ * @param uRowPack The row pack index
+ * @param uColumn The column index
+ * @param array_ Reference to an array where the harvested values will be stored (must have at least PACKCOUNT elements)
+ *
+ * @note This is optimized for SIMD operations
+ * @note The compiler will auto-vectorize this to load operations or equivalent
+*/
+template <std::size_t VALUESIZE, std::size_t PACKCOUNT>
+template <typename TYPE, gd::types::concept_ArrayContainer ARRAY>
+void table<VALUESIZE, PACKCOUNT>::pack_harvest(uint64_t uRowPack, unsigned uColumn, ARRAY& array_) const noexcept { assert(uRowPack < m_uRowReservedPackCount); assert(uColumn < get_column_count()); assert((VALUESIZE == sizeof(TYPE)) && "Value size mismatch");
+                                                                                                   assert(array_.size() == count_pack_s() && "Array size must match PACKCOUNT");
+   const uint8_t* puPackBase = rowpack_get(uRowPack, uColumn);                 // Get pointer to the start of the column data for this pack
+   const TYPE* pSource_ = reinterpret_cast<const TYPE*>(puPackBase);
+
+   for(size_t u = 0; u < count_pack_s(); ++u) { array_[u] = pSource_[u]; }
+}
+
 
 // ----------------------------------------------------------------------------
 // FREE FUNCTIONS - PACK GET METHODS
 // ----------------------------------------------------------------------------
 
-/** ---------------------------------------------------------------------------
+/** --------------------------------------------------------------------------- rowpack_get
  * @brief Get pointer to the start of a row pack for a specific column
  * @param table The table to access
  * @param uRowPack The row pack index
@@ -616,7 +661,7 @@ inline uint8_t* rowpack_get(table<VALUESIZE, PACKCOUNT>& table_, uint64_t uRowPa
    return puRowPackBase;
 }
 
-/** ---------------------------------------------------------------------------
+/** --------------------------------------------------------------------------- pack_get_span
  * @brief Get a span of values from a column pack for SIMD processing
  * @tparam TYPE The value type to interpret the data as
  * @param table The table to read from
@@ -631,7 +676,7 @@ inline std::span<TYPE> pack_get_span(table<VALUESIZE, PACKCOUNT>& table_, uint64
    return std::span<TYPE>(pvalue_, table_.count_pack_s());
 }
 
-/** ---------------------------------------------------------------------------
+/** --------------------------------------------------------------------------- pack_get_span
  * @brief Get a span of values from a column pack for SIMD processing
  * @tparam TYPE The value type to interpret the data as
  * @param table The table to read from
