@@ -37,6 +37,9 @@ TEST_CASE("[gd-table] create", "[gd-table]")
       uint64_t uTotal = 0;
       for(auto u : arrayValues) { uTotal += u; }
       std::cout << "total: " << uTotal << std::endl;
+
+      uint64_t puValues[8];
+      tableFiles.pack_harvest<uint64_t>(0u, 0, puValues);
    }
 }
 

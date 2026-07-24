@@ -537,6 +537,8 @@ inline void table_base::cell_set_not_null(uint64_t uRow, unsigned uColumn) {    
 // ================================================================= SIMD TABLE
 // ============================================================================
 
+
+
 /** ===========================================================================
  * \brief simd table, optimized for simd operations using  AoSoA (Array of Structure of Arrays) layout.
  * 
@@ -565,11 +567,15 @@ public:
    std::pair<bool, std::string> prepare() { return table_base::prepare(m_uValueSize_s, m_uPackCount_s); }
 
    void pack_set_value(uint64_t uRowPack, unsigned uColumn, const uint8_t* puValue) noexcept;
+
    template <typename TYPE>
    void pack_broadcast_value(uint64_t uRowPack, unsigned uColumn, TYPE value_) noexcept;
-
-   template <typename TYPE, gd::types::concept_ArrayContainer ARRAY>
-   void pack_harvest(uint64_t uRowPack, unsigned uColumn, ARRAY& array_) const noexcept;
+   template <typename TYPE, std::ranges::contiguous_range RANGE>
+   void pack_plant(uint64_t uRowPack, unsigned uColumn, const RANGE& range_) noexcept;
+   template <typename TYPE, std::ranges::contiguous_range RANGE>
+   void pack_harvest(uint64_t uRowPack, unsigned uColumn, RANGE& range_) const noexcept;
+   template <typename TYPE>
+   uint64_t pack_find_value(uint64_t uRowPack, unsigned uColumn, TYPE value_) const noexcept;
 
    static constexpr std::size_t m_uValueSize_s = VALUESIZE;
    static constexpr std::size_t m_uPackCount_s = PACKCOUNT;
@@ -623,26 +629,46 @@ inline void table<VALUESIZE, PACKCOUNT>::pack_broadcast_value(uint64_t uRowPack,
    for(size_t u = 0; u < count_pack_s(); ++u) { pDestination_[u] = value_; }
 }
 
+
+template <std::size_t VALUESIZE, std::size_t PACKCOUNT>
+template <typename TYPE, std::ranges::contiguous_range RANGE>
+void table<VALUESIZE, PACKCOUNT>::pack_plant(uint64_t uRowPack, unsigned uColumn, const RANGE& range_) noexcept { assert(uRowPack < m_uRowReservedPackCount); assert(uColumn < get_column_count());
+                                                                                                   static_assert(std::same_as<std::ranges::range_value_t<RANGE>, TYPE>, "Range value type must match TYPE");
+   constexpr std::size_t uCount = count_pack_s() * VALUESIZE / sizeof(TYPE);                       static_assert(count_pack_s() * VALUESIZE % sizeof(TYPE) == 0, "TYPE must evenly divide pack byte size");
+   assert(std::ranges::size(range_) >= uCount);
+   TYPE* pDestination_ = reinterpret_cast<TYPE*>(rowpack_get(uRowPack, uColumn));
+   std::memcpy(pDestination_, std::ranges::data(range_), VALUESIZE * count_pack_s());
+}
+
 /** --------------------------------------------------------------------------- pack_harvest
- * @brief Harvest values from a pack into an array
+ * @brief Harvest values from a pack into a range
  * @tparam TYPE The value type to interpret the data as
  * @param uRowPack The row pack index
  * @param uColumn The column index
- * @param array_ Reference to an array where the harvested values will be stored (must have at least PACKCOUNT elements)
+ * @param range_ Reference to a range where the harvested values will be stored (must have at least PACKCOUNT elements)
  *
  * @note This is optimized for SIMD operations
  * @note The compiler will auto-vectorize this to load operations or equivalent
 */
 template <std::size_t VALUESIZE, std::size_t PACKCOUNT>
-template <typename TYPE, gd::types::concept_ArrayContainer ARRAY>
-void table<VALUESIZE, PACKCOUNT>::pack_harvest(uint64_t uRowPack, unsigned uColumn, ARRAY& array_) const noexcept { assert(uRowPack < m_uRowReservedPackCount); assert(uColumn < get_column_count()); assert((VALUESIZE == sizeof(TYPE)) && "Value size mismatch");
-                                                                                                   assert(array_.size() == count_pack_s() && "Array size must match PACKCOUNT");
+template <typename TYPE, std::ranges::contiguous_range RANGE>
+void table<VALUESIZE, PACKCOUNT>::pack_harvest(uint64_t uRowPack, unsigned uColumn, RANGE& range_) const noexcept { assert(uRowPack < m_uRowReservedPackCount); assert(uColumn < get_column_count()); assert((VALUESIZE == sizeof(TYPE)) && "Value size mismatch"); assert(std::ranges::size(range_) >= count_pack_s());
+                                                                                                   static_assert(std::same_as<std::ranges::range_value_t<RANGE>, TYPE>, "Range value type must match TYPE");
    const uint8_t* puPackBase = rowpack_get(uRowPack, uColumn);                 // Get pointer to the start of the column data for this pack
    const TYPE* pSource_ = reinterpret_cast<const TYPE*>(puPackBase);
-
-   for(size_t u = 0; u < count_pack_s(); ++u) { array_[u] = pSource_[u]; }
+   std::memcpy(std::ranges::data(range_), pSource_, sizeof(TYPE) * count_pack_s());
 }
 
+template <std::size_t VALUESIZE, std::size_t PACKCOUNT>
+template <typename TYPE>
+uint64_t table<VALUESIZE, PACKCOUNT>::pack_find_value(uint64_t uRowPack, unsigned uColumn, TYPE value_) const noexcept { assert(uRowPack < m_uRowReservedPackCount); assert(uColumn < get_column_count());
+                                                                                                   static_assert(count_pack_s() * VALUESIZE % sizeof(TYPE) == 0, "TYPE must evenly divide pack byte size");
+   constexpr std::size_t uCount = count_pack_s() * VALUESIZE / sizeof(TYPE);                       static_assert(uCount <= 64, "reinterpreted element count exceeds 64-bit mask width");
+   const TYPE* puPackBase = reinterpret_cast<const TYPE*>(rowpack_get(uRowPack, uColumn));
+   uint64_t uMask = 0;
+   for(unsigned u = 0; u < uCount; ++u) { uMask |= uint64_t(puPackBase[u] == value_) << u; }
+   return uMask;
+}
 
 // ----------------------------------------------------------------------------
 // FREE FUNCTIONS - PACK GET METHODS
@@ -714,211 +740,31 @@ inline void pack_set_values(table<VALUESIZE, PACKCOUNT>& table_, uint64_t uRowPa
 }
 
 /*
-* 
-*  
-* 
-bulk insert
+using namespace gd::table::simd;
 
+table<1u, 32u> tableChunk(1);   // VALUESIZE=1, PACKCOUNT=32 → one pack = 32 bytes
+tableChunk.column_prepare();
+tableChunk.column_add({ { "uint8", 0, "bytes" } }, gd::table::tag_type_name{});
+tableChunk.prepare();
 
+std::string_view stringData = "name,age,city,00000000000000000";   // just an example
+// take (up to) 32 bytes, pad the tail with a sentinel that can't match a real delimiter
+std::array<uint8_t, 32> arrayChunk{};
+arrayChunk.fill(0);
+std::size_t uLen = std::min(stringData.size(), arrayChunk.size());
+std::memcpy(arrayChunk.data(), stringData.data(), uLen);
 
-template<typename T>
-std::span<T> column_pack_span(uint64_t uRowPack, unsigned uColumn) noexcept {
-   uint8_t* puPackBase = m_puData + uRowPack * m_uRowSize;
-   T* pValues = reinterpret_cast<T*>(puPackBase + uColumn * size_pack());
-   return std::span<T>(pValues, count_pack());
+tableChunk.pack_plant<uint8_t>(0u, 0, arrayChunk);
+
+// find every comma in this 32-byte chunk in one call
+uint64_t uMask = tableChunk.pack_find_value<uint8_t>(0u, 0, uint8_t(','));
+
+auto uRemaining = uMask;
+while(uRemaining) {
+   unsigned uPos = std::countr_zero(uRemaining);
+   std::cout << "comma at byte " << uPos << "\n";
+   uRemaining &= (uRemaining - 1);
 }
-
-
-uint64_t uTotal = 0;
-for(uint64_t uPack = 0; uPack < uRowReservedPackCount; ++uPack) {
-   auto sp = tableFiles.column_pack_span<uint64_t>(uPack, 0);
-   uTotal += std::reduce(sp.begin(), sp.end());   // <numeric>, auto-vectorizes well over 4/8 contiguous values
-}
-
-auto sp = tableFiles.column_pack_span<uint64_t>(uPack, 0);
-__m256i v = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(sp.data())); // 4×uint64 for PACKCOUNT=4
-
-m_puData = static_cast<uint8_t*>(::operator new(uTotalTableSize, std::align_val_t(64)));
-// pair with ::operator delete(ptr, std::align_val_t(64))
-
-
-#include <span>
-
-void batch_read_columns(table<8u, 8u>& table, std::span<unsigned> columns,
-                        uint64_t startRow, size_t count) {
-    size_t rowStride = table.m_uRowSize;
-    uint8_t* pData = table.m_puData;
-
-    for (unsigned col : columns) {
-        // Process entire column span
-        for (size_t i = 0; i < count; ++i) {
-            uint64_t rowIdx = startRow + i;
-            uint8_t* rowPtr = pData + (rowIdx / 8) * rowStride + col * rowStride;
-            uint64_t* valuePtr = reinterpret_cast<uint64_t*>(rowPtr + (rowIdx % 8) * 8);
-            // Process value...
-        }
-    }
-}
-*/
-
-/*
-* 
-void calculate_sizes_simd(gd::table::simd::table<8u, 8u>& tableFiles, uint64_t uFactor)
-{
-   unsigned uRowSize = tableFiles.row_size();
-   if(uRowSize == 0) return;
-
-   // ## 1. Hämta råa pekare till kolumnerna via din buffers startadress
-   // ## (Här antar vi att du har direktåtkomst till kolumnsträngarna i minnet)
-   uint64_t* pCountBuffer = reinterpret_cast<uint64_t*>(tableFiles.column_get_pointer(0));
-   uint64_t* pSizeBuffer  = reinterpret_cast<uint64_t*>(tableFiles.column_get_pointer(1));
-
-   // ## 2. Berätta för kompilatorn att minnet inte överlappar (__restrict)
-   // ## samt att det är perfekt justerat för 512-bitars AVX-register (64 bytes)
-   const uint64_t* __restrict pSrcCount = std::assume_aligned<64>(pCountBuffer);
-         uint64_t* __restrict pDestSize = std::assume_aligned<64>(pSizeBuffer);
-
-   constexpr unsigned uBlockSize = 8u;
-
-   // ## 3. Loopa igenom tabellen baserat på din blockstorlek
-   for(unsigned uRowIndex = 0; uRowIndex < uRowSize; uRowIndex += uBlockSize)
-   {
-      // ## Denna inre loop har en fast storlek (8). Kompilatorn kommer att
-      // ## ta bort loopen helt och ersätta den med EN enda SIMD-instruktion.
-      for(unsigned uBlockIndex = 0; uBlockIndex < uBlockSize; ++uBlockIndex)
-      {
-         pDestSize[uRowIndex + uBlockIndex] = pSrcCount[uRowIndex + uBlockIndex] * uFactor;
-      }
-   }
-}
-
-void calculate_physics_conditional(gd::table::simd::table<4u, 4u>& tablePhysics)
-{
-   unsigned uRowSize = tablePhysics.row_size();
-   if(uRowSize == 0) return;
-
-   float* pXBuffer = reinterpret_cast<float*>(tablePhysics.column_get_pointer(0));
-   float* pYBuffer = reinterpret_cast<float*>(tablePhysics.column_get_pointer(1));
-
-   // ## Justerat för 128-bitars SSE/NEON-register (16 bytes för 4 st floats)
-   const float* __restrict pSrcX  = std::assume_aligned<16>(pXBuffer);
-         float* __restrict pDestY = std::assume_aligned<16>(pYBuffer);
-
-   constexpr unsigned uBlockSize = 4u;
-
-   for(unsigned uRowIndex = 0; uRowIndex < uRowSize; uRowIndex += uBlockSize)
-   {
-      for(unsigned uBlockIndex = 0; uBlockIndex < uBlockSize; ++uBlockIndex)
-      {
-         float fCurrentX = pSrcX[uRowIndex + uBlockIndex];
-
-         // ## ANVÄND INTE: if(fCurrentX > 10.0f) { ... }
-         // ## Genom att skriva så här skapar kompilatorn en blixtsnabb SIMD-vektormask
-         pDestY[uRowIndex + uBlockIndex] = (fCurrentX > 10.0f) ? (fCurrentX * 2.0f) : (fCurrentX * 1.0f);
-      }
-   }
-}
-
-
-#include <span>
-#include <cstdint>
-
-// Assuming your table class provides a method to get raw pointers for a column
-// or you add a method like: uint64_t* get_column_ptr(size_t columnIndex);
-
-void calculate_sizes_span(gd::table::simd::table<8u, 8u>& tableFiles, uint64_t factor)
-{
-    size_t row_count = tableFiles.row_size();
-    if (row_count == 0) return;
-
-    // 1. Get direct pointers to the underlying contiguous memory of the columns
-    // (If your AoSoA has blocks, you would loop through blocks, but the concept remains)
-    uint64_t* count_ptr = reinterpret_cast<uint64_t*>(tableFiles.column_get_pointer(0));
-    uint64_t* size_ptr  = reinterpret_cast<uint64_t*>(tableFiles.column_get_pointer(1));
-
-    // 2. Wrap them in std::span for safe, modern bounds-checked boundaries
-    std::span<const uint64_t> counts(count_ptr, row_count);
-    std::span<uint64_t> sizes(size_ptr, row_count);
-
-    // 3. Write a simple, clean loop.
-    // The compiler sees contiguous memory and auto-vectorizes this using AVX/NEON.
-    #pragma omp simd // Optional: Hint to compiler to force vectorization
-    for (size_t i = 0; i < row_count; ++i)
-    {
-        sizes[i] = counts[i] * factor;
-    }
-}
-
-
-#include <mdspan>
-#include <cstdint>
-
-void calculate_with_mdspan(gd::table::simd::table<8u, 8u>& tableFiles)
-{
-    size_t total_rows = tableFiles.row_size();
-
-    // Assume 1 block fits exactly 8 elements (matching table template <8u, 8u>)
-    constexpr size_t BLOCK_SIZE = 8;
-    size_t total_blocks = (total_rows + BLOCK_SIZE - 1) / BLOCK_SIZE;
-
-    // Get pointer to the raw allocation start
-    uint64_t* raw_data = reinterpret_cast<uint64_t*>(tableFiles.buffer_data());
-
-    // Create a 3D view: [Block Index, Column Index, Element Index within block]
-    // LayoutRight means the rightmost index (elements) is contiguous in memory
-    std::mdspan<uint64_t, std::extents<size_t, std::dynamic_extent, 2, BLOCK_SIZE>> table_view(
-        raw_data, total_blocks
-    );
-
-    // Perform calculations block by block (perfect Cache/SIMD alignment)
-    for (size_t block = 0; block < total_blocks; ++block)
-    {
-        for (size_t i = 0; i < BLOCK_SIZE; ++i)
-        {
-            // size = count * 10
-            // column 0 = count, column 1 = size
-            table_view[block, 1, i] = table_view[block, 0, i] * 10;
-        }
-    }
-}
-
-#include <experimental/simd>
-#include <cstdint>
-
-void calculate_explicit_simd(gd::table::simd::table<8u, 8u>& tableFiles, uint64_t factor)
-{
-    namespace std_simd = std::experimental;
-
-    // Choose native vector size for the target CPU (e.g., 4 elements for AVX2/AVX-512 uint64)
-    using simd_v = std_simd::native_simd<uint64_t>;
-    constexpr size_t simd_size = simd_v::size();
-
-    size_t row_count = tableFiles.row_size();
-    uint64_t* count_ptr = reinterpret_cast<uint64_t*>(tableFiles.column_get_pointer(0));
-    uint64_t* size_ptr  = reinterpret_cast<uint64_t*>(tableFiles.column_get_pointer(1));
-
-    size_t i = 0;
-    // Step 1: Main SIMD loop processing chunks of elements at once
-    for (; i <= row_count - simd_size; i += simd_size)
-    {
-        // Load SIMD vector chunk from memory (aligned flags can be used if buffer is aligned)
-        simd_v counts_vec(&count_ptr[i], std_simd::element_aligned);
-
-        // Execute math operation across all elements in the register simultaneously
-        simd_v sizes_vec = counts_vec * factor;
-
-        // Store the result chunk back to memory
-        sizes_vec.copy_to(&size_ptr[i], std_simd::element_aligned);
-    }
-
-    // Step 2: Clean up remainder rows that didn't fit into a full SIMD vector
-    for (; i < row_count; ++i)
-    {
-        size_ptr[i] = count_ptr[i] * factor;
-    }
-}
-
-
 
 */
 
