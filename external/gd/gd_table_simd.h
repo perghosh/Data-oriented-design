@@ -25,6 +25,7 @@
 #include <algorithm>
 #include <cassert>
 #include <functional>
+#include <memory>
 #include <string_view>
 #include <string>
 #include <tuple>
@@ -57,6 +58,14 @@
 #endif
 
 _GD_TABLE_SIMD_BEGIN
+
+#if defined(__GNUC__) || defined(__clang__)
+    #define GD_RESTRICT __restrict__
+#elif defined(_MSC_VER)
+    #define GD_RESTRICT __restrict
+#else
+    #define GD_RESTRICT
+#endif
 
 class table_base
 {
@@ -194,9 +203,10 @@ public:
 // ## @API [tag: construct] [description: table construction, lots of constructors to simplify how to create new tables]
 public:
    table_base() : m_uFlags(0), m_uRowSize(0), m_uRowCount(0), m_uPackCount(0), m_uRowGrowBy(0) {}
-   table_base(unsigned uRowCount) : m_uFlags(0), m_uRowSize(0), m_uRowCount(0), m_uRowReservedPackCount(uRowCount), m_uRowGrowBy(0) {}
-   table_base(unsigned uRowCount, unsigned uFlags) : m_uFlags(uFlags), m_uRowSize(0), m_uRowCount(0), m_uRowReservedPackCount(uRowCount), m_uRowGrowBy(0) { assert(m_uFlags < eTableFlagMAX); }
-   table_base(unsigned uRowCount, unsigned uFlags, unsigned uGrowBy) : m_uFlags(uFlags), m_uRowSize(0), m_uRowCount(0), m_uRowReservedPackCount(uRowCount), m_uRowGrowBy(uGrowBy) { assert(m_uFlags < eTableFlagMAX); }
+   table_base(uint64_t uRowCount): m_uFlags(0), m_uRowSize(0), m_uRowCount(0), m_uRowReservedPackCount(uRowCount), m_uRowGrowBy(0) {}
+   table_base(uint64_t uRowCount, tag_repare_to_add_column) : m_uFlags(0), m_uRowSize(0), m_uRowCount(0), m_uRowReservedPackCount(uRowCount), m_uRowGrowBy(0) { column_prepare(); }
+   table_base(uint64_t uRowCount, unsigned uFlags) : m_uFlags(uFlags), m_uRowSize(0), m_uRowCount(0), m_uRowReservedPackCount(uRowCount), m_uRowGrowBy(0) { assert(m_uFlags < eTableFlagMAX); }
+   table_base(uint64_t uRowCount, unsigned uFlags, unsigned uGrowBy) : m_uFlags(uFlags), m_uRowSize(0), m_uRowCount(0), m_uRowReservedPackCount(uRowCount), m_uRowGrowBy(uGrowBy) { assert(m_uFlags < eTableFlagMAX); }
    table_base(tag_null) : m_uFlags(eTableFlagNull64), m_uRowSize(0), m_uRowCount(0), m_uRowReservedPackCount(0) { assert(m_uFlags < eTableFlagMAX); }
    table_base(tag_full_meta) : m_uFlags(eTableFlagNull64 | eTableFlagRowStatus), m_uRowSize(0), m_uRowCount(0), m_uRowReservedPackCount(0) { assert(m_uFlags < eTableFlagMAX); }
 
@@ -537,8 +547,6 @@ inline void table_base::cell_set_not_null(uint64_t uRow, unsigned uColumn) {    
 // ================================================================= SIMD TABLE
 // ============================================================================
 
-
-
 /** ===========================================================================
  * \brief simd table, optimized for simd operations using  AoSoA (Array of Structure of Arrays) layout.
  * 
@@ -549,9 +557,11 @@ class table : public table_base
 // ## @API [tag: construct] [description: table construction, lots of constructors to simplify how to create new tables]
 public:
    table(): table_base() { common_construct_set_simd(); }
-   table(unsigned uRowCount): table_base(uRowCount) { common_construct_set_simd(); }
-   table(unsigned uRowCount, unsigned uFlags): table_base(uRowCount, uFlags) { common_construct_set_simd(); }
-   table(unsigned uRowCount, unsigned uFlags, unsigned uGrowBy): table_base(uRowCount, uFlags, uGrowBy) { common_construct_set_simd(); }
+   table(uint64_t uRowCount): table_base(uRowCount) { common_construct_set_simd(); }
+   table(tag_repare_to_add_column) : table_base(tag_repare_to_add_column{}) { common_construct_set_simd(); }
+   table(uint64_t uRowCount, tag_repare_to_add_column) : table_base(uRowCount, tag_repare_to_add_column{}) { common_construct_set_simd(); }
+   table(uint64_t uRowCount, unsigned uFlags): table_base(uRowCount, uFlags) { common_construct_set_simd(); }
+   table(uint64_t uRowCount, unsigned uFlags, unsigned uGrowBy): table_base(uRowCount, uFlags, uGrowBy) { common_construct_set_simd(); }
    table(tag_null): table_base(tag_null{}) { common_construct_set_simd(); }
    table(tag_full_meta): table_base(tag_full_meta{}) { common_construct_set_simd(); }
 
@@ -663,10 +673,21 @@ template <std::size_t VALUESIZE, std::size_t PACKCOUNT>
 template <typename TYPE>
 uint64_t table<VALUESIZE, PACKCOUNT>::pack_find_value(uint64_t uRowPack, unsigned uColumn, TYPE value_) const noexcept { assert(uRowPack < m_uRowReservedPackCount); assert(uColumn < get_column_count());
                                                                                                    static_assert(count_pack_s() * VALUESIZE % sizeof(TYPE) == 0, "TYPE must evenly divide pack byte size");
-   constexpr std::size_t uCount = count_pack_s() * VALUESIZE / sizeof(TYPE);                       static_assert(uCount <= 64, "reinterpreted element count exceeds 64-bit mask width");
-   const TYPE* puPackBase = reinterpret_cast<const TYPE*>(rowpack_get(uRowPack, uColumn));
+   constexpr std::size_t uCount = count_pack_s() * VALUESIZE / sizeof(TYPE);                       static_assert(uCount <= 64 && (uCount % 4) == 0, "reinterpreted element count exceeds 64-bit mask width");
+                                                                                                   
+   const TYPE* GD_RESTRICT puPackBaseRaw = reinterpret_cast<const TYPE*>(rowpack_get(uRowPack, uColumn));
+   const TYPE* GD_RESTRICT puPackBase = std::assume_aligned<64>(puPackBaseRaw);
+
    uint64_t uMask = 0;
-   for(unsigned u = 0; u < uCount; ++u) { uMask |= uint64_t(puPackBase[u] == value_) << u; }
+
+   for(unsigned u = 0; u < uCount; u += 4) {
+      uint64_t uTemporaryMask = (uint64_t(puPackBase[u + 0] == value_) << 0)
+      | (uint64_t(puPackBase[u + 1] == value_) << 1)
+      | (uint64_t(puPackBase[u + 2] == value_) << 2)
+      | (uint64_t(puPackBase[u + 3] == value_) << 3);
+
+      uMask |= (uTemporaryMask << u);
+   }
    return uMask;
 }
 
@@ -767,6 +788,14 @@ while(uRemaining) {
 }
 
 */
+
+// ## @API [tag: table, simd, typealias] [description: default table types for common use cases]
+
+using table_4_4 = table<4, 4>;  // default table with 4 bytes per value and 4 values per pack
+using table_4_8 = table<4, 8>;  // default table with 4 bytes per value and 8 values per pack
+using table_4_16 = table<4, 16>;  // default table with 4 bytes per value and 16 values per pack
+using table_8_4 = table<8, 4>;  // default table with 8 bytes per value and 4 values per pack
+using table_8_8 = table<8, 8>;  // default table with 8 bytes per value and 8 values per pack
 
 
 

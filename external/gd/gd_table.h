@@ -117,6 +117,8 @@ using tag_adjust = gd::types::tag_adjust;
 struct tag_spill {};
 /// prepare (allocate internal buffers) table to be ready for work
 struct tag_prepare {};
+/// prepare internals for adding columns
+struct tag_repare_to_add_column {};
 /// use name in operation
 using tag_name = gd::types::tag_name;
 /// use alias in operation

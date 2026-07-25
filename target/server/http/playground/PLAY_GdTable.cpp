@@ -43,6 +43,37 @@ TEST_CASE("[gd-table] create", "[gd-table]")
    }
 }
 
+TEST_CASE("[gd-table] count characters", "[gd-table]")
+{
+   {
+      using namespace gd::table::simd;
+      table_8_8 tableCharacters(100u, gd::table::tag_repare_to_add_column{});
+
+      tableCharacters.column_add( "uint64", 0, "text" );
+      tableCharacters.prepare();
+
+      // generate text with 64 characters
+      std::string_view stringData = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
+      std::array<uint8_t, 64> arrayText{};
+      arrayText.fill(0);
+      std::size_t uLength = std::min(stringData.size(), arrayText.size());
+      std::memcpy(arrayText.data(), stringData.data(), uLength);
+      tableCharacters.pack_plant<uint8_t>(0u, 0, arrayText);
+
+
+      uint64_t uMask = tableCharacters.pack_find_value<uint8_t>(0u, 0, uint8_t('s'));
+      auto uRemaining = uMask;
+      while(uRemaining) {
+         unsigned uPos = std::countr_zero(uRemaining);
+         std::cout << "comma at byte " << uPos << "\n";
+         uRemaining &= (uRemaining - 1);
+      }
+
+   }
+}
+
+
+
 
 TEST_CASE("[gd-table] simd create simple", "[gd-table]")
 {
