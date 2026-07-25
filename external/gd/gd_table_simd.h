@@ -579,8 +579,8 @@ public:
 
    uint8_t* row_get(uint64_t uRow) const noexcept;
 
-   uint8_t* rowpack_get(uint64_t uRowPack, unsigned uColumn) noexcept { uint8_t* p_ = m_puData + (m_uRowSize * uRowPack) + (uColumn * size_pack_s()); return std::assume_aligned<64>(p_); }
-   const uint8_t* rowpack_get(uint64_t uRowPack, unsigned uColumn) const noexcept { const uint8_t* p_ = m_puData + (m_uRowSize * uRowPack) + (uColumn * size_pack_s()); return std::assume_aligned<64>(p_); }
+   uint8_t* rowpack_get(uint64_t uRowPack, unsigned uColumn) noexcept;
+   const uint8_t* rowpack_get(uint64_t uRowPack, unsigned uColumn) const noexcept;
 
    std::pair<bool, std::string> prepare() { return table_base::prepare(m_uValueSize_s, m_uPackCount_s); }
 
@@ -621,6 +621,24 @@ uint8_t* table<VALUESIZE, PACKCOUNT>::row_get(uint64_t uRow) const noexcept {
    // ## actual row is result of dividing row index by pack count, because each row block contains PACKCOUNT number of rows
    uint64_t uRowPack = row_to_pack_s(uRow);                                                        assert(uRowPack < m_uRowReservedPackCount );
    return m_puData + uRowPack * m_uRowSize;
+}
+
+template<std::size_t VALUESIZE, std::size_t PACKCOUNT>
+uint8_t* table<VALUESIZE, PACKCOUNT>::rowpack_get(uint64_t uRowPack, unsigned uColumn) noexcept { 
+   uint8_t* p_ = m_puData + (m_uRowSize * uRowPack) + (uColumn * size_pack_s()); 
+
+   if constexpr((VALUESIZE * PACKCOUNT) % 64 == 0) { return std::assume_aligned<64>(p_); }
+   else if constexpr((VALUESIZE * PACKCOUNT) % 32 == 0) { return std::assume_aligned<32>(p_); }
+   else { return p_; }
+}
+
+template<std::size_t VALUESIZE, std::size_t PACKCOUNT>
+const uint8_t* table<VALUESIZE, PACKCOUNT>::rowpack_get(uint64_t uRowPack, unsigned uColumn) const noexcept { 
+   const uint8_t* p_ = m_puData + (m_uRowSize * uRowPack) + (uColumn * size_pack_s()); 
+
+   if constexpr((VALUESIZE * PACKCOUNT) % 64 == 0) { return std::assume_aligned<64>(p_); }
+   else if constexpr((VALUESIZE * PACKCOUNT) % 32 == 0) { return std::assume_aligned<32>(p_); }
+   else { return p_; }
 }
 
 /** ---------------------------------------------------------------------------
