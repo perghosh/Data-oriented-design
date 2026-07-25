@@ -47,7 +47,7 @@ TEST_CASE("[gd-table] count characters", "[gd-table]")
 {
    {
       using namespace gd::table::simd;
-      table_8_8 tableCharacters(100u, gd::table::tag_repare_to_add_column{});
+      table_8_8 tableCharacters(100u, gd::table::tag_repare_to_add_column{});  // reserve 100 rows
 
       tableCharacters.column_add( "uint64", 0, "text" );
       tableCharacters.prepare();
@@ -58,17 +58,52 @@ TEST_CASE("[gd-table] count characters", "[gd-table]")
       arrayText.fill(0);
       std::size_t uLength = std::min(stringData.size(), arrayText.size());
       std::memcpy(arrayText.data(), stringData.data(), uLength);
+
+      tableCharacters.row_add_pack(3u);                                       // add one row pack (3 * 8 rows)
+      bool bSuccess = tableCharacters.size() == 24u;                          // 3 * 8 rows
+
+      bSuccess = tableCharacters.get_row_pack_count() == 3u;                  // 3 row packs
+
       tableCharacters.pack_plant<uint8_t>(0u, 0, arrayText);
+      tableCharacters.pack_plant<uint8_t>(1u, 0, arrayText);
+      tableCharacters.pack_plant<uint8_t>(2u, 0, arrayText);
 
 
-      uint64_t uMask = tableCharacters.pack_find_value<uint8_t>(0u, 0, uint8_t('s'));
-      auto uRemaining = uMask;
+      uint64_t uFindBitMask = tableCharacters.pack_find_value<uint8_t>(0u, 0, uint8_t('s'));
+      auto uRemaining = uFindBitMask;
       while(uRemaining) {
-         unsigned uPos = std::countr_zero(uRemaining);
-         std::cout << "comma at byte " << uPos << "\n";
+         unsigned uPosition = std::countr_zero(uRemaining);
+         std::cout << "position: " << uPosition << "\n";
          uRemaining &= (uRemaining - 1);
       }
 
+      // ## Count characters in all row packs
+      unsigned uCount = 0;
+      for(std::size_t uRowPack = 0; uRowPack < tableCharacters.get_row_pack_count(); ++uRowPack) {
+         uint64_t uFindBitMask = tableCharacters.pack_find_value<uint8_t>(uRowPack, 0, uint8_t('s'));
+         auto uRemaining = uFindBitMask;
+         while(uRemaining) {
+            ++uCount;
+            unsigned uPosition = std::countr_zero(uRemaining);
+            uRemaining &= (uRemaining - 1);
+         }
+      }
+
+      std::cout << "total count of 's': " << uCount << std::endl;
+   }
+}
+
+
+TEST_CASE("[gd-table] strip comments from code", "[gd-table]")
+{
+   using namespace gd::table::simd;
+   {
+      table_8_8 tableCode(100u, gd::table::tag_repare_to_add_column{});  // reserve 100 rows
+      tableCode.column_add("uint64", 0, "code");
+
+      // ## Add sample code to table using std::array to transfer data to table
+
+      // ## find all row comments, each row comment starts with "--", lua style comment, and ends with newline
    }
 }
 
@@ -155,109 +190,5 @@ TEST_CASE("[gd-table] simd create simple 32 bit", "[gd-table]")
       tableFiles[uRow, 0] = uint32_t(uRowIndex);
       tableFiles[uRow, 1] = uint32_t(uRowIndex * 10);
    }
-
 }
 
-
-/*
-TEST_CASE("[gd-table] custom columns", "[gd-table]")
-{
-   {
-      gd::table::arguments::table tableFiles(gd::table::tag_full_meta{});
-      tableFiles.column_prepare();
-      tableFiles.column_add("rstring", 0, "path");
-      tableFiles.column_add("rstring", 0, "name");
-      tableFiles.column_add("uint64", 0, "size");
-      tableFiles.prepare();
-
-      for(unsigned uRowIndex = 0; uRowIndex < 100; ++uRowIndex)
-      {
-         const auto uRow = tableFiles.row_add_one();
-         tableFiles.row_set(uRow, { { "path", "C:\\data\\files\\entry.bin" }, { "name", "entry.bin" }, { "size", 1000 + uRowIndex } }, gd::table::tag_convert{});
-         tableFiles.cell_set(uRow, "custom_file_category", gd::variant_view((uRowIndex % 2) == 0 ? "binary" : "text"));
-         tableFiles.cell_set(uRow, "custom_file_region", gd::variant_view((uRowIndex % 3) == 0 ? "north" : "south"));
-      }
-
-      for(unsigned uRowIndex = 0; uRowIndex < 100; ++uRowIndex)
-      {
-         const auto bCategoryOk = tableFiles.cell_get_variant_view(uRowIndex, "custom_file_category").as_string_view() == ((uRowIndex % 2) == 0 ? "binary" : "text"); REQUIRE(bCategoryOk);
-         const auto bRegionOk = tableFiles.cell_get_variant_view(uRowIndex, "custom_file_region").as_string_view() == ((uRowIndex % 3) == 0 ? "north" : "south"); REQUIRE(bRegionOk);
-      }
-   }
-
-   {
-      gd::table::arguments::table tableUsers(gd::table::tag_full_meta{});
-      tableUsers.column_prepare();
-      tableUsers.column_add({ { "uint64", 0, "user_id" }, { "rstring", 0, "username" }, { "string", 20, "email" } }, gd::table::tag_type_name{});
-      tableUsers.prepare();
-
-      for(unsigned uRowIndex = 0; uRowIndex < 100; ++uRowIndex)
-      {
-         const auto uRow = tableUsers.row_add_one();
-         tableUsers.row_set(uRow, { { "user_id", 10000 + uRowIndex }, { "username", "demo-user" }, { "email", "demo@example.com" } }, gd::table::tag_convert{});
-         tableUsers.cell_set(uRow, "custom_user_tier", gd::variant_view((uRowIndex % 4) == 0 ? "gold" : "standard"));
-         tableUsers.cell_set(uRow, "custom_user_channel", gd::variant_view((uRowIndex % 5) == 0 ? "partner" : "direct"));
-      }
-
-      for(unsigned uRowIndex = 0; uRowIndex < 100; ++uRowIndex)
-      {
-         const auto bTierOk = tableUsers.cell_get_variant_view(uRowIndex, "custom_user_tier").as_string_view() == ((uRowIndex % 4) == 0 ? "gold" : "standard"); REQUIRE(bTierOk);
-         const auto bChannelOk = tableUsers.cell_get_variant_view(uRowIndex, "custom_user_channel").as_string_view() == ((uRowIndex % 5) == 0 ? "partner" : "direct"); REQUIRE(bChannelOk);
-      }
-   }
-
-   {
-      using namespace gd::table::arguments;
-      unsigned uFlags = table::eTableFlagArguments | table::eTableFlagNull64 | table::eTableFlagRowStatus;
-      gd::table::arguments::table tableMetrics(uFlags, { {"string", 5, "service"}, {"uint64", 0, "epoch"}, {"uint64", 0, "requests"}}, gd::table::tag_prepare{});
-
-      for(unsigned uRowIndex = 0; uRowIndex < 100; ++uRowIndex)
-      {
-         const auto uRow = tableMetrics.row_add_one();
-         tableMetrics.row_set(uRow, { { "epoch", 1700000000 + uRowIndex }, { "requests", 500 + uRowIndex } }, gd::table::tag_convert{});
-         tableMetrics.cell_set(uRow, "service", gd::variant_view("api-service"), gd::table::tag_adjust{});
-         tableMetrics.cell_set(uRow, "custom_metric_bucket", gd::variant_view((uRowIndex % 10) < 5 ? "low" : "high"));
-         tableMetrics.cell_set(uRow, "custom_metric_window", gd::variant_view((uRowIndex % 2) == 0 ? "day" : "night"));
-      }
-
-      for(unsigned uRowIndex = 0; uRowIndex < 100; ++uRowIndex)
-      {
-         const auto bBucketOk = tableMetrics.cell_get_variant_view(uRowIndex, "custom_metric_bucket").as_string_view() == ((uRowIndex % 10) < 5 ? "low" : "high"); REQUIRE(bBucketOk);
-         const auto bWindowOk = tableMetrics.cell_get_variant_view(uRowIndex, "custom_metric_window").as_string_view() == ((uRowIndex % 2) == 0 ? "day" : "night"); REQUIRE(bWindowOk);
-      }
-
-      std::string string_d = gd::table::arguments::debug::print(tableMetrics);
-      std::cout << string_d << std::endl;
-   }
-}
-
-TEST_CASE("[gd-table] index operator", "[gd-table]")
-{
-   {
-      gd::table::arguments::table tableFiles(gd::table::tag_full_meta{});
-      tableFiles.column_prepare();
-      tableFiles.column_add("rstring", 0, "path");
-      tableFiles.column_add("rstring", 0, "name");
-      tableFiles.column_add("uint64", 0, "size");
-      tableFiles.prepare();
-
-      for(unsigned uRowIndex = 0; uRowIndex < 100; ++uRowIndex)
-      {
-         const auto uRow = tableFiles.row_add_one();
-         tableFiles.row_set(uRow, { { "path", "C:\\data\\files\\entry.bin" }, { "name", "entry.bin" }, { "size", 1000 + uRowIndex } }, gd::table::tag_convert{});
-         tableFiles.cell_set(uRow, "custom_file_category", gd::variant_view((uRowIndex % 2) == 0 ? "binary" : "text"));
-         tableFiles.cell_set(uRow, "custom_file_region", gd::variant_view((uRowIndex % 3) == 0 ? "north" : "south"));
-      }
-
-      for(unsigned uRowIndex = 0; uRowIndex < 100; ++uRowIndex)
-      {
-         const auto bCategoryOk = tableFiles.cell_get_variant_view(uRowIndex, "custom_file_category").as_string_view() == ((uRowIndex % 2) == 0 ? "binary" : "text"); REQUIRE(bCategoryOk);
-         const auto bRegionOk = tableFiles.cell_get_variant_view(uRowIndex, "custom_file_region").as_string_view() == ((uRowIndex % 3) == 0 ? "north" : "south"); REQUIRE(bRegionOk);
-      }
-
-      tableFiles(0, 2) = 10;
-      tableFiles[1,  2] = 10;
-   }
-
-}
-*/

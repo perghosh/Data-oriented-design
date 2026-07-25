@@ -341,13 +341,13 @@ public:
 
 
 
-   std::pair<bool, std::string> prepare( unsigned uValueSize, unsigned uStride );
+   std::pair<bool, std::string> prepare( unsigned uValueSize, unsigned uPackCount );
 
    /// return pointer to section holding null column information
    uint8_t* row_get_null(uint64_t uRow) const noexcept;
 
 
-   uint8_t* row_get( uint64_t uRow ) const noexcept {                                              assert(m_uPackCount == 4 || m_uPackCount == 8 && "Pack size must be 4 or 8");
+   uint8_t* row_get( uint64_t uRow ) const noexcept {                                              assert(m_uPackCount % 2 == 0 && "Pack size must be even");
       uint64_t uMemoryRow = uRow / count_pack();                               // get memory row index, each row holds array of values, each array is called pack, each pack holds 4 or 8 rows
       return m_puData + uMemoryRow * m_uRowSize; 
    }
@@ -403,6 +403,10 @@ public:
    void cell_set_null(uint64_t uRow, unsigned uColumn);
    void cell_set_null(uint64_t uRow, std::string_view stringName);
    void cell_set_not_null(uint64_t uRow, unsigned uColumn);
+
+   /// @brief size is same as `get_row_count and returns number of rows
+   size_t size() const { return (size_t)get_row_count(); }
+
 
 protected:
    /// Counts number of values in each array (simd block)
@@ -567,25 +571,36 @@ public:
 
    void common_construct_set_simd() { m_uValueSize = VALUESIZE; m_uPackCount = PACKCOUNT; }
 
-   //void row_add(uint64_t uCount);
+   /// Get number of pack rows, each pack row contains PACKCOUNT number of rows
+   std::size_t get_row_pack_count() const noexcept { assert(m_uRowCount % count_pack_s() == 0); return m_uRowCount / count_pack_s(); }
+
+   /// Add rows to table, this is a simple wrapper for row_add that adds rows in packs, so if you add 1 row it will actually add PACKCOUNT number of rows
+   void row_add_pack(uint64_t uCount) { row_add(uCount * count_pack_s()); }
 
    uint8_t* row_get(uint64_t uRow) const noexcept;
 
-   uint8_t* rowpack_get(uint64_t uRowPack, unsigned uColumn) noexcept { return m_puData + (m_uRowSize * uRowPack) + (uColumn * size_pack_s()); }
-   const uint8_t* rowpack_get(uint64_t uRowPack, unsigned uColumn) const noexcept { return m_puData + (m_uRowSize * uRowPack) + (uColumn * size_pack_s()); }
+   uint8_t* rowpack_get(uint64_t uRowPack, unsigned uColumn) noexcept { uint8_t* p_ = m_puData + (m_uRowSize * uRowPack) + (uColumn * size_pack_s()); return std::assume_aligned<64>(p_); }
+   const uint8_t* rowpack_get(uint64_t uRowPack, unsigned uColumn) const noexcept { const uint8_t* p_ = m_puData + (m_uRowSize * uRowPack) + (uColumn * size_pack_s()); return std::assume_aligned<64>(p_); }
 
    std::pair<bool, std::string> prepare() { return table_base::prepare(m_uValueSize_s, m_uPackCount_s); }
 
    void pack_set_value(uint64_t uRowPack, unsigned uColumn, const uint8_t* puValue) noexcept;
 
+   /// Broadcast a single value to all elements in a pack
    template <typename TYPE>
-   void pack_broadcast_value(uint64_t uRowPack, unsigned uColumn, TYPE value_) noexcept;
+      void pack_broadcast_value(uint64_t uRowPack, unsigned uColumn, TYPE value_) noexcept;
+   /// Plant values from a range into a pack for all rows in table
    template <typename TYPE, std::ranges::contiguous_range RANGE>
-   void pack_plant(uint64_t uRowPack, unsigned uColumn, const RANGE& range_) noexcept;
-   template <typename TYPE, std::ranges::contiguous_range RANGE>
-   void pack_harvest(uint64_t uRowPack, unsigned uColumn, RANGE& range_) const noexcept;
+      void pack_plant(uint64_t uRowPack, unsigned uColumn, const RANGE& range_) noexcept;
+
    template <typename TYPE>
-   uint64_t pack_find_value(uint64_t uRowPack, unsigned uColumn, TYPE value_) const noexcept;
+      void plant_span(std::span<const TYPE> span, unsigned uColumn = 0, TYPE padValue = TYPE{}) noexcept;
+
+   /// Harvest values from a pack into a range
+   template <typename TYPE, std::ranges::contiguous_range RANGE>
+      void pack_harvest(uint64_t uRowPack, unsigned uColumn, RANGE& range_) const noexcept;
+   template <typename TYPE>
+      uint64_t pack_find_value(uint64_t uRowPack, unsigned uColumn, TYPE value_) const noexcept;
 
    static constexpr std::size_t m_uValueSize_s = VALUESIZE;
    static constexpr std::size_t m_uPackCount_s = PACKCOUNT;
@@ -645,9 +660,49 @@ template <typename TYPE, std::ranges::contiguous_range RANGE>
 void table<VALUESIZE, PACKCOUNT>::pack_plant(uint64_t uRowPack, unsigned uColumn, const RANGE& range_) noexcept { assert(uRowPack < m_uRowReservedPackCount); assert(uColumn < get_column_count());
                                                                                                    static_assert(std::same_as<std::ranges::range_value_t<RANGE>, TYPE>, "Range value type must match TYPE");
    constexpr std::size_t uCount = count_pack_s() * VALUESIZE / sizeof(TYPE);                       static_assert(count_pack_s() * VALUESIZE % sizeof(TYPE) == 0, "TYPE must evenly divide pack byte size");
-   assert(std::ranges::size(range_) >= uCount);
+                                                                                                   assert(std::ranges::size(range_) >= uCount);
    TYPE* pDestination_ = reinterpret_cast<TYPE*>(rowpack_get(uRowPack, uColumn));
-   std::memcpy(pDestination_, std::ranges::data(range_), VALUESIZE * count_pack_s());
+   constexpr std::size_t uBytesToCopy = sizeof(TYPE) * uCount;
+   std::memcpy(pDestination_, std::ranges::data(range_), uBytesToCopy);       // Copy the values from the range to the pack
+}
+
+template <std::size_t VALUESIZE, std::size_t PACKCOUNT>
+template <typename TYPE>
+void table<VALUESIZE, PACKCOUNT>::plant_span(std::span<const TYPE> span, unsigned uColumn, TYPE padValue) noexcept {  static_assert(sizeof(TYPE) <= VALUESIZE, "TYPE must fit within VALUESIZE");
+   constexpr std::size_t uBytesPerPack = PACKCOUNT * VALUESIZE;
+   constexpr std::size_t uElementsPerPack = uBytesPerPack / sizeof(TYPE);
+   
+   alignas(64) std::array<TYPE, uElementsPerPack> packBuffer{}; // Create temporary buffer for packing
+
+   const TYPE* pSource = span.data(); // Pointer to start source data
+   const TYPE* pSourceEnd = pSource + span.size(); // Pointer to end of source data
+   uint64_t uRowPack = 0; // Start at the first row pack
+
+   // Phase 1: Process complete packs where source data exists
+   while(uRowPack < get_row_pack_count() && (pSource + uElementsPerPack) <= pSourceEnd) 
+   {
+      std::memcpy(packBuffer.data(), pSource, uBytesPerPack);                 // Compiler can fully vectorize this - no conditional checks
+      pSource += uElementsPerPack;
+
+      const TYPE* GD_RESTRICT puPackBaseRaw = reinterpret_cast<const TYPE*>(rowpack_get(uRowPack, uColumn));
+      const TYPE* GD_RESTRICT puPackBase = std::assume_aligned<64>(puPackBaseRaw);
+
+      uint8_t* pDestination = rowpack_get(uRowPack, uColumn);                 
+      std::memcpy(pDestination, packBuffer.data(), uBytesPerPack);
+
+      ++uRowPack;
+   }
+
+   while(uRowPack < get_row_pack_count()) {
+      // Prepare pack buffer: source data + padding
+      for(size_t u = 0; u < uElementsPerPack; ++u) {  packBuffer[u] = (pSource < pSourceEnd) ? *pSource++ : padValue;  }
+      
+      uint8_t* pDestination = rowpack_get(uRowPack, uColumn);
+      std::memcpy(pDestination, packBuffer.data(), uBytesPerPack);                    // Direct copy to table (compiler can optimize this)
+
+      uRowPack++;
+      if(pSource >= pSourceEnd) break;  // Source exhausted
+   }
 }
 
 /** --------------------------------------------------------------------------- pack_harvest

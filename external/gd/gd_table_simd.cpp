@@ -262,7 +262,7 @@ std::pair<bool, std::string> table_base::prepare( unsigned uValueSize, unsigned 
 
    uint64_t uTotalTableSize = (uRowSize + uMetaDataSize) * m_uRowReservedPackCount;// calculate size storing table data
 
-   m_puData = new uint8_t[uTotalTableSize];
+   m_puData = new (std::align_val_t(64)) uint8_t[uTotalTableSize];
 #ifdef _DEBUG
    memset(m_puData, 0, uTotalTableSize);                                     // set data to 0 in debug mode
 #endif // _DEBUG
@@ -401,7 +401,7 @@ void table_base::row_reserve_add(uint64_t uCount)
 
    uint64_t uCopyRowSize = uTotalTableSize - uTotalMetaSize;
                                                                                                    assert(((uTotalTableSizeCopyTo - uTotalMetaSizeCopyTo) % 4 == 0) && "Total table size must be multiple of 4");
-   uint8_t* puDataCopyTo = new uint8_t[uTotalTableSizeCopyTo];                // new buffer for table data (both data and meta data)
+   uint8_t* puDataCopyTo = new (std::align_val_t(64)) uint8_t[uTotalTableSizeCopyTo]; // new buffer for table data (both data and meta data)
 
    if(m_puData != nullptr) memcpy(puDataCopyTo, m_puData, uCopyRowSize);      // copy row data
 
