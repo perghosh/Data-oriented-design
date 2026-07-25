@@ -673,21 +673,28 @@ template <std::size_t VALUESIZE, std::size_t PACKCOUNT>
 template <typename TYPE>
 uint64_t table<VALUESIZE, PACKCOUNT>::pack_find_value(uint64_t uRowPack, unsigned uColumn, TYPE value_) const noexcept { assert(uRowPack < m_uRowReservedPackCount); assert(uColumn < get_column_count());
                                                                                                    static_assert(count_pack_s() * VALUESIZE % sizeof(TYPE) == 0, "TYPE must evenly divide pack byte size");
-   constexpr std::size_t uCount = count_pack_s() * VALUESIZE / sizeof(TYPE);                       static_assert(uCount <= 64 && (uCount % 4) == 0, "reinterpreted element count exceeds 64-bit mask width");
+   constexpr std::size_t uCount = count_pack_s() * VALUESIZE / sizeof(TYPE);                       static_assert(uCount <= 64, "reinterpreted element count exceeds 64-bit mask width");
                                                                                                    
    const TYPE* GD_RESTRICT puPackBaseRaw = reinterpret_cast<const TYPE*>(rowpack_get(uRowPack, uColumn));
    const TYPE* GD_RESTRICT puPackBase = std::assume_aligned<64>(puPackBaseRaw);
 
    uint64_t uMask = 0;
+   if constexpr(uCount >= 4 && (uCount % 4) == 0) {
+      for(unsigned u = 0; u < uCount; u += 4) {
+         uint64_t uTemporaryMask = (uint64_t(puPackBase[u + 0] == value_) << 0)
+            | (uint64_t(puPackBase[u + 1] == value_) << 1)
+            | (uint64_t(puPackBase[u + 2] == value_) << 2)
+            | (uint64_t(puPackBase[u + 3] == value_) << 3);
 
-   for(unsigned u = 0; u < uCount; u += 4) {
-      uint64_t uTemporaryMask = (uint64_t(puPackBase[u + 0] == value_) << 0)
-      | (uint64_t(puPackBase[u + 1] == value_) << 1)
-      | (uint64_t(puPackBase[u + 2] == value_) << 2)
-      | (uint64_t(puPackBase[u + 3] == value_) << 3);
-
-      uMask |= (uTemporaryMask << u);
+         uMask |= (uTemporaryMask << u);
+      }
    }
+   else {
+      for(unsigned u = 0; u < uCount; ++u) {
+         if(puPackBase[u] == value_) { uMask |= (1ULL << u); }
+      }
+   }
+
    return uMask;
 }
 
