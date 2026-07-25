@@ -210,6 +210,8 @@ public:
    table_base(tag_null) : m_uFlags(eTableFlagNull64), m_uRowSize(0), m_uRowCount(0), m_uRowReservedPackCount(0) { assert(m_uFlags < eTableFlagMAX); }
    table_base(tag_full_meta) : m_uFlags(eTableFlagNull64 | eTableFlagRowStatus), m_uRowSize(0), m_uRowCount(0), m_uRowReservedPackCount(0) { assert(m_uFlags < eTableFlagMAX); }
 
+   ~table_base() { clear(); }
+
    // ## @API [tag: operator] [description: table operators]
 public:
    std::vector<gd::variant_view> operator[](uint64_t uRow) const { return row_get_variant_view(uRow); }
@@ -406,6 +408,8 @@ public:
 
    /// @brief size is same as `get_row_count and returns number of rows
    size_t size() const { return (size_t)get_row_count(); }
+   /// @brief clear all data in table
+   void clear();
 
 
 protected:

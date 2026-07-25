@@ -8,9 +8,52 @@
 #include "gd_utf8_2.h"
 #include "gd_variant.h"
 
-
+#if defined(_MSC_VER) || defined(__MINGW32__)
+#include <malloc.h>  // _aligned_malloc och _aligned_free
+#endif
 
 _GD_TABLE_SIMD_BEGIN
+
+#include <cstdlib>   // För posix_memalign och free
+#include <cstdint>   // För uint8_t och uint64_t
+
+#if defined(_MSC_VER) || defined(__MINGW32__)
+#include <malloc.h>  // För _aligned_malloc och _aligned_free
+#endif
+
+namespace internal {
+
+/**
+ * Allokerar minne med en specifik alignment (justering).
+ * Fungerar på Windows, Linux, macOS (Intel & Apple Silicon/ARM).
+ */
+inline uint8_t* allocate( uint64_t uSize, size_t uAlignment = 64 ) {
+#if defined(_MSC_VER) || defined(__MINGW32__)
+   return static_cast<uint8_t*>( _aligned_malloc( uSize, uAlignment ) );
+#else
+   void* pTmp = nullptr;
+   if( posix_memalign( &pTmp, uAlignment, uSize ) == 0 ) {
+      return static_cast<uint8_t*>( pTmp );
+   }
+   return nullptr;
+#endif
+}
+
+/**
+ * Frigör minne som allokerats med internal::allocate.
+ */
+inline void deallocate( uint8_t* pData ) {
+   if( pData == nullptr ) return;
+
+#if defined(_MSC_VER) || defined(__MINGW32__)
+   _aligned_free( pData );
+#else
+   free( pData ); // posix_memalign frigörs med vanlig free()
+#endif
+}
+
+} // namespace internal
+
 
 /** ---------------------------------------------------------------------------
  * @brief add column to table
@@ -262,7 +305,8 @@ std::pair<bool, std::string> table_base::prepare( unsigned uValueSize, unsigned 
 
    uint64_t uTotalTableSize = (uRowSize + uMetaDataSize) * m_uRowReservedPackCount;// calculate size storing table data
 
-   m_puData = new (std::align_val_t(64)) uint8_t[uTotalTableSize];
+   //m_puData = new (std::align_val_t(64)) uint8_t[uTotalTableSize];
+   m_puData = internal::allocate( uTotalTableSize );
 #ifdef _DEBUG
    memset(m_puData, 0, uTotalTableSize);                                     // set data to 0 in debug mode
 #endif // _DEBUG
@@ -401,7 +445,7 @@ void table_base::row_reserve_add(uint64_t uCount)
 
    uint64_t uCopyRowSize = uTotalTableSize - uTotalMetaSize;
                                                                                                    assert(((uTotalTableSizeCopyTo - uTotalMetaSizeCopyTo) % 4 == 0) && "Total table size must be multiple of 4");
-   uint8_t* puDataCopyTo = new (std::align_val_t(64)) uint8_t[uTotalTableSizeCopyTo]; // new buffer for table data (both data and meta data)
+   uint8_t* puDataCopyTo = internal::allocate( uTotalTableSizeCopyTo ); // new buffer for table data (both data and meta data)
 
    if(m_puData != nullptr) memcpy(puDataCopyTo, m_puData, uCopyRowSize);      // copy row data
 
@@ -418,7 +462,7 @@ void table_base::row_reserve_add(uint64_t uCount)
       m_puMetaData = puDataCopyTo + (uTotalTableSizeCopyTo - uTotalMetaSizeCopyTo);// set meta position pointer if meta data is used
    }
 
-   delete[] m_puData;
+   internal::deallocate( m_puData );
    m_puData = puDataCopyTo;
 
    m_uRowReservedPackCount = uCount;
@@ -738,6 +782,27 @@ void table_base::cell_set( uint64_t uRow, const std::string_view& stringAlias, g
 {                                                                                                  assert(uRow < count_reserved_row());
    unsigned uColumnIndex = column_get_index( stringAlias, tag_alias{});                            assert(uColumnIndex != ( unsigned )-1);
    cell_set( uRow, uColumnIndex, variantviewValue );
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Clears all internal data and columns. 
+ * 
+ * When table is cleared, to start working with again you need to add columns and
+ * prepare it to add rows again.
+*/
+void table_base::clear()
+{
+   m_uFlags = 0;
+   m_uRowSize = 0;
+   m_uRowMetaSize = 0;
+   m_uRowCount = 0;
+   m_uRowReservedPackCount = 0;
+
+   if( m_puData != nullptr ) internal::deallocate( m_puData );
+   m_puData = nullptr;
+   m_puMetaData = nullptr;
+
+   //m_argumentsProperty.clear();
 }
 
 
