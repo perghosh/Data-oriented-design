@@ -784,6 +784,42 @@ void table_base::cell_set( uint64_t uRow, const std::string_view& stringAlias, g
    cell_set( uRow, uColumnIndex, variantviewValue );
 }
 
+/** --------------------------------------------------------------------------- offset_find_column
+ * @brief Find column index for offset in table data
+ * @param uOffset byte offset in table data
+ * @param tag_size8 tag indicating 8-bit size
+ * @return column index or -1 if not found
+ */
+int table_base::offset_find_column(uint64_t uOffset, gd::types::tag_size8) const noexcept
+{                                                                                                  assert(m_uRowSize > 0 && size_pack() > 0);
+   const uint64_t uTotalRowDataSize = m_uRowCount * m_uRowSize;
+   if(uOffset >= uTotalRowDataSize) return -1;
+
+   const uint64_t uOffsetInRowPack = uOffset % m_uRowSize;
+   const uint64_t uColumn = uOffsetInRowPack / size_pack();                                        assert(uColumn < get_column_count());
+
+   return static_cast<int>(uColumn);
+}
+
+/** --------------------------------------------------------------------------- offset_find_row
+ * @brief Find row index for offset in table data
+ * @param uOffset byte offset in table data
+ * @param tag_size8 tag indicating 8-bit size
+ * @return row index or -1 if not found
+ */
+int table_base::offset_find_row(uint64_t uOffset, gd::types::tag_size8) const noexcept
+{                                                                                                  assert(m_uRowSize > 0 && size_pack() > 0);
+   const uint64_t uTotalRowDataSize = m_uRowCount * m_uRowSize;                                             
+   if(uOffset >= uTotalRowDataSize) return -1;
+   
+   const uint64_t uRow = uOffset / m_uRowSize;                                                     assert(uRow < get_row_count());
+   const uint64_t uOffsetInRowPack = uOffset % m_uRowSize;
+   const uint64_t uColumn = uOffsetInRowPack / size_pack();                                        assert(uColumn < get_column_count());
+   const uint64_t uRowIndex = uRow * get_column_count() + uColumn;                                 assert(uRowIndex < (m_uRowCount * get_column_count()));
+
+   return static_cast<int>(uRowIndex);
+}
+
 /** ---------------------------------------------------------------------------
  * @brief Clears all internal data and columns. 
  * 

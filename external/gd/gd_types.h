@@ -255,6 +255,15 @@ struct tag_xy {};             ///< x-y ordering, like Cartesian coordinates (x h
 struct tag_yx {};             ///< y-x ordering, transposed Cartesian coordinates
 
 // ----------------------------------------------------------------------------
+// ## size related tag dispatchers
+struct tag_size8 {};          ///< 8 bit value or some form of 8 bit size, like uint8_t or int8_t
+struct tag_size16 {};         ///< 16 bit value or some form of 16 bit size
+struct tag_size32 {};         ///< 32 bit value or some form of 32 bit size
+struct tag_size64 {};         ///< 64 bit value or some form of 64 bit size 
+struct tag_size128 {};        ///< 128 bit value or some form of 128 bit size 
+
+
+// ----------------------------------------------------------------------------
 // ## storage related tag dispatchers
 struct tag_storage_memory {};   ///< memory storage, like RAM
 struct tag_storage_disk {};     ///< disk storage, like HDD or SSD

@@ -93,6 +93,54 @@ TEST_CASE("[gd-table] count characters", "[gd-table]")
    }
 }
 
+TEST_CASE("[gd-table] strip comments from code", "[gd-table]")
+{
+   using namespace gd::table::simd;
+
+   {
+      table_8_8 tableCode(100u, gd::table::tag_repare_to_add_column{});
+      tableCode.column_add("uint64", 0, "code");
+      tableCode.prepare();
+
+      // Sample Lua-like source code
+      std::string_view stringCode = "-- This is a comment\nlocal x = 5\n-- Another comment\nprint(x)\n-- ready";
+
+      // Fill table with source bytes, pad with 0x00
+      std::span<const char> span_(stringCode.data(), stringCode.size());
+      tableCode.pack_plant_span<char>(span_, 0, '\0');
+
+      // Now find comments using pack_find_value
+      for(uint64_t uPack = 0; uPack < tableCode.get_row_pack_count(); ++uPack) {
+         // Find '--' sequences (0x2D 0x2D)
+         uint64_t uMask = tableCode.pack_find_value<char>(uPack, 0, '-');
+         if(uMask == 0) continue;
+
+         auto spanPack = tableCode.pack_harvest_span<const char>(uPack);
+
+         // Process mask to identify comment positions
+         while(uMask) {
+            unsigned uPos = static_cast<unsigned>(std::countr_zero(uMask));
+
+            // Check if next byte is also '-' (check within span bounds)
+            if(uPos + 1 < spanPack.size() && spanPack[uPos + 1] == '-') {
+               // Found comment start at uPos, scan to end of comment
+               unsigned uCommentEnd = uPos + 2;
+
+               while(uCommentEnd < spanPack.size() && spanPack[uCommentEnd] != '\n') { ++uCommentEnd; }
+
+               // Include newline in comment range if found
+               if(uCommentEnd < spanPack.size() && spanPack[uCommentEnd] == '\n') { ++uCommentEnd; }
+
+               INFO("Comment found in pack " << uPack << ": [" << uPos << ", " << uCommentEnd << ")");
+               INFO("  Text: '" << std::string(spanPack.data() + uPos, uCommentEnd - uPos) << "'");
+            }
+
+            uMask &= (uMask - 1);
+         }
+      }
+   }
+}
+
 
 TEST_CASE("[gd-table] strip comments from code", "[gd-table]")
 {

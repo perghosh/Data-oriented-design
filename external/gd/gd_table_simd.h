@@ -406,6 +406,12 @@ public:
    void cell_set_null(uint64_t uRow, std::string_view stringName);
    void cell_set_not_null(uint64_t uRow, unsigned uColumn);
 
+   unsigned offset_get_column(uint64_t uOffset, gd::types::tag_size8) const noexcept { auto iColumn = offset_find_column(uOffset, gd::types::tag_size8{}); assert(iColumn >= 0); return static_cast<unsigned>(iColumn); }
+   int offset_find_column(uint64_t uOffset, gd::types::tag_size8) const noexcept;
+
+   unsigned offset_get_row(uint64_t uOffset, gd::types::tag_size8) const noexcept { auto iCell = offset_find_row(uOffset, gd::types::tag_size8{}); assert(iCell >= 0); return static_cast<unsigned>(iCell); }
+   int offset_find_row(uint64_t uOffset, gd::types::tag_size8) const noexcept;
+
    /// @brief size is same as `get_row_count and returns number of rows
    size_t size() const { return (size_t)get_row_count(); }
    /// @brief clear all data in table
@@ -590,21 +596,36 @@ public:
 
    void pack_set_value(uint64_t uRowPack, unsigned uColumn, const uint8_t* puValue) noexcept;
 
+   
    /// Broadcast a single value to all elements in a pack
    template <typename TYPE>
-      void pack_broadcast_value(uint64_t uRowPack, unsigned uColumn, TYPE value_) noexcept;
+   void pack_broadcast_value(uint64_t uRowPack, unsigned uColumn, TYPE value_) noexcept;
+
    /// Plant values from a range into a pack for all rows in table
    template <typename TYPE, std::ranges::contiguous_range RANGE>
-      void pack_plant(uint64_t uRowPack, unsigned uColumn, const RANGE& range_) noexcept;
+   void pack_plant(uint64_t uRowPack, unsigned uColumn, const RANGE& range_) noexcept;
 
    template <typename TYPE>
-      void plant_span(std::span<const TYPE> span, unsigned uColumn = 0, TYPE padValue = TYPE{}) noexcept;
+   void pack_plant_span(std::span<const TYPE> span, unsigned uColumn = 0, TYPE padValue = TYPE{}) noexcept;
 
    /// Harvest values from a pack into a range
    template <typename TYPE, std::ranges::contiguous_range RANGE>
-      void pack_harvest(uint64_t uRowPack, unsigned uColumn, RANGE& range_) const noexcept;
+   void pack_harvest(uint64_t uRowPack, unsigned uColumn, RANGE& range_) const noexcept;
+
+   /// Get span of values from a pack for direct access
    template <typename TYPE>
-      uint64_t pack_find_value(uint64_t uRowPack, unsigned uColumn, TYPE value_) const noexcept;
+   std::span<TYPE> pack_harvest_span(uint64_t uRowPack, unsigned uColumn = 0) const noexcept;
+
+   /// Extract elements where predicate is truthy
+   template <typename TYPE, typename PREDICATE>
+   std::size_t pack_extract_if(uint64_t uRowPack, unsigned uColumn, PREDICATE&& predicate_, std::span<TYPE> spanGather) const noexcept;
+
+   /// Extract elements where predicate is truthy - WRITES TO OUTPUT ITERATOR
+   template <typename TYPE, typename PREDICATE, typename OUTPUT_ITERATOR>
+   std::size_t pack_extract_if_iter(uint64_t uRowPack, unsigned uColumn, PREDICATE&& predicate_, OUTPUT_ITERATOR itDestination) const noexcept;
+
+   template <typename TYPE>
+   uint64_t pack_find_value(uint64_t uRowPack, unsigned uColumn, TYPE value_) const noexcept;
 
    static constexpr std::size_t m_uValueSize_s = VALUESIZE;
    static constexpr std::size_t m_uPackCount_s = PACKCOUNT;
@@ -677,6 +698,17 @@ inline void table<VALUESIZE, PACKCOUNT>::pack_broadcast_value(uint64_t uRowPack,
 }
 
 
+/** --------------------------------------------------------------------------- pack_plant
+ * @brief Plant contiguous values into a specific pack and column.
+ * @tparam TYPE Element type in destination pack.
+ * @tparam RANGE Contiguous source range type.
+ * @param uRowPack Target pack-row index.
+ * @param uColumn Target column index.
+ * @param range_ Source range used for copy.
+ *
+ * @note The range value type must be identical to `TYPE`.
+ * @note Source must contain enough elements to fill one full pack.
+ */
 template <std::size_t VALUESIZE, std::size_t PACKCOUNT>
 template <typename TYPE, std::ranges::contiguous_range RANGE>
 void table<VALUESIZE, PACKCOUNT>::pack_plant(uint64_t uRowPack, unsigned uColumn, const RANGE& range_) noexcept { assert(uRowPack < m_uRowReservedPackCount); assert(uColumn < get_column_count());
@@ -688,9 +720,19 @@ void table<VALUESIZE, PACKCOUNT>::pack_plant(uint64_t uRowPack, unsigned uColumn
    std::memcpy(pDestination_, std::ranges::data(range_), uBytesToCopy);       // Copy the values from the range to the pack
 }
 
+/** --------------------------------------------------------------------------- pack_plant_span
+ * @brief Plant span data into consecutive packs in one column.
+ * @tparam TYPE Element type for source and destination.
+ * @param span Source span with values to plant.
+ * @param uColumn Destination column index.
+ * @param padValue Value used to pad incomplete final pack.
+ *
+ * @note Full packs are copied directly for throughput.
+ * @note Remaining elements are padded and copied as one final pack.
+ */
 template <std::size_t VALUESIZE, std::size_t PACKCOUNT>
 template <typename TYPE>
-void table<VALUESIZE, PACKCOUNT>::plant_span(std::span<const TYPE> span, unsigned uColumn, TYPE padValue) noexcept {  static_assert(sizeof(TYPE) <= VALUESIZE, "TYPE must fit within VALUESIZE");
+void table<VALUESIZE, PACKCOUNT>::pack_plant_span(std::span<const TYPE> span, unsigned uColumn, TYPE padValue) noexcept {  static_assert(sizeof(TYPE) <= VALUESIZE, "TYPE must fit within VALUESIZE");
    constexpr std::size_t uBytesPerPack = PACKCOUNT * VALUESIZE;
    constexpr std::size_t uElementsPerPack = uBytesPerPack / sizeof(TYPE);
    
@@ -773,6 +815,95 @@ uint64_t table<VALUESIZE, PACKCOUNT>::pack_find_value(uint64_t uRowPack, unsigne
    }
 
    return uMask;
+}
+
+/** --------------------------------------------------------------------------- pack_harvest_span
+ * @brief Get a span of values from a pack for direct SIMD/data processing
+ * @tparam TYPE The value type to interpret the data as
+ * @param uRowPack The row pack index
+ * @param uColumn The column index
+ * @return std::span<TYPE> Span covering PACKCOUNT elements
+ *
+ * @note This does NOT copy data - returns direct view of table memory
+ * @note Caller must ensure pack exists and column is valid
+*/
+template <std::size_t VALUESIZE, std::size_t PACKCOUNT>
+template <typename TYPE>
+inline std::span<TYPE> table<VALUESIZE, PACKCOUNT>::pack_harvest_span(uint64_t uRowPack, unsigned uColumn) const noexcept
+{                                                                                                  assert(uRowPack < get_row_pack_count()); assert(uColumn < get_column_count()); assert(sizeof(TYPE) == VALUESIZE && "TYPE size must match VALUESIZE template parameter");
+   const uint8_t* puPackBase = rowpack_get(uRowPack, uColumn);
+   const TYPE* pSource_ = reinterpret_cast<const TYPE*>(puPackBase);
+   return std::span<const TYPE>(pSource_, count_pack_s());
+}
+
+
+/** --------------------------------------------------------------------------- pack_extract_if
+ * @brief Extract elements where predicate returns true (keep masked items)
+ * @param uRowPack Source pack index
+ * @param uColumn Source column index
+ * @param predicate Predicate returning true = KEEP, false = SKIP
+ * @param spanGather Destination span
+ * @return Number of elements written to spanGather
+*/
+template <std::size_t VALUESIZE, std::size_t PACKCOUNT>
+template <typename TYPE, typename PREDICATE>
+inline std::size_t table<VALUESIZE, PACKCOUNT>::pack_extract_if( uint64_t uRowPack, unsigned uColumn, PREDICATE&& predicate_, std::span<TYPE> spanGather) const noexcept
+{                                                                                                  assert(uRowPack < get_row_pack_count()); assert(uColumn < get_column_count()); assert(sizeof(TYPE) == VALUESIZE && "TYPE size must match VALUESIZE");
+   auto spanPack = pack_harvest_span<TYPE>(uRowPack, uColumn);
+   std::size_t uWritten = 0;
+
+   for(std::size_t u = 0; u < spanPack.size() && uWritten < spanGather.size(); ++u) {
+      // Allow predicate to optionally take index as first argument
+      if constexpr(requires(PREDICATE p, std::size_t u, TYPE v) { p(u, v); }) { // Predicate accepts (index, value)
+         if(predicate_(u, spanPack[u])) { spanGather[uWritten++] = spanPack[u]; }
+      }
+      else {                                                                   // Predicate accepts (value) only
+         if(predicate_(spanPack[u])) { spanGather[uWritten++] = spanPack[u]; }
+      }
+   }
+
+   return uWritten;
+}
+
+/** --------------------------------------------------------------------------- pack_extract_if_iter
+ * @brief Extract elements where predicate returns true - WRITES TO OUTPUT ITERATOR
+ * @param uRowPack Source pack index
+ * @param uColumn Source column index
+ * @param predicate_ Predicate returning true = KEEP, false = SKIP
+ * @param itDestination Output iterator (can be back_inserter(vector), front_inserter(list), begin(array), etc.)
+ * @return Number of elements written to destination
+ *
+ * @note Works with ANY output iterator - most flexible version
+ * @note Container manages memory - no need to pre-size or reserve
+ * @note Predicate can accept (value) or (index, value) - detected at compile time
+*/
+template <std::size_t VALUESIZE, std::size_t PACKCOUNT>
+template <typename TYPE, typename PREDICATE, typename OUTPUT_ITERATOR>
+inline std::size_t table<VALUESIZE, PACKCOUNT>::pack_extract_if_iter( uint64_t uRowPack, unsigned uColumn, PREDICATE&& predicate_, OUTPUT_ITERATOR itDestination) const noexcept
+{                                                                                                  assert(uRowPack < get_row_pack_count()); assert(uColumn < get_column_count()); assert(sizeof(TYPE) == VALUESIZE && "TYPE size must match VALUESIZE");
+   auto spanPack = pack_harvest_span<TYPE>(uRowPack, uColumn);
+   std::size_t uWritten = 0;
+
+   for(std::size_t uIndex = 0; uIndex < spanPack.size(); ++uIndex)
+   {
+      // Allow predicate to optionally take index as first argument
+      if constexpr(requires(PREDICATE p, std::size_t uIndex, TYPE value) { p(uIndex, value); }) { // Predicate accepts (index, value)
+         if(predicate_(uIndex, spanPack[uIndex])) 
+         {
+            *itDestination++ = spanPack[uIndex];
+            ++uWritten;
+         }
+      }
+      else {                                                                   // Predicate accepts (value) only
+         if(predicate_(spanPack[uIndex])) 
+         {
+            *itDestination++ = spanPack[uIndex];
+            ++uWritten;
+         }
+      }
+   }
+
+   return uWritten;
 }
 
 // ----------------------------------------------------------------------------
