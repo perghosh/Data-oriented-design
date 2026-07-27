@@ -339,6 +339,33 @@ int64_t buffer_find_g( const uint8_t* puBuffer, size_t uBufferSize, const uint8_
    return -1;  // Pattern not found
 }
 
+/** -------------------------------------------------------------------------- buffer_find_g (single byte overload)
+ * @brief Find first occurrence of a single byte value in buffer
+ * @param puBuffer Buffer to search in
+ * @param uBufferSize Size of the buffer
+ * @param uValue Value to search for
+ * @param tag_size8 Tag indicating 8-bit size (unused, for overload resolution)
+ * @param uOffset Starting position for search (default: 0)
+ * @return int64_t Position of first occurrence or -1 if not found
+ */
+int64_t buffer_find_g(const uint8_t* puBuffer, size_t uBufferSize, uint8_t uValue, gd::types::tag_size8, size_t uOffset )
+{
+   if(uOffset >= uBufferSize) return -1; // Start index out of bounds
+
+   const uint8_t* puEnd = puBuffer + uBufferSize; // End of buffer
+   const uint8_t* puPosition = puBuffer + uOffset; // Current position
+
+   // ## Search for single byte pattern .......................................
+   while(puPosition < puEnd)
+   {
+      if(*puPosition == uValue) return static_cast<int64_t>(puPosition - puBuffer);
+
+      puPosition++;                                                           // Move to next position
+   }
+
+   return -1;  // value not found
+ }
+
 
 /** -------------------------------------------------------------------------- buffer_find_last_g
  * @brief Find last occurrence of pattern in buffer
@@ -354,13 +381,23 @@ int64_t buffer_find_last_g( const uint8_t* puBuffer, size_t uBufferSize, const u
    if( uPatternSize == 0 || uPatternSize > uBufferSize ) return -1;
    
    // Search backwards
-   for( int64_t i = uBufferSize - uPatternSize; i >= 0; --i )
+   for( int64_t u = static_cast<int64_t>(uBufferSize) - static_cast<int64_t>(uPatternSize); u >= 0; --u )
    {
-      if( memcmp( puBuffer + i, puPattern, uPatternSize ) == 0 )
-         return i;
+      if( memcmp( puBuffer + u, puPattern, uPatternSize ) == 0 )  return u;
    }
    
    return -1;
+}
+
+/// @brief Find last occurrence of a single byte value in buffer --------------
+int64_t buffer_find_last_g(const uint8_t* puBuffer, size_t uBufferSize, uint8_t uValue, gd::types::tag_size8)
+{                                                                                                  assert( puBuffer != nullptr );
+   // Search backwards for single byte value
+   for(int64_t u = static_cast<int64_t>(uBufferSize) - 1; u >= 0; --u)
+   {
+      if(puBuffer[u] == uValue) return u;
+   }
+   return -1; 
 }
 
 // Your SWAP16, SWAP32, SWAP64 macros/intrinsics here

@@ -113,7 +113,15 @@ inline std::string binary_to_hex_g( std::string_view stringBuffer, bool bUpperca
 
 /// Find pattern in buffer, returns index or -1 if not found
 int64_t buffer_find_g( const uint8_t* puBuffer, size_t uBufferSize, const uint8_t* puPattern, size_t uPatternSize, size_t uOffset = 0 );
+int64_t buffer_find_g(const uint8_t* puBuffer, size_t uBufferSize, uint8_t uValue, gd::types::tag_size8, size_t uOffset = 0);
+inline int64_t buffer_find_g(const uint8_t* puBuffer, size_t uBufferSize, uint16_t uValue, gd::types::tag_size16, size_t uOffset = 0) { return buffer_find_g(puBuffer, uBufferSize, (const uint8_t*)&uValue, sizeof(uValue), uOffset); }
+inline int64_t buffer_find_g(const uint8_t* puBuffer, size_t uBufferSize, uint32_t uValue, gd::types::tag_size32, size_t uOffset = 0) { return buffer_find_g(puBuffer, uBufferSize, (const uint8_t*)&uValue, sizeof(uValue), uOffset); }
+inline int64_t buffer_find_g(const uint8_t* puBuffer, size_t uBufferSize, uint64_t uValue, gd::types::tag_size64, size_t uOffset = 0) { return buffer_find_g(puBuffer, uBufferSize, (const uint8_t*)&uValue, sizeof(uValue), uOffset); }
 int64_t buffer_find_last_g( const uint8_t* puBuffer, size_t uBufferSize, const uint8_t* puPattern, size_t uPatternSize );
+int64_t buffer_find_last_g(const uint8_t* puBuffer, size_t uBufferSize, uint8_t uValue, gd::types::tag_size8);
+inline int64_t buffer_find_last_g(const uint8_t* puBuffer, size_t uBufferSize, uint16_t uValue, gd::types::tag_size16) { return buffer_find_last_g(puBuffer, uBufferSize, (const uint8_t*)&uValue, sizeof(uValue)); }
+inline int64_t buffer_find_last_g(const uint8_t* puBuffer, size_t uBufferSize, uint32_t uValue, gd::types::tag_size32) { return buffer_find_last_g(puBuffer, uBufferSize, (const uint8_t*)&uValue, sizeof(uValue)); }
+inline int64_t buffer_find_last_g(const uint8_t* puBuffer, size_t uBufferSize, uint64_t uValue, gd::types::tag_size64) { return buffer_find_last_g(puBuffer, uBufferSize, (const uint8_t*)&uValue, sizeof(uValue)); }
 
 // @API [tag: binary, read, write] [description: read and write information from binary data]
 // Note: The template classes below (reader and writer) use these global functions internally

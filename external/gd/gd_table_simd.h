@@ -409,8 +409,8 @@ public:
    unsigned offset_get_column(uint64_t uOffset, gd::types::tag_size8) const noexcept { auto iColumn = offset_find_column(uOffset, gd::types::tag_size8{}); assert(iColumn >= 0); return static_cast<unsigned>(iColumn); }
    int offset_find_column(uint64_t uOffset, gd::types::tag_size8) const noexcept;
 
-   unsigned offset_get_row(uint64_t uOffset, gd::types::tag_size8) const noexcept { auto iCell = offset_find_row(uOffset, gd::types::tag_size8{}); assert(iCell >= 0); return static_cast<unsigned>(iCell); }
-   int offset_find_row(uint64_t uOffset, gd::types::tag_size8) const noexcept;
+   uint64_t offset_get_row(uint64_t uOffset, gd::types::tag_size8) const noexcept { auto iCell = offset_find_row(uOffset, gd::types::tag_size8{}); assert(iCell >= 0); return static_cast<uint64_t>(iCell); }
+   int64_t offset_find_row(uint64_t uOffset, gd::types::tag_size8) const noexcept;
 
    /// @brief size is same as `get_row_count and returns number of rows
    size_t size() const { return (size_t)get_row_count(); }
@@ -418,7 +418,7 @@ public:
    void clear();
 
 
-protected:
+public:
    /// Counts number of values in each array (simd block)
    unsigned count_pack() const noexcept { return m_uPackCount; }
    /// Counts number of rows that can be stored in allocated memory, this is the number of reserved rows
@@ -586,6 +586,7 @@ public:
 
    /// Add rows to table, this is a simple wrapper for row_add that adds rows in packs, so if you add 1 row it will actually add PACKCOUNT number of rows
    void row_add_pack(uint64_t uCount) { row_add(uCount * count_pack_s()); }
+   uint64_t row_add_pack_one() { row_add_pack(1); return get_row_pack_count() - 1; }
 
    uint8_t* row_get(uint64_t uRow) const noexcept;
 
@@ -614,7 +615,15 @@ public:
 
    /// Get span of values from a pack for direct access
    template <typename TYPE>
-   std::span<TYPE> pack_harvest_span(uint64_t uRowPack, unsigned uColumn = 0) const noexcept;
+   std::span<TYPE> pack_harvest_span(uint64_t uRowPack, unsigned uColumn = 0) noexcept;
+
+   /// Get span of values from a pack for direct access
+   template <typename TYPE>
+   std::span<const TYPE> pack_harvest_span(uint64_t uRowPack, unsigned uColumn = 0) const noexcept;
+
+   /// Appends values from a pack into a span, returns number of values appended
+   template <typename TYPE, typename OUTPUT_ITERATOR>
+   std::size_t pack_extract_iter(uint64_t uRowPack, unsigned uColumn, OUTPUT_ITERATOR itDestination) const noexcept;
 
    /// Extract elements where predicate is truthy
    template <typename TYPE, typename PREDICATE>
@@ -725,44 +734,45 @@ void table<VALUESIZE, PACKCOUNT>::pack_plant(uint64_t uRowPack, unsigned uColumn
  * @tparam TYPE Element type for source and destination.
  * @param span Source span with values to plant.
  * @param uColumn Destination column index.
- * @param padValue Value used to pad incomplete final pack.
+ * @param pad_ Value used to pad incomplete final pack.
  *
  * @note Full packs are copied directly for throughput.
  * @note Remaining elements are padded and copied as one final pack.
  */
 template <std::size_t VALUESIZE, std::size_t PACKCOUNT>
 template <typename TYPE>
-void table<VALUESIZE, PACKCOUNT>::pack_plant_span(std::span<const TYPE> span, unsigned uColumn, TYPE padValue) noexcept {  static_assert(sizeof(TYPE) <= VALUESIZE, "TYPE must fit within VALUESIZE");
+void table<VALUESIZE, PACKCOUNT>::pack_plant_span(std::span<const TYPE> span, unsigned uColumn, TYPE pad_) noexcept {  static_assert(sizeof(TYPE) <= VALUESIZE, "TYPE must fit within VALUESIZE");
    constexpr std::size_t uBytesPerPack = PACKCOUNT * VALUESIZE;
    constexpr std::size_t uElementsPerPack = uBytesPerPack / sizeof(TYPE);
    
-   alignas(64) std::array<TYPE, uElementsPerPack> packBuffer{}; // Create temporary buffer for packing
+   alignas(64) std::array<TYPE, uElementsPerPack> arrayPack{}; // Create temporary buffer for packing
 
    const TYPE* pSource = span.data(); // Pointer to start source data
    const TYPE* pSourceEnd = pSource + span.size(); // Pointer to end of source data
-   uint64_t uRowPack = 0; // Start at the first row pack
+   
 
    // Phase 1: Process complete packs where source data exists
-   while(uRowPack < get_row_pack_count() && (pSource + uElementsPerPack) <= pSourceEnd) 
+   while((pSource + uElementsPerPack) <= pSourceEnd) 
    {
-      std::memcpy(packBuffer.data(), pSource, uBytesPerPack);                 // Compiler can fully vectorize this - no conditional checks
+      uint64_t uRowPack = row_add_pack_one();
+
+      std::memcpy(arrayPack.data(), pSource, uBytesPerPack);                   // Compiler can fully vectorize this - no conditional checks
       pSource += uElementsPerPack;
 
       const TYPE* GD_RESTRICT puPackBaseRaw = reinterpret_cast<const TYPE*>(rowpack_get(uRowPack, uColumn));
       const TYPE* GD_RESTRICT puPackBase = std::assume_aligned<64>(puPackBaseRaw);
 
       uint8_t* pDestination = rowpack_get(uRowPack, uColumn);                 
-      std::memcpy(pDestination, packBuffer.data(), uBytesPerPack);
-
-      ++uRowPack;
+      std::memcpy(pDestination, arrayPack.data(), uBytesPerPack);
    }
 
-   while(uRowPack < get_row_pack_count()) {
+   while(pSource < pSourceEnd) {
       // Prepare pack buffer: source data + padding
-      for(size_t u = 0; u < uElementsPerPack; ++u) {  packBuffer[u] = (pSource < pSourceEnd) ? *pSource++ : padValue;  }
+      for(size_t u = 0; u < uElementsPerPack; ++u) {  arrayPack[u] = (pSource < pSourceEnd) ? *pSource++ : pad_;  }
       
+      uint64_t uRowPack = row_add_pack_one();
       uint8_t* pDestination = rowpack_get(uRowPack, uColumn);
-      std::memcpy(pDestination, packBuffer.data(), uBytesPerPack);                    // Direct copy to table (compiler can optimize this)
+      std::memcpy(pDestination, arrayPack.data(), uBytesPerPack);              // Direct copy to table (compiler can optimize this)
 
       uRowPack++;
       if(pSource >= pSourceEnd) break;  // Source exhausted
@@ -829,13 +839,58 @@ uint64_t table<VALUESIZE, PACKCOUNT>::pack_find_value(uint64_t uRowPack, unsigne
 */
 template <std::size_t VALUESIZE, std::size_t PACKCOUNT>
 template <typename TYPE>
-inline std::span<TYPE> table<VALUESIZE, PACKCOUNT>::pack_harvest_span(uint64_t uRowPack, unsigned uColumn) const noexcept
+inline std::span<TYPE> table<VALUESIZE, PACKCOUNT>::pack_harvest_span(uint64_t uRowPack, unsigned uColumn) noexcept
+{
+   assert(uRowPack < get_row_pack_count()); assert(uColumn < get_column_count()); assert(sizeof(TYPE) == VALUESIZE && "TYPE size must match VALUESIZE template parameter");
+   const uint8_t* puPackBase = rowpack_get(uRowPack, uColumn);
+   TYPE* pSource_ = reinterpret_cast<TYPE*>(const_cast<uint8_t*>(puPackBase));
+   return std::span<TYPE>(pSource_, count_pack_s());
+}
+
+
+/** --------------------------------------------------------------------------- pack_harvest_span
+ * @brief Get a span of values from a pack for direct SIMD/data processing
+ * @tparam TYPE The value type to interpret the data as
+ * @param uRowPack The row pack index
+ * @param uColumn The column index
+ * @return std::span<const TYPE> Span covering PACKCOUNT elements
+ *
+ * @note This does NOT copy data - returns direct view of table memory
+ * @note Caller must ensure pack exists and column is valid
+*/
+template <std::size_t VALUESIZE, std::size_t PACKCOUNT>
+template <typename TYPE>
+inline std::span<const TYPE> table<VALUESIZE, PACKCOUNT>::pack_harvest_span(uint64_t uRowPack, unsigned uColumn) const noexcept
 {                                                                                                  assert(uRowPack < get_row_pack_count()); assert(uColumn < get_column_count()); assert(sizeof(TYPE) == VALUESIZE && "TYPE size must match VALUESIZE template parameter");
    const uint8_t* puPackBase = rowpack_get(uRowPack, uColumn);
    const TYPE* pSource_ = reinterpret_cast<const TYPE*>(puPackBase);
    return std::span<const TYPE>(pSource_, count_pack_s());
 }
 
+/** --------------------------------------------------------------------------- pack_extract_iter
+ * @brief Extract elements from a pack into an output iterator
+ * @tparam VALUESIZE 
+ * @tparam PACKCOUNT 
+ * @param uRowPack 
+ * @param uColumn 
+ * @param itDestination Output iterator to write elements to
+ * @return Number of elements written to the output iterator
+ */
+template <std::size_t VALUESIZE, std::size_t PACKCOUNT>
+template <typename TYPE, typename OUTPUT_ITERATOR>
+inline std::size_t table<VALUESIZE, PACKCOUNT>::pack_extract_iter( uint64_t uRowPack, unsigned uColumn, OUTPUT_ITERATOR itDestination) const noexcept 
+{                                                                                                  assert(uRowPack < get_row_pack_count()); assert(uColumn < get_column_count()); assert(sizeof(TYPE) == VALUESIZE && "TYPE size must match VALUESIZE");
+   auto spanPack = pack_harvest_span<TYPE>(uRowPack, uColumn);
+   std::size_t uCount = 0; // Count of elements written to destination
+
+   for(auto it = spanPack.begin(); it != spanPack.end(); ++it) {
+      *itDestination = *it;
+      ++itDestination;
+      ++uCount;
+   }
+
+   return uCount;
+}
 
 /** --------------------------------------------------------------------------- pack_extract_if
  * @brief Extract elements where predicate returns true (keep masked items)
@@ -850,19 +905,19 @@ template <typename TYPE, typename PREDICATE>
 inline std::size_t table<VALUESIZE, PACKCOUNT>::pack_extract_if( uint64_t uRowPack, unsigned uColumn, PREDICATE&& predicate_, std::span<TYPE> spanGather) const noexcept
 {                                                                                                  assert(uRowPack < get_row_pack_count()); assert(uColumn < get_column_count()); assert(sizeof(TYPE) == VALUESIZE && "TYPE size must match VALUESIZE");
    auto spanPack = pack_harvest_span<TYPE>(uRowPack, uColumn);
-   std::size_t uWritten = 0;
+   std::size_t uCount = 0; // Count of elements written to spanGather
 
-   for(std::size_t u = 0; u < spanPack.size() && uWritten < spanGather.size(); ++u) {
+   for(std::size_t u = 0; u < spanPack.size() && uCount < spanGather.size(); ++u) {
       // Allow predicate to optionally take index as first argument
       if constexpr(requires(PREDICATE p, std::size_t u, TYPE v) { p(u, v); }) { // Predicate accepts (index, value)
-         if(predicate_(u, spanPack[u])) { spanGather[uWritten++] = spanPack[u]; }
+         if(predicate_(u, spanPack[u])) { spanGather[uCount++] = spanPack[u]; }
       }
       else {                                                                   // Predicate accepts (value) only
-         if(predicate_(spanPack[u])) { spanGather[uWritten++] = spanPack[u]; }
+         if(predicate_(spanPack[u])) { spanGather[uCount++] = spanPack[u]; }
       }
    }
 
-   return uWritten;
+   return uCount;
 }
 
 /** --------------------------------------------------------------------------- pack_extract_if_iter
@@ -882,7 +937,7 @@ template <typename TYPE, typename PREDICATE, typename OUTPUT_ITERATOR>
 inline std::size_t table<VALUESIZE, PACKCOUNT>::pack_extract_if_iter( uint64_t uRowPack, unsigned uColumn, PREDICATE&& predicate_, OUTPUT_ITERATOR itDestination) const noexcept
 {                                                                                                  assert(uRowPack < get_row_pack_count()); assert(uColumn < get_column_count()); assert(sizeof(TYPE) == VALUESIZE && "TYPE size must match VALUESIZE");
    auto spanPack = pack_harvest_span<TYPE>(uRowPack, uColumn);
-   std::size_t uWritten = 0;
+   std::size_t uCount = 0; // Count of elements written to destination
 
    for(std::size_t uIndex = 0; uIndex < spanPack.size(); ++uIndex)
    {
@@ -891,19 +946,19 @@ inline std::size_t table<VALUESIZE, PACKCOUNT>::pack_extract_if_iter( uint64_t u
          if(predicate_(uIndex, spanPack[uIndex])) 
          {
             *itDestination++ = spanPack[uIndex];
-            ++uWritten;
+            ++uCount;
          }
       }
       else {                                                                   // Predicate accepts (value) only
          if(predicate_(spanPack[uIndex])) 
          {
             *itDestination++ = spanPack[uIndex];
-            ++uWritten;
+            ++uCount;
          }
       }
    }
 
-   return uWritten;
+   return uCount;
 }
 
 // ----------------------------------------------------------------------------

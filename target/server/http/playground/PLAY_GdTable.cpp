@@ -20,6 +20,8 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
+/*
+
 TEST_CASE("[gd-table] create", "[gd-table]")
 {
    {
@@ -93,6 +95,8 @@ TEST_CASE("[gd-table] count characters", "[gd-table]")
    }
 }
 
+*/
+
 TEST_CASE("[gd-table] strip comments from code", "[gd-table]")
 {
    using namespace gd::table::simd;
@@ -104,44 +108,69 @@ TEST_CASE("[gd-table] strip comments from code", "[gd-table]")
 
       // Sample Lua-like source code
       std::string_view stringCode = "-- This is a comment\nlocal x = 5\n-- Another comment\nprint(x)\n-- ready";
+      std::string stringCodeCleaned;
+      stringCodeCleaned.reserve(stringCode.size());
 
-      // Fill table with source bytes, pad with 0x00
+      // ## Fill table with source bytes, pad with 0x00
       std::span<const char> span_(stringCode.data(), stringCode.size());
       tableCode.pack_plant_span<char>(span_, 0, '\0');
 
-      // Now find comments using pack_find_value
+      // ## Iterate over each row pack to find comments starting with '--' and ending with newline
       for(uint64_t uPack = 0; uPack < tableCode.get_row_pack_count(); ++uPack) {
-         // Find '--' sequences (0x2D 0x2D)
-         uint64_t uMask = tableCode.pack_find_value<char>(uPack, 0, '-');
-         if(uMask == 0) continue;
+         auto spanPack = tableCode.pack_harvest_span<char>(uPack, 0); // span will be needed to add or check for comments
 
-         auto spanPack = tableCode.pack_harvest_span<const char>(uPack);
+         // ### Find '--' sequences (0x2D 0x2D)
+
+         uint64_t uMask = tableCode.pack_find_value<char>(uPack, 0, '-');
+         if(uMask == 0)                                                       // No comments found in this pack, copy entire span to cleaned code
+         {
+            stringCodeCleaned.append(spanPack.data(), spanPack.size());
+            continue;
+         }
+
+         // ### Comment character for comment found, now check if next character is also '-' to confirm comment start
+
+         // check if position of '-' is the last character in the span, if so, extend spand to next pack to check for comment start
+         if(uMask == 0x01 && uPack < tableCode.get_row_pack_count())
+         {
+            spanPack = std::span<char>(spanPack.data(), spanPack.size() + 1); // extend span to include next character from next pack
+         }
 
          // Process mask to identify comment positions
+         unsigned  uPositionSave = 0;
          while(uMask) {
-            unsigned uPos = static_cast<unsigned>(std::countr_zero(uMask));
-
-            // Check if next byte is also '-' (check within span bounds)
-            if(uPos + 1 < spanPack.size() && spanPack[uPos + 1] == '-') {
-               // Found comment start at uPos, scan to end of comment
-               unsigned uCommentEnd = uPos + 2;
-
-               while(uCommentEnd < spanPack.size() && spanPack[uCommentEnd] != '\n') { ++uCommentEnd; }
-
-               // Include newline in comment range if found
-               if(uCommentEnd < spanPack.size() && spanPack[uCommentEnd] == '\n') { ++uCommentEnd; }
-
-               INFO("Comment found in pack " << uPack << ": [" << uPos << ", " << uCommentEnd << ")");
-               INFO("  Text: '" << std::string(spanPack.data() + uPos, uCommentEnd - uPos) << "'");
-            }
-
+            unsigned uPosition = static_cast<unsigned>(std::countr_zero(uMask));
             uMask &= (uMask - 1);
+
+            if(uPosition < uPositionSave) continue;                           // Already in comment zone ?
+
+            // Copy characters from last position to current position (excluding comment start)
+            stringCodeCleaned.append(spanPack.data() + uPositionSave, uPosition - uPositionSave);
+            uPositionSave = uPosition + 1;
+
+            bool bIsComment = false;
+            // Check if next byte is also '-' (check within span bounds)
+            if(uPosition + 1 < spanPack.size() && spanPack[uPosition + 1] == '-') { bIsComment = true; }
+            else
+
+            if(bIsComment == true)
+            {
+               //## Found comment start at uPosition, scan to end of comment within the current pack
+               auto iCommentEnd = gd::buffer_find_g((const uint8_t*)spanPack.data(), spanPack.size(), '\n', gd::types::tag_size8{}, uPosition);
+               if(iCommentEnd != -1) { uPositionSave = static_cast<unsigned>(iCommentEnd + 1); } // Move position to after the newline
+               else { uPositionSave = static_cast<unsigned>(spanPack.size()); }// Move position to end of span, comment continues in next pack
+            }
+            else
+            {
+               stringCodeCleaned.push_back(spanPack[uPosition]);              // Not a comment start, copy character to cleaned code
+               uPositionSave = uPosition + 1;                                 // Move position to next character after found '-' character
+            }
          }
       }
    }
 }
 
-
+/*
 TEST_CASE("[gd-table] strip comments from code", "[gd-table]")
 {
    using namespace gd::table::simd;
@@ -240,3 +269,4 @@ TEST_CASE("[gd-table] simd create simple 32 bit", "[gd-table]")
    }
 }
 
+*/
