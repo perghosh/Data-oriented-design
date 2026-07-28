@@ -372,6 +372,8 @@ public:
    /// Simple add one row to table that is safe (if table have null values these are automatically set to null)
    uint64_t row_add_one() { row_add(1); return m_uRowCount - 1; }
 
+   void row_clear() { m_uRowCount = 0; }
+
    void row_reserve_add(uint64_t uCount);
    void row_reserve_add() { row_reserve_add(1); }
 
@@ -437,12 +439,16 @@ public:
 public:
    uint8_t* m_puData = nullptr;        ///< data to hold values in table
    uint8_t* m_puMetaData = nullptr;    ///< data block with row meta information
+
    unsigned m_uFlags;                  ///< state information for table (eTableFlagNull32, eTableFlagNull64, eTableFlagRowStatus, eTableFlagUniqueStrings )
+
+   unsigned m_uValueSize;              ///< size of each value in bytes, used to calculate row size
+   unsigned m_uPackCount;               ///< number of values for each block/array, in AoSoA (Array of Structure of Arrays) layout
+
    unsigned m_uRowSize;                ///< row size in bytes
    unsigned m_uRowMetaSize;            ///< meta data size in bytes for each row
    unsigned m_uRowGrowBy = eSpaceRowGrowBy;///< if table needs more space, this holds number of rows to grow by
-   unsigned m_uValueSize;              ///< size of each value in bytes, used to calculate row size
-   unsigned m_uPackCount;               ///< number of values for each block/array, in AoSoA (Array of Structure of Arrays) layout
+
    uint64_t m_uRowCount;               ///< row count (row count * row size = total amount of bytes allocated)
    uint64_t m_uRowReservedPackCount = eSpaceFirstAllocate; ///< reserved row block count, max number of row blocks that can be placed in allocated memory
    gd::argument::arguments m_argumentsProperty; ///< table properties
@@ -774,7 +780,6 @@ void table<VALUESIZE, PACKCOUNT>::pack_plant_span(std::span<const TYPE> span, un
       uint8_t* pDestination = rowpack_get(uRowPack, uColumn);
       std::memcpy(pDestination, arrayPack.data(), uBytesPerPack);              // Direct copy to table (compiler can optimize this)
 
-      uRowPack++;
       if(pSource >= pSourceEnd) break;  // Source exhausted
    }
 }
@@ -840,11 +845,10 @@ uint64_t table<VALUESIZE, PACKCOUNT>::pack_find_value(uint64_t uRowPack, unsigne
 template <std::size_t VALUESIZE, std::size_t PACKCOUNT>
 template <typename TYPE>
 inline std::span<TYPE> table<VALUESIZE, PACKCOUNT>::pack_harvest_span(uint64_t uRowPack, unsigned uColumn) noexcept
-{
-   assert(uRowPack < get_row_pack_count()); assert(uColumn < get_column_count()); assert(sizeof(TYPE) == VALUESIZE && "TYPE size must match VALUESIZE template parameter");
+{                                                                                                  assert(uRowPack < get_row_pack_count()); assert(uColumn < get_column_count());
    const uint8_t* puPackBase = rowpack_get(uRowPack, uColumn);
    TYPE* pSource_ = reinterpret_cast<TYPE*>(const_cast<uint8_t*>(puPackBase));
-   return std::span<TYPE>(pSource_, count_pack_s());
+   return std::span<TYPE>(pSource_, (VALUESIZE / sizeof(TYPE)) * count_pack_s());
 }
 
 
