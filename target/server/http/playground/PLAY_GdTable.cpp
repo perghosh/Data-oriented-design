@@ -260,116 +260,118 @@ TEST_CASE("[gd-table] iterate with position to remove comments, hybrid", "[gd-ta
 {
    using namespace gd::table::simd;
 
+   for(unsigned uIndex = 0; uIndex < 16; ++uIndex)
    {
       table_8_8 tableCode(100u, gd::table::tag_repare_to_add_column{});
       tableCode.column_add("uint64", 0, "code");
       tableCode.prepare();
 
-      for(unsigned uIndex = 0; uIndex < 16; ++uIndex)
-      {
-         tableCode.row_clear();
-         std::string stringCodeCore = GetCode(uIndex);
-         std::string_view stringCode = stringCodeCore;
-         std::string stringCodeCleaned;
-         stringCodeCleaned.reserve(stringCode.size());
-         bool bInComment = false;
+      std::string stringCodeCore = GetCode(uIndex);
+      std::string_view stringCode = stringCodeCore;
 
-         std::span<const char> span_(stringCode.data(), stringCode.size());
-         tableCode.pack_plant_span<char>(span_, 0, '\0');
+      tableCode.row_clear();
+      std::span<const char> span_(stringCode.data(), stringCode.size());
+      tableCode.pack_plant_span<char>(span_, 0, '\0');
 
-         uint64_t uTotalBytes = stringCode.size();
-         uint64_t uBytesProcessed = 0;
+      // ## HYBRID VERSION - fast happy path, simple sad path
+      std::string stringCodeCleaned;
+      stringCodeCleaned.reserve(stringCode.size());
 
-         for(uint64_t uPack = 0; uPack < tableCode.get_row_pack_count(); ++uPack)
+      bool bInComment = false;
+      uint64_t uTotalBytes = stringCode.size();
+      table_8_8::position positionEnd;
+      positionEnd.advance((unsigned)uTotalBytes);
+
+      constexpr unsigned uPackBytes = table_8_8::size_pack_s();                 // PACKCOUNT * VALUESIZE = 64 for table_8_8
+
+      // ## `pack_plant_span` only ever pads the LAST pack it writes - every pack before that is
+      //    guaranteed to be 100% real data. So the main loop below never needs to ask "am I near
+      //    the end", "how many bytes are valid here", or mask anything - that question is answered
+      //    once, up front, and the trailing partial pack is handled on its own after the loop.
+      uint64_t uFullPackCount = uTotalBytes / uPackBytes;
+      unsigned uTailByteCount = (unsigned)(uTotalBytes % uPackBytes);
+
+      // ## SAD PATH: deliberately simple, same shape as the plain/non-hybrid test - a single byte
+      //    at a time via `position`, which absorbs pack-boundary crossing for free. This only runs
+      //    on the (rare) packs where the fast check below found something worth disambiguating,
+      //    plus the trailing partial pack.
+      auto ScanSimple = [&](table_8_8::position position_, table_8_8::position positionRangeEnd)
          {
-            auto spanPack = tableCode.pack_harvest_span<char>(uPack, 0);
-            size_t uBytesInThisPack = std::min( spanPack.size(), static_cast<size_t>(uTotalBytes - uBytesProcessed) );
-
-            if(uBytesInThisPack == 0) break;
-
-            // ## ====================
-            // ## HAPPY PATH: Fast check for dash-free packs
-            // ## ====================
-            if(!bInComment)
+            while(position_ < positionRangeEnd)
             {
-               uint64_t uMaskDash = tableCode.pack_find_value<char>(uPack, 0, '-');
-               uint64_t uValidMask = 0xFFFFFFFFFFFFFFFFULL >> (64 - uBytesInThisPack);
-
-               if((uMaskDash & uValidMask) == 0)
-               {
-                  // No dashes in valid range → safe bulk copy!
-                  stringCodeCleaned.append(spanPack.data(), uBytesInThisPack);
-                  uBytesProcessed += uBytesInThisPack;
-                  continue;  // Skip slow path entirely
-               }
-            }
-
-            // ## ====================
-            // ## SAD PATH: Byte-by-byte (correct, handles all edge cases)
-            // ## ====================
-            for(size_t uByte = 0; uByte < uBytesInThisPack; ++uByte)
-            {
-               char cCurrent = spanPack[uByte];
+               uint8_t uByte = tableCode.get_uint8(position_);
 
                if(bInComment)
                {
-                  // Inside comment - skip until newline
-                  if(cCurrent == '\n')
-                  {
-                     bInComment = false;
-                  }
-                  // else: skip comment character
+                  position_.advance(1);
+                  if(uByte == '\n') { bInComment = false; }
+                  continue;
                }
-               else
+
+               if(uByte == '-')
                {
-                  // Not in comment - check for "--"
-                  bool bIsCommentStart = false;
-
-                  if(cCurrent == '-')
+                  table_8_8::position positionNext = position_;
+                  positionNext.advance(1);
+                  if(positionNext < positionEnd && tableCode.get_uint8(positionNext) == '-')
                   {
-                     // Check lookahead within this pack
-                     if(uByte + 1 < uBytesInThisPack)
-                     {
-                        bIsCommentStart = (spanPack[uByte + 1] == '-');
-                     }
-                     // Check lookahead across pack boundary
-                     else if(uBytesProcessed + uByte + 1 < uTotalBytes &&
-                        uPack + 1 < tableCode.get_row_pack_count())
-                     {
-                        auto spanNext = tableCode.pack_harvest_span<char>(uPack + 1, 0);
-                        if(spanNext.size() > 0 && spanNext[0] == '-')
-                        {
-                           bIsCommentStart = true;
-                        }
-                     }
-
-                     if(bIsCommentStart)
-                     {
-                        // Start of comment - skip both dashes
-                        bInComment = true;
-                        ++uByte;  // Skip next character (second dash)
-                        continue;
-                     }
+                     bInComment = true;
+                     position_ = positionNext;
+                     position_.advance(1);                                        // skip the "--"
+                     continue;
                   }
-
-                  // Not a comment - copy character
-                  stringCodeCleaned.push_back(cCurrent);
                }
-            }
 
-            uBytesProcessed += uBytesInThisPack;
+               stringCodeCleaned.push_back((char)uByte);
+               position_.advance(1);
+            }
+         };
+
+      // ## FAST PATH: one mask over the whole (guaranteed-full) pack decides everything.
+      for(uint64_t uPack = 0; uPack < uFullPackCount; ++uPack)
+      {
+         if(bInComment)
+         {
+            uint64_t uMaskNewline = tableCode.pack_find_value<char>(uPack, 0, '\n');
+            if(uMaskNewline == 0) { continue; }                                // whole pack still inside comment, nothing to copy
+         }
+         else
+         {
+            uint64_t uMaskDash = tableCode.pack_find_value<char>(uPack, 0, '-');
+            if(uMaskDash == 0)                                                 // no '-' anywhere in this pack
+            {
+               auto spanPack = tableCode.pack_harvest_span<char>(uPack, 0);
+               stringCodeCleaned.append(spanPack.data(), spanPack.size());     // bulk copy, no per-byte scanning at all
+               continue;
+            }
          }
 
-         // Verification
-         std::cout << "-------------------------------------------------\n";
-         std::cout << "\n--- Test Case " << uIndex << " (HYBRID) ---\n";
-         std::cout << "Original Length: " << stringCode.size() << " bytes\n";
-         std::cout << "Cleaned Length: " << stringCodeCleaned.size() << " bytes\n";
+         // something needs disambiguating in this pack (comment ends here, or a real '-' shows up)
+         table_8_8::position positionPackStart;
+         positionPackStart.m_uRow = uPack * table_8_8::count_pack_s();
+         table_8_8::position positionPackEnd = positionPackStart;
+         positionPackEnd.advance(uPackBytes);
 
-         unsigned uRemainingDashes = std::count(stringCodeCleaned.begin(), stringCodeCleaned.end(), '-');
-         std::cout << "Remaining '--' sequences (approx): " << uRemainingDashes << "\n";
-         std::cout << "Cleaned Code:\n[" << stringCodeCleaned << "]\n";
+         ScanSimple(positionPackStart, positionPackEnd);
       }
+
+      // ## TAIL: the one possibly-partial pack, if any. Rare (at most once per string) and small
+      //    (< uPackBytes), so it always goes through the simple scan - no fast-path check needed here.
+      if(uTailByteCount > 0)
+      {
+         table_8_8::position positionTailStart;
+         positionTailStart.m_uRow = uFullPackCount * table_8_8::count_pack_s();
+         table_8_8::position positionTailEnd = positionTailStart;
+         positionTailEnd.advance(uTailByteCount);
+
+         ScanSimple(positionTailStart, positionTailEnd);
+      }
+
+      // ## Verification
+      std::cout << "-------------------------------------------------\n";
+      std::cout << "\n--- Test Case " << uIndex << " (HYBRID) ---\n";
+      std::cout << "Original Length: " << stringCode.size() << " bytes\n";
+      std::cout << "Cleaned Length: " << stringCodeCleaned.size() << " bytes\n";
+      std::cout << "Cleaned Code:\n[" << stringCodeCleaned << "]\n";
    }
 }
 /*
