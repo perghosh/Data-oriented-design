@@ -381,7 +381,8 @@ public:
    /// Number of rows memory is allocated for
    uint64_t get_reserved_row_count() const noexcept { return m_uReservedRowCount; }
    /// get allocated size in bytes for table
-   uint64_t get_reserved_size() const noexcept { return m_uReservedRowCount; }
+   uint64_t get_reserved_size() const noexcept { return m_uReservedRowCount * m_uRowSize + size_row_meta() * m_uReservedRowCount; }
+   /// Get number of rows with values
    uint64_t get_row_count( uint32_t uFlags ) const noexcept;
    /// Last valid row index where to insert cell values
    uint64_t get_row_back() const noexcept { assert( m_puData != nullptr ); return m_uRowCount - 1; }

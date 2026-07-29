@@ -54,6 +54,305 @@ inline void deallocate( uint8_t* pData ) {
 
 } // namespace internal
 
+#if defined( __clang__ )
+   #pragma clang diagnostic ignored "-Wdeprecated-enum-enum-conversion"
+#elif defined( __GNUC__ )
+   #pragma GCC diagnostic ignored "-Wdeprecated-enum-enum-conversion"
+#elif defined( _MSC_VER )
+   #pragma warning( disable: 4996 26812 )
+#endif
+
+
+
+/// @brief constructor adding columns with type, size and name to table
+table_base::table_base(unsigned uFlags, const std::vector< std::tuple< std::string_view, unsigned, std::string_view > >& vectorValue) :
+   m_uFlags(uFlags), m_uRowSize(0), m_uRowGrowBy(0), m_uRowCount(0), m_uRowReservedPackCount(eSpaceFirstAllocate)
+{
+   m_pcolumns = new_columns_s();
+   for(const auto& it : vectorValue)
+   {
+      column_add(std::get<0>(it), std::get<1>(it), std::get<2>(it));
+   }
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief construct table from one single variant view value
+@code
+// create table with one column storing string value, the buffer length is calculated based on string length
+gd::table_base::table_base_column_buffer t1( "0123456789", gd::table::tag_prepare{} );
+assert( t1.cell_get_variant_view( 0, 0 ).as_string() == "0123456789" );
+
+// create table from one int64_t value
+gd::table_base::table_base_column_buffer t2( (int64_t)123456789123456789, gd::table::tag_prepare{} );
+assert( t2.cell_get_variant_view( 0, 0 ) == gd::variant_view( ( int64_t )123456789123456789 ) );
+@endcode
+ * @param variantviewValue variant view value to generate table from
+*/
+table_base::table_base( gd::variant_view variantviewValue, tag_prepare, unsigned uValueSize, unsigned uPackCount ) :
+   m_uFlags(0), m_uRowSize(0), m_uRowGrowBy(0), m_uRowCount(0), m_uRowReservedPackCount( 1 )
+{
+   m_pcolumns = new_columns_s();
+   auto type_ = variantviewValue.type();
+   auto size_ = variantviewValue.is_primitive() ? 0 : variantviewValue.length();
+
+   column_add( type_, size_ );
+
+   prepare();
+   row_add();
+
+   cell_set( 0, 0, variantviewValue );
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Construct table and prepare for adding rows, columns are generated based on type name and column name
+ * @param uFlags type of state table works under
+ * @param vectorColumn vector with typle that has column type as string and column name
+*/
+table_base::table_base( const std::vector< std::string_view >& vectorColumn, tag_prepare, unsigned uValueSize, unsigned uPackCount ) :
+    m_uFlags( 0 ), m_uRowSize( 0 ), m_uRowGrowBy( 0 ), m_uRowCount( 0 ), m_uRowReservedPackCount( eSpaceFirstAllocate )
+{
+   m_pcolumns = new_columns_s();
+
+   for( const auto& it : vectorColumn )
+   {
+      column_add( it, 0 );
+   }
+
+   prepare();
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Construct table and prepare for adding rows, columns are generated based on type name and column name
+ * @param uFlags type of state table works under
+ * @param vectorColumn vector with typle that has column type as string and column name
+*/
+table_base::table_base( unsigned uFlags, const std::vector< std::tuple<std::string_view, std::string_view>>& vectorColumn, tag_prepare, unsigned uValueSize, unsigned uPackCount ) :
+    m_uFlags( uFlags ), m_uRowSize( 0 ), m_uRowGrowBy( 0 ), m_uRowCount( 0 ), m_uRowReservedPackCount( eSpaceFirstAllocate )
+{
+   m_pcolumns = new_columns_s();
+
+   for( const auto& it : vectorColumn )
+   {
+      column_add( std::get<0>( it ), std::get<1>( it ) );
+   }
+
+   prepare();
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Construct table and prepare for adding rows, columns are generated based on type name and column name
+ * @param uFlags type of state table works under
+ * @param vectorColumn vector with typle that has column type as string, value size for types that need it and column name
+ * @param uValueSize value size for types that need it
+ * @param uPackCount pack count for types that need it
+*/
+table_base::table_base( unsigned uFlags, const std::vector<std::tuple<std::string_view, unsigned, std::string_view>>& vectorColumn, tag_prepare, unsigned uValueSize, unsigned uPackCount ) :
+   m_uFlags( uFlags ), m_uRowSize( 0 ), m_uRowGrowBy( 0 ), m_uRowCount( 0 ), m_uRowReservedPackCount( eSpaceFirstAllocate )
+{
+   m_pcolumns = new_columns_s();
+
+   for( const auto& it : vectorColumn )
+   {
+      column_add( std::get<0>( it ), std::get<1>( it ), std::get<2>( it ) );
+   }
+
+   prepare();
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief construct table, prepare buffer and insert values to one single row
+ * Construct table if you do not heed details about what happens, maybe just want to pass single or a couple of values in one row
+@code
+// create table with one column storing string value with max 10 characters and add value
+gd::table_base::table_base_column_buffer t1( { { "string", 10, "FName", "0123456789" } }, gd::table::tag_prepare{} );
+assert( t1.cell_get_variant_view( 0, "FName" ).as_string() == "0123456789" );  // compare value at R0C0 (C0 = "FName")
+
+// create table with one column storing integer 64 bit value, add some values and compare
+gd::table_base::table_base_column_buffer t2( { { "int64", 0, "FInteger", (int64_t)123456789123456789 } }, gd::table::tag_prepare{} );
+assert( t2.cell_get_variant_view( 0, "FInteger" ) == gd::variant_view((int64_t)123456789123456789) );
+t2.row_add( { {1} }, gd::table::tag_convert{} );
+t2.row_add( { {2} }, gd::table::tag_convert{} );
+assert( t2.cell_get_variant_view( 2, "FInteger" ) == gd::variant_view((int64_t)2) );
+@endcode
+ * 
+ * @param vectorValue tuple with four values
+ * @param vectorValue.[0] type name for column
+ * @param vectorValue.[1] buffer size for derived types (primitive types do not need size because table know the size)
+ * @param vectorValue.[2] column name
+ * @param vectorValue.[3] value inserted to table at first row
+ * @param uValueSize value size for types that need it
+ * @param uPackCount pack count for types that need it
+*/
+table_base::table_base( const std::vector<std::tuple<std::string_view, unsigned, std::string_view, gd::variant_view>>& vectorValue, tag_prepare, unsigned uValueSize, unsigned uPackCount ) :
+   m_uFlags(0), m_uRowSize(0), m_uRowGrowBy(0), m_uRowCount(0), m_uRowReservedPackCount( 1 )
+{
+   m_pcolumns = new_columns_s();
+
+   for( const auto& it : vectorValue )
+   {
+      column_add( std::get<0>( it ), std::get<1>( it ), std::get<2>( it ) );
+   }
+
+   prepare();
+   row_add();
+
+   for( unsigned u = 0, uMax = (unsigned)vectorValue.size(); u < uMax; u++ )
+   {
+      cell_set( 0, u, std::get<3>(vectorValue[u] ), tag_convert{});
+   }
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief construct table from another table (creates a copy)
+ * @note Do not call this method externally, only for internal use
+ * @param o reference to table to construct from
+*/
+void table_base::common_construct( const table_base& o ) {
+   m_uFlags             = o.m_uFlags; 
+   m_uValueSize         = o.m_uValueSize;
+   m_uPackCount         = o.m_uPackCount;
+   m_uRowSize           = o.m_uRowSize;  
+   m_uRowMetaSize       = o.m_uRowMetaSize;
+   m_uRowCount          = o.m_uRowCount; 
+   m_uRowReservedPackCount = o.m_uRowReservedPackCount;
+
+   delete m_puData;
+
+   m_pcolumns = o.m_pcolumns;
+
+   if( o.m_puData != nullptr )
+   {
+      uint64_t uTotalSize = size_reserved_total();
+      m_puData = new uint8_t[uTotalSize];
+      memcpy( m_puData, o.m_puData, uTotalSize );
+
+      // ## check if copied table has meta data
+      if( o.m_puMetaData != nullptr ) { m_puMetaData = m_puData + (m_uRowReservedPackCount * m_uRowSize); assert( m_uFlags != 0 ); }
+      else                            { m_puMetaData = nullptr; }
+   }
+   else
+   {
+      m_puData = nullptr;
+      m_puMetaData = nullptr;
+   }
+   m_references = o.m_references;
+   m_argumentsProperty = o.m_argumentsProperty;
+#ifndef NDEBUG
+   //m_uAllocatedBlockSize_d = size_reserved_total();
+#endif // NDEBUG
+
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief construct table from another table (creates a copy)
+ * @note Do not call this method externally, only for internal use
+ * @param o reference to table to construct from
+*/
+void table_base::common_construct( const table_base& o, tag_columns )
+{
+   m_uFlags             = o.m_uFlags; 
+   m_uValueSize         = o.m_uValueSize;
+   m_uPackCount         = o.m_uPackCount;
+   m_uRowSize           = o.m_uRowSize;
+   m_uRowMetaSize       = o.m_uRowMetaSize;
+   m_uRowCount          = 0; 
+   m_uRowReservedPackCount = 0;
+
+   delete m_puData;
+   m_puData = nullptr;
+   m_puMetaData = nullptr;
+
+   m_pcolumns = o.m_pcolumns;
+   m_pcolumns->add_reference();
+
+   m_argumentsProperty = o.m_argumentsProperty;
+}
+
+void table_base::common_construct( const table_base& o, tag_body )
+{
+   m_uFlags             = o.m_uFlags; 
+   m_uValueSize         = o.m_uValueSize;
+   m_uPackCount         = o.m_uPackCount;
+   m_uRowSize           = o.m_uRowSize;  
+   m_uRowMetaSize       = o.m_uRowMetaSize;
+   m_uRowCount          = o.m_uRowCount; 
+   m_uRowReservedPackCount = o.m_uRowReservedPackCount;
+
+   delete m_puData;
+
+   if( o.m_puData != nullptr )
+   {
+      uint64_t uTotalSize = size_reserved_total();
+      m_puData = new uint8_t[uTotalSize];
+      memcpy( m_puData, o.m_puData, uTotalSize );
+
+      // ## check if copied table has meta data
+      if( o.m_puMetaData != nullptr ) { m_puMetaData = m_puData + (m_uRowReservedPackCount * m_uRowSize); assert( m_uFlags != 0 ); }
+      else                            { m_puMetaData = nullptr; }
+   }
+   else
+   {
+      m_puData = nullptr;
+      m_puMetaData = nullptr;
+   }
+
+   m_references = o.m_references;
+   m_argumentsProperty = o.m_argumentsProperty;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief construct table from another table (creates a copy)
+ * @note Do not call this method externally, only for internal use
+ * @param o reference to table to construct from
+*/
+void table_base::common_construct( detail::columns* pcolumns )
+{
+   m_uFlags             = 0;
+   m_uValueSize         = 0;
+   m_uPackCount         = 0;
+   m_uRowSize           = 0;  
+   m_uRowMetaSize       = 0;
+   m_uRowCount          = 0; 
+   m_uRowReservedPackCount = 0;
+
+   delete m_puData;
+   m_puData = nullptr;
+   m_puMetaData = nullptr;
+
+   m_pcolumns = pcolumns;
+   m_pcolumns->add_reference();
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief construct table with columns and prepare for adding rows
+ * @param pcolumns pointer to columns object, adds reference to columns
+ * @param uRowCount number of rows to reserve space for
+ * @param uFlags flags for table state, see eTableFlagNull32, eTableFlagNull64, eTableFlagRowStatus
+ * @param uGrowBy how many rows to grow by if table needs more space
+*/
+table_base::table_base(detail::columns* pcolumns, unsigned uRowCount, unsigned uFlags, unsigned uGrowBy)
+{                                                                                                  assert( pcolumns );
+   common_construct( pcolumns );
+
+   m_uFlags             = uFlags;
+   m_uValueSize         = 0;
+   m_uPackCount         = 0;
+   m_uRowSize           = 0;
+   m_uRowGrowBy         = uGrowBy;
+   m_uRowCount          = 0;
+   m_uRowReservedPackCount = eSpaceFirstAllocate;
+
+   prepare();
+
+   if( uRowCount > 0 )
+   {
+      row_reserve_add( uRowCount );
+   }
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief add column to table

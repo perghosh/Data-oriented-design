@@ -197,6 +197,28 @@ public:
       const table_base* m_ptable;
    };
 
+public:
+// @API [tag: stl, aliases] [description: simplify for templates using table data]
+
+   using column_value_type = detail::column;
+   using column_const_value_type = const detail::column;
+   using column_iterator = std::vector<detail::column>::iterator;
+   using column_const_iterator = std::vector<detail::column>::const_iterator;
+   typedef std::random_access_iterator_tag iterator_category;
+
+   using row_value_type = std::vector<gd::table::cell<table_base> >;  ///< used to simplify stl and containers working with table rows
+   using row_const_value_type = const std::vector<gd::table::cell<table_base> >;///< used to simplify stl and containers working with table rows
+   using row_iterator = iterator_row;
+   using row_const_iterator = const_iterator_row;
+   using row_difference_type = std::ptrdiff_t;
+
+   using value_type = row_value_type;
+   using const_value_type = row_const_value_type;
+   using iterator = iterator_row;
+   using const_iterator = const_iterator_row;
+   using difference_type = row_difference_type;
+
+
 
 public:
 
@@ -210,7 +232,29 @@ public:
    table_base(tag_null) : m_uFlags(eTableFlagNull64), m_uRowSize(0), m_uRowCount(0), m_uRowReservedPackCount(0) { assert(m_uFlags < eTableFlagMAX); }
    table_base(tag_full_meta) : m_uFlags(eTableFlagNull64 | eTableFlagRowStatus), m_uRowSize(0), m_uRowCount(0), m_uRowReservedPackCount(0) { assert(m_uFlags < eTableFlagMAX); }
 
+   table_base(unsigned uFlags, const std::vector< std::tuple< std::string_view, unsigned, std::string_view > >& vectorValue);
+
+   table_base(gd::variant_view variantviewValue, tag_prepare, unsigned uValueSize, unsigned uPackCount);
+   table_base(const std::vector< std::string_view >& vectorValue, tag_prepare, unsigned uValueSize, unsigned uPackCount);
+   table_base(unsigned uFlags, const std::vector< std::tuple< std::string_view, std::string_view > >& vectorValue, tag_prepare, unsigned uValueSize, unsigned uPackCount);
+   table_base(unsigned uFlags, const std::vector< std::tuple< std::string_view, unsigned, std::string_view > >& vectorValue, tag_prepare, unsigned uValueSize, unsigned uPackCount);
+   table_base(const std::vector< std::tuple< std::string_view, unsigned, std::string_view, gd::variant_view > >& vectorValue, tag_prepare, unsigned uValueSize, unsigned uPackCount);
+
+   table_base(const table_base& o) : m_puData(nullptr) { common_construct(o); }
+   table_base(table_base&& o) noexcept : m_puData(nullptr) { common_construct(std::move(o)); }
+   table_base(detail::columns* pcolumns, unsigned uRowCount, unsigned uFlags, unsigned uGrowBy);
+
+
    ~table_base() { clear(); }
+
+private:
+   // common copy
+   void common_construct(const table_base& o);
+   void common_construct(const table_base& o, tag_columns);
+   void common_construct(const table_base& o, tag_body);
+   void common_construct(table_base&& o) noexcept;
+   void common_construct(detail::columns* pcolumns);
+
 
    // ## @API [tag: operator] [description: table operators]
 public:
@@ -259,6 +303,8 @@ public:
    void set_flags(tag_full_meta) noexcept { m_uFlags = eTableFlagRowStatus | eTableFlagNull64; }
    void set_flags(uint32_t uSet, uint32_t uClear) noexcept { m_uFlags |= uSet; m_uFlags &= ~uClear; }
    unsigned get_column_count() const noexcept { return (unsigned)m_pcolumns->size(); }
+   /// get allocated size in bytes for table
+   uint64_t get_reserved_size() const noexcept { return (m_uRowReservedPackCount * m_uRowSize) + (m_uRowSize * size_row_meta()); }
    /// Get number of rows with values
    uint64_t get_row_count() const noexcept { return m_uRowCount; }
 
@@ -344,6 +390,8 @@ public:
 
 
    std::pair<bool, std::string> prepare( unsigned uValueSize, unsigned uPackCount );
+   std::pair<bool, std::string> prepare() { return prepare(m_uValueSize, m_uPackCount); }
+
 
    /// return pointer to section holding null column information
    uint8_t* row_get_null(uint64_t uRow) const noexcept;
@@ -369,6 +417,7 @@ public:
    void row_get_variant_view(uint64_t uRow, const std::vector<unsigned>& vectorIndex, std::vector<gd::variant_view>& vectorValue) const { row_get_variant_view(uRow, vectorIndex.data(), (unsigned)vectorIndex.size(), vectorValue); }
 
    void row_add(uint64_t uCount);
+   void row_add() { row_add(1); }
    /// Simple add one row to table that is safe (if table have null values these are automatically set to null)
    uint64_t row_add_one() { row_add(1); return m_uRowCount - 1; }
 
@@ -612,12 +661,21 @@ public:
 public:
    table(): table_base() { common_construct_set_simd(); }
    table(uint64_t uRowCount): table_base(uRowCount) { common_construct_set_simd(); }
-   table(tag_repare_to_add_column) : table_base(tag_repare_to_add_column{}) { common_construct_set_simd(); }
+   table(tag_repare_to_add_column) : table_base(eSpaceFirstAllocate, tag_repare_to_add_column{}) { common_construct_set_simd(); }
    table(uint64_t uRowCount, tag_repare_to_add_column) : table_base(uRowCount, tag_repare_to_add_column{}) { common_construct_set_simd(); }
    table(uint64_t uRowCount, unsigned uFlags): table_base(uRowCount, uFlags) { common_construct_set_simd(); }
    table(uint64_t uRowCount, unsigned uFlags, unsigned uGrowBy): table_base(uRowCount, uFlags, uGrowBy) { common_construct_set_simd(); }
    table(tag_null): table_base(tag_null{}) { common_construct_set_simd(); }
    table(tag_full_meta): table_base(tag_full_meta{}) { common_construct_set_simd(); }
+
+   table(unsigned uFlags, const std::vector< std::tuple< std::string_view, unsigned, std::string_view > >& vectorValue) : table_base(uFlags, vectorValue) { common_construct_set_simd(); }
+
+   table(gd::variant_view variantviewValue, tag_prepare): table_base(variantviewValue, tag_prepare{}, VALUESIZE, PACKCOUNT) {}
+   table(const std::vector< std::string_view >& vectorValue, tag_prepare): table_base(vectorValue, tag_prepare{}, VALUESIZE, PACKCOUNT) {}
+   table(unsigned uFlags, const std::vector< std::tuple< std::string_view, std::string_view > >& vectorValue, tag_prepare): table_base(uFlags, vectorValue, tag_prepare{}, VALUESIZE, PACKCOUNT) {}
+   table(unsigned uFlags, const std::vector< std::tuple< std::string_view, unsigned, std::string_view > >& vectorValue, tag_prepare): table_base(uFlags, vectorValue, tag_prepare{}, VALUESIZE, PACKCOUNT) {}
+   table(const std::vector< std::tuple< std::string_view, unsigned, std::string_view, gd::variant_view > >& vectorValue, tag_prepare): table_base(vectorValue, tag_prepare{}, VALUESIZE, PACKCOUNT) {}
+
 
    void common_construct_set_simd() { m_uValueSize = VALUESIZE; m_uPackCount = PACKCOUNT; }
 

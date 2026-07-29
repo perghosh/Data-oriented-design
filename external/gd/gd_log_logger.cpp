@@ -11,10 +11,12 @@
    #pragma clang diagnostic ignored "-Wdeprecated-enum-enum-conversion"
    #pragma clang diagnostic ignored "-Wunused-value"
    #pragma clang diagnostic ignored "-Wdeprecated-enum-compare"
+   #pragma clang diagnostic ignored "-Wunused-variable"
 #elif defined( __GNUC__ )
    #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
    #pragma GCC diagnostic ignored "-Wdeprecated-enum-enum-conversion"
    #pragma GCC diagnostic ignored "-Wunused-value"
+   #pragma GCC diagnostic ignored "-Wunused-variable"
 #elif defined( _MSC_VER )
    #pragma warning( disable: 4996 26812 )
 #endif

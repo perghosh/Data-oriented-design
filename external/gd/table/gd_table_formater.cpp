@@ -2,6 +2,14 @@
 
 #include "gd_table_formater.h"
 
+#if defined( __clang__ )
+   #pragma clang diagnostic ignored "-Wunused-variable"
+#elif defined( __GNUC__ )
+   #pragma GCC diagnostic ignored "-Wunused-variable"
+#elif defined( _MSC_VER )
+#endif
+
+
 _GD_TABLE_BEGIN
 
 namespace format
