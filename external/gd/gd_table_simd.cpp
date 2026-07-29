@@ -728,6 +728,384 @@ void table_base::row_add(uint64_t uCount)
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief Add row and set values in row, list cant be larger than amount of values in row
+~~~(.cpp)
+gd::table::table_column_buffer t( 1, 0, 1 ); // one row is allocated, not using row state, grow table with one reserved row if needed
+t.column_add( { { "int32", 0, "number1"}, { "int32", 0, "number2"}, { "int32", 0, "number3"} }, gd::table::tag_type_name{} );
+t.prepare();
+t.row_add( { 0,0,0 } );
+t.row_add( { 1,1,1 } );
+t.row_add( { 2,2,2 } );
+~~~
+ * @param listValue list of values inserted in added row
+*/
+void table_base::row_add( const std::initializer_list<gd::variant_view>& listValue )
+{                                                                                                  assert( listValue.size() <= get_column_count() );              
+   uint64_t uRow = m_uRowCount;
+
+   row_add();
+   
+   row_set( uRow, listValue );
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Add row and set values in row, vector cant be larger than amount of values in row
+~~~(.cpp)
+~~~
+ * @param listValue list of values inserted in added row
+*/
+void table_base::row_add( const std::initializer_list<gd::variant_view>& vectorValue, tag_convert )
+{                                                                                                  assert( vectorValue.size() <= get_column_count() );              
+   uint64_t uRow = m_uRowCount;
+
+   row_add();
+   
+   row_set( uRow, vectorValue, tag_convert{} );
+}
+
+void table_base::row_add( const std::vector<gd::variant_view>& vectorValue )
+{                                                                                                  assert( vectorValue.size() <= get_column_count() );              
+   uint64_t uRow = m_uRowCount;
+
+   row_add();
+   
+   row_set( uRow, vectorValue );
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Set row values
+ * @param uRow row where values are set
+ * @param listValue list of values inserted to specified row
+*/
+void table_base::row_set( uint64_t uRow, const std::initializer_list<gd::variant_view>& listValue )
+{                                                                                                  assert( uRow < m_uRowCount ); assert( listValue.size() <= get_column_count() );   
+   unsigned uIndex = 0;
+   for( auto it = std::begin( listValue ), itEnd = std::end( listValue ); it != itEnd; ++it )
+   {
+      cell_set( uRow, uIndex, *it );
+      uIndex++;
+   }
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Set row values
+ * @param uRow row where values are set
+ * @param uFirstColumn row where values are set
+ * @param listValue list of values inserted to specified row
+*/
+void table_base::row_set( uint64_t uRow, unsigned uFirstColumn, const std::initializer_list<gd::variant_view>& listValue )
+{                                                                                                  assert( uRow < m_uRowCount ); assert( (listValue.size() + uFirstColumn) <= get_column_count() );   
+   unsigned uIndex = uFirstColumn;
+   if( is_null() == true ) row_set_null( uRow );
+   for( auto it = std::begin( listValue ), itEnd = std::end( listValue ); it != itEnd; ++it )
+   {
+      cell_set( uRow, uIndex, *it );
+      uIndex++;
+   }
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Set row values and if column values do not match type it tries to convert to proper type
+ * @param uRow row where values are set
+ * @param listValue list of values inserted to specified row
+*/
+void table_base::row_set( uint64_t uRow, const std::initializer_list<gd::variant_view>& listValue, tag_convert )
+{                                                                                                  assert( uRow < m_uRowCount ); assert( listValue.size() <= get_column_count() );   
+   unsigned uIndex = 0;
+   if( is_null() == true ) row_set_null( uRow );
+   for( auto it = std::begin( listValue ), itEnd = std::end( listValue ); it != itEnd; ++it )
+   {
+      cell_set( uRow, uIndex, *it, tag_convert{} );
+      uIndex++;
+   }
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Set row values and if column values do not match type it tries to convert to proper type
+ * @param uRow row where values are set
+ * @param uFirstColumn row where values are set
+ * @param listValue list of values inserted to specified row
+*/
+void table_base::row_set( uint64_t uRow, unsigned uFirstColumn, const std::initializer_list<gd::variant_view>& listValue, tag_convert )
+{                                                                                                  assert( uRow < m_uRowCount ); assert( (listValue.size() + uFirstColumn) <= get_column_count() );   
+   unsigned uIndex = uFirstColumn;
+   for( auto it = std::begin( listValue ), itEnd = std::end( listValue ); it != itEnd; ++it )
+   {
+      cell_set( uRow, uIndex, *it, tag_convert{});
+      uIndex++;
+   }
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Set row values
+ * @param uRow row where values are set
+ * @param vectorValue vector of values inserted to specified row
+*/
+void table_base::row_set( uint64_t uRow, const std::vector<gd::variant_view>& vectorValue )
+{                                                                                                  assert( uRow < m_uRowCount ); assert( vectorValue.size() <= get_column_count() );   
+   unsigned uIndex = 0;
+   for( auto it = std::begin( vectorValue ), itEnd = std::end( vectorValue ); it != itEnd; ++it )
+   {
+      cell_set( uRow, uIndex, *it );
+      uIndex++;
+   }
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Set row values, if value type differ it tries to convert to type in column
+ * @param uRow row where values are set
+ * @param vectorValue vector of values inserted to specified row
+*/
+void table_base::row_set( uint64_t uRow, const std::vector<gd::variant_view>& vectorValue, tag_convert )
+{                                                                                                  assert( uRow < m_uRowCount ); assert( vectorValue.size() <= get_column_count() );   
+   unsigned uIndex = 0;
+   for( auto it = std::begin( vectorValue ), itEnd = std::end( vectorValue ); it != itEnd; ++it )
+   {
+      cell_set( uRow, uIndex, *it, tag_convert{});
+      uIndex++;
+   }
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Set row values and specify column index where value is placed
+ * @param uRow index to row where values are set
+ * @param vectorValue vector with values
+ * @param vectorColumn index to column where value is placed
+*/
+void table_base::row_set(uint64_t uRow, const std::vector<gd::variant_view>& vectorValue, const std::vector<unsigned>& vectorColumn)
+{                                                                                                  assert(uRow < m_uRowCount); assert(vectorValue.size() == vectorColumn.size());
+   for(unsigned u = 0, uMax = (unsigned)vectorValue.size(); u < uMax; u++)
+   {
+      unsigned uColumn = vectorColumn[u];                                                          assert(uColumn < get_column_count());
+      cell_set(uRow, uColumn, vectorValue[u]);
+   }
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Set row values and specify column index where value is placed, if value type differ it tries to convert to type in column
+ * @param uRow index to row where values are set
+ * @param vectorValue vector with values
+ * @param vectorColumn index to column where value is placed
+*/
+void table_base::row_set(uint64_t uRow, const std::vector<gd::variant_view>& vectorValue, const std::vector<unsigned>& vectorColumn, tag_convert)
+{                                                                                                  assert(uRow < m_uRowCount); assert(vectorValue.size() == vectorColumn.size());
+   for(unsigned u = 0, uMax = (unsigned)vectorValue.size(); u < uMax; u++)
+   {
+      unsigned uColumn = vectorColumn[u];                                                          assert(uColumn < get_column_count());
+      cell_set(uRow, uColumn, vectorValue[u], tag_convert{});
+   }
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief set row values
+ * @param vectorValue vector with pair values set to row, first is column index and second is value
+*/
+void table_base::row_set(uint64_t uRow, const std::vector< std::pair<unsigned, gd::variant_view> >& vectorValue)
+{                                                                                                  assert(uRow < m_uRowCount);
+   for(auto it = std::begin(vectorValue), itEnd = std::end(vectorValue); it != itEnd; it++)
+   {
+      assert(it->first < get_column_count());
+      cell_set(uRow, it->first, it->second);
+   }
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief set row values, convert to right type if value type differ from column
+ * @param vectorValue vector with pair values set to row, first is column name and second is value
+ */
+void table_base::row_set( uint64_t uRow, const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorValue, tag_convert )
+{                                                                                                  assert( uRow < m_uRowCount );
+   for( auto it = std::begin( vectorValue ), itEnd = std::end( vectorValue ); it != itEnd; it++ )
+   {
+      int iIndex = column_find_index( it->first );
+      if( iIndex != -1 ) cell_set( uRow, ( unsigned )iIndex, it->second, tag_convert{} );
+   }
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Set data taken from another row in table
+ * @param uRow row where data is set to
+ * @param uRowToCopy row where data is taken from
+*/
+void table_base::row_set(uint64_t uRow, uint64_t uRowToCopy)
+{                                                                                                  assert( uRow < m_uRowCount ); assert( uRowToCopy <= get_column_count() );   
+   // ## Copy row data
+   const uint8_t* puRowToCopy = row_get( uRowToCopy );
+   uint8_t* puRow = row_get( uRow );
+   memcpy( puRow, puRowToCopy, m_uRowSize );                                   // copy row data
+
+   // ## Copy row meta datadata
+   puRowToCopy = row_get_meta( uRowToCopy );
+   puRow = row_get_meta( uRow );
+   memcpy( puRow, puRowToCopy, m_uRowMetaSize );                               // copy meta data about row
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief set cell values from string where string is divided based on character sent
+ * @param uRow Row number where cell values are set
+ * @param uFirst column where to start to insert values
+ * @param stringRowValue string with values
+ * @param chSplit character that separates values
+ */
+void table_base::row_set(uint64_t uRow, unsigned uFirst, const std::string_view& stringRowValue, char chSplit, tag_parse)
+{
+   std::vector<std::size_t> vectorOffset;       // positions for each column in string
+   std::vector<std::string_view> vectorValue;   // cell values
+
+   gd::utf8::offset( stringRowValue, chSplit, vectorOffset );                  // offset column positions, they are divided with 'chSplit'
+   if( stringRowValue.back() != chSplit ) vectorOffset.push_back(stringRowValue.length());// add last position to add last section without code after loop
+
+   gd::utf8::split( stringRowValue, vectorOffset, vectorValue );
+
+   unsigned uCoulmnCount = (unsigned)vectorValue.size() + uFirst;
+   if( uCoulmnCount > get_column_count() ) { uCoulmnCount = get_column_count(); } // not more than number of columns in table?
+   for( unsigned uColumn = uFirst, uIndex = 0; uColumn < uCoulmnCount; uColumn++, uIndex++ )
+   {
+      const auto stringValue = vectorValue.at( uIndex );
+      if( stringValue.empty() == false )
+      {
+         cell_set( uRow, uColumn, stringValue, tag_convert{} );
+      }
+      else
+      {
+         // if null values in table then set to null, otherwise skip it
+         if( is_null() == true ) { cell_set_null( uRow, uColumn ); }
+      }
+   }
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief set cell values from string where string is divided based on character sent
+ * @param uRow Row number where cell values are set
+ * @param puColumn pointer to column indexes where to place column values
+ *        @note make shoure that there are enough values for values in string, this is not checked        
+ * @param stringRowValue string with values
+ * @param chSplit character that separates values
+ */
+void table_base::row_set(uint64_t uRow, const unsigned* puColumn, const std::string_view& stringRowValue, char chSplit, tag_parse)
+{
+   std::vector<std::size_t> vectorOffset;       // positions for each column in string
+   std::vector<std::string_view> vectorValue;   // cell values
+
+   gd::utf8::offset( stringRowValue, chSplit, vectorOffset );                  // offset column positions, they are divided with 'chSplit'
+   if( stringRowValue.back() != chSplit ) vectorOffset.push_back(stringRowValue.length());// add last position to add last section without code after loop
+
+   gd::utf8::split( stringRowValue, vectorOffset, vectorValue );
+
+   unsigned uCount = (unsigned)vectorValue.size();
+   for( unsigned uIndex = 0; uIndex < uCount; uIndex++ )
+   {                                                                                               assert( puColumn[uIndex] < get_column_count() );
+      const auto stringValue = vectorValue.at( uIndex );
+      if( stringValue.empty() == false )
+      {
+         cell_set( uRow, puColumn[uIndex], stringValue, tag_convert{});
+      }
+      else
+      {
+         // if null values in table then set to null, otherwise skip it
+         if( is_null() == true ) { cell_set_null( uRow, puColumn[uIndex] ); }
+      }
+   }
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief set cell values from string where string is divided based on character sent
+ * @param uRow Row number where cell values are set
+ * @param uFirst column where to start to insert values
+ * @param stringRowValue string with values
+ * @param chSplit character that separates values
+ */
+bool table_base::row_set(uint64_t uRow, unsigned uFirst, const std::string_view& stringRowValue, char chSplit,std::function< bool( std::vector<std::string>& vectorValue )> callback_, tag_parse)
+{
+   std::vector<std::size_t> vectorOffset;       // positions for each column in string
+   std::vector<std::string> vectorValue;        // cell values
+
+   gd::utf8::offset( stringRowValue, chSplit, vectorOffset );                  // offset column positions, they are divided with 'chSplit'
+   if( stringRowValue.back() != chSplit ) vectorOffset.push_back(stringRowValue.length());// add last position to add last section without code after loop
+
+   gd::utf8::split( stringRowValue, vectorOffset, vectorValue );
+
+   if( callback_( vectorValue ) == true )
+   {
+      unsigned uCoulmnCount = (unsigned)vectorValue.size() + uFirst;
+      if( uCoulmnCount > get_column_count() ) { uCoulmnCount = get_column_count(); } // not more than number of columns in table?
+      for( unsigned uColumn = uFirst, uIndex = 0; uColumn < uCoulmnCount; uColumn++, uIndex++ )
+      {
+         const auto& stringValue = vectorValue.at( uIndex );
+         if( stringValue.empty() == false )
+         {
+            cell_set( uRow, uColumn, stringValue, tag_convert{} );
+         }
+         else
+         {
+            // if null values in table then set to null, otherwise skip it
+            if( is_null() == true ) { cell_set_null( uRow, uColumn ); }
+         }
+      }
+
+      return true;
+   }
+
+   return false;
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief set cell values from string where string is divided based on character sent
+ * @param uRow Row number where cell values are set
+ * @param puColumn pointer to column indexes where to place column values
+ *        @note make shoure that there are enough values for values in string, this is not checked        
+ * @param stringRowValue string with values
+ * @param chSplit character that separates values
+ */
+bool table_base::row_set(uint64_t uRow, const unsigned* puColumn, const std::string_view& stringRowValue, char chSplit, std::function< bool( std::vector<std::string>& vectorValue )> callback_, tag_parse)
+{
+   std::vector<std::size_t> vectorOffset;       // positions for each column in string
+   std::vector<std::string> vectorValue;        // cell values
+
+   gd::utf8::offset( stringRowValue, chSplit, vectorOffset );                  // offset column positions, they are divided with 'chSplit'
+   if( stringRowValue.back() != chSplit ) vectorOffset.push_back(stringRowValue.length());// add last position to add last section without code after loop
+
+   gd::utf8::split( stringRowValue, vectorOffset, vectorValue );
+
+   if( callback_( vectorValue ) == true )
+   {
+      unsigned uCount = (unsigned)vectorValue.size();
+      for( unsigned uIndex = 0; uIndex < uCount; uIndex++ )
+      {                                                                                            assert( puColumn[uIndex] < get_column_count() );
+         const auto stringValue = vectorValue.at( uIndex );
+         if( stringValue.empty() == false )
+         {
+            cell_set( uRow, puColumn[uIndex], stringValue, tag_convert{});
+         }
+         else
+         {
+            // if null values in table then set to null, otherwise skip it
+            if( is_null() == true ) { cell_set_null( uRow, puColumn[uIndex] ); }
+         }
+      }
+      return true;
+   }
+
+   return false;
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Set raw data to row, data must be of correct size
+ * @param uRow row where data is set
+ * @param praw_ pointer to raw data
+ */
+void table_base::row_set( uint64_t uRow, const void* praw_, tag_raw )
+{                                                                                                  assert( uRow < m_uRowCount ); assert( praw_ != nullptr );
+   uint8_t* puRow = row_get( uRow );
+   memcpy( puRow, praw_, m_uRowSize );
+}
+
+
+
+/** ---------------------------------------------------------------------------
  * @brief adds more memory storing row/rows to table
  * @param uCount number of rows to add
 */
@@ -1118,6 +1496,91 @@ int64_t table_base::offset_find_row(uint64_t uOffset, gd::types::tag_size8) cons
 
    return static_cast<int64_t>(uRowIndex);
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief harvest row values into vector with arguments
+ * @param uBeginRow start row
+ * @param uCount number of rows to harvest values from
+ * @param vectorArguments vector with arguments values where harvested arguments are inserted to
+*/
+void table_base::harvest( uint64_t uBeginRow, uint64_t uCount, std::vector<gd::argument::arguments>& vectorArguments ) const
+{
+   if( uBeginRow < get_row_count() )
+   {
+      uint64_t uEndRow = uBeginRow + uCount;                                   // last row 
+      if( uEndRow > get_row_count() ) uEndRow = get_row_count();               // is end row within table bounds
+
+      // ## loop rows and harvest values in rows
+      for( auto uRow = uBeginRow; uRow < uEndRow; uRow++ )
+      {
+         gd::argument::arguments arguments;
+         row_get_arguments( uRow, arguments );
+         vectorArguments.push_back( std::move( arguments ) );
+      }
+   }
+}
+
+
+/** ---------------------------------------------------------------------------
+* @brief harvest row values into vector with arguments
+* @param vectorRow rows values are harvested from
+* @param vectorArguments vector with arguments values where harvested arguments are inserted to
+*/
+void table_base::harvest( const std::vector<uint64_t>& vectorRow, std::vector<gd::argument::arguments>& vectorArguments ) const
+{
+   for( auto itRow : vectorRow )
+   {                                                                                               assert( itRow < get_row_count() );
+      gd::argument::arguments arguments;
+      row_get_arguments( itRow, arguments );
+      vectorArguments.push_back( std::move( arguments ) );
+   }
+}
+
+/** ---------------------------------------------------------------------------
+* @brief harvest row values into vector that stores row vectors collecting values
+* @param vectorRow rows values are harvested from
+* @param vectorHarvest vector with vector that collects values from selected rows
+*/
+void table_base::harvest( const std::vector<uint64_t>& vectorRow, std::vector< std::vector<gd::variant_view> >& vectorHarvest ) const
+{
+   for( auto itRow : vectorRow )
+   {                                                                                               assert( itRow < get_row_count() );
+      std::vector< gd::variant_view > vectorValue;
+      vectorValue.reserve( get_column_count() );
+      row_get_variant_view( itRow, vectorValue );
+      vectorHarvest.emplace_back( std::move( vectorValue ) );
+   }
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Harvest selected rows from table into table that store harvested data
+ * @param vectorRow index for rows where values are harvested from
+ * @param tableHarvest table to store harvested data
+ */
+void table_base::harvest(const std::vector<uint64_t>& vectorRow, table_base& tableHarvest)
+{
+   if( tableHarvest.get_columns() == nullptr )                                 // do we have columns?
+   {
+      tableHarvest.set_reserved_row_count( vectorRow.size() );
+      tableHarvest.set_columns( get_columns() );
+      tableHarvest.prepare();
+   }
+   else
+   {
+      tableHarvest.row_reserve_add( vectorRow.size() );
+   }
+
+   // ## Loop selected rows and copy row data to harvest table
+   std::vector<gd::variant_view> vectorRowData;
+   for(auto itRow : vectorRow)
+   {                                                                                               assert( itRow < get_row_count() );
+      row_get_variant_view( itRow, vectorRowData );
+      tableHarvest.row_add( vectorRowData );
+      vectorRowData.clear();
+   }
+}
+
+
 
 /** ---------------------------------------------------------------------------
  * @brief Clears all internal data and columns. 

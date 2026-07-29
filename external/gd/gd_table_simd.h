@@ -294,8 +294,7 @@ public:
 
    // ## methods ------------------------------------------------------------------
 public:
-   /** \name GET/SET
-   *///@{
+// @API [tag: getter, setter] [description: getters and setters]
    unsigned get_flags() const noexcept { return m_uFlags; }
    void set_state [[deprecated]] (uint32_t uFlags) noexcept { m_uFlags = uFlags; }
    void set_flags(uint32_t uFlags) noexcept { m_uFlags = uFlags; }
@@ -307,7 +306,7 @@ public:
    uint64_t get_reserved_size() const noexcept { return (m_uRowReservedPackCount * m_uRowSize) + (m_uRowSize * size_row_meta()); }
    /// Get number of rows with values
    uint64_t get_row_count() const noexcept { return m_uRowCount; }
-
+   void set_reserved_row_count(uint64_t uCount) { assert(uCount >= m_uRowCount); m_uRowReservedPackCount = (uCount / size_pack() + 1); }
    unsigned size_row() const noexcept { return m_uRowSize; }
    unsigned size_row_meta() const noexcept;
    /// get meta block size
@@ -318,6 +317,12 @@ public:
    uint64_t size_reserved_total() const noexcept { return (m_uRowSize + size_row_meta()) * m_uRowReservedPackCount; }
    /// calc and return total allocated memory size for rows
    uint64_t size_reserved_total(uint64_t uRowCount) const noexcept { return (m_uRowSize * uRowCount) + (size_row_meta() * uRowCount); }
+   /// return pointer to internal columns object
+   detail::columns* get_columns() noexcept { return m_pcolumns; }
+   const detail::columns* get_columns() const noexcept { return m_pcolumns; }
+   void set_columns(detail::columns* pcolumns) { assert(m_pcolumns == nullptr); assert(pcolumns != nullptr); m_pcolumns = pcolumns; m_pcolumns->add_reference(); }
+
+// @API [tag: state] [description: state methods, check state flags]
 
    bool is_null() const { return m_uFlags & (eTableFlagNull32 | eTableFlagNull64); }
    bool is_null32() const { return m_uFlags & eTableFlagNull32; }
@@ -392,11 +397,19 @@ public:
    std::pair<bool, std::string> prepare( unsigned uValueSize, unsigned uPackCount );
    std::pair<bool, std::string> prepare() { return prepare(m_uValueSize, m_uPackCount); }
 
+   // ## @API [tag: row] [description: row management methods]
 
+   void row_set_state(uint64_t uRow, unsigned uFlags) { assert(uRow < count_reserved_row()); *row_get_state(uRow) = uFlags; }
+   void row_set_state(uint64_t uRow, unsigned uSet, unsigned uClear);
+   uint8_t* row_get_meta(uint64_t uRow) const noexcept { return row_get_null(uRow); }
    /// return pointer to section holding null column information
    uint8_t* row_get_null(uint64_t uRow) const noexcept;
    /// Get pointer to row state part
    uint32_t* row_get_state(uint64_t uRow) const noexcept;
+   /// if row is in used (when state information is used for row)
+   bool row_is_use(uint64_t uRow) const noexcept;
+   /// Get pointer to row part used to mark null columns
+   uint64_t* row_get_null_columns(uint64_t uRow) const noexcept { assert(uRow < count_reserved_row()); return reinterpret_cast<uint64_t*>(m_puData + uRow * m_uRowSize); }
 
 
    uint8_t* row_get( uint64_t uRow ) const noexcept {                                              assert(m_uPackCount % 2 == 0 && "Pack size must be even");
@@ -424,6 +437,34 @@ public:
    void row_add(tag_null) { row_add(1, tag_null{}); }
    /// Simple add one row to table that is safe (if table have null values these are automatically set to null)
    uint64_t row_add_one() { row_add(1); return m_uRowCount - 1; }
+
+   void row_add(const std::initializer_list<gd::variant_view>& vectorValue);
+   void row_add(const std::initializer_list<gd::variant_view>& vectorValue, tag_convert);
+   void row_add(const std::vector<gd::variant_view>& vectorValue);
+
+   void row_set(uint64_t uRow, const std::initializer_list<gd::variant_view>& listValue);
+   void row_set(uint64_t uRow, unsigned uSart, const std::initializer_list<gd::variant_view>& listValue);
+   void row_set(uint64_t uRow, const std::initializer_list<gd::variant_view>& listValue, tag_convert);
+   void row_set(uint64_t uRow, unsigned uSart, const std::initializer_list<gd::variant_view>& listValue, tag_convert);
+   void row_set(uint64_t uRow, const std::vector<gd::variant_view>& listValue);
+   void row_set(uint64_t uRow, const std::vector<gd::variant_view>& listValue, tag_convert);
+   void row_set(uint64_t uRow, const std::vector<gd::variant_view>& listValue, const std::vector<unsigned>& vectorColumn);
+   void row_set(uint64_t uRow, const std::vector<gd::variant_view>& listValue, const std::vector<unsigned>& vectorColumn, tag_convert);
+   void row_set(uint64_t uRow, const std::vector< std::pair<unsigned, gd::variant_view> >& vectorValue);
+   void row_set(uint64_t uRow, const std::vector< std::pair<unsigned, gd::variant_view> >& vectorValue, tag_convert);
+   void row_set(uint64_t uRow, const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorValue);
+   void row_set(uint64_t uRow, const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorValue, tag_convert);
+   void row_set(uint64_t uRow, const gd::argument::arguments& argumentsRow, tag_arguments);
+   void row_set(uint64_t uRow, uint64_t uRowToCopy);
+   void row_set(uint64_t uRow, const std::string_view& stringRowValue, char chSplit, tag_parse);
+   void row_set(uint64_t uRow, unsigned uFirst, const std::string_view& stringRowValue, char chSplit, tag_parse);
+   void row_set(uint64_t uRow, const unsigned* puColumn, const std::string_view& stringRowValue, char chSplit, tag_parse);
+   bool row_set(uint64_t uRow, unsigned uFirst, const std::string_view& stringRowValue, char chSplit, std::function< bool(std::vector<std::string>& vectorValue)> callback_, tag_parse);
+   bool row_set(uint64_t uRow, const unsigned* puColumn, const std::string_view& stringRowValue, char chSplit, std::function< bool(std::vector<std::string>& vectorValue)> callback_, tag_parse);
+
+   /// set raw data in row, use with care because no checks are done
+   void row_set(uint64_t uRow, const void* praw_, tag_raw);
+
 
    void row_set_null(uint64_t uRow);
    void row_set_null(uint64_t uFrom, uint64_t uCount);
@@ -465,11 +506,24 @@ public:
    void cell_set_null(uint64_t uRow, std::string_view stringName);
    void cell_set_not_null(uint64_t uRow, unsigned uColumn);
 
+// @API [tag: offset] [description: returns information based on offset values]
+
+   /// @brief get column index for byte offset in all allocated memory block for table.
    unsigned offset_get_column(uint64_t uOffset, gd::types::tag_size8) const noexcept { auto iColumn = offset_find_column(uOffset, gd::types::tag_size8{}); assert(iColumn >= 0); return static_cast<unsigned>(iColumn); }
    int offset_find_column(uint64_t uOffset, gd::types::tag_size8) const noexcept;
 
    uint64_t offset_get_row(uint64_t uOffset, gd::types::tag_size8) const noexcept { auto iCell = offset_find_row(uOffset, gd::types::tag_size8{}); assert(iCell >= 0); return static_cast<uint64_t>(iCell); }
    int64_t offset_find_row(uint64_t uOffset, gd::types::tag_size8) const noexcept;
+
+// @API [tag: harvest] [description: harvest or read information from table]
+
+   /// harvest row values into vector with arguments
+   void harvest(uint64_t uBeginRow, uint64_t uCount, std::vector<gd::argument::arguments>& vectorArguments) const;
+   void harvest(std::vector<gd::argument::arguments>& vectorArguments) const { harvest(0, get_row_count(), vectorArguments); }
+   std::vector<gd::argument::arguments> harvest(tag_arguments) const { std::vector<gd::argument::arguments> v_; harvest(0, get_row_count(), v_); return v_; }
+   void harvest(const std::vector<uint64_t>& vectorRow, std::vector<gd::argument::arguments>& vectorArguments) const;
+   void harvest(const std::vector<uint64_t>& vectorRow, std::vector< std::vector<gd::variant_view> >& vectorRowValue) const;
+   void harvest(const std::vector<uint64_t>& vectorRow, table_base& tableHarvest);
 
    /// @brief size is same as `get_row_count and returns number of rows
    size_t size() const { return (size_t)get_row_count(); }

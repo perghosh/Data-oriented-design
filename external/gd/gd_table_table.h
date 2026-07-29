@@ -393,7 +393,7 @@ public:
    const detail::columns* get_columns() const noexcept { return m_pcolumns; }
    void set_columns( detail::columns* pcolumns ) { assert( m_pcolumns == nullptr ); assert( pcolumns != nullptr ); m_pcolumns = pcolumns; m_pcolumns->add_reference(); }
 
-   // ## state methods, check state flags
+// @API [tag: state] [description: state methods, check state flags]
 
    bool is_null() const { return m_uFlags & (eTableFlagNull32|eTableFlagNull64); }
    bool is_null32() const { return m_uFlags & eTableFlagNull32; }
@@ -602,7 +602,7 @@ public:
    void row_set( uint64_t uRow, unsigned uFirst, const std::string_view& stringRowValue, char chSplit, tag_parse );
    void row_set( uint64_t uRow, const unsigned* puColumn, const std::string_view& stringRowValue, char chSplit, tag_parse );
    bool row_set( uint64_t uRow, unsigned uFirst, const std::string_view& stringRowValue, char chSplit, std::function< bool( std::vector<std::string>& vectorValue )> callback_, tag_parse );
-   bool row_set(uint64_t uRow, const unsigned* puColumn, const std::string_view& stringRowValue, char chSplit, std::function< bool( std::vector<std::string>& vectorValue )> callback_, tag_parse);
+   bool row_set( uint64_t uRow, const unsigned* puColumn, const std::string_view& stringRowValue, char chSplit, std::function< bool( std::vector<std::string>& vectorValue )> callback_, tag_parse);
 
    /// variadic templates for row_set
 

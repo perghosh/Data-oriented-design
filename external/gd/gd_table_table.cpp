@@ -1314,7 +1314,7 @@ void table::row_set( uint64_t uRow, const std::vector< std::pair<unsigned, gd::v
 /** ---------------------------------------------------------------------------
  * @brief set row values
  * @param vectorValue vector with pair values set to row, first is column name and second is value
-*/
+ */
 void table::row_set( uint64_t uRow, const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorValue )
 {                                                                                                  assert( uRow < m_uRowCount );
    for( auto it = std::begin( vectorValue ), itEnd = std::end( vectorValue ); it != itEnd; it++ )
@@ -1327,7 +1327,7 @@ void table::row_set( uint64_t uRow, const std::vector< std::pair<std::string_vie
 /** ---------------------------------------------------------------------------
  * @brief set row values, convert to right type if value type differ from column
  * @param vectorValue vector with pair values set to row, first is column name and second is value
-*/
+ */
 void table::row_set( uint64_t uRow, const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorValue, tag_convert )
 {                                                                                                  assert( uRow < m_uRowCount );
    for( auto it = std::begin( vectorValue ), itEnd = std::end( vectorValue ); it != itEnd; it++ )
