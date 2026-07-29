@@ -395,6 +395,8 @@ public:
 
    /// return pointer to section holding null column information
    uint8_t* row_get_null(uint64_t uRow) const noexcept;
+   /// Get pointer to row state part
+   uint32_t* row_get_state(uint64_t uRow) const noexcept;
 
 
    uint8_t* row_get( uint64_t uRow ) const noexcept {                                              assert(m_uPackCount % 2 == 0 && "Pack size must be even");
@@ -418,8 +420,14 @@ public:
 
    void row_add(uint64_t uCount);
    void row_add() { row_add(1); }
+   void row_add(uint64_t uCount, tag_null);
+   void row_add(tag_null) { row_add(1, tag_null{}); }
    /// Simple add one row to table that is safe (if table have null values these are automatically set to null)
    uint64_t row_add_one() { row_add(1); return m_uRowCount - 1; }
+
+   void row_set_null(uint64_t uRow);
+   void row_set_null(uint64_t uFrom, uint64_t uCount);
+
 
    void row_clear() { m_uRowCount = 0; }
 
@@ -540,6 +548,51 @@ inline unsigned table_base::size_row_meta() const noexcept {
 inline uint8_t* table_base::row_get_null( uint64_t uRow ) const noexcept {                         assert( uRow < (m_uRowReservedPackCount * count_pack())); assert( m_puMetaData != nullptr );
    return reinterpret_cast<uint8_t*>( m_puMetaData + (uRow * m_uRowMetaSize) );
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief get position in buffer to row state information for row at index
+ * @param uRow index to row where state is located
+ * @return uint32_t* pointer to position in internal buffer for row state
+*/
+inline uint32_t* table_base::row_get_state(uint64_t uRow) const noexcept {                         assert( uRow < (m_uRowReservedPackCount * count_pack())); assert( m_puMetaData != nullptr );
+   // calculate number of bytes used to store flags for culumns marked as null (cant be over sizeof(uint32_t) * 2 or 8 bytes)
+   // note that state cant be set to both 32 and 64 columns
+   unsigned uNullSize = (m_uFlags & (eTableFlagNull32 | eTableFlagNull64)) * sizeof(uint32_t);     assert(uNullSize <= (sizeof(uint32_t) * 2));
+   return reinterpret_cast<uint32_t*>(m_puMetaData + (uRow * m_uRowMetaSize) + uNullSize); // return pointer to state value
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief set all columns to null in row
+ * @param uRow index to row where values are set to null
+*/
+inline void table_base::row_set_null( uint64_t uRow ) {                                            assert( uRow < (m_uRowReservedPackCount * count_pack())); assert( is_null() == true );
+   auto puRow = row_get_null( uRow );
+
+   if( is_null32() ) *(uint32_t*)puRow =((uint32_t)-1);
+   else              *(uint64_t*)puRow =((uint64_t)-1);
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Set all values in row to null
+ * @param uFrom start row to set all values to null
+ * @param uCount number of sequential rows to set to null
+*/
+inline void table_base::row_set_null(uint64_t uFrom, uint64_t uCount) {                            assert((uFrom + uCount) <= get_row_count());
+   for(auto u = uFrom, uMax = (uFrom + uCount); u < uMax; u++) row_set_null(u);
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Add row to table and set columns in added row to null
+ * @param uCount number of rows to add
+*/
+inline void table_base::row_add(uint64_t uCount, tag_null) {
+   assert(is_null() == true);
+   auto uBegin = m_uRowCount;
+   row_add(uCount);
+   row_set_null(uBegin, m_uRowCount - uBegin);
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief Check if cell is null

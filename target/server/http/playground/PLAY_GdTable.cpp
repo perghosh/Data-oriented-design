@@ -20,6 +20,50 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
+
+TEST_CASE("[gd-table] test to check gd::table::simd::table", "[gd-table]")
+{
+   using table_8_8 = gd::table::simd::table<8u, 8u>;
+
+   SECTION("template layout")
+   {
+      REQUIRE(table_8_8::count_pack_s() == 8u);
+      REQUIRE(table_8_8::size_pack_s() == 64u);
+      REQUIRE(table_8_8::row_to_pack_s(7u) == 0u);
+      REQUIRE(table_8_8::row_to_pack_s(8u) == 1u);
+   }
+
+   SECTION("construct, prepare, set, get, harvest")
+   {
+      table_8_8 tableValue(1u, gd::table::tag_repare_to_add_column{});
+      tableValue.column_add("uint64", 0, "value");
+      tableValue.prepare();
+      tableValue.row_add_pack(1u);
+
+      REQUIRE(tableValue.size_value() == 8u);
+      REQUIRE(tableValue.count_pack() == 8u);
+      REQUIRE(tableValue.size_pack() == 64u);
+      REQUIRE(tableValue.get_row_pack_count() == 1u);
+      REQUIRE(tableValue.size() == 8u);
+
+      table_8_8::position positionValue(0u, 0u);
+      tableValue.set_uint64(positionValue, 123456789u);
+
+      REQUIRE(tableValue.get_uint64(positionValue) == 123456789u);
+      REQUIRE(tableValue.cell_get_value64(0u, 0u) == 123456789u);
+      REQUIRE(tableValue.row_get_variant_view(0u).size() == 1u);
+
+      std::array<uint64_t, table_8_8::count_pack_s()> arrayExpected{ 1u, 2u, 3u, 4u, 5u, 6u, 7u, 8u };
+      tableValue.pack_plant<uint64_t>(0u, 0u, arrayExpected);
+
+      std::array<uint64_t, table_8_8::count_pack_s()> arrayReceived{};
+      tableValue.pack_harvest<uint64_t>(0u, 0u, arrayReceived);
+
+      REQUIRE(arrayReceived == arrayExpected);
+      REQUIRE(tableValue.pack_find_value<uint64_t>(0u, 0u, 4u) == (1ull << 3));
+   }
+}
+
 /*
 
 TEST_CASE("[gd-table] create", "[gd-table]")

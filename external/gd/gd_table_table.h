@@ -1249,7 +1249,7 @@ inline bool table::row_is_use( uint64_t uRow ) const noexcept { assert( uRow < m
  * @brief set all columns to null in row
  * @param uRow index to row where values are set to null
 */
-inline void table::row_set_null( uint64_t uRow ) { assert( uRow < m_uReservedRowCount ); assert( is_null() == true );
+inline void table::row_set_null( uint64_t uRow ) {                                                 assert( uRow < m_uReservedRowCount ); assert( is_null() == true );
    auto puRow = row_get_null( uRow );
 
    if( is_null32() ) *(uint32_t*)puRow =((uint32_t)-1);
