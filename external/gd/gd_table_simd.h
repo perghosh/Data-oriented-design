@@ -575,8 +575,17 @@ template<std::size_t VALUESIZE = 8, std::size_t PACKCOUNT = 8>
 class table : public table_base
 {
 public:
+   /**
+    * @brief Position in table, used to get or set values in table without knowing the column type
+    */
    struct position
    {
+      position() = default;
+      position(uint64_t uRow) noexcept : m_uRow(uRow), m_uColumn(0), m_uOffset(0) {}
+      position(uint64_t uRow, unsigned uColumn) noexcept : m_uRow(uRow), m_uColumn(uColumn), m_uOffset(0) {}
+      position(uint64_t uRow, unsigned uColumn, unsigned uOffset) noexcept : m_uRow(uRow), m_uColumn(uColumn), m_uOffset(uOffset) {}
+      position(const position&) = default;
+
       constexpr bool operator==(const position&) const noexcept = default;
       constexpr bool operator<(const position& o) const noexcept { return m_uRow != o.m_uRow ? m_uRow < o.m_uRow : m_uOffset < o.m_uOffset; }
 
@@ -709,6 +718,12 @@ public:
 };
 
 
+/** --------------------------------------------------------------------------- get
+ * @brief Read a value from `position_` as `TYPE`
+ * @tparam TYPE Value type to read from the table
+ * @param position_ Cell position in the table
+ * @return TYPE Value read from the table
+ */
 template<std::size_t VALUESIZE, std::size_t PACKCOUNT>
 template<typename TYPE>
 TYPE table<VALUESIZE, PACKCOUNT>::get(position position_) const noexcept
@@ -718,22 +733,27 @@ TYPE table<VALUESIZE, PACKCOUNT>::get(position position_) const noexcept
 
    if(uLocalByte + sizeof(TYPE) <= size_pack_s())            // fits inside this pack, single fast read
    {
-      const uint8_t* p = rowpack_get(uRowPack, position_.column());
-      TYPE value_;
+      const uint8_t* p = rowpack_get(uRowPack, position_.column());           // pointer to start of pack
+      TYPE value_; // temporary buffer to hold bytes of value  
       std::memcpy(&value_, p + uLocalByte, sizeof(TYPE));
       return value_;
    }
 
-   // spans into next pack - assemble byte by byte via safe per-byte reads
+   // ## spans into next pack - assemble byte by byte via safe per-byte reads
    uint8_t puBytes[sizeof(TYPE)];
    position pos_ = position_;
    for(std::size_t u = 0; u < sizeof(TYPE); ++u) { puBytes[u] = get_uint8(pos_); pos_.advance(1); }
-   TYPE value_;
+   TYPE value_; // temporary buffer to hold bytes of value
    std::memcpy(&value_, puBytes, sizeof(TYPE));
    return value_;
 }
 
-
+/** --------------------------------------------------------------------------- set
+ * @brief Write a value to `position_` as `TYPE`
+ * @tparam TYPE Value type to write into the table
+ * @param position_ Cell position in the table
+ * @param value_ Value to store in the table
+ */
 template<std::size_t VALUESIZE, std::size_t PACKCOUNT>
 template <typename TYPE>
 void table<VALUESIZE, PACKCOUNT>::set(position position_, TYPE value_) noexcept
@@ -743,13 +763,13 @@ void table<VALUESIZE, PACKCOUNT>::set(position position_, TYPE value_) noexcept
 
    if(uLocalByte + sizeof(TYPE) <= size_pack_s())            // fits inside this pack, single fast write
    {
-      uint8_t* p = rowpack_get(uRowPack, position_.column());
+      uint8_t* p = rowpack_get(uRowPack, position_.column());                 // pointer to start of pack
       std::memcpy(p + uLocalByte, &value_, sizeof(TYPE));
       return;
    }
 
-   // spans into next pack - assemble byte by byte via safe per-byte writes
-   uint8_t puBytes[sizeof(TYPE)];
+   // ## spans into next pack - assemble byte by byte via safe per-byte writes
+   uint8_t puBytes[sizeof(TYPE)]; // temporary buffer to hold bytes of value
    std::memcpy(puBytes, &value_, sizeof(TYPE));
    position pos_ = position_;
    for(std::size_t u = 0; u < sizeof(TYPE); ++u) { set_uint8(pos_, puBytes[u]); pos_.advance(1); }
