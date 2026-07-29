@@ -170,11 +170,217 @@ std::string GetCode(unsigned uIndex)
    return "";
 }
 
-TEST_CASE("[gd-table] strip comments from code", "[gd-table]")
+TEST_CASE("[gd-table] iterate with position to remove comments", "[gd-table]")
 {
    using namespace gd::table::simd;
 
    {
+      table_8_8 tableCode(100u, gd::table::tag_repare_to_add_column{});
+      tableCode.column_add("uint64", 0, "code");
+      tableCode.prepare();
+
+      // Sample Lua-like source code
+
+      for(unsigned uIndex = 0; uIndex < 16; ++uIndex)
+      {
+         tableCode.row_clear();
+         std::string stringCodeCore = GetCode(uIndex);
+         std::string_view stringCode = stringCodeCore;
+         std::string stringCodeCleaned;
+         stringCodeCleaned.reserve(stringCode.size());
+
+         // ## Fill table with source bytes, pad with 0x00
+         std::span<const char> span_(stringCode.data(), stringCode.size());
+         tableCode.pack_plant_span<char>(span_, 0, '\0');
+
+         // ## `position` walks row/pack boundaries internally (via get_uint8), so the scan below
+         //    never has to know a pack even exists - that's the whole point of the type.
+         table_8_8::position positionEnd;
+         positionEnd.advance((unsigned)stringCode.size());
+
+         // ### Pass 1: find every "-- ... \n" comment as a [begin, end) range
+         std::vector<table_8_8::range> vectorComment;
+         {
+            table_8_8::position position_;
+            while(position_ < positionEnd)
+            {
+               uint8_t uByte = tableCode.get_uint8(position_);
+
+               table_8_8::position positionNext = position_;
+               positionNext.advance(1);
+
+               if(uByte == '-' && positionNext < positionEnd && tableCode.get_uint8(positionNext) == '-')
+               {
+                  table_8_8::position positionStart = position_;
+                  table_8_8::position positionScan = position_;
+                  positionScan.advance(2);                                     // skip past the opening "--"
+
+                  while(positionScan < positionEnd && tableCode.get_uint8(positionScan) != '\n') { positionScan.advance(1); }
+                  if(positionScan < positionEnd) { positionScan.advance(1); }   // include the trailing newline in the stripped range
+
+                  vectorComment.push_back(table_8_8::range{ positionStart, positionScan });
+                  position_ = positionScan;
+                  continue;
+               }
+
+               position_.advance(1);
+            }
+         }
+
+         // ### Pass 2: copy everything that isn't covered by a comment range
+         {
+            table_8_8::position position_;
+            auto itComment = vectorComment.begin();
+            while(position_ < positionEnd)
+            {
+               if(itComment != vectorComment.end() && position_ == itComment->first)
+               {
+                  position_ = itComment->second;                               // skip the whole comment in one jump
+                  ++itComment;
+                  continue;
+               }
+
+               stringCodeCleaned.push_back((char)tableCode.get_uint8(position_));
+               position_.advance(1);
+            }
+         }
+
+         std::cout << "-------------------------------------------------\n";
+         std::cout << "\n--- Test Case " << uIndex << " ---\n";
+         std::cout << "Original Length: " << stringCode.size() << " bytes\n";
+         std::cout << "Comment Ranges Found: " << vectorComment.size() << "\n";
+         std::cout << "Original Code:\n" << stringCode << "\n";
+         std::cout << "\nCleaned Code:\n" << stringCodeCleaned << "\n";
+         std::cout << "Cleaned Length: " << stringCodeCleaned.size() << " bytes\n";
+      }
+   }
+}
+
+TEST_CASE("[gd-table] iterate with position to remove comments, hybrid", "[gd-table]")
+{
+   using namespace gd::table::simd;
+
+   {
+      table_8_8 tableCode(100u, gd::table::tag_repare_to_add_column{});
+      tableCode.column_add("uint64", 0, "code");
+      tableCode.prepare();
+
+      for(unsigned uIndex = 0; uIndex < 16; ++uIndex)
+      {
+         tableCode.row_clear();
+         std::string stringCodeCore = GetCode(uIndex);
+         std::string_view stringCode = stringCodeCore;
+         std::string stringCodeCleaned;
+         stringCodeCleaned.reserve(stringCode.size());
+         bool bInComment = false;
+
+         std::span<const char> span_(stringCode.data(), stringCode.size());
+         tableCode.pack_plant_span<char>(span_, 0, '\0');
+
+         uint64_t uTotalBytes = stringCode.size();
+         uint64_t uBytesProcessed = 0;
+
+         for(uint64_t uPack = 0; uPack < tableCode.get_row_pack_count(); ++uPack)
+         {
+            auto spanPack = tableCode.pack_harvest_span<char>(uPack, 0);
+            size_t uBytesInThisPack = std::min( spanPack.size(), static_cast<size_t>(uTotalBytes - uBytesProcessed) );
+
+            if(uBytesInThisPack == 0) break;
+
+            // ## ====================
+            // ## HAPPY PATH: Fast check for dash-free packs
+            // ## ====================
+            if(!bInComment)
+            {
+               uint64_t uMaskDash = tableCode.pack_find_value<char>(uPack, 0, '-');
+               uint64_t uValidMask = 0xFFFFFFFFFFFFFFFFULL >> (64 - uBytesInThisPack);
+
+               if((uMaskDash & uValidMask) == 0)
+               {
+                  // No dashes in valid range → safe bulk copy!
+                  stringCodeCleaned.append(spanPack.data(), uBytesInThisPack);
+                  uBytesProcessed += uBytesInThisPack;
+                  continue;  // Skip slow path entirely
+               }
+            }
+
+            // ## ====================
+            // ## SAD PATH: Byte-by-byte (correct, handles all edge cases)
+            // ## ====================
+            for(size_t uByte = 0; uByte < uBytesInThisPack; ++uByte)
+            {
+               char cCurrent = spanPack[uByte];
+
+               if(bInComment)
+               {
+                  // Inside comment - skip until newline
+                  if(cCurrent == '\n')
+                  {
+                     bInComment = false;
+                  }
+                  // else: skip comment character
+               }
+               else
+               {
+                  // Not in comment - check for "--"
+                  bool bIsCommentStart = false;
+
+                  if(cCurrent == '-')
+                  {
+                     // Check lookahead within this pack
+                     if(uByte + 1 < uBytesInThisPack)
+                     {
+                        bIsCommentStart = (spanPack[uByte + 1] == '-');
+                     }
+                     // Check lookahead across pack boundary
+                     else if(uBytesProcessed + uByte + 1 < uTotalBytes &&
+                        uPack + 1 < tableCode.get_row_pack_count())
+                     {
+                        auto spanNext = tableCode.pack_harvest_span<char>(uPack + 1, 0);
+                        if(spanNext.size() > 0 && spanNext[0] == '-')
+                        {
+                           bIsCommentStart = true;
+                        }
+                     }
+
+                     if(bIsCommentStart)
+                     {
+                        // Start of comment - skip both dashes
+                        bInComment = true;
+                        ++uByte;  // Skip next character (second dash)
+                        continue;
+                     }
+                  }
+
+                  // Not a comment - copy character
+                  stringCodeCleaned.push_back(cCurrent);
+               }
+            }
+
+            uBytesProcessed += uBytesInThisPack;
+         }
+
+         // Verification
+         std::cout << "-------------------------------------------------\n";
+         std::cout << "\n--- Test Case " << uIndex << " (HYBRID) ---\n";
+         std::cout << "Original Length: " << stringCode.size() << " bytes\n";
+         std::cout << "Cleaned Length: " << stringCodeCleaned.size() << " bytes\n";
+
+         unsigned uRemainingDashes = std::count(stringCodeCleaned.begin(), stringCodeCleaned.end(), '-');
+         std::cout << "Remaining '--' sequences (approx): " << uRemainingDashes << "\n";
+         std::cout << "Cleaned Code:\n[" << stringCodeCleaned << "]\n";
+      }
+   }
+}
+/*
+
+TEST_CASE("[gd-table] strip comments from code", "[gd-table]")
+{
+   enum CodeState { eCode, eComment };
+   using namespace gd::table::simd;
+
+   {
+      CodeState eCodeState = eCode;
       table_8_8 tableCode(100u, gd::table::tag_repare_to_add_column{});
       tableCode.column_add("uint64", 0, "code");
       tableCode.prepare();
@@ -240,6 +446,7 @@ TEST_CASE("[gd-table] strip comments from code", "[gd-table]")
 
                if(uPosition + 1 < spanPack.size() && spanPack[uPosition + 1] == '-') // Check if next byte is also '-' (check within span bounds)
                {
+
                   bIsComment = true;
                   uMask &= (uMask - 1);
                }
@@ -251,7 +458,6 @@ TEST_CASE("[gd-table] strip comments from code", "[gd-table]")
                   if(iCommentEnd != -1) 
                   { 
                      uPositionSave = static_cast<unsigned>(iCommentEnd + 1);   // Move position to after the newline
-                     bIsComment = false;  
                   }
                   else { uPositionSave = static_cast<unsigned>(spanPack.size()); }// Move position to end of span, comment continues in next pack
                }
@@ -274,104 +480,5 @@ TEST_CASE("[gd-table] strip comments from code", "[gd-table]")
       }
    }
 }
-
-/*
-TEST_CASE("[gd-table] strip comments from code", "[gd-table]")
-{
-   using namespace gd::table::simd;
-   {
-      table_8_8 tableCode(100u, gd::table::tag_repare_to_add_column{});  // reserve 100 rows
-      tableCode.column_add("uint64", 0, "code");
-
-      // ## Add sample code to table using std::array to transfer data to table
-
-      // ## find all row comments, each row comment starts with "--", lua style comment, and ends with newline
-   }
-}
-
-
-
-
-TEST_CASE("[gd-table] simd create simple", "[gd-table]")
-{
-   using namespace gd::table::simd;
-   table<8u, 8u> tableFiles(8);
-   tableFiles.column_prepare();
-
-   tableFiles.column_add({ { "uint64", 0, "count" }, { "uint64", 0, "size" } }, gd::table::tag_type_name{});
-   tableFiles.prepare();
-
-   tableFiles.row_add(16);
-
-   // ## set 16 values on each row
-   for(unsigned uRowIndex = 0; uRowIndex < 16; ++uRowIndex)
-   {
-      tableFiles.cell_set(uRowIndex, 0, uint64_t( uRowIndex ));
-      tableFiles.cell_set(uRowIndex, 1, uint64_t( uRowIndex * 10 ));
-   }
-
-   for(unsigned uRowIndex = 0; uRowIndex < 16; ++uRowIndex)
-   {
-      auto uRow = tableFiles.row_add_one();
-      tableFiles.cell_set(uRow, 0, uint64_t(uRowIndex));
-      tableFiles.cell_set(uRow, 1, uint64_t(uRowIndex * 10));
-   }
-   
-   for(unsigned uRowIndex = 0; uRowIndex < 16; ++uRowIndex)
-   {
-      auto uRow = tableFiles.row_add_one();
-      tableFiles[uRow, 0]= uint64_t(uRowIndex);
-      tableFiles[uRow, 1]= uint64_t(uRowIndex * 10);
-   }
-
-   for(unsigned uRowIndex = 0; uRowIndex < 16000; ++uRowIndex)
-   {
-      auto uRow = tableFiles.row_add_one();
-      tableFiles[uRow, 0] = uint64_t(uRowIndex);
-      tableFiles[uRow, 1] = uint64_t(uRowIndex * 10);
-   }
-}
-
-TEST_CASE("[gd-table] simd create simple 32 bit", "[gd-table]")
-{
-   using namespace gd::table::simd;
-   table<4u, 4u> tableFiles(4);
-   tableFiles.column_prepare();
-
-   tableFiles.column_add("uint32", 0, "count");
-   tableFiles.column_add("uint32", 0, "size");
-
-   tableFiles.prepare();
-
-   tableFiles.row_add(8);
-
-   // ## set 8 values on each row
-   for(unsigned uRowIndex = 0; uRowIndex < 8; ++uRowIndex)
-   {
-      tableFiles.cell_set(uRowIndex, 0, uint32_t(uRowIndex));
-      tableFiles.cell_set(uRowIndex, 1, uint32_t(uRowIndex * 10));
-   }
-
-   for(unsigned uRowIndex = 0; uRowIndex < 8; ++uRowIndex)
-   {
-      auto uRow = tableFiles.row_add_one();
-      tableFiles.cell_set(uRow, 0, uint32_t(uRowIndex));
-      tableFiles.cell_set(uRow, 1, uint32_t(uRowIndex * 10));
-   }
-
-   for(unsigned uRowIndex = 0; uRowIndex < 8; ++uRowIndex)
-   {
-      auto uRow = tableFiles.row_add_one();
-      tableFiles[uRow, 0] = uint32_t(uRowIndex);
-      tableFiles[uRow, 1] = uint32_t(uRowIndex * 10);
-   }
-
-   for(unsigned uRowIndex = 0; uRowIndex < 8000; ++uRowIndex)
-   {
-      auto uRow = tableFiles.row_add_one();
-      tableFiles[uRow, 0] = uint32_t(uRowIndex);
-      tableFiles[uRow, 1] = uint32_t(uRowIndex * 10);
-   }
-}
-
 */
+

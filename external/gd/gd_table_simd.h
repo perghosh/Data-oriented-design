@@ -574,6 +574,31 @@ inline void table_base::cell_set_not_null(uint64_t uRow, unsigned uColumn) {    
 template<std::size_t VALUESIZE = 8, std::size_t PACKCOUNT = 8>
 class table : public table_base
 {
+public:
+   struct position
+   {
+      constexpr bool operator==(const position&) const noexcept = default;
+      constexpr bool operator<(const position& o) const noexcept { return m_uRow != o.m_uRow ? m_uRow < o.m_uRow : m_uOffset < o.m_uOffset; }
+
+      /// @brief Advance position by uCount bytes, this will advance to next row if needed
+      constexpr position& advance(unsigned uCount) noexcept {
+         uint64_t uTotal = (uint64_t)m_uOffset + uCount;
+         m_uRow += uTotal / VALUESIZE;
+         m_uOffset = (unsigned)(uTotal % VALUESIZE);
+         return *this;
+      }
+
+      uint64_t row() const noexcept { return m_uRow; }
+      unsigned column() const noexcept { assert(m_uColumn < 0xF0000); return m_uColumn; }  // checks for realistic column index, if column index is larger than 0xF0000 then something is wrong
+      unsigned offset() const noexcept { assert(m_uOffset < VALUESIZE); return m_uOffset; }  // checks for realistic offset, if offset is larger than VALUESIZE then something is wrong
+
+      uint64_t m_uRow = 0;      ///< row index in table
+      unsigned m_uColumn = 0;   ///< column index in table
+      unsigned m_uOffset = 0;   ///< byte offset inside the VALUESIZE-byte cell
+   };
+
+   using range = std::pair<position, position>;   // [begin, end)
+
 // ## @API [tag: construct] [description: table construction, lots of constructors to simplify how to create new tables]
 public:
    table(): table_base() { common_construct_set_simd(); }
@@ -586,6 +611,38 @@ public:
    table(tag_full_meta): table_base(tag_full_meta{}) { common_construct_set_simd(); }
 
    void common_construct_set_simd() { m_uValueSize = VALUESIZE; m_uPackCount = PACKCOUNT; }
+
+   // @API  [tag: get, primitives] [description: low-level methods to get values from table without knowing the column type]
+
+   /// Get value from table at position, this is a low level method that can be used to get values from table without knowing the column type
+   template <typename TYPE>
+   TYPE get(position position_) const noexcept;
+
+   bool     get_bool(position position_) const noexcept     { return get<bool>(position_); }
+   uint8_t  get_uint8(position position_) const noexcept    { return get<uint8_t>(position_); }
+   uint16_t get_uint16(position position_) const noexcept   { return get<uint16_t>(position_); }
+   uint32_t get_uint32(position position_) const noexcept   { return get<uint32_t>(position_); }
+   uint64_t get_uint64(position position_) const noexcept   { return get<uint64_t>(position_); }
+   int8_t   get_int8(position position_) const noexcept     { return (int8_t)get_uint8(position_); }
+   int16_t  get_int16(position position_) const noexcept    { return (int16_t)get_uint16(position_); }
+   int32_t  get_int32(position position_) const noexcept    { return (int32_t)get_uint32(position_); }
+   int64_t  get_int64(position position_) const noexcept    { return (int64_t)get_uint64(position_); }
+   float    get_float(position position_) const noexcept    { return get<float>(position_); }
+   double   get_double(position position_) const noexcept   { return get<double>(position_); }
+
+   template <typename TYPE>
+   void set(position position_, TYPE value_) noexcept;
+   void set_bool(position position_, bool value_) noexcept { set<bool>(position_, value_); }
+   void set_uint8(position position_, uint8_t value_) noexcept { set<uint8_t>(position_, value_); }
+   void set_uint16(position position_, uint16_t value_) noexcept { set<uint16_t>(position_, value_); }
+   void set_uint32(position position_, uint32_t value_) noexcept { set<uint32_t>(position_, value_); }
+   void set_uint64(position position_, uint64_t value_) noexcept { set<uint64_t>(position_, value_); }
+   void set_int8(position position_, int8_t value_) noexcept { set<int8_t>(position_, value_); }
+   void set_int16(position position_, int16_t value_) noexcept { set<int16_t>(position_, value_); }
+   void set_int32(position position_, int32_t value_) noexcept { set<int32_t>(position_, value_); }
+   void set_int64(position position_, int64_t value_) noexcept { set<int64_t>(position_, value_); }
+   void set_float(position position_, float value_) noexcept { set<float>(position_, value_); }
+   void set_double(position position_, double value_) noexcept { set<double>(position_, value_); }
 
    /// Get number of pack rows, each pack row contains PACKCOUNT number of rows
    std::size_t get_row_pack_count() const noexcept { assert(m_uRowCount % count_pack_s() == 0); return m_uRowCount / count_pack_s(); }
@@ -650,6 +707,53 @@ public:
    static constexpr unsigned size_pack_s() noexcept { return PACKCOUNT * VALUESIZE; }
    static constexpr unsigned count_pack_s() noexcept { return PACKCOUNT; }
 };
+
+
+template<std::size_t VALUESIZE, std::size_t PACKCOUNT>
+template<typename TYPE>
+TYPE table<VALUESIZE, PACKCOUNT>::get(position position_) const noexcept
+{
+   uint64_t uRowPack = row_to_pack_s(position_.row());
+   unsigned uLocalByte = (unsigned)(position_.row() % PACKCOUNT) * VALUESIZE + position_.offset();
+
+   if(uLocalByte + sizeof(TYPE) <= size_pack_s())            // fits inside this pack, single fast read
+   {
+      const uint8_t* p = rowpack_get(uRowPack, position_.column());
+      TYPE value_;
+      std::memcpy(&value_, p + uLocalByte, sizeof(TYPE));
+      return value_;
+   }
+
+   // spans into next pack - assemble byte by byte via safe per-byte reads
+   uint8_t puBytes[sizeof(TYPE)];
+   position pos_ = position_;
+   for(std::size_t u = 0; u < sizeof(TYPE); ++u) { puBytes[u] = get_uint8(pos_); pos_.advance(1); }
+   TYPE value_;
+   std::memcpy(&value_, puBytes, sizeof(TYPE));
+   return value_;
+}
+
+
+template<std::size_t VALUESIZE, std::size_t PACKCOUNT>
+template <typename TYPE>
+void table<VALUESIZE, PACKCOUNT>::set(position position_, TYPE value_) noexcept
+{
+   uint64_t uRowPack = row_to_pack_s(position_.row());
+   unsigned uLocalByte = (unsigned)(position_.row() % PACKCOUNT) * VALUESIZE + position_.offset();
+
+   if(uLocalByte + sizeof(TYPE) <= size_pack_s())            // fits inside this pack, single fast write
+   {
+      uint8_t* p = rowpack_get(uRowPack, position_.column());
+      std::memcpy(p + uLocalByte, &value_, sizeof(TYPE));
+      return;
+   }
+
+   // spans into next pack - assemble byte by byte via safe per-byte writes
+   uint8_t puBytes[sizeof(TYPE)];
+   std::memcpy(puBytes, &value_, sizeof(TYPE));
+   position pos_ = position_;
+   for(std::size_t u = 0; u < sizeof(TYPE); ++u) { set_uint8(pos_, puBytes[u]); pos_.advance(1); }
+}
 
 /** --------------------------------------------------------------------------- row_get
  * @brief Get pointer to the row data for a specific row index
