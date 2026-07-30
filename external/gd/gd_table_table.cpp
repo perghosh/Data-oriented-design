@@ -1141,28 +1141,6 @@ bool table::row_add(const unsigned* puColumn, std::string_view& stringRowValue, 
 }
 
 /** ---------------------------------------------------------------------------
- * @brief Add values from arguments object where names in arguments match column names
- * @param argumentsRow values added to row
-*/
-void table::row_set( uint64_t uRow, const gd::argument::arguments& argumentsRow, tag_arguments )
-{                                                                                                  assert( empty( tag_raw{} ) == false);
-   for( auto pPosition = argumentsRow.next(); pPosition != nullptr; pPosition = argumentsRow.next(pPosition) )
-   {
-      if( gd::argument::arguments::is_name_s(pPosition) == true )
-      {
-         auto stringName = gd::argument::arguments::get_name_s( pPosition );
-         auto value_ = gd::argument::arguments::get_argument_s( pPosition ).as_variant_view();
-
-         int iIndex = column_find_index( stringName );
-         if( iIndex != -1 )
-         {
-            cell_set( uRow, iIndex, value_ );
-         }
-      }
-   }
-}
-
-/** ---------------------------------------------------------------------------
  * @brief Set row values
  * @param uRow row where values are set
  * @param listValue list of values inserted to specified row
@@ -1336,6 +1314,29 @@ void table::row_set( uint64_t uRow, const std::vector< std::pair<std::string_vie
       if( iIndex != -1 ) cell_set( uRow, ( unsigned )iIndex, it->second, tag_convert{} );
    }
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Add values from arguments object where names in arguments match column names
+ * @param argumentsRow values added to row
+ */
+void table::row_set( uint64_t uRow, const gd::argument::arguments& argumentsRow, tag_arguments )
+{                                                                                                  assert( empty( tag_raw{} ) == false);
+   for( auto pPosition = argumentsRow.next(); pPosition != nullptr; pPosition = argumentsRow.next(pPosition) )
+   {
+      if( gd::argument::arguments::is_name_s(pPosition) == true )
+      {
+         auto stringName = gd::argument::arguments::get_name_s( pPosition );
+         auto value_ = gd::argument::arguments::get_argument_s( pPosition ).as_variant_view();
+
+         int iIndex = column_find_index( stringName );
+         if( iIndex != -1 )
+         {
+            cell_set( uRow, iIndex, value_ );
+         }
+      }
+   }
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief Set data taken from another row in table

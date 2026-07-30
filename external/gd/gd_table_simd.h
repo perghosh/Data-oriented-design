@@ -529,6 +529,11 @@ public:
    size_t size() const { return (size_t)get_row_count(); }
    /// @brief clear all data in table
    void clear();
+   /// check if table is empty, don't have and data in table rows
+   bool empty() const noexcept { return (m_puData == nullptr || m_uRowSize == 0); }
+   /// checks if table isn't even initialized (not able to store data)
+   bool empty(tag_raw) const noexcept { return (m_uRowSize == 0 || m_puData == nullptr); }
+
 
 
 public:
