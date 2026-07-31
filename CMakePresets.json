@@ -134,6 +134,24 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
       }
+    },
+    {
+      "name": "x64-relwithdebinfo",
+      "displayName": "x64 RelWithDebInfo",
+      "inherits": "windows-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
+    },
+    {
+      "name": "x64-clang-relwithdebinfo",
+      "displayName": "x64 Clang RelWithDebInfo",
+      "inherits": "windows-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_C_COMPILER": "clang-cl.exe",
+        "CMAKE_CXX_COMPILER": "clang-cl.exe"
+      }
     }
   ],
   "buildPresets": [
@@ -176,6 +194,16 @@
       "name": "macos-release",
       "configurePreset": "macos-release",
       "displayName": "Build macOS Release"
+    },
+    {
+      "name": "x64-relwithdebinfo",
+      "configurePreset": "x64-relwithdebinfo",
+      "displayName": "Build Windows RelWithDebInfo"
+    },
+    {
+      "name": "x64-clang-relwithdebinfo",
+      "configurePreset": "x64-clang-relwithdebinfo",
+      "displayName": "Build Windows Clang RelWithDebInfo"
     }
   ]
 }

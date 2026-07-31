@@ -117,6 +117,28 @@ if( USE_TEST_ )
    if(WIN32)
       target_compile_definitions(${TEST_NAME_} PRIVATE _WIN32_WINNT=0x0A00 WIN32_LEAN_AND_MEAN NOMINMAX ) # Windows 10/11 (was 0x0601 for Windows 7)
    endif()
+
+   target_compile_options(${TEST_NAME_} PRIVATE
+      # === MSVC frontend flags (cl.exe and clang-cl in MSVC mode) ===
+      $<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:
+         /arch:AVX2
+      >
+
+      # === MSVC-only vectorization report (diagnostics) ===
+      $<$<CXX_COMPILER_ID:MSVC>:
+         /Qvec-report:2
+      >
+
+      # === Release/RelWithDebInfo tuning for MSVC frontend ===
+      $<$<AND:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>,$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>>:
+         /O2 /Oi /Ot /fp:fast
+      >
+
+      # === Clang/GCC with GNU-style frontend (Linux/macOS, clang++) ===
+      $<$<AND:$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>,$<NOT:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>>>:
+         -O3 -ffast-math -march=x86-64-v3 -fvectorize-fslp-vectorize
+      >
+   )
 endif()
 
 set( USE_TEST_ OFF )

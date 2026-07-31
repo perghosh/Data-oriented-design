@@ -29,8 +29,9 @@
  | Pack Access (span)  | pack_harvest_span(...), pack_get_span(...) [free fn]                              | Zero-copy `std::span<TYPE>` view directly over a pack's memory, for callers doing their own SIMD.|
  | Pack Write          | pack_set_value(...), pack_set_values(...) [free fn], pack_broadcast_value(...), pack_plant(...), pack_plant_span(...) | Write a raw value, an array, or broadcast/fill a value across every element in a pack.         |
  | Pack Read/Copy      | pack_harvest(...), pack_extract_iter(...)                                         | Copy a pack's values out into a range or output iterator.                                     |
- | Pack Search/Filter  | pack_find_value(...), pack_extract_if(...), pack_extract_if_iter(...)             | Search a pack for a value (bitmask result) or extract elements matching a predicate.          |
- | Element Get/Set     | get(...), set(...), get_uint8(...)..get_double(...), set_uint8(...)..set_double(...) | Typed single-value read/write at a `position` (row/column/offset), byte-aware across packs.   | *
+ | Pack Search/Filter  | pack_find_value(...), pack_find_value_if(...), pack_any(...), pack_find_first(...), pack_find_last(...), pack_extract_if(...), pack_extract_if_iter(...) | Search a pack for a value/predicate (bitmask, yes/no, or first/last index) or extract matching elements. |
+ | Pack Reductions     | pack_min(...), pack_max(...), pack_sum(...)                                       | Reduce a pack's elements to a single smallest/largest/summed value.                           |
+ | Element Get/Set     | get(...), set(...), get_uint8(...)..get_double(...), set_uint8(...)..set_double(...) | Typed single-value read/write at a `position` (row/column/offset), byte-aware across packs.   |
  */
 
 #pragma once
@@ -885,15 +886,45 @@ public:
    template <typename TYPE, typename PREDICATE>
    std::size_t pack_extract_if(uint64_t uRowPack, unsigned uColumn, PREDICATE&& predicate_, std::span<TYPE> spanGather) const noexcept;
 
-   /// Extract elements where predicate is truthy - WRITES TO OUTPUT ITERATOR
+   /// Extract elements where predicate is truthy - writes to output iterator
    template <typename TYPE, typename PREDICATE, typename OUTPUT_ITERATOR>
    std::size_t pack_extract_if_iter(uint64_t uRowPack, unsigned uColumn, PREDICATE&& predicate_, OUTPUT_ITERATOR itDestination) const noexcept;
 
    template <typename TYPE>
    uint64_t pack_find_value(uint64_t uRowPack, unsigned uColumn, TYPE value_) const noexcept;
 
-   static constexpr std::size_t m_uValueSize_s = VALUESIZE;
-   static constexpr std::size_t m_uPackCount_s = PACKCOUNT;
+   /// Bitmask of pack elements for which predicate_ returns true (generalizes pack_find_value beyond equality)
+   template <typename TYPE, typename PREDICATE>
+   uint64_t pack_find_value_if(uint64_t uRowPack, unsigned uColumn, PREDICATE&& predicate_) const noexcept;
+
+   /// True if any pack element satisfies predicate_ - cheaper than pack_find_value_if(...) != 0
+   template <typename TYPE, typename PREDICATE>
+   bool pack_any(uint64_t uRowPack, unsigned uColumn, PREDICATE&& predicate_) const noexcept;
+
+   /// Index of the first pack element equal to value_, or npos if no element matches
+   template <typename TYPE>
+   std::size_t pack_find_first(uint64_t uRowPack, unsigned uColumn, TYPE value_) const noexcept;
+
+   /// Index of the last pack element equal to value_, or npos if no element matches
+   template <typename TYPE>
+   std::size_t pack_find_last(uint64_t uRowPack, unsigned uColumn, TYPE value_) const noexcept;
+
+   /// Smallest value among a pack's elements
+   template <typename TYPE>
+   TYPE pack_min(uint64_t uRowPack, unsigned uColumn) const noexcept;
+
+   /// Largest value among a pack's elements
+   template <typename TYPE>
+   TYPE pack_max(uint64_t uRowPack, unsigned uColumn) const noexcept;
+
+   /// Sum of a pack's elements
+   template <typename TYPE>
+   TYPE pack_sum(uint64_t uRowPack, unsigned uColumn) const noexcept;
+
+   
+   static constexpr std::size_t npos = static_cast<std::size_t>(-1); ///< Sentinel returned by pack_find_first/pack_find_last when nothing matches (mirrors std::string::npos)
+   static constexpr std::size_t m_uValueSize_s = VALUESIZE; ///< Size of each value in bytes, all values in table have this size
+   static constexpr std::size_t m_uPackCount_s = PACKCOUNT; ///< Number of values for each block/array, in AoSoA (Array of Structure of Arrays) layout 
 
    /// Convert row to pack row
    static constexpr uint64_t row_to_pack_s(uint64_t uRow) noexcept { return uRow / PACKCOUNT; }
@@ -1150,6 +1181,176 @@ uint64_t table<VALUESIZE, PACKCOUNT>::pack_find_value(uint64_t uRowPack, unsigne
    return uMask;
 }
 
+/** --------------------------------------------------------------------------- pack_find_value_if
+ * @brief Search a specific pack for elements matching an arbitrary predicate and return a bitmask of match positions.
+ * @tparam TYPE Element type to test.
+ * @tparam PREDICATE Callable taking TYPE and returning something contextually convertible to bool.
+ * @param uRowPack Target pack-row index.
+ * @param uColumn Target column index.
+ * @param predicate_ Predicate evaluated per element.
+ * @return uint64_t Bitmask where bit 'n' is 1 if predicate_(element n) is true.
+ *
+ * @note Deliberately the same flat, single-loop shape as pack_find_value - a hand-unrolled version of
+ *       pack_find_value was measured (see disassembly) to produce *worse* MSVC codegen, an extra
+ *       shift/indirection per block. Do not "improve" this into a manually unrolled loop without
+ *       re-checking the disassembly; the flat form is the faster one on MSVC.
+ * @note PREDICATE must be a template callable (lambda or functor) resolved at compile time, never
+ *       std::function or a function pointer - an indirect call here forces a real call per element
+ *       and turns this back into branchy, non-branch-free code, defeating the whole point.
+ * @note Keep predicate_ cheap (a comparison, a range check) - this always evaluates every element
+ *       with no early exit, which is the fast choice for a small fixed-size pack but a bad one if
+ *       predicate_ itself is expensive.
+ */
+template <std::size_t VALUESIZE, std::size_t PACKCOUNT>
+template <typename TYPE, typename PREDICATE>
+uint64_t table<VALUESIZE, PACKCOUNT>::pack_find_value_if(uint64_t uRowPack, unsigned uColumn, PREDICATE&& predicate_) const noexcept { assert(uRowPack < m_uRowReservedPackCount); assert(uColumn < get_column_count());
+                                                                                                   static_assert(count_pack_s() * VALUESIZE % sizeof(TYPE) == 0, "TYPE must evenly divide pack byte size");
+   constexpr std::size_t uCount = count_pack_s() * VALUESIZE / sizeof(TYPE);                       static_assert(uCount <= 64, "reinterpreted element count exceeds 64-bit mask width");
+
+   const TYPE* GD_RESTRICT puPackBaseRaw = reinterpret_cast<const TYPE*>(rowpack_get(uRowPack, uColumn));
+   const TYPE* GD_RESTRICT puPackBase = std::assume_aligned<64>(puPackBaseRaw);
+
+   uint64_t uMask = 0;
+   for(unsigned u = 0; u < uCount; ++u) { uMask |= (uint64_t(bool(predicate_(puPackBase[u]))) << u); }
+   return uMask;
+}
+
+/** --------------------------------------------------------------------------- pack_any
+ * @brief Test whether any pack element satisfies predicate_, without assembling a positional bitmask.
+ * @tparam TYPE Element type to test.
+ * @tparam PREDICATE Callable taking TYPE and returning something contextually convertible to bool.
+ * @param uRowPack Target pack-row index.
+ * @param uColumn Target column index.
+ * @param predicate_ Predicate evaluated per element.
+ * @return bool true if predicate_ returned true for at least one element.
+ *
+ * @note Cheaper than `pack_find_value_if(...) != 0`: no per-element shift and no 64-bit mask assembly,
+ *       just a narrow OR accumulation - fewer instructions for the same answer.
+ * @note Deliberately branch-free: every element is evaluated, there is no early exit. For a small,
+ *       fixed-size pack with a cheap predicate this beats a branchy early-exit loop, because pack
+ *       contents are typically data-dependent/unpredictable, so the branch mispredicts about as often
+ *       as it doesn't - you are then paying a misprediction to (maybe) skip a handful of near-free
+ *       compares. That trade only flips if predicate_ becomes genuinely expensive (a function call
+ *       into other data, not a plain comparison); in that case prefer std::any_of over
+ *       pack_harvest_span(...) with an explicit early-exit loop instead of this method.
+ */
+template <std::size_t VALUESIZE, std::size_t PACKCOUNT>
+template <typename TYPE, typename PREDICATE>
+bool table<VALUESIZE, PACKCOUNT>::pack_any(uint64_t uRowPack, unsigned uColumn, PREDICATE&& predicate_) const noexcept { assert(uRowPack < m_uRowReservedPackCount); assert(uColumn < get_column_count());
+                                                                                                   static_assert(count_pack_s() * VALUESIZE % sizeof(TYPE) == 0, "TYPE must evenly divide pack byte size");
+   constexpr std::size_t uCount = count_pack_s() * VALUESIZE / sizeof(TYPE);
+
+   const TYPE* GD_RESTRICT puPackBaseRaw = reinterpret_cast<const TYPE*>(rowpack_get(uRowPack, uColumn));
+   const TYPE* GD_RESTRICT puPackBase = std::assume_aligned<64>(puPackBaseRaw);
+
+   bool bAny = false;
+   for(std::size_t u = 0; u < uCount; ++u) { bAny |= bool(predicate_(puPackBase[u])); }
+   return bAny;
+}
+
+/** --------------------------------------------------------------------------- pack_find_first
+ * @brief Find the index of the first pack element equal to value_.
+ * @tparam TYPE Element type to find.
+ * @param uRowPack Target pack-row index.
+ * @param uColumn Target column index.
+ * @param value_ Value to search for.
+ * @return std::size_t Index of the first match, or npos if no element matches.
+ *
+ * @note Built on pack_find_value's bitmask; countr_zero picks out the lowest set bit in one step.
+ */
+template <std::size_t VALUESIZE, std::size_t PACKCOUNT>
+template <typename TYPE>
+std::size_t table<VALUESIZE, PACKCOUNT>::pack_find_first(uint64_t uRowPack, unsigned uColumn, TYPE value_) const noexcept {
+   uint64_t uMask = pack_find_value<TYPE>(uRowPack, uColumn, value_);
+   if(uMask == 0) return npos;
+   return (std::size_t)std::countr_zero(uMask);
+}
+
+/** --------------------------------------------------------------------------- pack_find_last
+ * @brief Find the index of the last pack element equal to value_.
+ * @tparam TYPE Element type to find.
+ * @param uRowPack Target pack-row index.
+ * @param uColumn Target column index.
+ * @param value_ Value to search for.
+ * @return std::size_t Index of the last match, or npos if no element matches.
+ */
+template <std::size_t VALUESIZE, std::size_t PACKCOUNT>
+template <typename TYPE>
+std::size_t table<VALUESIZE, PACKCOUNT>::pack_find_last(uint64_t uRowPack, unsigned uColumn, TYPE value_) const noexcept {
+   uint64_t uMask = pack_find_value<TYPE>(uRowPack, uColumn, value_);
+   if(uMask == 0) return npos;
+   return (std::size_t)(63 - std::countl_zero(uMask));
+}
+
+/** --------------------------------------------------------------------------- pack_min
+ * @brief Smallest value among a pack's elements.
+ * @tparam TYPE Element type to reduce over.
+ * @param uRowPack Target pack-row index.
+ * @param uColumn Target column index.
+ * @return TYPE Smallest element value in the pack.
+ */
+template <std::size_t VALUESIZE, std::size_t PACKCOUNT>
+template <typename TYPE>
+TYPE table<VALUESIZE, PACKCOUNT>::pack_min(uint64_t uRowPack, unsigned uColumn) const noexcept { assert(uRowPack < m_uRowReservedPackCount); assert(uColumn < get_column_count());
+                                                                                                   static_assert(std::is_arithmetic_v<TYPE>, "TYPE must be arithmetic for pack_min");
+                                                                                                   static_assert(count_pack_s() * VALUESIZE % sizeof(TYPE) == 0, "TYPE must evenly divide pack byte size");
+   constexpr std::size_t uCount = count_pack_s() * VALUESIZE / sizeof(TYPE);
+
+   const TYPE* GD_RESTRICT puPackBaseRaw = reinterpret_cast<const TYPE*>(rowpack_get(uRowPack, uColumn));
+   const TYPE* GD_RESTRICT puPackBase = std::assume_aligned<64>(puPackBaseRaw);
+
+   TYPE valueMin = puPackBase[0];
+   for(std::size_t u = 1; u < uCount; ++u) { valueMin = std::min(valueMin, puPackBase[u]); }
+   return valueMin;
+}
+
+/** --------------------------------------------------------------------------- pack_max
+ * @brief Largest value among a pack's elements.
+ * @tparam TYPE Element type to reduce over.
+ * @param uRowPack Target pack-row index.
+ * @param uColumn Target column index.
+ * @return TYPE Largest element value in the pack.
+ */
+template <std::size_t VALUESIZE, std::size_t PACKCOUNT>
+template <typename TYPE>
+TYPE table<VALUESIZE, PACKCOUNT>::pack_max(uint64_t uRowPack, unsigned uColumn) const noexcept { assert(uRowPack < m_uRowReservedPackCount); assert(uColumn < get_column_count());
+                                                                                                   static_assert(std::is_arithmetic_v<TYPE>, "TYPE must be arithmetic for pack_max");
+                                                                                                   static_assert(count_pack_s() * VALUESIZE % sizeof(TYPE) == 0, "TYPE must evenly divide pack byte size");
+   constexpr std::size_t uCount = count_pack_s() * VALUESIZE / sizeof(TYPE);
+
+   const TYPE* GD_RESTRICT puPackBaseRaw = reinterpret_cast<const TYPE*>(rowpack_get(uRowPack, uColumn));
+   const TYPE* GD_RESTRICT puPackBase = std::assume_aligned<64>(puPackBaseRaw);
+
+   TYPE valueMax = puPackBase[0];
+   for(std::size_t u = 1; u < uCount; ++u) { valueMax = std::max(valueMax, puPackBase[u]); }
+   return valueMax;
+}
+
+/** --------------------------------------------------------------------------- pack_sum
+ * @brief Sum of a pack's elements.
+ * @tparam TYPE Element type to reduce over.
+ * @param uRowPack Target pack-row index.
+ * @param uColumn Target column index.
+ * @return TYPE Sum of all element values in the pack.
+ *
+ * @note No widening accumulator - sums as TYPE, same tradeoff callers already accept elsewhere in this file.
+ */
+template <std::size_t VALUESIZE, std::size_t PACKCOUNT>
+template <typename TYPE>
+TYPE table<VALUESIZE, PACKCOUNT>::pack_sum(uint64_t uRowPack, unsigned uColumn) const noexcept { assert(uRowPack < m_uRowReservedPackCount); assert(uColumn < get_column_count());
+                                                                                                   static_assert(std::is_arithmetic_v<TYPE>, "TYPE must be arithmetic for pack_sum");
+                                                                                                   static_assert(count_pack_s() * VALUESIZE % sizeof(TYPE) == 0, "TYPE must evenly divide pack byte size");
+   constexpr std::size_t uCount = count_pack_s() * VALUESIZE / sizeof(TYPE);
+
+   const TYPE* GD_RESTRICT puPackBaseRaw = reinterpret_cast<const TYPE*>(rowpack_get(uRowPack, uColumn));
+   const TYPE* GD_RESTRICT puPackBase = std::assume_aligned<64>(puPackBaseRaw);
+
+   TYPE valueSum = TYPE{};
+   for(std::size_t u = 0; u < uCount; ++u) { valueSum += puPackBase[u]; }
+   return valueSum;
+}
+
+
 /** --------------------------------------------------------------------------- pack_harvest_span
  * @brief Get a span of values from a pack for direct SIMD/data processing
  * @tparam TYPE The value type to interpret the data as
@@ -1243,7 +1444,7 @@ inline std::size_t table<VALUESIZE, PACKCOUNT>::pack_extract_if( uint64_t uRowPa
 }
 
 /** --------------------------------------------------------------------------- pack_extract_if_iter
- * @brief Extract elements where predicate returns true - WRITES TO OUTPUT ITERATOR
+ * @brief Extract elements where predicate returns true - writes to output iterator
  * @param uRowPack Source pack index
  * @param uColumn Source column index
  * @param predicate_ Predicate returning true = KEEP, false = SKIP
@@ -1344,12 +1545,11 @@ inline std::span<const TYPE> pack_get_span(const table<VALUESIZE, PACKCOUNT>& ta
  * @param pSource_ Source array of values (must have at least PACKCOUNT elements)
  */
 template<typename TYPE, std::size_t VALUESIZE, std::size_t PACKCOUNT>
-inline void pack_set_values(table<VALUESIZE, PACKCOUNT>& table_, uint64_t uRowPack, unsigned uColumn, const TYPE* pSource_) noexcept { assert(uRowPack < table_.get_row_pack_count()); assert(uColumn < table_.get_column_count()); assert(table_.size_value() == sizeof(TYPE));
-   uint8_t* puPackBase = rowpack_get(table_, uRowPack, uColumn);
-   TYPE* pDestination_ = reinterpret_cast<TYPE*>(puPackBase); // destination array for values
-
-   for(size_t u = 0; u < table_.count_pack_s(); ++u) { pDestination_[u] = pSource_[u]; }
+inline void pack_set_values(table<VALUESIZE, PACKCOUNT>& table_, uint64_t uRowPack, unsigned uColumn, const TYPE* GD_RESTRICT pSource_) noexcept { ...
+   TYPE* GD_RESTRICT pDestination = reinterpret_cast<TYPE*>(rowpack_get(table_, uRowPack, uColumn));
+   std::memcpy(pDestination, pSource_, table_.count_pack_s() * sizeof(TYPE));
 }
+
 
 
 // ## @API [tag: table, simd, typealias] [description: default table types for common use cases]
