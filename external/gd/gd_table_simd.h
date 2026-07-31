@@ -4,6 +4,8 @@
  * \file gd_table_simd.h
  *
  * @brief Table used to transfer/move data, Use `gd::table::simd::table` class that is optimized for data transfer.
+ * 
+ * ## table_base
  *
  | Area                | Methods (Examples)                                                                 | Description                                                                                   |
  |---------------------|------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
@@ -17,6 +19,18 @@
  | Debug/Printing      | debug::print(...), debug::print_row(...), debug::print_column(...)                 | Methods for printing table, row, and column information for debugging purposes.                |
  | Utility/Meta        | clear(), count_used_rows(), count_free_rows(), column_match_s(...), to_columns(...)| Utility methods for clearing, counting, matching, and converting table/column metadata.        |
  *
+ * `gd::table::simd::table<VALUESIZE, PACKCOUNT>` - fixed-layout, pack-oriented table built on `table_base`, sized for SIMD-friendly access.
+ * 
+ * ## table
+ *
+ | Area                | Methods (Examples)                                                                 | Description                                                                                   |
+ |---------------------|------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
+ | Pack Addressing     | rowpack_get(...), row_to_pack_s(...), get_row_pack_count(), row_add_pack(...)      | Locate a pack's base pointer/index; each pack holds PACKCOUNT rows of VALUESIZE bytes.        |
+ | Pack Access (span)  | pack_harvest_span(...), pack_get_span(...) [free fn]                              | Zero-copy `std::span<TYPE>` view directly over a pack's memory, for callers doing their own SIMD.|
+ | Pack Write          | pack_set_value(...), pack_set_values(...) [free fn], pack_broadcast_value(...), pack_plant(...), pack_plant_span(...) | Write a raw value, an array, or broadcast/fill a value across every element in a pack.         |
+ | Pack Read/Copy      | pack_harvest(...), pack_extract_iter(...)                                         | Copy a pack's values out into a range or output iterator.                                     |
+ | Pack Search/Filter  | pack_find_value(...), pack_extract_if(...), pack_extract_if_iter(...)             | Search a pack for a value (bitmask result) or extract elements matching a predicate.          |
+ | Element Get/Set     | get(...), set(...), get_uint8(...)..get_double(...), set_uint8(...)..set_double(...) | Typed single-value read/write at a `position` (row/column/offset), byte-aware across packs.   | *
  */
 
 #pragma once
@@ -1042,39 +1056,47 @@ void table<VALUESIZE, PACKCOUNT>::pack_plant(uint64_t uRowPack, unsigned uColumn
 template <std::size_t VALUESIZE, std::size_t PACKCOUNT>
 template <typename TYPE>
 void table<VALUESIZE, PACKCOUNT>::pack_plant_span(std::span<const TYPE> span, unsigned uColumn, TYPE pad_) noexcept {  static_assert(sizeof(TYPE) <= VALUESIZE, "TYPE must fit within VALUESIZE");
-   constexpr std::size_t uBytesPerPack = PACKCOUNT * VALUESIZE;
-   constexpr std::size_t uElementsPerPack = uBytesPerPack / sizeof(TYPE);
+   constexpr std::size_t uBytesPerPack = PACKCOUNT * VALUESIZE; // Total bytes in one pack (pack is simd optimized array of values)
+   constexpr std::size_t uElementsPerPack = uBytesPerPack / sizeof(TYPE); // Total number of TYPE elements that fit in one pack (to manage types smaller tha VALUESIZE)
    
    alignas(64) std::array<TYPE, uElementsPerPack> arrayPack{}; // Create temporary buffer for packing
 
    const TYPE* pSource = span.data(); // Pointer to start source data
-   const TYPE* pSourceEnd = pSource + span.size(); // Pointer to end of source data
+   const std::size_t uSourceLength = span.size(); // Total number of elements in source span
    
+   std::size_t uPackIndex = 0;
 
-   // Phase 1: Process complete packs where source data exists
-   while((pSource + uElementsPerPack) <= pSourceEnd) 
+   // 1: Process complete packs where source data exists
+   while((uPackIndex + uElementsPerPack) <= uSourceLength)
    {
       uint64_t uRowPack = row_add_pack_one();
 
-      std::memcpy(arrayPack.data(), pSource, uBytesPerPack);                   // Compiler can fully vectorize this - no conditional checks
-      pSource += uElementsPerPack;
+      // ## Directly copy source data to the pack, inform compiler that it can safely optimize this
+      TYPE* GD_RESTRICT pDestinationRaw = reinterpret_cast<TYPE*>(rowpack_get(uRowPack, uColumn));
+      TYPE* GD_RESTRICT pDestination = std::assume_aligned<64>(pDestinationRaw);
 
-      const TYPE* GD_RESTRICT puPackBaseRaw = reinterpret_cast<const TYPE*>(rowpack_get(uRowPack, uColumn));
-      const TYPE* GD_RESTRICT puPackBase = std::assume_aligned<64>(puPackBaseRaw);
+      for(std::size_t u = 0; u < uElementsPerPack; ++u) { pDestination[u] = pSource[uPackIndex + u]; }
 
-      uint8_t* pDestination = rowpack_get(uRowPack, uColumn);                 
-      std::memcpy(pDestination, arrayPack.data(), uBytesPerPack);
+      uPackIndex += uElementsPerPack;
    }
 
-   while(pSource < pSourceEnd) {
-      // Prepare pack buffer: source data + padding
-      for(size_t u = 0; u < uElementsPerPack; ++u) {  arrayPack[u] = (pSource < pSourceEnd) ? *pSource++ : pad_;  }
-      
-      uint64_t uRowPack = row_add_pack_one();
-      uint8_t* pDestination = rowpack_get(uRowPack, uColumn);
-      std::memcpy(pDestination, arrayPack.data(), uBytesPerPack);              // Direct copy to table (compiler can optimize this)
+   // 2: Process remaining elements and fill with padding
+   const std::size_t uRemainingElements = uSourceLength - uPackIndex;
 
-      if(pSource >= pSourceEnd) break;  // Source exhausted
+   if(uRemainingElements > 0) {
+      uint64_t uRowPack = row_add_pack_one();
+
+      TYPE* GD_RESTRICT pDestinationRaw = reinterpret_cast<TYPE*>(rowpack_get(uRowPack, uColumn));
+      TYPE* GD_RESTRICT pDestination = std::assume_aligned<64>(pDestinationRaw);
+
+      const TYPE* GD_RESTRICT pSourceRemainder = pSource + uPackIndex;
+      std::size_t uPosition = 0;
+
+      // Copy actual leftover data
+      std::memcpy(pDestination, pSourceRemainder, uRemainingElements * sizeof(TYPE));
+
+      // Pad the rest of the pack
+      std::fill(pDestination + uRemainingElements, pDestination + uElementsPerPack, pad_);
    }
 }
 
@@ -1097,6 +1119,14 @@ void table<VALUESIZE, PACKCOUNT>::pack_harvest(uint64_t uRowPack, unsigned uColu
    std::memcpy(std::ranges::data(range_), pSource_, sizeof(TYPE) * count_pack_s());
 }
 
+/** --------------------------------------------------------------------------- pack_find_value
+ * @brief Search a specific pack for a value and return a bitmask of match positions.
+ * @tparam TYPE Element type to find.
+ * @param uRowPack Target pack-row index.
+ * @param uColumn Target column index.
+ * @param value_ Value to search for.
+ * @return uint64_t Bitmask where bit 'n' is 1 if element 'n' matches valueSearch.
+ */
 template <std::size_t VALUESIZE, std::size_t PACKCOUNT>
 template <typename TYPE>
 uint64_t table<VALUESIZE, PACKCOUNT>::pack_find_value(uint64_t uRowPack, unsigned uColumn, TYPE value_) const noexcept { assert(uRowPack < m_uRowReservedPackCount); assert(uColumn < get_column_count());
@@ -1108,17 +1138,11 @@ uint64_t table<VALUESIZE, PACKCOUNT>::pack_find_value(uint64_t uRowPack, unsigne
 
    uint64_t uMask = 0;
    if constexpr(uCount >= 4 && (uCount % 4) == 0) {
-      for(unsigned u = 0; u < uCount; u += 4) {
-         uint64_t uTemporaryMask = (uint64_t(puPackBase[u + 0] == value_) << 0)
-            | (uint64_t(puPackBase[u + 1] == value_) << 1)
-            | (uint64_t(puPackBase[u + 2] == value_) << 2)
-            | (uint64_t(puPackBase[u + 3] == value_) << 3);
-
-         uMask |= (uTemporaryMask << u);
-      }
+      for(unsigned u = 0; u < uCount; ++u) { uMask |= (uint64_t(puPackBase[u] == value_) << u); }
    }
    else {
-      for(unsigned u = 0; u < uCount; ++u) {
+      for(unsigned u = 0; u < uCount; ++u) 
+      {
          if(puPackBase[u] == value_) { uMask |= (1ULL << u); }
       }
    }
@@ -1300,8 +1324,7 @@ inline std::span<TYPE> pack_get_span(table<VALUESIZE, PACKCOUNT>& table_, uint64
  * @return std::span<T> Contiguous values ready for SIMD operations
  */
 template<typename TYPE, std::size_t VALUESIZE, std::size_t PACKCOUNT>
-inline std::span<const TYPE> pack_get_span(const table<VALUESIZE, PACKCOUNT>& table_, uint64_t uRowPack, unsigned uColumn) noexcept {
-   assert(uRowPack < table_.get_row_pack_count()); assert(uColumn < table_.get_column_count()); assert(table_.size_value() == sizeof(TYPE) && "Value size mismatch");
+inline std::span<const TYPE> pack_get_span(const table<VALUESIZE, PACKCOUNT>& table_, uint64_t uRowPack, unsigned uColumn) noexcept { assert(uRowPack < table_.get_row_pack_count()); assert(uColumn < table_.get_column_count()); assert(table_.size_value() == sizeof(TYPE) && "Value size mismatch");
    const uint8_t* puPackBase = table_.rowpack_get(uRowPack, uColumn);
    const TYPE* pvalue_ = reinterpret_cast<const TYPE*>(puPackBase);
    return std::span<const TYPE>(pvalue_, table_.count_pack_s());
@@ -1328,34 +1351,6 @@ inline void pack_set_values(table<VALUESIZE, PACKCOUNT>& table_, uint64_t uRowPa
    for(size_t u = 0; u < table_.count_pack_s(); ++u) { pDestination_[u] = pSource_[u]; }
 }
 
-/*
-using namespace gd::table::simd;
-
-table<1u, 32u> tableChunk(1);   // VALUESIZE=1, PACKCOUNT=32 → one pack = 32 bytes
-tableChunk.column_prepare();
-tableChunk.column_add({ { "uint8", 0, "bytes" } }, gd::table::tag_type_name{});
-tableChunk.prepare();
-
-std::string_view stringData = "name,age,city,00000000000000000";   // just an example
-// take (up to) 32 bytes, pad the tail with a sentinel that can't match a real delimiter
-std::array<uint8_t, 32> arrayChunk{};
-arrayChunk.fill(0);
-std::size_t uLen = std::min(stringData.size(), arrayChunk.size());
-std::memcpy(arrayChunk.data(), stringData.data(), uLen);
-
-tableChunk.pack_plant<uint8_t>(0u, 0, arrayChunk);
-
-// find every comma in this 32-byte chunk in one call
-uint64_t uMask = tableChunk.pack_find_value<uint8_t>(0u, 0, uint8_t(','));
-
-auto uRemaining = uMask;
-while(uRemaining) {
-   unsigned uPos = std::countr_zero(uRemaining);
-   std::cout << "comma at byte " << uPos << "\n";
-   uRemaining &= (uRemaining - 1);
-}
-
-*/
 
 // ## @API [tag: table, simd, typealias] [description: default table types for common use cases]
 
