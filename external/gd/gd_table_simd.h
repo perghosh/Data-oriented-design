@@ -1545,7 +1545,7 @@ inline std::span<const TYPE> pack_get_span(const table<VALUESIZE, PACKCOUNT>& ta
  * @param pSource_ Source array of values (must have at least PACKCOUNT elements)
  */
 template<typename TYPE, std::size_t VALUESIZE, std::size_t PACKCOUNT>
-inline void pack_set_values(table<VALUESIZE, PACKCOUNT>& table_, uint64_t uRowPack, unsigned uColumn, const TYPE* GD_RESTRICT pSource_) noexcept { ...
+inline void pack_set_values(table<VALUESIZE, PACKCOUNT>& table_, uint64_t uRowPack, unsigned uColumn, const TYPE* GD_RESTRICT pSource_) noexcept {
    TYPE* GD_RESTRICT pDestination = reinterpret_cast<TYPE*>(rowpack_get(table_, uRowPack, uColumn));
    std::memcpy(pDestination, pSource_, table_.count_pack_s() * sizeof(TYPE));
 }
