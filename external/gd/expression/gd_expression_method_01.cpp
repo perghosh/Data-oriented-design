@@ -1,7 +1,8 @@
 #include <algorithm>
 #include <cmath>
 
-#include "gd/gd_binary.h"
+#include "../gd_binary.h"
+#include "../gd_translate.h"
 
 #include "../math/gd_math_string.h"  //math related methods
 
@@ -511,6 +512,107 @@ std::pair<bool, std::string> count_g(const std::vector< value >& vectorArgument,
    }
 
    return { false, "count_g - Invalid argument type" };
+}
+
+/// Reversible encryption/decryption for magic link URLs
+/// Usage: crypt(text) or crypt(text, key) or crypt(text, key, direction)
+/// - text: The string to encrypt/decrypt (required)
+/// - key: Optional XOR key (uses server default if not provided)
+/// - direction: Optional "encrypt" or "decrypt" (auto-detected if omitted)
+/// Returns: base64 encoded encrypted string or decrypted original text
+std::pair<bool, std::string> crypt_g(const std::vector<value>& vectorArgument, value* pvalueResult)
+{                                                                                                  assert(vectorArgument.size() > 1);
+   int iArgumentIndex = (int)vectorArgument.size() - 1;
+   const auto& input_ = vectorArgument[iArgumentIndex];
+   iArgumentIndex--;
+
+   if(input_.is_null()) { *pvalueResult = input_; return { true, "" }; }       // Handle null gracefully
+
+   if(input_.is_string() == false ) return { false, "crypt_g - Input must be a string" };
+
+   auto stringInput = input_.as_string();
+
+   // ## Determine mode (encrypt/decrypt) and key .............................
+   bool bEncrypt = true; // Default to encrypt mode
+   std::string stringKey;
+
+   if(iArgumentIndex >= 0)
+   {
+      const auto& arg1_ = vectorArgument[iArgumentIndex];
+      if(arg1_.is_string())
+      {
+         stringKey = arg1_.as_string();
+         iArgumentIndex--;
+      }
+   }
+
+   if(iArgumentIndex >= 0)
+   {
+      const auto& arg2_ = vectorArgument[iArgumentIndex];
+      if(arg2_.is_string())
+      {
+         auto stringDir = arg2_.as_string();
+         std::transform(stringDir.begin(), stringDir.end(), stringDir.begin(), ::tolower);
+         bEncrypt = (stringDir[0] == 'e' || stringDir[0] == 'E');
+      }
+   }
+
+
+   // ## Simple XOR encryption/decryption function
+   auto xor_cipher_ = [](std::string_view stringInput, std::string_view stringKey) -> std::string {
+      if(stringKey.empty()) { return std::string(stringInput); }
+
+      std::string stringResult;
+      stringResult.reserve(stringInput.length());
+
+      for(size_t u = 0; u < stringInput.length(); ++u)
+      {
+         stringResult += stringInput[u] ^ stringKey[u % stringKey.length()];
+      }
+
+      return stringResult;
+      };
+
+   // ## Generate random IV for unique outputs (16 bytes)
+   auto generate_iv_ = []() -> std::string {
+      std::string stringIV;
+      stringIV.resize(16);
+      for(size_t i = 0; i < 16; ++i)
+      {
+         stringIV[i] = static_cast<char>(rand() & 0xFF);
+      }
+      return stringIV;
+      };
+
+   // ## Perform encryption using YOUR gd_translate library
+   if(bEncrypt == true)
+   {
+      std::string stringIV = generate_iv_();                                   // Step 1: Generate random IV (ensures unique URLs each time)
+      std::string stringXored = xor_cipher_(stringInput, stringKey);           // Step 2: XOR encrypt the input
+      std::string stringCombined = stringIV + stringXored;                     // Step 3: Combine IV + encrypted data
+
+      // Step 4: Use gd_translate::base64_encode_g for encoding
+      *pvalueResult = gd::translate::base64_encode_g(stringCombined.c_str(), stringCombined.length(), gd::translate::tag_string{});
+   }
+   // ## Perform decryption using YOUR gd_translate library
+   else
+   {
+      // Step 1: Use gd_translate::base64_decode_g
+      auto stringDecoded = gd::translate::base64_decode_g(stringInput.c_str(), stringInput.length(), gd::translate::tag_string{});
+
+      if(stringDecoded.length() < 16) { return { false, "crypt_g - Invalid data, too short" }; }
+
+      // Step 2: Extract IV (first 16 bytes) and encrypted data
+      std::string stringIV = stringDecoded.substr(0, 16);
+      std::string stringXored = stringDecoded.substr(16);
+
+      // Step 3: XOR decrypt (same as encrypt for XOR)
+      std::string stringOriginal = xor_cipher_(stringXored, stringKey);
+
+      *pvalueResult = stringOriginal;
+   }
+
+   return { true, "" };
 }
 
 /// Find the position of the first occurrence of word (needle) in text (haystack). Returns -1 if not found.

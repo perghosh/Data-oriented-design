@@ -59,6 +59,7 @@ std::pair<bool, std::string> toupper_g(const std::vector< value >& vectorArgumen
 
 std::pair<bool, std::string> length_g( const std::vector< value >& vectorArgument, value* pvalueResult );
 std::pair<bool, std::string> count_g(const std::vector< value >& vectorArgument, value* pvalueResult);
+std::pair<bool, std::string> crypt_g(const std::vector< value >& vectorArgument, value* pvalueResult);
 std::pair<bool, std::string> find_g(const std::vector< value >& vectorArgument, value* pvalueResult);
 std::pair<bool, std::string> has_g(const std::vector< value >& vectorArgument, value* pvalueResult);
 std::pair<bool, std::string> has_tag_g(const std::vector< value >& vectorArgument, value* pvalueResult);
@@ -123,6 +124,7 @@ constexpr size_t uMethodDefaultSize_g = sizeof(pmethodDefault_g) / sizeof(method
 const method pmethodString_g[] = {
    { (void*)&char_at_g, "char_at", 2, 1 },           // char_at(text, index) - get character at position
    { (void*)&count_g, "count", 2, 1 },               // count(haystack, needle) - count occurrences
+   { (void*)&crypt_g, "crypt", 1, 1, method::eFlagVarArgs }, // crypt(text, key?, direction?)
    { (void*)&ends_with_g, "ends_with", 2, 1 },       // ends_with(haystack, suffix) - check string ending
    { (void*)&find_g, "find", 3, 1 },                 // find(text, word, offset) - find substring position
    { (void*)&has_g, "has", 1, 1, method::eFlagVarArgs },// has(haystack, needle, ...) - check if contains substring
