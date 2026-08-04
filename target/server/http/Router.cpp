@@ -83,7 +83,21 @@ std::pair<bool, std::string> CRouter::Parse()
    return { true, "" };
 }
 
-
+/**  -------------------------------------------------------------------------- ExecuteCommand_
+ * @API [tag: router, command, handler] [summary: Execute one handler for current command segment]
+ * @brief Execute a single API handler, run configure hooks, and transfer produced objects to response.
+ *
+ * Create `APIObject` from shared router context, run optional local and global configure callbacks,
+ * execute the handler, and update `uCommandIndex` so the caller can continue command-chain dispatch.
+ *
+ * @tparam APIObject Concrete handler type used for the current command segment.
+ * @tparam Configure Configure callable type (or `std::monostate` when not used).
+ * @param vectorPath Parsed command path segments.
+ * @param arguments_ Parsed request arguments shared with handler execution.
+ * @param uCommandIndex In/out command segment index; updated from handler after execution.
+ * @param configure Optional local configure callback executed before global `"before"` hook.
+ * @return std::pair<bool, std::string> `first` indicates success; `second` contains error details.
+ */
 template<typename APIObject, typename Configure>
 std::pair<bool, std::string> CRouter::ExecuteCommand_( const std::vector<std::string_view>& vectorPath, const gd::argument::arguments& arguments_, unsigned& uCommandIndex, Configure&& configure )
 {
@@ -309,7 +323,8 @@ std::pair<bool, std::string> CRouter::RunXml(pugi::xml_document* pxmldocument_)
 
    if(stringRoot == "commands")
    {
-      for(pugi::xml_node xmlnodeCommand : xmlnodeRoot.children("command"))
+      const auto& children_ = xmlnodeRoot.children("command");
+      for(pugi::xml_node xmlnodeCommand : children_)
       {
          auto result_ = run_command_(xmlnodeCommand);
          if(result_.first == false) { return result_; }

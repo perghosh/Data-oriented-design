@@ -1,3 +1,5 @@
+// @FILE [tag: base64] [description: text translation logic] [name: gd_translate.cpp] [type: source]
+
 #include "gd_translate.h"
 
 
@@ -102,8 +104,44 @@ static const char pchBase64Digit_s[64] =
 // 24	Y        50	y
 // 25	Z        51	z
 
+/**
+ * @brief Lookup table for Base64URL character values.
+ *
+ * Same as standard Base64, but accepts '-' and '_' instead of '+' and '/'.
+ * Maps each byte value (0-255) to its Base64 digit value (0-63), or -1 if invalid.
+ */
+static int8_t constexpr piBase64URLValue_s[] = {
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 0x00-0x0F
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 0x10-0x1F
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1, // 0x20-0x2F (-, . )  Note: '-' is at 0x2D
+   52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -1, -1, -1, -1, -1, -1, // 0x30-0x3F (0-9)
+   -1,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, // 0x40-0x4F (A-O)
+   15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1, // 0x50-0x5F
+   -1, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, // 0x60-0x6F (a-o)
+   41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -1, -1, 63, -1, -1, // 0x70-0x7F (p-z, _) Note: '_' is at 0x5F, '+' replaced
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 0x80-0x8F
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 0x90-0x9F
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 0xA0-0xAF
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 0xB0-0xBF
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 0xC0-0xCF
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 0xD0-0xDF
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 0xE0-0xEF
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1  // 0xF0-0xFF
+};
 
+/// List of all Base64URL digits in right order (uses - and _ instead of + and /)
+static const char pchBase64URLDigit_s[64] =
+{
+   'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
+   'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',
+   'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd',
+   'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
+   'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x',
+   'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7',
+   '8', '9', '-', '_'
+};
 
+// Mapping: 62 -> '-', 63 -> '_'
 
 static uint8_t constexpr uInvalidBit_s = 0b1000'0000;
 
@@ -266,13 +304,15 @@ std::string base64_encode_g( const char* puStream, size_t uLength, tag_string )
 */
 size_t base64_decode_g( const uint8_t* puStream, size_t uLength, uint8_t* puBuffer )
 {
+   if(uLength == 0) { *puBuffer = '\0'; return 0; }
+
    uint8_t uValue;
    const uint8_t* puRead = puStream;// pointer to read stream for current read position
    const uint8_t* puEnd = puStream + uLength;// end of stream
    uint8_t* puWrite = puBuffer;     // write position to buffer
    unsigned uTrailCount = 0;
    if( puRead[uLength - 1] == '=' ) { uLength--; uTrailCount = 2; }
-   if( puRead[uLength - 1] == '=' ) { uLength--; uTrailCount = 1; }
+   if(uLength > 0 && puRead[uLength - 1] == '=' ) { uLength--; uTrailCount = 1; }
    unsigned uBase64SectionCount = uLength >= 4 ? ((unsigned)uLength / 4) : 0; // number of complete base64 sections
 
    for( auto u = 0u; u < uBase64SectionCount; u++ )
@@ -312,7 +352,7 @@ size_t base64_decode_g( const uint8_t* puStream, size_t uLength, uint8_t* puBuff
 
    *puWrite = '\0';
 
-   return puWrite - puStream - 1;
+   return puWrite - puBuffer - 1;
 }
 
 
@@ -324,7 +364,7 @@ size_t base64_decode_g( const uint8_t* puStream, size_t uLength, uint8_t* puBuff
  * @return number of base64 digits generated
 */
 size_t base64_decode_g( const char* puStream, size_t uLength, std::vector<uint8_t>& vectorBase64 )
-{
+{                                                                                                  assert( puStream != nullptr ); assert( uLength > 0 );
    size_t uBufferSize = base64_size_g( uLength ) + 1; // Needed size to store bytes as base64 and zero terminator
    
    auto uVectorSize = vectorBase64.size();
@@ -358,6 +398,139 @@ std::string base64_decode_g( const char* puStream, size_t uLength, tag_string )
 }
 
 
+/// @brief Validate if stream is valid base64url stream, if not return false and position of first invalid character
+bool base64url_validate_g(const uint8_t* puStream, size_t uLength, uint8_t const** ppuPosition)
+{
+   const uint8_t* puEnd = puStream + uLength;
+
+   while(puStream < puEnd)
+   {
+      if(piBase64URLValue_s[*puStream] & uInvalidBit_s)
+      {
+         // Check if this is the last padding part using = characters
+         while(puStream < puEnd && *puStream == '=') puStream++;
+         if(puStream < puEnd)
+         {
+            if(ppuPosition != nullptr) *ppuPosition = puStream;
+            return false;
+         }
+         return true;
+      }
+
+      puStream++;
+   }
+
+   return true;
+}
+
+/// Encode byte stream to Base64URL and return as string
+std::string base64url_encode_g(const char* puStream, size_t uLength, tag_string)
+{
+   // Calculate output size (same formula as standard Base64)
+   size_t uBufferSize = ((4 * uLength / 3) + 3) & ~3;
+
+   std::vector<char> vectorBase64;
+   vectorBase64.resize(uBufferSize + 1); // +1 for null terminator
+
+   const uint8_t* puRead = (const uint8_t*)puStream;
+   uint8_t* puWrite = (uint8_t*)vectorBase64.data();
+   unsigned uBase64SectionCount = ((unsigned)uLength / 3);
+
+   // Process complete 3-byte groups
+   for(auto u = 0u; u < uBase64SectionCount; u++)
+   {
+      uint32_t uBase64Value = 0;
+      uBase64Value |= (*puRead++ << 0x10);
+      uBase64Value |= (*puRead++ << 0x08);
+      uBase64Value |= *puRead++;
+
+      *puWrite++ = pchBase64URLDigit_s[(uBase64Value >> 18) & 0x3f];
+      *puWrite++ = pchBase64URLDigit_s[(uBase64Value >> 12) & 0x3f];
+      *puWrite++ = pchBase64URLDigit_s[(uBase64Value >> 6) & 0x3f];
+      *puWrite++ = pchBase64URLDigit_s[uBase64Value & 0x3f];
+   }
+
+   // Handle trailing bytes
+   switch(uLength % 3)
+   {
+   case 2:
+      *puWrite++ = pchBase64URLDigit_s[(*puRead & 0xfc) >> 2];
+      *puWrite++ = pchBase64URLDigit_s[((*puRead & 0x03) << 4) + ((puRead[1] & 0xf0) >> 4)];
+      *puWrite++ = pchBase64URLDigit_s[(puRead[1] & 0x0f) << 2];
+      *puWrite++ = '='; // Padding
+      break;
+
+   case 1:
+      *puWrite++ = pchBase64URLDigit_s[(*puRead & 0xfc) >> 2];
+      *puWrite++ = pchBase64URLDigit_s[(*puRead & 0x03) << 4];
+      *puWrite++ = '=';
+      *puWrite++ = '=';
+      break;
+
+   case 0:
+      break;
+   }
+
+   *puWrite = '\0';
+   return std::string(vectorBase64.data(), puWrite - (uint8_t*)vectorBase64.data());
+}
+
+/// Decode Base64URL stream to bytes in vector
+std::vector<uint8_t> base64url_decode_g(const char* puStream, size_t uLength, tag_vector)
+{
+   std::vector<uint8_t> vectorBytes;
+   size_t uBufferSize = ((4 * uLength / 3) + 3) & ~3;
+   vectorBytes.resize(uBufferSize + 1);
+
+   const uint8_t* puRead = (const uint8_t*)puStream;
+   const uint8_t* puEnd = puRead + uLength;
+   uint8_t* puWrite = vectorBytes.data();
+   unsigned uTrailCount = 0;
+
+   // Detect padding
+   if(uLength > 0 && puRead[uLength - 1] == '=') { uLength--; uTrailCount = 2; }
+   if(uLength > 0 && puRead[uLength - 1] == '=') { uLength--; uTrailCount = 1; }
+
+   unsigned uBase64SectionCount = uLength >= 4 ? ((unsigned)uLength / 4) : 0;
+
+   // Process complete 4-character groups
+   for(auto u = 0u; u < uBase64SectionCount; u++)
+   {
+      uint32_t uBase64Value = 0;
+      uint8_t uValue = piBase64URLValue_s[*puRead++];
+      uBase64Value = (uValue << 18);
+      uValue = piBase64URLValue_s[*puRead++];
+      uBase64Value |= (uValue << 12);
+      uValue = piBase64URLValue_s[*puRead++];
+      uBase64Value |= (uValue << 6);
+      uValue = piBase64URLValue_s[*puRead++];
+      uBase64Value |= uValue;
+
+      *puWrite++ = (uint8_t)((uBase64Value >> 16) & 0xff);
+      *puWrite++ = (uint8_t)((uBase64Value >> 8) & 0xff);
+      *puWrite++ = (uint8_t)(uBase64Value & 0xff);
+   }
+
+   // Handle partial final group (with padding)
+   if(puRead < puEnd)
+   {
+      uint32_t uBase64Value = 0;
+      uint8_t uValue = piBase64URLValue_s[*puRead++];
+      uBase64Value = (uValue << 18);
+      uValue = piBase64URLValue_s[*puRead++];
+      uBase64Value |= (uValue << 12);
+      uValue = piBase64URLValue_s[*puRead++];
+      if(uValue <= 63) uBase64Value |= (uValue << 6);
+      uValue = piBase64URLValue_s[*puRead++];
+      if(uValue <= 63) uBase64Value |= uValue;
+
+      *puWrite++ = (uint8_t)((uBase64Value >> 16) & 0xff);
+      if(uTrailCount > 1) *puWrite++ = (uint8_t)((uBase64Value >> 8) & 0xff);
+   }
+
+   vectorBytes.resize(puWrite - vectorBytes.data());
+   return vectorBytes;
+}
 
 
 _GD_TRANSLATE_END

@@ -1,3 +1,5 @@
+// @FILE [tag: base64] [description: text translation logic] [name: gd_translate.h] [type: header]
+
 /*
 * @brief translate from different text formats
 * 
@@ -65,6 +67,21 @@ std::string base64_decode_g( const char* puStream, size_t uLength, tag_string );
 inline std::string base64_decode_g( const std::string& stringStream, tag_string ) { return base64_decode_g( stringStream.c_str(), stringStream.length(), tag_string{} ); }
 
 
+/// Base64URL (URL-safe variant per RFC 4648 §5)
+/// Replaces '+' with '-' and '/' with '_' for safe URL/filename usage
+/// Optionally omits padding '=' characters
+std::string base64url_encode_g(const char* puStream, size_t uLength, tag_string);
+inline std::string base64url_encode_g(const char* puStream, tag_string) { return base64url_encode_g(puStream, strlen(puStream), tag_string{}); }
+inline std::string base64url_encode_g(const std::string& stringStream, tag_string) { return base64url_encode_g(stringStream.c_str(), stringStream.length(), tag_string{}); }
+
+std::vector<uint8_t> base64url_decode_g(const char* puStream, size_t uLength, tag_vector);
+inline std::vector<uint8_t> base64url_decode_g(const char* puStream, tag_vector) { return base64url_decode_g(puStream, strlen(puStream), tag_vector{}); }
+inline std::vector<uint8_t> base64url_decode_g(const std::string& stringStream, tag_vector) { return base64url_decode_g(stringStream.c_str(), stringStream.length(), tag_vector{}); }
+
+/// Validate Base64URL stream (accepts - and _, rejects + and /)
+bool base64url_validate_g(const uint8_t* puStream, size_t uLength, uint8_t const** ppuPosition);
+inline bool base64url_validate_g(const uint8_t* puStream, size_t uLength) { return base64url_validate_g(puStream, uLength, nullptr); }
+inline bool base64url_validate_g(const char* puStream) { return base64url_validate_g((const uint8_t*)puStream, strlen(puStream), nullptr); }
 
 
 

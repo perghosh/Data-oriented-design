@@ -464,7 +464,7 @@ std::pair<bool, std::string> CAPISystem::Execute_SessionAdd()
    gd::types::uuid uuid; // uuid for session
    std::string stringSession; // session string read from request
 
-   if( m_argumentsQS.exists("new") == false )
+   if(m_argumentsQS.exists("new") == false)                                  // No "new" parameter, so we are adding a session by value
    {
       stringSession = m_argumentsQS["session"].as_string();    // get session to add
 
