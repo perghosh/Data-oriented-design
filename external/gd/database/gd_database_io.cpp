@@ -34,6 +34,7 @@ std::pair<bool, std::string> to_table(gd::database::cursor_i* pcursor, gd::table
 {                                                                                                  assert( pcursor != nullptr ); assert( ptable != nullptr );
    const auto* precord = pcursor->get_record();                                                    assert( precord != nullptr );
 
+   // ## table is empty, generate columns in table from database cursor result
    if( ptable->empty() == true )                                              // check if table is empty, if empty then generate a perfect match against database cursor result
    {
       if( ptable->get_reserved_row_count() == 0 ) ptable->set_reserved_row_count( 10 ); //pre allocate data to hold 10 rows 
@@ -43,13 +44,13 @@ std::pair<bool, std::string> to_table(gd::database::cursor_i* pcursor, gd::table
    }
 
    // ## table contains columns, match against tables in result to know what to add
-   auto vectorTableName = ptable->column_get_name();
-   auto vectorResultName = precord->name_get();
+   auto vectorTableName = ptable->column_get_name(); // get column names in table
+   auto vectorResultName = precord->name_get(); // get column names in result
 
    // Match column names, only fill in columns with matching name in table and result
    auto vectorMatch = gd::table::table_column_buffer::column_match_s( vectorTableName, vectorResultName );
 
-   if( vectorMatch.empty() == false )
+   if(vectorMatch.empty() == false)                                           // if there are matching columns then fill in only those columns
    {
       std::vector<unsigned> vectorWriteTable;
       std::vector<unsigned> vectorReadResult;
@@ -69,7 +70,7 @@ std::pair<bool, std::string> to_table(gd::database::cursor_i* pcursor, gd::table
    }
    else
    {
-      while( pcursor->is_valid_row() == true )
+      while( pcursor->is_valid_row() == true )                                // if there are no matching columns then fill in all columns
       {
          auto vectorValue = precord->get_variant_view();
          ptable->row_add( vectorValue, gd::table::tag_convert{} );

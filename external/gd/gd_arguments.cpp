@@ -3005,6 +3005,11 @@ bool arguments::compare_s(const argument& v1, const gd::variant_view v2)
 arguments::argument arguments::get_argument_s(arguments::const_pointer pPosition)
 {
    arguments::enumCType eCType = (arguments::enumCType)*pPosition;
+#ifndef NDEBUG
+   int64_t iType_d = (int64_t)eCType;
+   int_fast64_t iTypeNumber_d = iType_d & ~eTypeNumber_MASK;
+#endif // NDEBUG
+
    pPosition++;
    switch( eCType )
    {
@@ -3037,12 +3042,12 @@ arguments::argument arguments::get_argument_s(arguments::const_pointer pPosition
    case arguments::eTypeNumberWString: return arguments::argument(eTypeWString, (const uint8_t*)(const wchar_t*)(pPosition));
    case arguments::eTypeNumberBinary: return arguments::argument(eTypeGuid, (const uint8_t*)pPosition);
 
-   case (arguments::eTypeNumberString | arguments::eValueLength): {
+   case (arguments::eTypeNumberString | arguments::eValueLength): {            // string with length
       uint32_t uSize = gd::types::cast_g<uint32_t>( pPosition );
       const uint8_t* p_ = (const uint8_t*)pPosition + sizeof(uint32_t);
       return arguments::argument( p_, uSize, enumType(eTypeString | arguments::eValueLength) );
    }
-   case (arguments::eTypeNumberUtf8String | arguments::eValueLength): {
+   case (arguments::eTypeNumberUtf8String | arguments::eValueLength): {        // utf8 string with length
       uint32_t uSize = gd::types::cast_g<uint32_t>( pPosition );
       const uint8_t* p_ = (const uint8_t*)pPosition + sizeof(uint32_t);
       return arguments::argument( p_, uSize, enumType(eTypeUtf8String | arguments::eValueLength) );

@@ -241,13 +241,13 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Open()
 
    std::string stringDocument = m_argumentsQS[{ {"document"}, {"doc"} }].as_string();
 
-	if(stringDocument.empty() == true) stringDocument = "default";
+	if( stringDocument.empty() == true ) stringDocument = "default";
 
    // ## Check if document already is connected to database
    CDocument* pdocument = GetApplication()->DOCUMENT_Get(stringDocument, true);
    if( pdocument->IsDatabaseOpen() == true ) { return { false, "document already connected to database" }; }
 
-   if(stringType.empty() == true || stringType == "sqlite")
+   if( stringType.empty() == true || stringType == "sqlite" )
    {
       std::filesystem::path pathFile(stringName);
       if(pathFile.has_extension() == false) { pathFile += ".sqlite"; }
@@ -307,7 +307,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Query()
    return { true, "" };
 }
 
-/** ---------------------------------------------------------------------------
+/** --------------------------------------------------------------------------- Execute_Select
  * @brief Executes a SELECT SQL query and retrieves the results.
  *
  * This method retrieves the database connection from the specified document
@@ -334,7 +334,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
    auto* pdatabase = GetContext()->GetDatabase();                                                  assert(pdatabase != nullptr && "no database connection");
 
    std::string stringQuery = GetNextArgument( "query" ).as_string();          // get query name to find query to execute
-   if(stringQuery.empty() == false)                                           // if query statement is to be used
+   if( stringQuery.empty() == false )                                           // if query statement is to be used
    {
       auto result_ = PrepareStatement( stringQuery, stringSelect );
       if( result_.first == false ) { return result_; }
