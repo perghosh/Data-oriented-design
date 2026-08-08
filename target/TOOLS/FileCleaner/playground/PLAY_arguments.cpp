@@ -34,3 +34,12 @@ TEST_CASE("[arguments] test arg to add values", "[arguments]")
 
 }
 
+TEST_CASE("[arguments] key value iterate", "[arguments]")
+{
+   // simulate JSON.stringify({FLoginName: sName, FPassword: sPassword})
+   std::string stringJson;
+   stringJson += "{";
+   stringJson += "\"FLoginName\": \"testuser\",";
+   stringJson += "\"FPassword\": \"testpassword\"";
+   stringJson += "}";
+}
