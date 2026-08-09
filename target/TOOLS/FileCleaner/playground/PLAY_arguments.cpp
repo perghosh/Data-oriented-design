@@ -34,6 +34,7 @@ TEST_CASE("[arguments] test arg to add values", "[arguments]")
 
 }
 
+// test to check for named error
 TEST_CASE("[arguments] key value iterate", "[arguments]")
 {
    // simulate JSON.stringify({FLoginName: sName, FPassword: sPassword})
