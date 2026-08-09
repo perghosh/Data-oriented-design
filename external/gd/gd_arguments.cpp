@@ -1026,6 +1026,20 @@ arguments::arguments(const std::string_view& stringName, const gd::variant& vari
    append_argument(stringName, variantValue);
 }
 
+/** ---------------------------------------------------------------------------
+*@brief Constructs an arguments object from a single string - variant_view pair with a tag to bypass initializer list.
+* @param stringName The string view representing the argument name.
+* @param variantValue The gd::variant_view value associated with the argument name.
+* @param tag_view A tag indicating the use of variant_view(distinguishes constructor overload).
+* @param tag_no_initializer_list A tag to explicitly indicate this constructor does not use an initializer list.
+* Initializes the object by appending the single name - value pair using the tag_view overload.
+*/   
+arguments::arguments(const std::string_view& stringName, gd::variant_view variantValue, tag_view, tag_no_initializer_list)
+{
+   zero();
+   append_argument(stringName, variantValue, tag_view{});
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief index operator where editable argument is returned.

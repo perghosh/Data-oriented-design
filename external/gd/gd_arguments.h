@@ -467,6 +467,10 @@ public:
       void get_binary_as_hex(std::string& s) const;
       unsigned int get_binary_as_hex(char* pbsz, unsigned int uLength) const;
 
+      bool is_name() const   { return (m_eType & arguments::eValueName) != 0; }
+      bool is_length() const { return (m_eType & arguments::eValueLength) != 0; }
+      bool is_array() const  { return (m_eType & arguments::eValueArray) != 0; }
+
       /// reset param
       void reset(const argument* pParam = nullptr) {
          if( pParam != nullptr ) {
@@ -882,6 +886,7 @@ public: //0TAG0construct.arguments
    /** Set buffer and size, use this to avoid heap allocations (if internal data grows over buffer size you will get heap allocation)  */
    arguments(pointer pBuffer, unsigned int uSize) : m_bOwner(false), m_pBuffer(pBuffer), m_uLength(0), m_uBufferLength(uSize) {}
    arguments(const std::string_view& stringName, const gd::variant& variantValue, tag_no_initializer_list);
+   arguments(const std::string_view& stringName, gd::variant_view variantValue, tag_view, tag_no_initializer_list);
 
 
    arguments(std::pair<std::string_view, gd::variant> pairArgument);

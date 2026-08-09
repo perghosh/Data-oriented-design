@@ -159,7 +159,11 @@ std::pair<bool, std::string> CAPISystem::Execute()
       {
          //Objects()["command"] = stringCommand;
          Objects().SetAttribute("command", gd::variant_view(stringCommand));                    // set command name that is added to response
-         if(QS_Exists("echo") == true) { Objects()["echo"] = QS_GetArguments()["echo"].as_string_view(); }
+         if(QS_Exists("echo") == true)
+         {
+            auto stringEcho = QS_GetArguments()["echo"].as_string();
+            Objects().SetAttribute("echo", stringEcho);
+         }
       }
 
       SetCommandIndex( uIndex );
@@ -488,7 +492,8 @@ std::pair<bool, std::string> CAPISystem::Execute_SessionAdd()
 
    // ## return response with index for session added
 
-   gd::argument::arguments* parguments_ = new gd::argument::arguments( { { "index", uIndex } } );
+   gd::argument::arguments* parguments_ = new gd::argument::arguments( "index", uIndex, gd::argument::arguments::tag_view{}, gd::argument::arguments::tag_no_initializer_list{});
+   //gd::argument::arguments* parguments_ = new gd::argument::arguments( { { "index", uIndex } } );
    if( m_argumentsQS.exists("new") == true ) { parguments_->append("session", stringSession); }
    Objects().Add( parguments_ );
    

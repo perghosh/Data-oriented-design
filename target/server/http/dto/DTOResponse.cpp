@@ -73,15 +73,15 @@ std::pair<bool, std::string> CDTOResponse::AddTransfer( Types::Objects* pobjects
       if( arguments_.empty() == false )
       {
          for( const auto [key_, value_] : arguments_.named() )
-         {
+         {                                                                                         assert(value_.is_array() == false);
             if( key_ == "command" || key_ == "echo" )
             {                                                                                      assert( value_.length() < 12 );
-               m_tableBody.cell_set( uRow, key_, value_.as_string_view() );
+               m_tableBody.cell_set( uRow, key_, value_.as_string() );
             }
             else
             {
                // ## @OPTIMIZED [tag: if] [description: check if value is string and use string_view to avoid unnecessary copy]
-               if( value_.is_string() == true ) { m_tableBody.cell_set_argument( uRow, key_, value_.as_string_view() ); }
+               if( value_.is_string() == true ) { m_tableBody.cell_set_argument( uRow, key_, value_.as_string() ); }
                else { m_tableBody.cell_set_argument( uRow, key_, value_.as_string() ); }
             }
          }
