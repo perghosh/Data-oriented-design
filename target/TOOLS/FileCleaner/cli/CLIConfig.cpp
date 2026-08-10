@@ -290,6 +290,12 @@ static std::string_view GetDefaultConfigData_s()
 // shortcuts for directories - format: "name":"path"
 "cleaner.directory": {
 }
+},
+// command settings for cleaner, customize commands and set default commands for the application
+"cleaner.command": {
+   "default": "list",
+}
+
 
 })";
    return stringConfig;
