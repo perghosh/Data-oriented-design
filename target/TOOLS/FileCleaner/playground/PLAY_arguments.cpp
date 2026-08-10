@@ -44,16 +44,33 @@ TEST_CASE("[arguments] key value iterate", "[arguments]")
    stringJson += "\"FPassword\": \"testpassword\"";
    stringJson += "}";
 
-   gd::argument::arguments argumentsTest;
-
-   argumentsTest.append("FLoginName", "testuser");
-   argumentsTest.append("FPassword", "testpassword");
-   argumentsTest.append("active", true);
-
-   for(const auto& [key, value] : argumentsTest.named() )  
    {
-      std::cout << "Key: " << key << ", Value:" << value.as_string() << std::endl;
+      gd::argument::arguments argumentsTest;
+
+      argumentsTest.append("FLoginName", "testuser");
+      argumentsTest.append("FPassword", "testpassword");
+      argumentsTest.append("active", true);
+
+      for(const auto& [key, value] : argumentsTest.named())
+      {
+         std::cout << "Key: " << key << ", Value:" << value.as_string() << std::endl;
+      }
    }
+
+   {
+      gd::argument::arguments argumentsTest;
+
+      argumentsTest["FLoginName"] = std::string_view("testuser");
+      argumentsTest["FPassword"] = std::string("testpassword");
+      argumentsTest["active"] = true;
+
+
+      for(const auto& [key, value] : argumentsTest.named())
+      {
+         std::cout << "Key: " << key << ", Value:" << value.as_string() << std::endl;
+      }
+   }
+
 
    //argumentsTest.append(stringJson, gd::types::tag_json{});
 }
