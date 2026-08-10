@@ -239,6 +239,7 @@ private:
       m_vectorSubOption = o.m_vectorSubOption;
       m_argumentsValue = o.m_argumentsValue;
       m_poptionsParent = o.m_poptionsParent;
+      m_stringDefaultOption = o.m_stringDefaultOption;
    }
    void common_construct( options&& o ) noexcept {
       m_uFirstToken = o.m_uFirstToken;
@@ -250,6 +251,7 @@ private:
       m_vectorSubOption = std::move( o.m_vectorSubOption );
       m_argumentsValue = std::move( o.m_argumentsValue );
       m_poptionsParent = o.m_poptionsParent;
+      m_stringDefaultOption = std::move( o.m_stringDefaultOption );
    }
 
 // ## operator -----------------------------------------------------------------
@@ -426,8 +428,8 @@ public:
    // 0TAG0sub.options
    // ## sub options
 
-   bool sub_exists( const std::string_view& stringName );
-   bool sub_is_active( const std::string_view& stringName ) const;
+   bool sub_exists( std::string_view stringName );
+   bool sub_is_active( std::string_view stringName ) const;
    options& sub_add( const options& options_ ) { m_vectorSubOption.push_back( options_ ); return *this; }
    options& sub_add( options&& options_ ) { m_vectorSubOption.push_back( std::move( options_ ) ); return *this; }
    std::size_t sub_size() const { return m_vectorSubOption.size(); }
@@ -437,7 +439,7 @@ public:
    /// find active sub command name
    std::string_view sub_find_active_name() const;
    /// find sub command for specified name
-   options* sub_find( const std::string_view& stringName );
+   options* sub_find( std::string_view stringName );
    /// count active sub commands
    size_t sub_count_active() const;
    /// find sub command for specified name
@@ -485,6 +487,7 @@ public:
    gd::argument::arguments m_argumentsValue;///< Argument values
    std::vector< options > m_vectorSubOption;///< Attached subcommands 
    std::vector< std::pair<std::string, gd::argument::arguments> > m_vectorAlias;///< alias for commands, alias may have hardcoded arguments
+   std::string m_stringDefaultOption; ///< Default option name, if set then this option is used if no other options is found
 
    const options* m_poptionsParent = nullptr; ///< Pointer to parent options (if this is sub command)
 

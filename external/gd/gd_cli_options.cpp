@@ -154,6 +154,17 @@ std::pair<bool, std::string> options::parse( int iArgumentCount, const char* con
    {                                                                                               assert( iPosition < iArgumentCount ); // iPosition cant pass iArgumentCount
       const char* pbszArgument = ppbszArgumentValue[iPosition];               // current argument
 
+      // ## if first argument is not an option and default option is set then use default option as argument
+      if( iPosition == m_uFirstToken && poptionsRoot == nullptr && m_stringDefaultOption.empty() == false && sub_exists(m_stringDefaultOption))
+      {
+         pbszArgument = ppbszArgumentValue[iPosition];
+         if(sub_exists(pbszArgument) == false && alias_exists(pbszArgument) == false)
+         {
+            pbszArgument = m_stringDefaultOption.c_str();
+            iPosition--;
+         }
+      }
+
       bool bOption = false;      // test if option
       bool bMayBeFlag = false;   // if no option then test for flag or abreviated option
       if( pbszArgument[0] == '-' && pbszArgument[1] == '-' ) bOption = true;
@@ -1100,7 +1111,7 @@ void options::print_suboption_options(const options& optionsSub, std::string& st
 }
 
 
-bool options::sub_exists(const std::string_view& stringName)
+bool options::sub_exists(std::string_view stringName)
 {
    for(auto it = std::begin( m_vectorSubOption ), itEnd = std::end( m_vectorSubOption ); it != itEnd; it++)
    {
@@ -1110,7 +1121,7 @@ bool options::sub_exists(const std::string_view& stringName)
 }
 
 /// Check if sub command is active, true if active, false if not active
-bool options::sub_is_active(const std::string_view& stringName) const
+bool options::sub_is_active(std::string_view stringName) const
 {
    for(auto it = std::begin( m_vectorSubOption ), itEnd = std::end( m_vectorSubOption ); it != itEnd; it++)
    {
@@ -1152,7 +1163,7 @@ std::string_view options::sub_find_active_name() const
 }
 
 /// Find sub command for specified name
-options* options::sub_find(const std::string_view& stringName)
+options* options::sub_find(std::string_view stringName)
 {
    for(auto it = std::begin( m_vectorSubOption ), itEnd = std::end( m_vectorSubOption ); it != itEnd; it++)
    {
