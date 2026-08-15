@@ -355,7 +355,31 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       gd::cli::options optionsApplication;
       CApplication::Prepare_s(optionsApplication);                             // prepare command-line options
 
-      // ## Parse the command-line arguments
+      // ## Parse the command-line arguments ..................................
+
+      // ### Check if command is valid, if not find defualt command
+      std::string stringCommand = ppbszArgument[1];
+      if(optionsApplication.exists(stringCommand, gd::types::tag_command{}) == false)
+      {
+         std::filesystem::path pathConfigLocation; // path to the configuration file
+         result_ = ConfigurationFindFile_s(pathConfigLocation, 3);            // try to find the configuration file in the current directory or parent directories
+         if(result_.first == true && pathConfigLocation.empty() == false)
+         {
+            if(std::filesystem::exists(pathConfigLocation) == true)         // if configuration file exists
+            {
+               result_ = CONFIG_Load(pathConfigLocation.string());                                LOG_WARNING_RAW_IF(result_.first == false, result_.second);
+               LOG_DEBUG_RAW_IF(result_.first == true, "== Loaded configuration file: " & pathConfigLocation.string());
+            }
+            else { LOG_DEBUG_RAW("Configuration file not found in current directory or parent directories.\n"); }
+         }
+         else
+         {
+            result_ = CONFIG_Load();                                                               LOG_DEBUG_RAW_IF(result_.first == false, result_.second);
+         }
+
+         stringCommand = CONFIG_GetDefaultCommand();
+         if(stringCommand.empty() == false) { optionsApplication.set_default(stringCommand); }
+      }
 
       auto [bOk, stringError] = optionsApplication.parse(iArgumentCount, ppbszArgument);// @CODE [tag: parse] [description: parse command line arguments]
       if( bOk == false )
@@ -452,20 +476,23 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
          //     - try to find the configuration file in the current directory or parent directories
          //     - if not found, try to find the configuration file in the home directory
 
-         std::filesystem::path pathConfigLocation; // path to the configuration file
-         result_ = ConfigurationFindFile_s(pathConfigLocation, 2);            // try to find the configuration file in the current directory or parent directories
-         if( result_.first == true && pathConfigLocation.empty() == false )
+         if(CONFIG_Empty() == true)
          {
-            if( std::filesystem::exists(pathConfigLocation) == true )         // if configuration file exists
+            std::filesystem::path pathConfigLocation; // path to the configuration file
+            result_ = ConfigurationFindFile_s(pathConfigLocation, 3);          // try to find the configuration file in the current directory or parent directories
+            if(result_.first == true && pathConfigLocation.empty() == false)
             {
-               result_ = CONFIG_Load(pathConfigLocation.string());                                LOG_WARNING_RAW_IF(result_.first == false, result_.second);
-                                                                                                  LOG_DEBUG_RAW_IF(result_.first == true, "== Loaded configuration file: " & pathConfigLocation.string());
+               if(std::filesystem::exists(pathConfigLocation) == true)         // if configuration file exists
+               {
+                  result_ = CONFIG_Load(pathConfigLocation.string());                              LOG_WARNING_RAW_IF(result_.first == false, result_.second);
+                  LOG_DEBUG_RAW_IF(result_.first == true, "== Loaded configuration file: " & pathConfigLocation.string());
+               }
+               else { LOG_DEBUG_RAW("Configuration file not found in current directory or parent directories.\n"); }
             }
-            else { LOG_DEBUG_RAW("Configuration file not found in current directory or parent directories.\n"); }
-         }
-         else
-         {
-            result_ = CONFIG_Load();                                                               LOG_DEBUG_RAW_IF(result_.first == false, result_.second);
+            else
+            {
+               result_ = CONFIG_Load();                                                            LOG_DEBUG_RAW_IF(result_.first == false, result_.second);
+            }
          }
       }
 
@@ -2023,6 +2050,26 @@ gd::variant_view CApplication::CONFIG_Get(std::string_view stringGroup, std::str
    }
 
    return gd::variant_view();
+}
+
+/** --------------------------------------------------------------------------
+* @brief Get the default command from the configuration
+*
+* This function retrieves the default command from the configuration table.
+* If the configuration is not loaded, it attempts to load it first.
+*
+* @return std::string_view The default command as a string view, or an empty string if not found or loading fails
+*/
+std::string_view CApplication::CONFIG_GetDefaultCommand()
+{
+   // ## Load configuration if not loaded ....................................
+   if(m_ptableConfig == nullptr)
+   {
+      auto result_ = CONFIG_Load();
+      if(result_.first == false) { return ""; } // If loading configuration fails, return empty string
+   }
+
+   return CONFIG_Get("command", "default").as_string_view();
 }
 
 void CApplication::CONFIG_Set(std::string_view stringGroup, std::string_view stringName, const gd::variant_view& value_)

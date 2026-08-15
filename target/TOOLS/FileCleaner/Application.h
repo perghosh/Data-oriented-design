@@ -342,6 +342,8 @@ public:
 
    gd::variant_view CONFIG_Get( std::string_view stringGroup, std::string_view stringName ) const;
    gd::variant_view CONFIG_Get( std::string_view stringGroup, const std::initializer_list<std::string_view> listName ) const;
+   /// Try to read default command from configuration, if not found then return empty string
+   std::string_view CONFIG_GetDefaultCommand();
 
    void CONFIG_Set( std::string_view stringGroup, std::string_view stringName, const gd::variant_view& value_ );
 

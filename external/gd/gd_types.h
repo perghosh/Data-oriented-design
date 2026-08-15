@@ -133,6 +133,7 @@ struct tag_class {};          ///< class is used in some form, like a class name
 struct tag_code {};           ///< code is used in some form, like a reference code
 struct tag_color {};          ///< color used in some form
 struct tag_column {};         ///< column is used in some form, like table columns
+struct tag_command {};        ///< command is used in some form, like a short command value
 struct tag_comment {};        ///< comment is used in some form, like user notes
 struct tag_date {};           ///< date is used in some form
 struct tag_description {};    ///< description is used in some form

@@ -896,6 +896,19 @@ bool options::exists( const std::string_view stringName, gd::types::tag_state_ac
    return exists( stringName );
 }
 
+/// @brief Check if a command name is a valid subcommand of the current options context.
+bool options::exists(std::string_view stringCommandName, gd::types::tag_command) const noexcept
+{
+   for(auto& subOption : m_vectorSubOption)
+   {
+      if(subOption.name() == stringCommandName)
+      {
+         return true;
+      }
+   }
+
+   return false;
+}
 
 
 /** ---------------------------------------------------------------------------

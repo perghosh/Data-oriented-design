@@ -277,6 +277,8 @@ public:
    bool is_sub() const;
    /// Check if single dash options is allowed
    bool is_single_dash() const { return is_flag( eFlagSingleDash ); }
+   /// Set default option name, if set then this option is used if no other options is found
+   void set_default(const std::string& stringDefault) { m_stringDefaultOption = stringDefault; }
 
 	// ## argument values
 
@@ -406,6 +408,8 @@ public:
    bool exists( const std::string_view stringName ) const noexcept { return m_argumentsValue.exists( stringName ); }
    /// Check if arguments exists in active options
    bool exists( const std::string_view stringName, gd::types::tag_state_active ) const noexcept;
+   /// Check if valid command exists in active options
+   bool exists( std::string_view stringCommandName, gd::types::tag_command ) const noexcept;
 
    void remove(const std::string_view& stringName) { m_argumentsValue.remove(stringName); }
 
