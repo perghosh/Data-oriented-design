@@ -387,7 +387,7 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
-   enumMode m_eMode = eModeUnknown;                ///< Mode of the application, e.g. review, stats, search, changes, audit, document
+   enumMode m_eMode = eModeSearch;                 ///< Mode of the application, e.g. review, stats, search, changes, audit, document
 	enumDetail m_eDetail = eDetailStandard;         ///< Level of detail for output or processing
    enumUIType m_eUIType = eUITypeUnknown;          ///< Type of user interface
    unsigned m_uApplicationState = eApplicationStateUnknown; ///< State of the application

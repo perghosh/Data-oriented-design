@@ -741,6 +741,15 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       }
    }
 
+   if(optionsApplication.exists({ "recursive", "depth" }, gd::types::tag_state_active{}) == false)
+   {
+      auto stringRecursive = CONFIG_Get("command", "recursive");
+      if(stringRecursive.empty() == false)
+      {
+         optionsApplication["recursive"] = stringRecursive;                                        LOG_INFORMATION_RAW("== Set recursive to: " & std::string(stringRecursive));
+      }
+   }
+
 
    /// ## prepare command
 
@@ -902,6 +911,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    {
 		// prepare options for list command, this is for usability so that user can use list command without specifying file or pattern
       // Check for only one argument, then this should search for that element
+      /*
 		if(poptionsActive->get_argument_count() == 3)                           // 3 is 3 subtracting program name and command name
       {                                                                                            assert(poptionsActive->exists("R") == false);
          // move from filter to pattern
@@ -909,6 +919,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
          poptionsActive->add_value("pattern", stringPattern);
          poptionsActive->set_value("filter", "**");
       }
+      */
 
       // Add a document for the "count" command
       auto* pdocument = DOCUMENT_Get("list", true);
