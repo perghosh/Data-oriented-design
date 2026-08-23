@@ -798,6 +798,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
 }
 
 
+
 /** ---------------------------------------------------------------------------
  * @brief Updates the pattern list for files in the cache using multithreading.
  *

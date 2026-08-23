@@ -2464,6 +2464,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    optionsApplication.add_flag({ "help", "Prints help information about command" });
    optionsApplication.add_flag({ "history", "Add active command to history" });
    optionsApplication.add_flag({ "print", "Results from command should be printed" });
+   optionsApplication.add_flag({ "text", 'T', "text mode, treat files as text" });
    optionsApplication.add_flag({ "verbose", "Write information about operations that might be useful for user" });
    optionsApplication.add_flag({ "icase", "Ignore case when matching patterns" });
    optionsApplication.add_flag({ "word", "Match whole words only when patterns are used" });
