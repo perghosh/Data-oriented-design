@@ -1470,8 +1470,6 @@ std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument
 
 std::pair<bool, std::string> COMMAND_ListLinesWithPatternInText(const gd::argument::shared::arguments& argumentsPath, const gd::parse::patterns& patternsFind, gd::table::table* ptable_)
 {
-   enum { eStateCode = 0x01, eStateComment = 0x02, eStateString = 0x04 }; // states for code, comment and string
-
    uint64_t uSaveRowCount = ptable_->get_row_count(); // save number of rows to fill in the full row for found rows at the end
 
    uint64_t uFileKey = argumentsPath["file-key"]; // key to file for main table holding activ files
@@ -1543,6 +1541,9 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPatternInText(const gd::argume
                std::string_view stringPattern = patternsFind.get_pattern(iPattern);
                add_line_to_table_(iPattern, stringSourceCode, uRow, uColumn, stringPattern); // add line to table
             }
+            stringSourceCode.clear();
+            uRowCharacterCodeCount = 0;                                       // reset code character count for next line
+            continue;
          }
          else if(gd::expression::is_code_g(*it) != 0)
          {

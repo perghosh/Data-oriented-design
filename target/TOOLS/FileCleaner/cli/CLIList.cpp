@@ -168,7 +168,15 @@ std::pair<bool, std::string> ListPattern_g( const gd::cli::options* poptionsList
       if( vectorPattern.size() == 0 ) return {false, "No patterns provided."}; // if no patterns are provided, return an error
 
       uSearchPatternCount = vectorPattern.size();                              // count the number of patterns to search for
-      result_ = pdocument->FILE_UpdatePatternList(vectorPattern, argumentsList); // Search for patterns in harvested files and place them into the result table
+
+      if(options_.exists("text") == true)
+      {
+         result_ = pdocument->FILE_UpdatePatternListFromText(vectorPattern, argumentsList); // Search for patterns in harvested files using text search and place them into the result table
+      }
+      else
+      {
+         result_ = pdocument->FILE_UpdatePatternList(vectorPattern, argumentsList); // Search for patterns in harvested files and place them into the result table
+      }
       if (result_.first == false) return result_;
 
       if( argumentsList["match-all"].is_true() == true )
