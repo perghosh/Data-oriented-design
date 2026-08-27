@@ -106,6 +106,7 @@ public:
    std::pair<bool, std::string> FILE_UpdatePatternCounters( const gd::argument::shared::arguments& argumentsPattern, const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, int iThreadCount = 0 );
 
    std::pair<bool, std::string> FILE_UpdatePatternListFromText(const std::vector<std::string>& vectorPattern, const gd::argument::shared::arguments& argumentsList, int iThreadCount = 0);
+   std::pair<bool, std::string> FILE_UpdatePatternListFromText(const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, const gd::argument::shared::arguments& argumentsList, int iThreadCount = 0);
 
    std::pair<bool, std::string> FILE_UpdatePatternList( const std::vector<std::string>& vectorPattern, const gd::argument::shared::arguments& argumentsList, int iThreadCount = 0 );
    std::pair<bool, std::string> FILE_UpdatePatternList( const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, const gd::argument::shared::arguments& argumentsList, int iThreadCount = 0 );

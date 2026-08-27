@@ -169,7 +169,7 @@ std::pair<bool, std::string> ListPattern_g( const gd::cli::options* poptionsList
 
       uSearchPatternCount = vectorPattern.size();                              // count the number of patterns to search for
 
-      if(options_.exists("text") == true)
+	  if (options_.exists("text") == true)                                     // if text option is specified, then treat files as plain text and search in all text.
       {
          result_ = pdocument->FILE_UpdatePatternListFromText(vectorPattern, argumentsList); // Search for patterns in harvested files using text search and place them into the result table
       }
@@ -177,7 +177,8 @@ std::pair<bool, std::string> ListPattern_g( const gd::cli::options* poptionsList
       {
          result_ = pdocument->FILE_UpdatePatternList(vectorPattern, argumentsList); // Search for patterns in harvested files and place them into the result table
       }
-      if (result_.first == false) return result_;
+
+	  if (result_.first == false) return result_;                              // if the pattern search failed, return the error
 
       if( argumentsList["match-all"].is_true() == true )
       {
@@ -226,7 +227,16 @@ std::pair<bool, std::string> ListPattern_g( const gd::cli::options* poptionsList
          }
       }
 
-      result_ = pdocument->FILE_UpdatePatternList(vectorRegexPattern, argumentsList); // Search for patterns in harvested files and place them into the result table
+      if (options_.exists("text") == true)                                     // if text option is specified, then treat files as plain text and search in all text.
+      {
+          result_ = pdocument->FILE_UpdatePatternListFromText(vectorRegexPattern, argumentsList); // Search for patterns in harvested files using text search and place them into the result table
+      }
+      else
+      {
+          result_ = pdocument->FILE_UpdatePatternList(vectorRegexPattern, argumentsList); // Search for patterns in harvested files and place them into the result table
+      }
+
+
       if( result_.first == false) return result_;
 
       if( options_["match-all"].is_true() == true )

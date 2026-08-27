@@ -1575,6 +1575,112 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPatternInText(const gd::argume
    return { true, "" };
 }
 
+std::pair<bool, std::string> COMMAND_ListLinesWithPatternInText(const gd::argument::shared::arguments& argumentsPath, const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, gd::table::table* ptable_)
+{
+   uint64_t uSaveRowCount = ptable_->get_row_count(); // save number of rows to fill in the full row for found rows at the end
+
+   uint64_t uFileKey = argumentsPath["file-key"]; // key to file for main table holding activ files
+
+   // ## prepare source file
+
+   std::string stringFile = argumentsPath["source"].as_string();                                   assert(stringFile.empty() == false);
+   if( std::filesystem::is_regular_file(stringFile) == false ) return { false, "File not found: " + stringFile };
+   gd::file::path pathFile(stringFile);
+   std::string stringExtension = pathFile.extension().string();
+
+   // ### Open file
+
+   std::ifstream file_(stringFile, std::ios::binary);
+   if(file_.is_open() == false) return { false, "Failed to open file: " + stringFile };
+
+   gd::parse::window::line lineBuffer(48 * 64, 64 * 64, gd::types::tag_create{});  // create line buffer 64 * 64 = 4096 bytes = 64 cache lines
+
+   uint64_t uCountNewLine = 0;                                                // counts all new lines in file (all '\n' characters)
+
+   // ## Function to add line to table
+   auto add_line_to_table_ = [uFileKey,ptable_,&stringFile,&patternsFind](int iPatternIndex, std::string& stringText, uint64_t uLineRow, uint64_t uColumn, const std::string_view& stringPattern ) 
+      {  
+         stringText = gd::utf8::trim_to_string(stringText);                   // trim
+
+         // ## adds line with information about found pattern to table holding matches
+         auto uRow = ptable_->row_add_one();
+         ptable_->cell_set(uRow, "key", uRow + 1);
+         ptable_->cell_set(uRow, "file-key", uFileKey);
+         ptable_->cell_set(uRow, "filename", stringFile);
+         ptable_->cell_set(uRow, "line", stringText);
+         ptable_->cell_set(uRow, "row", uLineRow);
+         ptable_->cell_set(uRow, "column", uColumn);
+         ptable_->cell_set(uRow, "pattern", stringPattern, gd::types::tag_adjust{});
+      };
+
+
+   std::string stringSourceCode; // gets source code for analysis
+   std::string stringText;       // gets text for analysis
+   uint64_t uRowCharacterCodeCount = 0; // number of characters of code in current row (helper variable)
+
+
+   // ## Read the file into the buffer
+   auto uAvailable = lineBuffer.available();
+   file_.read((char*)lineBuffer.buffer(), uAvailable);
+   auto uReadSize = file_.gcount();                                           // get number of valid bytes read
+   lineBuffer.update(uReadSize);                                              // Update valid size in line buffer
+
+   // ## Process the file
+   while(lineBuffer.eof() == false)
+   {
+      uCountNewLine += lineBuffer.count('\n');                                // count all new lines in buffer
+
+      auto [first_, last_] = lineBuffer.range(gd::types::tag_pair{});         // get first and last position of buffer
+
+      for(auto it = first_; it < last_; it++ ) 
+      {
+         if(*it == '\n')
+         {
+            uint64_t uColumn;
+            int iPattern = patternsFind.find_pattern(stringSourceCode, &uColumn); // try to find pattern in source code
+            if(iPattern != -1)                                                // did we find a pattern?
+            {
+               // ## figure ot row and column
+               auto uRow = uCountNewLine; // row number for current buffer
+               auto uPosition = it - first_;
+               uRow -= lineBuffer.count('\n', uPosition);                     // subtract number of new lines in buffer from current position to get the right row
+
+               std::string_view stringPattern = patternsFind.get_pattern(iPattern);
+               add_line_to_table_(iPattern, stringSourceCode, uRow, uColumn, stringPattern); // add line to table
+            }
+            stringSourceCode.clear();
+            uRowCharacterCodeCount = 0;                                       // reset code character count for next line
+            continue;
+         }
+         else if(gd::expression::is_code_g(*it) != 0)
+         {
+            uRowCharacterCodeCount++;                                         // count all code characters in line
+         }
+         stringSourceCode += *it;                                             // add character to source code
+      }
+
+      lineBuffer.rotate();                                                    // rotate buffer
+
+      if( uReadSize > 0 )                                                     // was it possible to read data last read, then more data is available
+      {
+         auto uAvailable = lineBuffer.available();                            // get available space in buffer to be filled
+         file_.read((char*)lineBuffer.buffer(), lineBuffer.available());      // read more data into available space in buffer
+         uReadSize = file_.gcount();
+         lineBuffer.update(uReadSize);                                        // update valid size in line buffer
+      }
+   }
+
+   // ## Check if rows have been added, if so then read the full line into "line" field as a preview
+   if( ptable_->size() > uSaveRowCount )
+   {
+      // move file to the beginning
+      file_.clear(); // clear EOF and fail bits
+      file_.seekg(0, std::ios::beg); // move to the beginning of the file
+      FILES_ReadFullRow_g( &file_, ptable_, uSaveRowCount ); // read full row into "line" field as a preview for all rows that were added to the table
+   }
+
+   return { true, "" };
+}
 
 
 /** ---------------------------------------------------------------------------

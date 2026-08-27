@@ -70,6 +70,7 @@ std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument
 std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument::shared::arguments& argumentsPath, const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, std::vector<uint64_t>& vectorCount );
 
 std::pair<bool, std::string> COMMAND_ListLinesWithPatternInText(const gd::argument::shared::arguments& argumentsPath, const gd::parse::patterns& patternsFind, gd::table::table* ptable_);
+std::pair<bool, std::string> COMMAND_ListLinesWithPatternInText(const gd::argument::shared::arguments& argumentsPath, const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, gd::table::table* ptable_);
 
 /// @brief Collects the number of lines in a file that match a specific pattern, this is case sensetive matching.
 std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::shared::arguments& argumentsPath, const gd::parse::patterns& patternsFind, gd::table::table* ptable_ );
