@@ -1597,8 +1597,22 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPatternInText(const gd::argume
 
    uint64_t uCountNewLine = 0;                                                // counts all new lines in file (all '\n' characters)
 
-   // ## Function to add line to table
-   auto add_line_to_table_ = [uFileKey,ptable_,&stringFile,&patternsFind](int iPatternIndex, std::string& stringText, uint64_t uLineRow, uint64_t uColumn, const std::string_view& stringPattern ) 
+   // ## find pattern in code using regex, returns index to matched regex in regexPatterns if match, otherwise -1
+   auto find_pattern_ = [&vectorRegexPatterns](const std::string& stringText, uint64_t* puColumn) -> int {
+      for(size_t u = 0; u < vectorRegexPatterns.size(); ++u)
+      {
+         boost::smatch smatch_;
+         if(boost::regex_search(stringText, smatch_, vectorRegexPatterns[u].first)) 
+         {
+            if(puColumn) *puColumn = smatch_.position( size_t(0) );
+            return static_cast<int>(u);
+         }
+      }
+      return -1;
+   };
+
+   // ## find pattern in code, returns index to found pattern within patternsFind if match, otherwise -1
+   auto add_line_to_table_ = [uFileKey,ptable_,&stringFile,&vectorRegexPatterns](int iPatternIndex, std::string& stringText, uint64_t uLineRow, uint64_t uColumn, const std::string_view& stringPattern ) 
       {  
          stringText = gd::utf8::trim_to_string(stringText);                   // trim
 
@@ -1637,16 +1651,15 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPatternInText(const gd::argume
          if(*it == '\n')
          {
             uint64_t uColumn;
-            int iPattern = patternsFind.find_pattern(stringSourceCode, &uColumn); // try to find pattern in source code
-            if(iPattern != -1)                                                // did we find a pattern?
+            int iPattern = find_pattern_(stringSourceCode, &uColumn);         // try to find pattern in source code
+            if( iPattern != -1 )                                              // did we find a pattern?
             {
                // ## figure ot row and column
                auto uRow = uCountNewLine; // row number for current buffer
                auto uPosition = it - first_;
                uRow -= lineBuffer.count('\n', uPosition);                     // subtract number of new lines in buffer from current position to get the right row
 
-               std::string_view stringPattern = patternsFind.get_pattern(iPattern);
-               add_line_to_table_(iPattern, stringSourceCode, uRow, uColumn, stringPattern); // add line to table
+               add_line_to_table_(iPattern, stringSourceCode, uRow, uColumn, vectorRegexPatterns[iPattern].second); // add line to table
             }
             stringSourceCode.clear();
             uRowCharacterCodeCount = 0;                                       // reset code character count for next line
