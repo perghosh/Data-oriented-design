@@ -226,7 +226,14 @@ std::pair<bool, std::string> ListPattern_g( const gd::cli::options* poptionsList
          }
       }
 
-      result_ = pdocument->FILE_UpdatePatternList(vectorRegexPattern, argumentsList); // Search for patterns in harvested files and place them into the result table
+      if(options_.exists("text") == true)
+      {
+         result_ = pdocument->FILE_UpdatePatternListFromText(vectorRegexPattern, argumentsList); // Search for patterns in harvested files using text search and place them into the result table
+      }
+      else
+      {
+         result_ = pdocument->FILE_UpdatePatternList(vectorRegexPattern, argumentsList); // Search for patterns in harvested files and place them into the result table
+      }
       if( result_.first == false) return result_;
 
       if( options_["match-all"].is_true() == true )
