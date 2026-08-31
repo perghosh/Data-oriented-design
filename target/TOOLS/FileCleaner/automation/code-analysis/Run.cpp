@@ -188,6 +188,9 @@ std::pair<bool, std::string> RunExpression_Where_g(const std::string_view& strin
       {
          if( value_.is_bool() == true )
          {
+#ifndef NDEBUG
+            bool bResult_d = value_.get_bool();
+#endif // check if the value is a boolean
             bool bResult = value_.get_bool();
             if( bResult == true ) { bWhere = true; break; }
          }

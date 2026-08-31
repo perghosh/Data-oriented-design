@@ -4273,10 +4273,11 @@ void table::erase( uint64_t uFrom, uint64_t uCount )
       // ## erase arguments objects first
       if( is_rowarguments() == true )
       {
-         for( uint64_t u = uFrom; u < (uFrom + uCount); u++ )
+         for( uint64_t uRow = uFrom; uRow < (uFrom + uCount); uRow++ )
          {
-            gd::argument::shared::arguments** ppargumentsRow = (gd::argument::shared::arguments**)row_get_arguments_meta(u);
-            if( *ppargumentsRow != nullptr ) (*ppargumentsRow)->buffer_delete(); // release reference to arguments object
+            row_arguments_delete(uRow);
+            //gd::argument::shared::arguments** ppargumentsRow = (gd::argument::shared::arguments**)row_get_arguments_meta(u);
+            //if( *ppargumentsRow != nullptr ) (*ppargumentsRow)->buffer_delete(); // release reference to arguments object
          }
       }
 
