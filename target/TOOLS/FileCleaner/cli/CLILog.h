@@ -15,7 +15,7 @@
 #include "gd/gd_cli_options.h"
 #include "gd/gd_table_io.h"
 
-
+#include "../Document.h"
 
 #ifndef NAMESPACE_CLI_BEGIN
 
@@ -26,7 +26,8 @@
 
 NAMESPACE_CLI_BEGIN
 
-std::pair<bool,std::string> Log_g( const gd::cli::options* poptionsCount, gd::cli::options* poptionsRoot );
+std::pair<bool,std::string> Log_g( gd::cli::options* poptionsLog, CDocument* pdocument );
+std::pair<bool, std::string> LogPattern_g(gd::cli::options* poptionsLog, CDocument* pdocument);
 
 NAMESPACE_CLI_END
 

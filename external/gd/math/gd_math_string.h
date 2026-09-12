@@ -12,6 +12,8 @@
 #include <string_view>
 #include <vector>
 
+#include "../gd_types.h"
+
 
 #ifndef _GD_MATH_STRING_BEGIN
 
@@ -46,6 +48,11 @@ bool compare_any(const std::string_view& stringText, const std::vector<std::stri
 bool compare_any(const std::string_view& stringText, const std::initializer_list<std::string_view>& listText) noexcept;
 /// Compare if any of the strings in vectorText are equal to stringText, ignoring case.
 bool compare_any_ignore_case(const std::string_view& stringText, const std::vector<std::string_view>& vectorText) noexcept;
+
+/// compare all alpha characters in stringText1 and stringText2, ignoring case and non-alpha characters. Returns true if they are equal.
+bool compare_alpha_nocase(const std::string_view& stringText1, const std::string_view& stringText2, gd::types::tag_strip ) noexcept;
+
+bool compare_alpha(const std::string_view& stringText1, const std::string_view& stringText2, gd::types::tag_strip) noexcept;
 
 // ## Search methods ..........................................................
 

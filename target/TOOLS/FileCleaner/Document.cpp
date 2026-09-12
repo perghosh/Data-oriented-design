@@ -44,6 +44,18 @@ void CDocument::common_construct(CDocument&& o) noexcept
    m_vectorError = std::move(o.m_vectorError);
 }
 
+std::pair<bool, std::string> CDocument::FILE_Harvest(const gd::argument::arguments& argumentsPath)
+{ 
+   std::vector< std::pair<std::string_view, gd::variant_view> > vectorArguments;
+
+   vectorArguments = gd::argument::arguments::get_argument_all_s( argumentsPath );
+   gd::argument::shared::arguments argumentsPath_(vectorArguments);
+
+   //argumentsPath.
+
+   //gd::argument::shared::arguments arguments( argumentsPath );
+}
+
 /** ---------------------------------------------------------------------------
  * @brief Harvests file information based on the provided arguments.
  *

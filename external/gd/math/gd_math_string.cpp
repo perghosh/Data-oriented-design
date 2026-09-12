@@ -277,6 +277,150 @@ bool compare_any_ignore_case(const std::string_view& stringText, const std::vect
    return false;
 }
 
+/**  -------------------------------------------------------------------------- compare_alpha
+ * @brief Compare two texts using only alphabetic characters (case-sensitive).
+ *
+ * Non-alphabetic characters in `stringText1` and `stringText2` are skipped.
+ * Only alphabetic characters are compared in-order. Comparison is **case-sensitive**.
+ *
+ * @param stringText1 First text to compare.
+ * @param stringText2 Second text to compare.
+ * @param tag_strip Comparison mode tag selecting strip behavior.
+ * @return bool `true` if alphabetic character sequences match exactly; otherwise `false`.
+ */
+bool compare_alpha(const std::string_view& stringText1, const std::string_view& stringText2, gd::types::tag_strip) noexcept
+{
+   const size_t uLengthText1 = stringText1.length(); // Length of the first string
+   const size_t uLengthText2 = stringText2.length(); // Length of the second string
+
+   size_t uIndexText1 = 0; // Index for iterating through the first string
+   size_t uIndexText2 = 0; // Index for iterating through the second string
+
+   /// ## Lambda function to check if a character is an alphabetic character
+   auto is_alpha_ = [](char iCharacter) noexcept -> bool
+      {
+         const uint8_t uCharacter = static_cast<uint8_t>(iCharacter);
+         return (gd::types::puCharGroup_g[uCharacter] & gd::types::CHAR_GROUP_ALPHABET) == gd::types::CHAR_GROUP_ALPHABET;
+      };
+
+   // ## Iterate through both strings, comparing only alphabetic characters ...
+   while(uIndexText1 < uLengthText1 && uIndexText2 < uLengthText2)
+   {
+      char iCharacterText1 = stringText1[uIndexText1]; // Current character from the first string
+      char iCharacterText2 = stringText2[uIndexText2]; // Current character from the second string
+
+      if(is_alpha_(iCharacterText1) == false) { ++uIndexText1; continue; }
+      if(is_alpha_(iCharacterText2) == false) { ++uIndexText2; continue; }
+
+      if(iCharacterText1 != iCharacterText2) { return false; }
+
+      ++uIndexText1;
+      ++uIndexText2;
+   }
+
+   while(uIndexText1 < uLengthText1)                                           // Check remaining characters in the first string
+   {
+      if(is_alpha_(stringText1[uIndexText1]) == true) { return false; }
+      ++uIndexText1;
+   }
+
+   while(uIndexText2 < uLengthText2)                                           // Check remaining characters in the second string
+   {
+      if(is_alpha_(stringText2[uIndexText2]) == true) { return false; }
+      ++uIndexText2;
+   }
+
+   return true;
+}
+
+
+/** --------------------------------------------------------------------------- compare_alpha_nocase
+ * @brief Compare two texts using only alphabetic characters (case-insensitive).
+ *
+ * Non-alphabetic characters in `stringText1` and `stringText2` are skipped.
+ * Only alphabetic characters are compared in-order. Comparison is **case-insensitive**.
+ *
+ * @param stringText1 First text to compare.
+ * @param stringText2 Second text to compare.
+ * @param tag_strip Comparison mode tag selecting strip behavior.
+ * @return bool `true` if alphabetic character sequences match ignoring case; otherwise `false`.
+ */
+bool compare_alpha_nocase(const std::string_view& stringText1, const std::string_view& stringText2, gd::types::tag_strip) noexcept
+{
+   const size_t uLengthText1 = stringText1.length(); // Length of the first string
+   const size_t uLengthText2 = stringText2.length(); // Length of the second string
+
+   size_t uIndexText1 = 0; // Index for iterating through the first string
+   size_t uIndexText2 = 0; // Index for iterating through the second string
+
+   /// ## Lambda function to check if a character is an alphabetic character
+   auto is_alpha_ = [](char iCharacter) noexcept -> bool
+      {
+         const uint8_t uCharacter = static_cast<uint8_t>(iCharacter);
+         return (gd::types::puCharGroup_g[uCharacter] & gd::types::CHAR_GROUP_ALPHABET) == gd::types::CHAR_GROUP_ALPHABET;
+      };
+
+   // ## Iterate through both strings, comparing only alphabetic characters ...
+   while(uIndexText1 < uLengthText1 && uIndexText2 < uLengthText2)
+   {
+      char iCharacterText1 = stringText1[uIndexText1]; // Current character from the first string
+      char iCharacterText2 = stringText2[uIndexText2]; // Current character from the second string
+
+      if(is_alpha_(iCharacterText1) == false) { ++uIndexText1; continue; }
+      if(is_alpha_(iCharacterText2) == false) { ++uIndexText2; continue; }
+
+      // ### Convert uppercase characters to lowercase for comparison
+      if(iCharacterText1 >= 'A' && iCharacterText1 <= 'Z') { iCharacterText1 += ('a' - 'A'); }
+      if(iCharacterText2 >= 'A' && iCharacterText2 <= 'Z') { iCharacterText2 += ('a' - 'A'); }
+
+      if(iCharacterText1 != iCharacterText2) { return false; }
+
+      ++uIndexText1;
+      ++uIndexText2;
+   }
+
+   while(uIndexText1 < uLengthText1)                                           // Check remaining characters in the first string
+   {
+      if(is_alpha_(stringText1[uIndexText1]) == true) { return false; }
+      ++uIndexText1;
+   }
+
+   while(uIndexText2 < uLengthText2)                                           // 
+   {
+      if(is_alpha_(stringText2[uIndexText2]) == true) { return false; }
+      ++uIndexText2;
+   }
+
+   return true;
+}
+
+bool compare_alpha(const std::string_view& stringText1, const std::string_view& stringText2, gd::types::tag_column) noexcept
+{
+   const size_t uLength1 = stringText1.length();
+   const size_t uLength2 = stringText2.length();
+
+   size_t uIndex1 = 0;
+   size_t uIndex2 = 0;
+   while(uIndex1 < uLength1 && uIndex2 < uLength2)
+   {
+      char iChar1 = stringText1[uIndex1];
+      char iChar2 = stringText2[uIndex2];
+      // Skip non-alpha characters
+      if(!std::isalpha(static_cast<unsigned char>(iChar1))) { ++uIndex1; continue; }
+      if(!std::isalpha(static_cast<unsigned char>(iChar2))) { ++uIndex2; continue; }
+      // Convert to lowercase for comparison
+      if(iChar1 >= 'A' && iChar1 <= 'Z') { iChar1 += ('a' - 'A'); }
+      if(iChar2 >= 'A' && iChar2 <= 'Z') { iChar2 += ('a' - 'A'); }
+      if(iChar1 != iChar2) { return false; }
+      ++uIndex1;
+      ++uIndex2;
+   }
+   // Check if both strings have been fully processed
+   while(uIndex1 < uLength1) { if(std::isalpha(static_cast<unsigned char>(stringText1[uIndex1]))) { return false; } ++uIndex1; }
+   while(uIndex2 < uLength2) { if(std::isalpha(static_cast<unsigned char>(stringText2[uIndex2]))) { return false; } ++uIndex2; }
+   return true;
+}
+
 /** ---------------------------------------------------------------------------
  * @brief Finds the first occurrence of a whole word within a string.
  *

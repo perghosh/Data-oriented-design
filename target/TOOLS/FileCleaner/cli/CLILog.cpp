@@ -3,8 +3,16 @@
  * @brief Implementation file for CLI log operations.
  */
 
+#include <cstdint>
+#include <format>
+
 #include "../Command.h"
-#include "../Application.h"
+
+#ifdef _WIN32
+#  include "../win/VS_Command.h"
+#endif
+
+#include "CLI_Shared.h"
 
 #include "CLILog.h"
 
@@ -13,12 +21,12 @@ NAMESPACE_CLI_BEGIN
 // count  --source "C:\dev\home\DOD\external\gd" -R --sort count --stats "sum"
 
 
-std::pair<bool, std::string> Log_g( const gd::cli::options* poptionsLog, gd::cli::options* poptionsApplication )
+std::pair<bool, std::string> Log_g( gd::cli::options* poptionsLog, CDocument* pdocument)
 {
-    const gd::cli::options& options_ = *poptionsList;
+    const gd::cli::options& options_ = *poptionsLog;
 
 #ifndef NDEBUG
-    [[maybe_unused]] std::string string_d = gd::argument::debug::print(poptionsList->get_arguments());
+    [[maybe_unused]] std::string string_d = gd::argument::debug::print(poptionsLog->get_arguments());
 #endif // NDEBUG
 
 
@@ -31,25 +39,50 @@ std::pair<bool, std::string> Log_g( const gd::cli::options* poptionsLog, gd::cli
         if (stringFile.empty() == false && std::filesystem::exists(stringFile) == true)
         {
             pdocument->MESSAGE_Display(std::format("File from clipboard as source: {}", stringFile));
-            poptionsList->set_value("source", stringFile);                       // set source to the file from clipboard
+            poptionsLog->set_value("source", stringFile);                       // set source to the file from clipboard
         }
     }
 
     std::string stringCommandName = options_.name();
     if (stringCommandName == "log")
     {
-        auto result_ =  LogPattern_g(poptionsList, pdocument);
+        auto result_ =  LogPattern_g(poptionsLog, pdocument);
         if (result_.first == false) return result_;
     }
 
     return { true, "" };
 }
 
-std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList, CDocument* pdocument)
-{                                                                                                   assert(poptionsList != nullptr); assert(pdocument != nullptr);
+std::pair<bool, std::string> SHARED_Harvest(const gd::argument::arguments& argumentsHarvest, CDocument* pdocument)
+{
+   std::string stringFilter = argumentsHarvest["filter"].as_string();
+   std::string stringSource = argumentsHarvest["source"].as_string();
+   auto result_ = pdocument->FILE_Harvest(argumentsHarvest, stringFilter);       // harvest (read) files based on source, source can be a file or directory or multiple separated by ;
+   if(result_.first == false) return result_;
+}
+
+std::pair<bool, std::string> LogPattern_g(gd::cli::options* poptionsLog, CDocument* pdocument)
+{                                                                                                   assert(poptionsLog != nullptr); assert(pdocument != nullptr);
     size_t uSearchPatternCount = 0; // count of patterns to search for
-    const gd::cli::options& options_ = *poptionsList;
+    const gd::cli::options& options_ = *poptionsLog;
     return { true, "" }; // return success
+
+    gd::argument::arguments argumentsFileHarvest;
+    SHARED_ReadHarvestSetting_g(options_, argumentsFileHarvest, pdocument);
+
+    int iRecursive = argumentsFileHarvest["depth"].as_int();
+
+    std::string stringSource = argumentsFileHarvest["source"].as_string();
+    CApplication::PreparePath_s(stringSource);                                 // if source is empty then set it to current path, otherwise prepare it
+
+    std::string stringFilter = options_["filter"].as_string();
+
+    gd::argument::shared::arguments argumentsPath({ { "source", stringSource },{ "recursive", iRecursive } });
+    std::string stringPathFilter = options_["path-filter"].as_string();
+    if(stringPathFilter.empty() == false) argumentsPath.append("path-filter", stringPathFilter);
+    auto result_ = pdocument->FILE_Harvest(argumentsPath, stringFilter);       // harvest (read) files based on source, source can be a file or directory or multiple separated by ;
+    if(result_.first == false) return result_;
+
 
 }
 

@@ -3171,6 +3171,18 @@ std::vector<std::pair<std::string_view, gd::variant_view>> arguments::get_argume
    return vectorArgument;
 }
 
+/** ---------------------------------------------------------------------------
+ * Extracts all arguments from an arguments object into a vector of name-value pairs.
+ * @param {const arguments&} arguments_ - The arguments object to extract from.
+ * @returns {std::vector<std::pair<std::string_view, gd::variant_view>>} 
+ *          A vector of pairs where each pair contains an optional name (std::string_view) 
+ *          and a value (gd::variant_view). Unnamed arguments have an empty name.
+ */
+std::vector<std::pair<std::string_view, gd::variant_view>> arguments::get_argument_all_s(const arguments& arguments_)
+{
+   return get_argument_all_s(arguments_.buffer_data(), arguments_.get_buffer_end(), tag_view{}, tag_pair{});
+}
+
 
 /// return all values from name and traling values with no name
 /// this is handy if you store a list or lists of values in arguments object and they start with some name

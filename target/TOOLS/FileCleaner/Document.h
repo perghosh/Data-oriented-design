@@ -97,6 +97,7 @@ public:
 
 
    /// @brief Harvest file information and store it in a table (harvest = collect)
+   std::pair<bool, std::string> FILE_Harvest( const gd::argument::arguments& argumentsPath );
    std::pair<bool, std::string> FILE_Harvest( const gd::argument::shared::arguments& argumentsPath );
    std::pair<bool, std::string> FILE_Harvest( const gd::argument::shared::arguments& argumentsPath, std::string stringFilter );
    std::pair<bool, std::string> FILE_Filter( const std::string_view& stringFilter );

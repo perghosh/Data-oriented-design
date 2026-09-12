@@ -1588,6 +1588,7 @@ public:
    static std::vector<gd::variant_view> get_argument_all_s(const_pointer pBegin, const_pointer pEnd, std::string_view stringName, tag_view);
    static std::vector<std::pair<std::string_view, gd::variant_view>> get_argument_all_s(const_pointer pBegin, const_pointer pEnd,  tag_view, tag_pair);
    static std::vector<gd::variant_view> get_argument_section_s(const_pointer pBegin, const_pointer pEnd, std::string_view stringName, tag_view);
+   static std::vector<std::pair<std::string_view, gd::variant_view>> get_argument_all_s(const arguments& arguments_);
 
    /// ## move methods
    /// move pointer to next value in buffer

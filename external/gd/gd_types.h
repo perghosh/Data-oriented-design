@@ -266,20 +266,23 @@ struct tag_size128 {};        ///< 128 bit value or some form of 128 bit size
 
 // ----------------------------------------------------------------------------
 // ## storage related tag dispatchers
-struct tag_storage_memory {};   ///< memory storage, like RAM
-struct tag_storage_disk {};     ///< disk storage, like HDD or SSD
-struct tag_storage_cloud {};    ///< cloud storage, like AWS S3 or Azure Blob
-struct tag_storage_cache {};    ///< cache storage, like in-memory cache or disk cache
+struct tag_storage_memory {};  ///< memory storage, like RAM
+struct tag_storage_disk {};    ///< disk storage, like HDD or SSD
+struct tag_storage_cloud {};   ///< cloud storage, like AWS S3 or Azure Blob
+struct tag_storage_cache {};   ///< cache storage, like in-memory cache or disk cache
 struct tag_storage_temporary {};///< temporary storage, like temp files or in-memory temp data
 struct tag_storage_permanent {};///< permanent storage, like database or long-term files
-struct tag_storage_database {}; ///< database storage, like SQL or NoSQL databases
+struct tag_storage_database {};///< database storage, like SQL or NoSQL databases
 
 
 
 
 // ----------------------------------------------------------------------------
 // ## operation related tag dispatchers
+struct tag_canonical {};      ///< canonical is used in some form, like canonical form or canonical representation
+struct tag_filter {};         ///< filter is used in some form, like filtering data
 struct tag_raw {};            ///< do not perform any smart operations, just raw data
+struct tag_strip {};          ///< strip is used in some form, like stripping whitespace or characters
 
 
 // ----------------------------------------------------------------------------
