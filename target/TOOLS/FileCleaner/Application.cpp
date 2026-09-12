@@ -2648,6 +2648,18 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsApplication.sub_add(std::move(optionsCommand));
    }
 
+   {  // ## `log` is targeted to investigate logs.
+	   gd::cli::options optionsCommand(gd::cli::options::eFlagUnchecked, "log", "Investigate log files");
+	   optionsCommand.add({ "source", 's', "Log file(s) to investigate" });
+	   optionsCommand.add({ "filter", "Filter to apply (wildcard file name matching). If empty, all found text files are counted" });
+	   optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;" });
+	   optionsCommand.add({ "rpattern", "Use a **regular expression pattern** to search for more complex text matches within file content." });
+	   optionsCommand.add({ "where", "Specify SQL like conditions for filtering result." });
+	   optionsCommand.add({ "where-expression", "Use internal expression format for filtering result." });
+	   optionsCommand.set_flag((gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0);
+	   optionsApplication.sub_add(std::move(optionsCommand));
+   }
+
    {  // ## `paste` checks the clipboard for text or input file reading arguments
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "paste", "Paste text from clipboard or read from input file" );
       optionsCommand.add({"source", 's', "Files to join"});

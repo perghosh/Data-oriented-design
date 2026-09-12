@@ -1,5 +1,5 @@
-/** @FILE [tag: cli, command, paste] [description:implementation for CLI paste operations, command is found in clipboard] [type: source]
-* @file CLIPaste.h
+/** @FILE [tag: cli, command, log] [description:implementation for CLI log operations] [type: source]
+* @file CLILog.h
 *  
 */
 
@@ -26,7 +26,7 @@
 
 NAMESPACE_CLI_BEGIN
 
-std::pair<bool,std::string> Paste_g( const gd::cli::options* poptionsCount, gd::cli::options* poptionsRoot );
+std::pair<bool,std::string> Log_g( const gd::cli::options* poptionsCount, gd::cli::options* poptionsRoot );
 
 NAMESPACE_CLI_END
 
