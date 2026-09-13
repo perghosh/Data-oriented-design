@@ -57,7 +57,7 @@ std::pair<bool, std::string> SHARED_Harvest(const gd::argument::arguments& argum
 {
    std::string stringFilter = argumentsHarvest["filter"].as_string();
    std::string stringSource = argumentsHarvest["source"].as_string();
-   auto result_ = pdocument->FILE_Harvest(argumentsHarvest, stringFilter);       // harvest (read) files based on source, source can be a file or directory or multiple separated by ;
+   auto result_ = pdocument->FILE_Harvest(argumentsHarvest);                  // harvest (read) files based on source, source can be a file or directory or multiple separated by ;
    if(result_.first == false) return result_;
 }
 

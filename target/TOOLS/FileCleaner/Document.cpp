@@ -51,9 +51,13 @@ std::pair<bool, std::string> CDocument::FILE_Harvest(const gd::argument::argumen
    vectorArguments = gd::argument::arguments::get_argument_all_s( argumentsPath );
    gd::argument::shared::arguments argumentsPath_(vectorArguments);
 
-   //argumentsPath.
+   if(argumentsPath_.exists("filter") == false)
+   {
+      return FILE_Harvest(argumentsPath_);
+   }
 
-   //gd::argument::shared::arguments arguments( argumentsPath );
+   auto stringFilter = argumentsPath_.get_argument("filter").as_string();
+   return FILE_Harvest(argumentsPath_, stringFilter);
 }
 
 /** ---------------------------------------------------------------------------
