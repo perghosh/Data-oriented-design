@@ -70,6 +70,7 @@ bool os_fnmatch(const char* piPattern, const char* piPath) {
 #include "cli/CLIHistory.h"
 #include "cli/CLIKeyValue.h"
 #include "cli/CLIList.h"
+#include "cli/CLILog.h"
 #include "cli/CLIPaste.h"
 #include "cli/CLIRun.h"
 
@@ -921,7 +922,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       }
       */
 
-      // Add a document for the "count" command
+      // Add a document for the "list" command
       auto* pdocument = DOCUMENT_Get("list", true);
       if( bUseThreads == true )
       {
@@ -930,6 +931,18 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       }
       else                      { return CLI::List_g(poptionsActive, pdocument); }// list lines in file or directory with the matched pattern
       if( pdocument->ERROR_Empty() == false ) { pdocument->ERROR_Print(); }
+   }
+   else if(stringCommandName == "log")
+   {
+      // Add a document for the "log" command
+      auto* pdocument = DOCUMENT_Get("log", true);
+      if(bUseThreads == true)
+      {
+         auto options_ = poptionsActive->clone();
+         return execute_edit_(CLI::Log_g, std::move(options_), pdocument);    // log lines in file or directory with the matched pattern in its own thread
+      }
+      else { return CLI::Log_g(poptionsActive, pdocument); }// log lines in file or directory with the matched pattern
+      if(pdocument->ERROR_Empty() == false) { pdocument->ERROR_Print(); }
    }
    else if( stringCommandName == "paste" )
    {

@@ -97,6 +97,9 @@ std::pair<bool, std::string> CDocument::FILE_Harvest(const gd::argument::shared:
    }
 
    auto result_ = FILES_Harvest_g(argumentsPath, ptable_);
+#ifndef NDEBUG
+   const uint64_t uCount_d = ptable_->size();
+#endif // NDEBUG
    if( result_.first == false ) return result_;
 
    return result_;

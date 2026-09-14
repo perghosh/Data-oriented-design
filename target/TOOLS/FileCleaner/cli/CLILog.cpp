@@ -53,6 +53,7 @@ std::pair<bool, std::string> Log_g( gd::cli::options* poptionsLog, CDocument* pd
     return { true, "" };
 }
 
+/*
 std::pair<bool, std::string> SHARED_Harvest(const gd::argument::arguments& argumentsHarvest, CDocument* pdocument)
 {
    std::string stringFilter = argumentsHarvest["filter"].as_string();
@@ -60,12 +61,12 @@ std::pair<bool, std::string> SHARED_Harvest(const gd::argument::arguments& argum
    auto result_ = pdocument->FILE_Harvest(argumentsHarvest);                  // harvest (read) files based on source, source can be a file or directory or multiple separated by ;
    if(result_.first == false) return result_;
 }
+*/
 
 std::pair<bool, std::string> LogPattern_g(gd::cli::options* poptionsLog, CDocument* pdocument)
 {                                                                                                   assert(poptionsLog != nullptr); assert(pdocument != nullptr);
     size_t uSearchPatternCount = 0; // count of patterns to search for
     const gd::cli::options& options_ = *poptionsLog;
-    return { true, "" }; // return success
 
     gd::argument::arguments argumentsFileHarvest;
     SHARED_ReadHarvestSetting_g(options_, argumentsFileHarvest, pdocument);
@@ -82,6 +83,17 @@ std::pair<bool, std::string> LogPattern_g(gd::cli::options* poptionsLog, CDocume
     if(stringPathFilter.empty() == false) argumentsPath.append("path-filter", stringPathFilter);
     auto result_ = pdocument->FILE_Harvest(argumentsPath, stringFilter);       // harvest (read) files based on source, source can be a file or directory or multiple separated by ;
     if(result_.first == false) return result_;
+
+    if(options_["filter"].is_true() == true)                                   // Apply file filters if specified
+    {
+       std::string stringFilter = options_["filter"].as_string();
+       // If the filter is empty, we do not apply any filter and remove files that do not match the filter
+       result_ = pdocument->FILE_Filter(stringFilter);                                              if(!result_.first) { return result_; }
+    }
+
+    gd::argument::shared::arguments argumentsList;
+    argumentsList.append(options_.get_arguments(), { "max", "match-all", "icase", "word" });
+    if(argumentsList.exists("max") == false) { argumentsList.set("max", 512); } // default to 512 lines
 
 
 }
