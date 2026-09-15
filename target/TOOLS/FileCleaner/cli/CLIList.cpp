@@ -131,8 +131,6 @@ std::pair<bool, std::string> ListPattern_g( const gd::cli::options* poptionsList
    if( options_.exists("pattern") == true )
    {
       std::vector<std::string> vectorPattern; // vector to store patterns
-      //auto vector_ = options_.get_all("pattern"); // get all patterns from options and put them into argumentsList
-
       vectorPattern = options_.get_arguments().get_all<std::string>("pattern"); // get all patterns from options and put them into vectorPattern
 
 
