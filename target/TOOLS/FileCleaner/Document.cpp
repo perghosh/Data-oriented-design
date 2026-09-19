@@ -2592,6 +2592,21 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<
          ptable_->property_set("id", stringId);                                // set id for table, used to identify table in cache
       }
    }
+   else if (stringId == "file-loglist")                                        // lists line where pattern was found  
+   {
+       auto p_ = CACHE_Get(stringId, false);
+       if (p_ == nullptr)
+       {
+           // file-linelist table: key | file-key | filename  
+           //                      line | row | column | pattern, segment  
+           //                      line = the row in text where pattern was found  
+           ptable_ = std::make_unique<table>(table(uTableStyle,
+               { {"uint64", 0, "key"}, {"uint64", 0, "file-key"}, {"rstring", 0, "filename"},
+                 {"rstring", 0, "line"}, {"rstring", 0, "line-zip"}, {"uint64", 0, "row"}, {"uint64", 0, "count"} }, gd::table::tag_prepare{})
+           );
+           ptable_->property_set("id", stringId);                                // set id for table, used to identify table in cache
+       }
+   }
    else if( stringId == "file-snippet" )
    { 
       // ## This is a table used to store snippets of lines where patterns were found, this can be used to show more context in the UI for example 
