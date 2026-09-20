@@ -1,6 +1,7 @@
 // application.cpp : Defines the entry point for the application.
 //
 
+#include "os/OS_Event.h"
 #include "application.h"
 #include "window.h"
 #include <vector>
