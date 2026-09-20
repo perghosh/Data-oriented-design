@@ -1,4 +1,7 @@
 // event_translate.h
+#include <array>
+
+#include "window.h"
 
 namespace ui {
 
@@ -29,7 +32,7 @@ namespace ui {
 
       eEventTimer,
 
-      eEventCount
+      eEvent_Count
    };
 
    // Dense translation table. Index is the native WM_* id, value is our eEvent.
