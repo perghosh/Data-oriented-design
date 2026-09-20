@@ -4,7 +4,28 @@
  * @file gd_arguments.h
  *
  * @brief Pack primitive and common derived values into a byte buffer for efficient storage and access with focus on memory size. Like key-value pairs in one single buffer.
+ * 
+ * Sections — double-click a marker, then Ctrl+F3 / F3 to jump.
+ * Repeated markers step through multiple locations.
  *
+ *   append__                    append, append_argument, append_if, append_object
+ *   argument__                  struct argument (single value)
+ *   arguments_return__          arguments_return (return-value helper)
+ *   buffer__                    buffer_set, buffer_data, buffer_offset, is_owner
+ *   compare__                   compare, compare_exists, iif
+ *   construct_arguments__       constructors and destructors
+ *   find__                      find, find_all, find_argument, exists
+ *   forwarder__                 argument_forwarder (CRTP base)
+ *   get_argument__              get_argument, get_argument_all, get_variant_view
+ *   getters_setters__           get_buffer_start, get_buffer_end, is_owner, set_owner
+ *   internal_free_functions__   static free functions (move, compare, sizeof, memcpy)
+ *   iterator__                  struct iterator_ + begin/end + named_begin/end + iterator_named
+ *   misc__                      clear, data
+ *   operator__                  operator[], operator=, operator+=, operator<<, operator()
+ *   print__                     print, print_json, debug::print
+ *   remove__                    remove, erase, reserve, shrink_to_fit
+ *   set__                       set, set_uuid
+ *   walk_iterator__             next(), next(pPosition)
  *
  | Area                | Methods (Examples)                                                                 | Description                                                                                   |
  |---------------------|------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
@@ -75,22 +96,6 @@ for( auto it = args8.named_begin(); it != args8.named_end(); it++ )
  * it is automatically freed in the destructor.
  *
  */
-
-/**
- * ### 0TAG0 File navigation, mark and jump to common parts
- * - `0TAG0argument` - Represents a single argument in `arguments`.
- * - `0TAG0iterator` - Provides forward traversal of arguments in `arguments`.
- * - `0TAG0construct.arguments` - Constructors and destructors for `arguments`.
- * - `0TAG0operator.arguments` - Overloaded operators for `arguments`.
- * - `0TAG0append.arguments` - Methods for appending values to `arguments`.
- * - `0TAG0set.arguments` - Methods for setting values in the `arguments`.
- * - `0TAG0get.arguments` - Methods for retrieving values from `arguments`.
- * - `0TAG0print.arguments` - Methods for printing values in `arguments`.
- * - `0TAG0free_functions.arguments` - Free functions for working with `arguments`.
- * - `0TAG0buffer.arguments` - Methods for managing the buffer in `arguments`.
- */
-
-
 
 #pragma once
 #include <cassert>
@@ -348,7 +353,7 @@ public:
    };
 
 public:
-   struct argument  //0TAG0argument - gd::argument::arguments::argument
+   struct argument  // @API [tag: argument] [description: argument manages single values in arguments object] [jump: argument__]
    {
       union value;   // forward declare
       /// default constructor
@@ -574,9 +579,9 @@ public:
       } m_unionValue;
    };
 
-   // @API [tag: helper] [description: Helper base class that forwards all const methods to derived type's get_argument()]
+   // @API [tag: helper] [description: Helper base class that forwards all const methods to derived type's get_argument()] [jump: forwarder__]
 
-   /// CRTP (Curiously Recurring Template Pattern) to simplfy use of argument_proxy
+   /// CRTP (Curiously Recurring Template Pattern) to simplfy use of argument_proxy @API [tag: argument_proxy] [description: argument_proxy is a proxy class that forwards all const methods to the underlying argument object] [jump: argument_proxy__]
    template<typename DERIVED>
    struct argument_forwarder
    {
@@ -758,7 +763,7 @@ public:
     * @brief iterator_ for iterating values in params object.
     */
    template<typename ARGUMENTS>
-   struct iterator_  //0TAG0iterator - iterator used to move forward for values whithin arguments
+   struct iterator_  // @API [tag: iterator] [description: iterator used to move forward for values within arguments] [jump: iterator__]
    {
       using value_type = argument;
       using iterator_category = std::forward_iterator_tag;
@@ -879,8 +884,8 @@ public:
    using const_iterator =     iterator_<const arguments>;
 
 
-   // ## @API [tag: construct] [description: construction methods for creating arguments instances]
-public: //0TAG0construct.arguments
+   // @API [tag: construct] [description: construction methods for creating arguments instances] [jump: construct_arguments__]
+public: 
    arguments() { buffer_set(); }
 
    /** Set buffer and size, use this to avoid heap allocations (if internal data grows over buffer size you will get heap allocation)  */
@@ -991,7 +996,7 @@ protected:
 
    void zero() { buffer_set(); };
 
-   // ## @API [tag: operator] [description: overloaded operators]
+   // @API [tag: operator] [description: overloaded operators] [jump: operator__]
 public: 
    // Non-const versions return proxy for read/write access 
    argument_proxy operator[](unsigned uIndex) { pointer pPosition = find(uIndex); return argument_proxy(this, pPosition); }
@@ -1056,9 +1061,9 @@ public:
 
    // ## methods ------------------------------------------------------------------
 public:
-/** \name GET/SET
-*///@{
-/// return start position to buffer where values are stored
+
+   // @API [tag: getters, setters] [description: get buffer start/end positions] [jump: getters_setters__]
+
    pointer get_buffer_start() { return m_pBuffer; }
    const_pointer get_buffer_start() const { return m_pBuffer; }
    /// return last position for buffer where values are stored
@@ -1071,12 +1076,11 @@ public:
    /// set if object owns memory, if it does it should be deleted when arguments goes out of scope
    void set_owner( bool bOwner = true ) noexcept { m_bOwner = bOwner; }
 
-//@}
 
 /** \name OPERATION
 *///@{
 
-   // ## @API [tag: append] [description: append data to arguments]
+   // @API [tag: append] [description: append data to arguments] [jump: append__]
    //    note: remember that each value has its type and type in stream is just
    //    one byte. That means that the amount of information about the type is
    //    limited. This is the reason why each type only has it's type number.
@@ -1235,7 +1239,7 @@ public:
    arguments& push_back_view(std::string_view key_, gd::variant_view value_) { return append_argument(key_, value_); }
    arguments& push_back_view(const std::pair<std::string_view, gd::variant_view>& pairArgument) { return append_argument(pairArgument.first, pairArgument.second); }
    
-   // ## @API [tag: set] [description: set methods, if value exists it is overwritten, otherwise it is appended]
+   // @API [tag: set] [description: set methods, if value exists it is overwritten, otherwise it is appended] [jump: set__]
    //    Set values for selected position in buffer, it could be for a name, index or pointer
    //    If position is not found, new value is appended to buffer
 
@@ -1284,7 +1288,7 @@ public:
    /// merge values from another arguments object, onlye named values are merged
    arguments& merge(const arguments& arguments_);
 
-   // ## @API [tag: iterator] [description: provides iterators for traversing arguments]
+   // @API [tag: iterator] [description: provides iterators for traversing arguments] [jump: iterator__]
 
    // ### value based iterators, faster but less support for stl iterator logic
 
@@ -1322,7 +1326,7 @@ public:
    /// number of arguments found in arguments object
    [[nodiscard]] size_t size() const;
 
-   // ## @API [tag: find] [description: find methods to find values within arguments objects]
+   // @API [tag: find] [description: find methods to find values within arguments objects] [jump: find__]
 
    [[nodiscard]] pointer find(unsigned int uIndex);
    [[nodiscard]] const_pointer find(unsigned int uIndex) const;
@@ -1359,7 +1363,7 @@ public:
    [[nodiscard]] std::pair<bool, std::string> exists( const std::initializer_list<std::pair<std::string_view, std::string_view>>& listName, tag_description ) const { return exists_s( *this, listName, tag_description{}); }
    [[nodiscard]] std::pair<bool, std::string> exists_any_of( const std::initializer_list<std::string_view>& listName, tag_name ) const { return exists_any_of_s( *this, listName, tag_name{}); }
 
-   // ## @API [tag: compare] [description: compare methods, checks if values in arguments are equal]
+   // @API [tag: compare] [description: compare methods, checks if values in arguments are equal] [jump: compare__]
 
    [[nodiscard]] bool compare(const std::pair<std::string_view, gd::variant_view>& pairMatch) const { return find(pairMatch) != nullptr; }
    [[nodiscard]] bool compare(const std::string_view& stringName, const arguments& argumentsCompareTo) const;
@@ -1368,7 +1372,7 @@ public:
    bool iif( const std::string_view& stringName, std::function< void( const gd::variant_view& ) > callback_ ) const;
 
 
-   // ## @API [tag: walk, iterator] [description: walk between items in arguments, moves pointer to next value, can't go back]
+   // @API [tag: walk, iterator] [description: walk between items in arguments, moves pointer to next value, can't go back] [jump: walk_iterator__]
 
    [[nodiscard]] pointer next() { return m_uLength > 0 ? m_pBuffer : nullptr; }
    [[nodiscard]] const_pointer next() const { return m_uLength > 0 ? m_pBuffer : nullptr; }
@@ -1381,7 +1385,7 @@ public:
       return p < get_buffer_end() ? p : nullptr;
    }
 
-   // ## @API [tag: misc] [description: miscellaneous methods for arguments management]
+   // @API [tag: misc] [description: miscellaneous methods for arguments management] [jump: misc__]
 
    /// cleans upp interal data and set it as empty
    void clear();
@@ -1389,7 +1393,7 @@ public:
    /// Return raw data buffer
    [[nodiscard]] void* data() { return m_pBuffer; }
 
-   // ## @API [tag: get] [description: get methods to retrieve values from arguments objects, note that arguments store `argument` values, argument is a type of variant]
+   // @API [tag: get] [description: get methods to retrieve values from arguments objects, note that arguments store `argument` values, argument is a type of variant] [jump: get_argument__]
 
    [[nodiscard]] argument get_argument() const { return get_argument_s(m_pBuffer); }
    [[nodiscard]] argument get_argument(const_pointer pPosition) const {                assert( verify_d(pPosition) );
@@ -1488,7 +1492,7 @@ public:
    OBJECT get_object( const std::string_view& stringPrefixFind );
 
 
-   // ## @API [tag: print] [description: Methods used to format argument values, values are mostly printed into std::string object]
+   // @API [tag: print] [description: Methods used to format argument values, values are mostly printed into std::string object] [jump: print__]
 
    std::string print() const;
    std::string print( const_iterator itBegin ) const { return print(itBegin, cend(), ", "); };
@@ -1506,7 +1510,7 @@ public:
    bool verify_d(const_pointer pPosition) const;
 #endif
 
-   // ## @API [tag: buffer, remmove] [description: Internal buffer related and methods to remove values]
+   // @API [tag: buffer, remove] [description: Internal buffer related and methods to remove values] [jump: remove__]
 
    /// erase argument value at iterator
    iterator erase(iterator itPosition) { remove(static_cast<const_pointer>( itPosition )); return itPosition < end() ? itPosition : end(); }
@@ -1541,7 +1545,7 @@ public:
    }
    std::string_view get_name(const_pointer pPosition) { return get_name_s( pPosition ); }
 
-   // ## @API [tag: internal, free-functions] [description: Internal free functions for argument manipulation, if used outside make sure you know the internals]
+   // @API [tag: internal, free-functions] [description: Internal free functions for argument manipulation, if used outside make sure you know the internals] [jump: internal_free_functions__]
 
    /// ## Move logic
    static pointer move_to_value_s(pointer pPosition);
@@ -1721,7 +1725,7 @@ public:
 
 // ##
 public:
-   // ## buffer methods, used to access buffer data 0TAG0buffer.arguments
+   // @API [tag: buffer, memory] [description: buffer related methods, used to access buffer data] [jump: buffer__]
 
    void buffer_set() { memset(static_cast<void*>(this), 0, sizeof( arguments ) ); }
    void buffer_set( pointer p_ ) { m_pBuffer = p_; }
@@ -2020,7 +2024,7 @@ inline bool arguments::verify_d(const_pointer pPosition) const {
 // ================================================================================= arguments_return
 // ================================================================================================
 
-/**
+/** @API [tag: arguments_return] [description: Simplifies using type deduction to return value as a pair] [jump: arguments_return__]
  * \brief simplifies using type deduction to return value as a pair
  *
  * arguments_return is just to simplify how to write code returning values.
@@ -2165,7 +2169,7 @@ TYPE get_g( const arguments::argument& argument_ )
 // ================================================================================================
 
 
-/**
+/** @API [tag: iterator] [description: Enhanced iterator for arguments class that provides easy access to both names and values] [jump: iterator__]
  * @brief Enhanced iterator for arguments class that provides easy access to both names and values
  *
  * This iterator extends the functionality of the existing iterator_ class to provide
@@ -2403,7 +2407,7 @@ _GD_ARGUMENT_END
 
 _GD_ARGUMENT_BEGIN
 
-// @DEBUG @API [tag: arguments, debug] [summary: Print arguments structure and data to string for debug purposes]
+// @DEBUG @API [tag: arguments, debug] [summary: Print arguments structure and data to string for debug purposes] [jump: print__]
 
 namespace debug {
    std::string print( const arguments::argument& argumentToPrint );
