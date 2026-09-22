@@ -8,14 +8,19 @@
 #ifndef NOMINMAX
 #  define NOMINMAX
 #endif
-#include <windows.h>
-#include <windowsx.h>
 
+#include <bitset>
 #include <functional>
 #include <string>
 #include <tuple>
 #include <type_traits>
 #include <unordered_map>
+
+#include <windows.h>
+#include <windowsx.h>
+
+#include "os/OS_Event.h"
+
 
 namespace win {
 
@@ -191,6 +196,16 @@ namespace win {
    private:
       LRESULT Dispatch(UINT uMessage, WPARAM uParam, LPARAM iParam)
       {
+         auto eEvent = gd_win::translate_s(uMessage); // translate to portable event, ignored here but useful for debugging
+         if(eEvent != gd_win::eEventNone)
+         {
+            if (m_bitset.test(eEvent) == false)
+            {
+               OutputDebugStringA((std::to_string(uMessage) + " " + std::to_string(eEvent) + "\n").c_str());
+            }
+         }
+
+
          auto it = m_mapHandler.find(uMessage);
          if(it == m_mapHandler.end()) return Default(uMessage, uParam, iParam);
          return it->second(uParam, iParam);
@@ -244,7 +259,7 @@ namespace win {
 
    private:
       static constexpr const wchar_t* pwszClassName_s = L"win::CWindow";
-
+      std::bitset<100> m_bitset{};
       HWND m_hwnd = nullptr;
       std::unordered_map<UINT, handler> m_mapHandler;
    };

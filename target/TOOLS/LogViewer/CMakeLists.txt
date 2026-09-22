@@ -75,7 +75,7 @@ if( USE_TARGET_ )
       ${TARGET_FILES_}   
       ${TARGET_SOURCE_FILES_}
       ${TARGET_AUTOMATION_FILES_}
-
+      "WindowApplication.cpp"
       "main.cpp"
    )
 
