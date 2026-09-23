@@ -100,6 +100,9 @@ public:
    registry() = default;
    ~registry() = default;
 
+   /// Legacy append method
+   void append(const entry& entry_) { m_vectorEntry.push_back(entry_); }
+
    /// Insert or update an entry by identifier
    std::pair<std::vector<entry>::iterator, bool> insert(const std::string& stringKey, const entry& entry_);
 
@@ -128,15 +131,13 @@ public:
    std::vector<entry>::iterator end() { return m_vectorEntry.end(); }
    std::vector<entry>::const_iterator end() const { return m_vectorEntry.end(); }
 
-   /// Legacy append method
-   void append(const entry& entry_) { m_vectorEntry.push_back(entry_); }
 
 public:
    std::vector<entry> m_vectorEntry;
 
 private:
    /// Find index by identifier
-   int find_index_s(const std::string& stringKey) const;
+   static int find_index_s(const registry& registry_, const std::string& stringKey);
 
 };
 

@@ -18,7 +18,7 @@ struct CShape
    enumShape eShape;
 };
 
-class CDrawWindow : public win::CWindow
+class CDrawWindow : public CWindow
 {
 public:
    CDrawWindow();
