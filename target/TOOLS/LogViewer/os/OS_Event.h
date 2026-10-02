@@ -88,7 +88,7 @@ inline eEvent translate_s(UINT uNative)
 
 class registry
 {
-   static constexpr unsigned m_uMaxEventId_s = 0x400;
+   static constexpr unsigned m_uMaxEventId_s = 0x400;  // largest WM_* message id we support, used for bitset size
 
    struct entry
    {
