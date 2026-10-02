@@ -3,7 +3,7 @@
 _GD_WIN_BEGIN
 
 
-void registry::append(const entry& entry_)
+void event_map_registry::append(const entry& entry_)
 {
    m_vectorEntry.push_back(entry_);
 }
@@ -15,7 +15,7 @@ void registry::append(const entry& entry_)
 
 
 /// Insert or update an entry by identifier ----------------------------------- insert
-std::pair<std::vector<registry::entry>::iterator, bool> registry::insert( const std::string& stringKey, const entry& entry_)
+std::pair<std::vector<event_map_registry::entry>::iterator, bool> event_map_registry::insert( const std::string& stringKey, const entry& entry_)
 {
    int iIndex = find_index_s(*this, stringKey);
    if(iIndex != -1)
@@ -31,26 +31,26 @@ std::pair<std::vector<registry::entry>::iterator, bool> registry::insert( const 
 }
 
 /// Find entry by identifier -------------------------------------------------- find
-std::vector<registry::entry>::iterator registry::find(const std::string& stringKey)
+std::vector<event_map_registry::entry>::iterator event_map_registry::find(const std::string& stringKey)
 {
    int iIndex = find_index_s(*this, stringKey);
    return (iIndex != -1) ? (m_vectorEntry.begin() + iIndex) : m_vectorEntry.end();
 }
 
-std::vector<registry::entry>::const_iterator registry::find(const std::string& stringKey) const
+std::vector<event_map_registry::entry>::const_iterator event_map_registry::find(const std::string& stringKey) const
 {
    int iIndex = find_index_s(*this, stringKey);
    return (iIndex != -1) ? (m_vectorEntry.begin() + iIndex) : m_vectorEntry.end();
 }
 
 /// Check if entry exists ----------------------------------------------------- contains
-bool registry::contains(const std::string& stringKey) const
+bool event_map_registry::contains(const std::string& stringKey) const
 {
    return find_index_s(*this, stringKey) != -1;
 }
 
 /// Remove entry by identifier ------------------------------------------------ erase
-size_t registry::erase(const std::string& stringKey)
+size_t event_map_registry::erase(const std::string& stringKey)
 {
    int iIndex = find_index_s(*this, stringKey);
    if(iIndex != -1)
@@ -62,7 +62,7 @@ size_t registry::erase(const std::string& stringKey)
 }
 
 /// Find index by identifier ------------------------------------------------- find_index_s
-int registry::find_index_s(const registry& registry_, const std::string& stringKey)
+int event_map_registry::find_index_s(const event_map_registry& registry_, const std::string& stringKey)
 {
    for(size_t uIndex = 0; uIndex < registry_.m_vectorEntry.size(); ++uIndex)
    {

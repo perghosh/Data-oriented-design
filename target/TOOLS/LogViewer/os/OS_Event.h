@@ -16,6 +16,9 @@ _GD_WIN_BEGIN
 
 // @API [tag: event, id] [description: Event identifiers for portable event handling.] [jump: event__] 
 
+/* # 
+ */
+
 enum eEvent
 {
    eEventNone = 0,
@@ -86,19 +89,29 @@ inline eEvent translate_s(UINT uNative)
 
 // @API [tag: event, map, container] [description: Manage registration of event maps.] [jump: event_map__] 
 
-class registry
+/** -----
+ * @brief Register maps for windows to set what type of messages that they can respond to
+ * 
+~~~{.cpp}
+~~~
+ */
+class event_map_registry 
 {
-   static constexpr unsigned m_uMaxEventId_s = 0x400;  // largest WM_* message id we support, used for bitset size
-
+public:
+   /**
+    * @brief Each entry contains an identifier and a bitset of supported events
+    */
    struct entry
    {
+      std::bitset<uMaxMessageId> get_bitset() const { return m_bitset; }        // Get the bitset that marks enabled events
+
       std::string m_stringId;
-      std::bitset<m_uMaxEventId_s> m_bitset;
+      std::bitset<uMaxMessageId> m_bitset;
    };
 
 public:
-   registry() = default;
-   ~registry() = default;
+   event_map_registry() = default;
+   ~event_map_registry() = default;
 
    /// Legacy append method
    void append(const entry& entry_) { m_vectorEntry.push_back(entry_); }
@@ -133,13 +146,40 @@ public:
 
 
 public:
-   std::vector<entry> m_vectorEntry;
+   std::vector<entry> m_vectorEntry; ///< Holds all registered entries, each entry contains an identifier and a bitset of supported events 
+
+   static constexpr unsigned m_uMaxEventId_s = uMaxMessageId;  // largest WM_* message id we support, used for bitset size
 
 private:
    /// Find index by identifier
-   static int find_index_s(const registry& registry_, const std::string& stringKey);
+   static int find_index_s(const event_map_registry& registry_, const std::string& stringKey);
 
 };
+
+class event_map
+{
+public:
+   event_map() = default;
+   ~event_map() = default;
+
+   event_map(const event_map_registr::entry& entry) : m_entry{ entry } { }
+   event_map(const std::string& stringId, const std::bitset<event_map_registry::m_uMaxEventId_s>& bitset) : m_entry{ stringId, bitset } { set_map(stringId, bitset); }
+
+   /// Register an event map with a given identifier
+   void set_map(const std::string& stringId, const std::bitset<event_map_registry::m_uMaxEventId_s>& bitset);
+   /// Unregister an event map by identifier
+   void unregister_map(const std::string& stringId);
+   /// Check if an event map is registered by identifier
+   bool is_registered(const std::string& stringId) const;
+   /// Get the bitset of supported events for a given identifier
+   std::bitset<event_map_registry::m_uMaxEventId_s> get_bitset(const std::string& stringId) const;
+
+   event_map_registry::entry& get_registry() { return m_entry; }
+
+public:
+   event_map_registry::entry m_entry; ///< Current entry being registered or unregistered
+};
+
 
 
 
