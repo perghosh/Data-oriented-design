@@ -42,7 +42,7 @@ void CDrawWindow::OnLButtonDown(UINT, POINT point)
 
 void CDrawWindow::OnPaint()
 {
-   win::CPaint paint(GetHandle());
+   CPaint paint(GetHandle());
 
    HBRUSH brush = CreateSolidBrush(RGB(255, 0, 0));
    HBRUSH brushOld = (HBRUSH)SelectObject(paint, brush);
