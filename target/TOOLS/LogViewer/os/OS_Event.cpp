@@ -13,6 +13,19 @@ void event_map_registry::append(const entry& entry_)
 #include "OS_Event.h"
 
 
+void add(const std::string& stringId, std::initializer_list<std::string_view> stringEvent)
+{
+   std::bitset<uMaxMessageId> bitset_;
+   for(const auto& eventName : stringEvent)
+   {
+      eEvent eId = to_event_g(eventName.data());
+      if(eId != eEventNone)
+      {
+         bitset_.set(static_cast<size_t>(eId));
+      }
+   }
+   add(stringId, bitset);
+}
 
 /// Insert or update an entry by identifier ----------------------------------- insert
 std::pair<std::vector<event_map_registry::entry>::iterator, bool> event_map_registry::insert( const std::string& stringKey, const entry& entry_)

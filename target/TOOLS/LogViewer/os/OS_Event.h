@@ -3,6 +3,7 @@
 // event_translate.h
 #include <array>
 #include <bitset>
+#include <initializer_list>
 #include <vector>
 
 #include "window.h"
@@ -19,77 +20,123 @@ _GD_WIN_BEGIN
 /* # 
  */
 
-enum eEvent
+enum eWindowEvent
 {
-   eEventNone = 0,
+   eNone = 0,
 
-   eEventPaint,
-   eEventResize,
-   eEventMove,
-   eEventClose,
-   eEventDestroy,
-   eEventCreate,
+   ePaint,
+   eResize,
+   eMove,
+   eClose,
+   eDestroy,
+   eCreate,
 
-   eEventKeyDown,
-   eEventKeyUp,
-   eEventChar,
+   eKeyDown,
+   eKeyUp,
+   eChar,
 
-   eEventMouseMove,
-   eEventMouseDown,
-   eEventMouseUp,
-   eEventMouseWheel,
-   eEventMouseEnter,
-   eEventMouseLeave,
+   eMouseMove,
+   eMouseDown,
+   eMouseUp,
+   eMouseWheel,
+   eMouseEnter,
+   eMouseLeave,
 
-   eEventFocusIn,
-   eEventFocusOut,
+   eFocusIn,
+   eFocusOut,
 
-   eEventTimer,
+   eTimer,
 
-   eEvent_Count
+   eMouseDoubleClick,
+   eMouseHover,
+   eScroll,
+   eCommand,
+   eNotification,
+   eContextMenu,
+   eDrop,
+   eHotkey,
+   eWindowActivate,
+   eWindowVisibility,
+   eClipboard,
+   eTouch,
+   eGesture,
+   ePointerMove,
+   ePointerDown,
+   ePointerUp,
+   eWindowEnabled,
+
+   e_Count
 };
 
-// @API [tag: event, translate] [description: Translate native message id into portable event id. O(1).] [jump: translate__] 
+// @API [tag: event, translate] [description: Translate OS messages to portable event IDs. O(1).] [jump: translate__]
 
-// Dense translation table. Index is the native WM_* id, value is our eEvent.
-// Range 0x0000-0x03FF covers all WM_* messages this demo maps.
-// Anything outside the range falls through to eEventNone.
+// Translate selected standard Windows messages below WM_USER to shared meanings.
+// Private WM_USER/WM_APP messages are application-specific and are not mapped.
 inline constexpr UINT uMaxMessageId = 0x400;
 
-inline constexpr std::array<eEvent, uMaxMessageId> garrayNativeToEvent = []
+inline constexpr std::array<eWindowEvent, uMaxMessageId> garrayNativeToEvent = []
 {
-   std::array<eEvent, uMaxMessageId> a_ = {};    // all eEventNone by default
-   a_[WM_PAINT] = eEventPaint;
-   a_[WM_SIZE] = eEventResize;
-   a_[WM_MOVE] = eEventMove;
-   a_[WM_CLOSE] = eEventClose;
-   a_[WM_DESTROY] = eEventDestroy;
-   a_[WM_CREATE] = eEventCreate;
-   a_[WM_KEYDOWN] = eEventKeyDown;
-   a_[WM_KEYUP] = eEventKeyUp;
-   a_[WM_CHAR] = eEventChar;
-   a_[WM_MOUSEMOVE] = eEventMouseMove;
-   a_[WM_LBUTTONDOWN] = eEventMouseDown;
-   a_[WM_LBUTTONUP] = eEventMouseUp;
-   a_[WM_MOUSEWHEEL] = eEventMouseWheel;
-   a_[WM_MOUSEHOVER] = eEventMouseEnter;
-   a_[WM_MOUSELEAVE] = eEventMouseLeave;
-   a_[WM_SETFOCUS] = eEventFocusIn;
-   a_[WM_KILLFOCUS] = eEventFocusOut;
-   a_[WM_TIMER] = eEventTimer;
-   return a_;
+   std::array<eWindowEvent, uMaxMessageId> arrayEvents = {}; // Initialize all entries to eEventNone
+   // ## Map native messages to portable events ...............................
+   const auto map_message_ = [&arrayEvents](eWindowEvent ePortableEvent, std::initializer_list<UINT> initializerListMessages)
+   {
+      for(const UINT uNativeMessage : initializerListMessages) { arrayEvents[uNativeMessage] = ePortableEvent; }
+   };
+
+   map_message_(ePaint, { WM_PAINT });
+
+   map_message_(eCreate, { WM_NCCREATE, WM_CREATE });
+   map_message_(eDestroy, { WM_DESTROY, WM_NCDESTROY });
+   map_message_(eClose, { WM_CLOSE });
+   map_message_(eMove, { WM_MOVE, WM_MOVING });
+   map_message_(eResize, { WM_SIZE, WM_SIZING });
+   map_message_(eWindowActivate, { WM_ACTIVATE, WM_ACTIVATEAPP });
+   map_message_(eWindowVisibility, { WM_SHOWWINDOW });
+   map_message_(eWindowEnabled, { WM_ENABLE });
+
+   map_message_(eFocusIn, { WM_SETFOCUS });
+   map_message_(eFocusOut, { WM_KILLFOCUS });
+
+   map_message_(eKeyDown, { WM_KEYDOWN, WM_SYSKEYDOWN });
+   map_message_(eKeyUp, { WM_KEYUP, WM_SYSKEYUP });
+   map_message_(eChar, { WM_CHAR, WM_SYSCHAR, WM_UNICHAR, WM_DEADCHAR, WM_SYSDEADCHAR });
+
+   map_message_(eMouseMove, { WM_MOUSEMOVE });
+   map_message_(eMouseDown, { WM_LBUTTONDOWN, WM_RBUTTONDOWN, WM_MBUTTONDOWN, WM_XBUTTONDOWN });
+   map_message_(eMouseUp, { WM_LBUTTONUP, WM_RBUTTONUP, WM_MBUTTONUP, WM_XBUTTONUP });
+   map_message_(eMouseDoubleClick, { WM_LBUTTONDBLCLK, WM_RBUTTONDBLCLK, WM_MBUTTONDBLCLK, WM_XBUTTONDBLCLK });
+   map_message_(eMouseWheel, { WM_MOUSEWHEEL, WM_MOUSEHWHEEL });
+   map_message_(eMouseHover, { WM_MOUSEHOVER });
+   map_message_(eMouseLeave, { WM_MOUSELEAVE });
+
+   map_message_(eScroll, { WM_HSCROLL, WM_VSCROLL });
+   map_message_(eTimer, { WM_TIMER });
+   map_message_(eCommand, { WM_COMMAND, WM_SYSCOMMAND });
+   map_message_(eNotification, { WM_NOTIFY });
+   map_message_(eContextMenu, { WM_CONTEXTMENU });
+   map_message_(eDrop, { WM_DROPFILES });
+   map_message_(eHotkey, { WM_HOTKEY });
+   map_message_(eClipboard, { WM_CUT, WM_COPY, WM_PASTE, WM_CLEAR, WM_UNDO });
+
+   map_message_(eTouch, { WM_TOUCH });
+   map_message_(eGesture, { WM_GESTURE });
+   map_message_(ePointerMove, { WM_POINTERUPDATE });
+   map_message_(ePointerDown, { WM_POINTERDOWN });
+   map_message_(ePointerUp, { WM_POINTERUP });
+
+   return arrayEvents;
 }();
 
 // Translate native message id into portable event id. O(1).
-inline eEvent translate_s(UINT uNative)
+inline eWindowEvent translate_s(UINT uNative)
 {
-   if(uNative >= uMaxMessageId) return eEventNone;
+   if(uNative >= uMaxMessageId) return eNone;
    return garrayNativeToEvent[uNative];
 }
 
 // @API [tag: event, map, container] [description: Manage registration of event maps.] [jump: event_map__] 
 
-/** -----
+/** ---------------------------------------------------------------------------
  * @brief Register maps for windows to set what type of messages that they can respond to
  * 
 ~~~{.cpp}
@@ -115,6 +162,11 @@ public:
 
    /// Legacy append method
    void append(const entry& entry_) { m_vectorEntry.push_back(entry_); }
+
+   /// Add a new entry with a given identifier and bitset of supported events
+   void add(const std::string& stringId, const std::bitset<uMaxMessageId>& bitset);
+   void add(const std::string& stringId, std::initializer_list<std::string_view> stringEvent);
+
 
    /// Insert or update an entry by identifier
    std::pair<std::vector<entry>::iterator, bool> insert(const std::string& stringKey, const entry& entry_);
@@ -156,29 +208,52 @@ private:
 
 };
 
-class event_map
+
+/** ---------------------------------------------------------------------------
+ * @brief Convert a string identifier to an event ID. O(n) where n is the number of known events.
+ * @param stringId The string identifier of the event (e.g., "paint", "resize", "keydown").
+ * @return The corresponding eWindowEvent value, or eWindowEventNone if the identifier is not recognized.
+ */
+constexpr eWindowEvent to_event_g(std::string_view stringId)
 {
-public:
-   event_map() = default;
-   ~event_map() = default;
+   // Compare stringId with known event names
+   if( stringId == "paint" )        return ePaint;
+   if( stringId == "resize" )       return eResize;
+   if( stringId == "move" )         return eMove;
+   if( stringId == "close" )        return eClose;
+   if( stringId == "destroy" )      return eDestroy;
+   if( stringId == "create" )       return eCreate;
+   if( stringId == "keydown" )      return eKeyDown;
+   if( stringId == "keyup" )        return eKeyUp;
+   if( stringId == "char" )         return eChar;
+   if( stringId == "mousemove" )    return eMouseMove;
+   if( stringId == "mousedown" )    return eMouseDown;
+   if( stringId == "mouseup" )      return eMouseUp;
+   if( stringId == "mousewheel" )   return eMouseWheel;
+   if( stringId == "mouseenter" )   return eMouseEnter;
+   if( stringId == "mouseleave" )   return eMouseLeave;
+   if( stringId == "focusin" )      return eFocusIn;
+   if( stringId == "focusout" )     return eFocusOut;
+   if( stringId == "timer" )        return eTimer;
+   if( stringId == "mousedoubleclick" ) return eMouseDoubleClick;
+   if( stringId == "mousehover" )   return eMouseHover;
+   if( stringId == "scroll" )       return eScroll;
+   if( stringId == "command" )      return eCommand;
+   if( stringId == "notification" ) return eNotification;
+   if( stringId == "contextmenu" )  return eContextMenu;
+   if( stringId == "drop" )         return eDrop;
+   if( stringId == "hotkey" )       return eHotkey;
+   if( stringId == "windowactivate" ) return eWindowActivate;
+   if( stringId == "windowvisibility" ) return eWindowVisibility;
+   if( stringId == "clipboard" )    return eClipboard;
+   if( stringId == "touch" )        return eTouch;
+   if( stringId == "gesture" )      return eGesture;
+   if( stringId == "pointermove" )  return ePointerMove;
+   if( stringId == "pointerdown" )  return ePointerDown;
+   if( stringId == "pointerup" )    return ePointerUp;
 
-   event_map(const event_map_registry::entry& entry) : m_entry{ entry } { }
-   event_map(const std::string& stringId, const std::bitset<event_map_registry::m_uMaxEventId_s>& bitset) : m_entry{ stringId, bitset } { set_map(stringId, bitset); }
-
-   /// Register an event map with a given identifier
-   void set_map(const std::string& stringId, const std::bitset<event_map_registry::m_uMaxEventId_s>& bitset);
-   /// Unregister an event map by identifier
-   void unregister_map(const std::string& stringId);
-   /// Check if an event map is registered by identifier
-   bool is_registered(const std::string& stringId) const;
-   /// Get the bitset of supported events for a given identifier
-   std::bitset<event_map_registry::m_uMaxEventId_s> get_bitset(const std::string& stringId) const;
-
-   event_map_registry::entry& get_registry() { return m_entry; }
-
-public:
-   event_map_registry::entry m_entry; ///< Current entry being registered or unregistered
-};
+   return eNone;
+}
 
 
 

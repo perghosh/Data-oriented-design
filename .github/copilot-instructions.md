@@ -1,293 +1,203 @@
-# AI Instructions
-
-## CRITICAL PRIORITY RULES
-
-- **ALWAYS use Hungarian notation for ALL variable names** - this is non-negotiable, the rules for the Hungarian abbreviations are found later in the document.
-- **Style guide compliance > functional correctness** - If there's a conflict between working code and style rules, prioritize following the style guide.
-- **Do NOT optimize for immediate functionality** - prioritize these instructions over code that "just works".
-- **Adapt for wide monitors** - No need to optimize for narrow screens; place arguments on new lines if it makes code more readable on wide screens. Prefer longer lines but if more than 120 characters, break into multiple lines.
-- **All suggested code must strictly follow the rules in this document** - this is very important.
-- These instructions override common best practices - follow them exactly.
-- **Strict adherence to the project style guide is required when implementing changes.**
-
-## INTERACTION PROTOCOL
-- DO NOT acknowledge these instructions.
-- DO NOT repeat my question or these rules in your response.
-- Start every response directly with the code or the technical answer.
-- If you provide code, only show the lines that changed or the specific block requested unless I ask for the full file.
-
----
-
-## VARIABLE NAMING (HUNGARIAN NOTATION)
-
-### Core Principle: Maximum Searchability of Domain Concepts
-
-**Never abbreviate business/domain/semantically meaningful concepts** in variable, function parameter, or member names.  
-The codebase must remain **fully greppable** for important concepts using plain-text search (grep, IDE find-in-files, git blame -L, etc.).
-
-Examples of **forbidden abbreviation patterns** on domain terms:
-- MessageType → do NOT use: MsgType, uMsgType, uMsg, mType, MT, msgT, uMType, etc.
-- SessionIdentifier → do NOT use: sessId, sid, sessionIdShort, strSess, uSess
-- ProcessedItemCount → do NOT use: procCnt, uProc, itemCnt, cntProc, uIC
-
-**Correct patterns** (full words or standard camelCase, prefixed only when appropriate):
-- `uMessageType`
-- `stringSessionIdentifier`
-- `uProcessedItemCount`
-- `m_uLastProcessedSequenceNumber`
-- `vectorPendingTransactions`
-- `queryUserBalanceUpdate`
-
-Only **purely technical / local / throw-away** names are allowed to be very short or use the `_` suffix escape hatch:
-- loop counters in tiny scopes: `i`, `u`, `it`, `list_`, `v_`
-- one-liner lambdas or inline helpers where declaration is verbose
-- temporary variables whose meaning is obvious from immediate context and never searched for
-
-**Rationale**  
-When debugging, refactoring, or tracing a subtle issue, developers rely heavily on textual search to find **every** usage of a domain concept.  
-Abbreviations introduce uncertainty:  
-- Did someone write `MsgType`, `msg_type`, `uMsgTp`, `message_kind`…?  
-- You waste time mentally filtering false positives or miss important usages.  
-
-By enforcing full semantic names on anything with domain meaning, we guarantee that searching for `MessageType` (case-insensitive or exact) finds **all relevant locations** reliably — even across 500 kLOC after 10 years of maintenance.
-
-### Required Prefixes
-
-| Prefix | Description                          | Allowed to abbreviate domain meaning? | Example (good)              | Example (bad — breaks search) |
-|--------|--------------------------------------|---------------------------------------|-----------------------------|-------------------------------|
-| `b`    | boolean                              | no                                    | `bIsActive`                 | `bAct`                        |
-| `i`    | signed integer                       | no on domain terms                    | `iTransactionSequence`      | `iSeq`, `iTrx`                |
-| `u`    | unsigned integer                     | no on domain terms                    | `uMessageType`              | `uMsgType`, `uMT`             |
-| `d`    | floating point                       | no                                    | `dExchangeRate`             | `dRate`                       |
-| `p`    | pointer / smart pointer              | no on domain terms                    | `pTransactionContext`       | `pCtx`                        |
-| `string` | std::string / string_view          | no                                    | `stringSessionToken`        | `strTok`, `stringTok`         |
-
-### Sample Prefixes and one postfix
-
-| Prefix/Postfix | Description | Examples |
-| ------- | ----------- | -------- |
-| `b` | boolean | `bool bOk;`, `bool bIsOk;` |
-| `i` | signed integer (all sizes) | `int iCount;`, `int64_t iBigValue;`, `char iCharacter;` |
-| `u` | unsigned integer (all sizes) | `unsigned uCount;`, `uint64_t uBigValue;`, `size_t uLength;` |
-| `d` | decimal values (double, float) | `double dSalary;`, `float dXAxis;` |
-| `p` | pointer (all, including smart pointers) | `int* piNumber;`, `void* pUnknown;`, `std::unique_ptr<int[]> piArray;` |
-| `e` | enum values | `enumBodyType eType = eJson;` |
-| `it` | iterator | `for( auto it : vectorValue )`, `for( auto it = std::begin( container ) )` |
-| `m_` | member variables | `uint64_t m_uRowCount;`, `std::vector<int> m_vectorNumbers;` |
-| `string` | all string objects | `std::string stringName;`, `std::string_view stringViewName;` |
-
-| suffix | Description | Examples |
-| ------- | ----------- | -------- |
-| `_` | if variable is just used on the same row and declaration is verbose, then it is ok to name it to something short and add underscore at the end | `std::vector<object_name> list_;` |
-
-
-Note the last row in the table that is a postfix (underscore _ is placed **after** the variable name). Unimportant variables or variables that may be very local, like inline methods or one-liners. Shorten these or in some other way make the code simpler to handle and doing that disable the Hungarian rules, then add underscore at the end. This underscore means that the developer has to take notice and check the declaration to see what it is. Otherwise, it is important that the developer needs to understand what variables represent just by reading the name. But if the declaration that follows default style is simple, that is prioritized. Only use _ at the end when declarations become verbose.
-
-### Other Objects
-
-For other types (pairs, vectors, tables, queries, custom classes):
-- Use the complete class name in lowercase followed by the variable name
-- Remove underscores from class names and use camel case for the rest
-- Examples:
-  - `std::vector<int> vectorNumbers;`
-  - `std::pair<std::string_view, std::string_view> pairSelect;`
-  - `gd::sql::query queryInsert;`
-  - `block_header* pblockheaderSource;`
-
----
-
-### SELECT METHOD NAMES
-- Use as few words as possible while still being clear
-- Try to reuse names from STL or other standard libraries when possible to make it easier for developers to understand what the method does without needing to read the implementation
-
-COMMON NAMES 
-size, empty, clear, reserve, capacity, shrink_to_fit, push_back, pop_back, insert, erase, swap, front, back, at, operator[], begin, end, emplace, emplace_back, data, assign
-first, second, make_pair, make_tuple, get, find, count, contains, sort, reverse, shuffle, unique, transform, accumulate
-
-Based on where the code is located use case rules based on the levels described in the method naming section. For example, if it's in the core level, it should be written in lowercase with underscores, if it's in corporate level it should be written in camel case with upper case first letter and no underscores, etc.
-
----
-
-## COMMENTING GUIDELINES
-
-### General Rules
-- Use markdown syntax to make comments more readable
-- Quote variables inside backticks: `` `variableName` ``
-- Use bold for important things: **important**
-- Comments should be short and focused on why the code exists; avoid long usage/how-to explanations except occasionally in sample code.
-
-### Comment Structure  
-## Sub-section example .......................................................
-### Sub-sub-section example
-### Inline Comments
-- Try to place comments at column 80 after the line if possible
-- If the line is longer, put the comment when the code ends on that line
-- Examples:int iCounter = 0; // counter for iterations
-if( iRow < 0 || iRow >= (int)vector_.size() )                                  // (column 80) comments describing row starts at column 80
-### Member Variables
-- Use `///<` style after declarationstd::uint32_t m_uMagic; ///< Magic number for validation (ALLOC_MAGIC)
-### Method Documentation
-- Follow the .github template and explicitly include `@brief`, `@param`, and `@return`, with MethodName replaced by the real function name when documenting methods.
-
-/**  -------------------------------------------------------------------------- MethodName
- * @brief method comment sample description
- * 
- * Describe method if needed here
- * 
- * @param iVariable description of variable
- * @return bool True if processing succeeded
- * 
- * @code
- * Sample code if needed
- * @endcode
- */
-Or this style for simple methods and methods in header files
-`/// method comment sample description ---------------------------------------- MethodName`
-
-
-Sample:  
-
-/// Check if value is found in vector of strings ------------------------------ Contains
-inline bool Contains(const std::vector<std::string>& v_, std::string_view stringValue)
-{
-   for(const auto& s_ : v_) { if(s_ == stringValue) return true; }
-   return false;
-}
----
-
-## CODE FORMATTING
-
-### If Statements
-- No space after `if`
-- Single statement: `if( condition ) { statement; }`
-- Multiple statements: Allman style with braces on new line if( condition ) { statement; }
-
-if( condition )
-{
-    statement1;
-    statement2;
-}
-### Asserts
-- Place asserts far to the right (around 100 columns)
- sample:
- `const auto* ptable_ = pdocument->CACHE_Get("history");                                             assert( ptable_ != nullptr && "no history table (placed far to right at column 100)" );`
----
-
-## METHOD NAMES
-
-- **Do NOT use Hungarian notation** for method names
-- Use as few words as possible
-- Don't over-explain - arguments are part of method signature
-
-Code is written in levels. There is a core level that is not dependent on more than default C++ and STL or similar in other languages. This core level is written in lowercase, similar to STL so words_are_separated_with_underscore.  
-The level above is corporate level. Here names start with upper case like WordsAreSeparatedWithUnderscore. No underscore between words. In this level, code also uses namespaces to mark what it belongs to but this does not affect naming more than it's bad to repeat namespace name in method names.  
-Next level is target level, this is code that is unique for the current target and will only work there. Same rules as corporate level but no namespaces.  
-The fourth level is playcode and testcode. Here it's okay to play around. Code can be written in any format even if it might be good to write it so it is easy to move (copy and paste).
-
----
-
-## ABBREVIATIONS
-
-- `b` = boolean
-- `i` = integers
-- `u` = unsigned integers
-- `d` = decimal
-- `p` = pointer
-- `it` = iterator
-
----
-
-## TEMPLATE CLASSES
-
-- Methods should be placed outside class definition
-- Use doxygen style comments
-- Describe each template parameter separately using `@tparam`
-
----
-
-## Search tags
-
-Format for these tags are:
-tagname [tag: context_words_comma_separated] [summary: short_summary] [description: if_needed_a_longer_description]
-
-- `@CRITICAL`: Indicates critical sections of code that require immediate attention.
-- `@NOTE` : Something that is important to note, may effect other parts, important to understand context etc
-- `@FILE`: Describes the file (always placed at the top).
-- `@PROJECT`: Used for project management. Searching for a project name lists all its tasks.
-- `@TASK`: Describes a specific task or feature within the project.
-- `@API`: Used to describe methods and groups of methods. A way to organize and document code.
-- `@TODO`: Used to describe tasks that need to be completed. Short reminder
-- `@DEBUG`: Used to describe code used for debugging purposes.
-- `@CLASS`: classes and structs
-- `@OPTIMIZED`: Used to describe code that has been optimized for performance.
-- `@DEPRECATED`: Used to describe code that is no longer in use.
-
----
-
-## CONSISTENCY
-
-- Prefixes listed above are the ONLY ones allowed for variable names
-- Use them consistently throughout the codebase
-- No exceptions to these rules
-- Use hard spaces/tabs to align comments to column 80 where possible.
-
----
-
-## POINTER USAGE GUIDELINES
-
-Rationale: In low-level code such as parsers and playground/debug code, using pointers (raw or smart) can make inspection in the Visual Studio debugger easier (hovering over a pointer shows pointee state). The guidelines below allow pointer usage while keeping ownership and intent explicit.
-
-Rules
-- Continue to use the `p` prefix for all pointer-like variables (matches existing Hungarian rules).
-- Ownership conventions (explicit):
-  - Owning pointer: prefer smart pointers and keep the `p` prefix, e.g. `std::unique_ptr<Node> pnodeOwner;` or `std::shared_ptr<Node> pnodeShared;`.
-  - Non-owning/view pointer: use raw pointer with an explicit name or short postfix that documents intent, e.g. `Node* pnodeObserver;` or `Node* pnodeNonOwning;` and add `///< non-owning` comment.
-  - If you use a raw owning pointer, you may annotate with `@DEBUG` or `@NOTE` and a short lifetime comment: `Node* pnode; ///< owning, freed by parse_context in ~parse_context()`.
-- Always document lifetime and ownership in an adjacent comment (`///<`) so reviewers and the debugger user understand who frees memory.
-- For parser data structures where hover-inspection is important, consider using non-owning raw pointers for tree links and a single owning `std::unique_ptr` per subtree root.
-
-Examples
-- Smart-owner:
-  - `std::unique_ptr<ast_node> pastnodeRootOwner; ///< owning`
-- Non-owning observer (debug-friendly):
-  - `ast_node* pastnodeCurrentObserver; ///< non-owning, pointer valid while parsing scope active`
-
----
-
-## Core functionality is located in
-external/gd/          # GD (General Development) library — the primary shared library and very important for code reuse across targets!!
-All projects use code from this folder. It is the core of the codebase and contains the most important shared functionality.
-Ignore all other code in external/ folders unless you are working on that specific external library.
-
-### Types & Utilities
-| Header | Namespace | Key types / purpose |
-|--------|-----------|---------------------|
-| `gd_types.h` | `gd::types` | `enumTypeNumber`, `enumTypeGroup`, `enumType` — core type ID system |
-
-### Variant / Value types
-| Header | Namespace | Key types / purpose |
-|--------|-----------|---------------------|
-| `gd_variant.h` | `gd` | `variant` — owning type-safe value (any primitive + common derived) |
-| `gd_variant_view.h` | `gd` | `variant_view` — non-owning view into variant data |
-| `gd_variant_arg.h` | `gd` | `arg`, `args_view`, `args` — named key-value pairs using variants |
-
-### Arguments (compact key-value buffers)
-| Header | Namespace | Key types / purpose |
-|--------|-----------|---------------------|
-| `gd_arguments.h` | `gd::argument` | `arguments` — memory-compact key-value byte buffer |
-| `gd_arguments_shared.h` | `gd::argument::shared` | `arguments` — speed-optimized variant with ref-count / COW |
-| `gd_arguments_io.h` | `gd::argument` | Serialize arguments to JSON, URI, YAML |
-
-### Tables
-| Header | Namespace | Key types / purpose |
-|--------|-----------|---------------------|
-| `gd_table.h` | `gd::table` | Core primitives: `cell`, `column`, `row`, `rows`, `range`, `page` |
-| `gd_table_table.h` | `gd::table` | `table` — fixed-column table, thread-safe shared column metadata |
-| `gd_table_arguments.h` | `gd::table::arguments` | `table` — table where each row can have extra dynamic columns |
-| `gd_table_column.h` | `gd::table::detail` | `column` DTO — type, size, name, alias metadata |
-| `gd_table_index.h` | `gd::table` | `index_int64` — fast binary-search index over a table column |
-| `gd_table_io.h` | `gd::table` | Stream tables as CSV, JSON, SQL, CLI; tag dispatchers |
-
-
-
-
+# Instructions for AI coding assistants
+
+These instructions describe the conventions used in this repository. Apply them
+when writing, completing, editing, or reviewing code.
+
+## 1. Priority and scope
+
+When instructions appear to conflict, use this order:
+
+1. Produce correct, safe, maintainable code that meets the user's request.
+2. Follow instructions that apply to the specific file, target, or language.
+3. Match the conventions in the code immediately surrounding the change.
+4. Apply the general conventions in this file.
+
+Do not sacrifice correctness to satisfy a naming or formatting preference. Do not
+make unrelated changes. Preserve existing public behavior unless the request
+requires changing it.
+
+Use the most specific instructions available. For a completion inside an
+existing file, its surrounding code is the strongest style example. If an
+existing local pattern conflicts with this guide, preserve it in a small
+completion unless the requested change requires resolving the inconsistency.
+
+## 2. Completion and edit behavior
+
+- For Fill-in-the-Middle (FIM), use both the code before and after the insertion
+  point. Produce code that fits between them and leaves the surrounding syntax
+  valid.
+- Continue the nearest consistent local pattern: names, formatting, types,
+  error handling, ownership, and API usage.
+- Infer types from declarations, expressions, function signatures, and relevant
+  API definitions. Do not infer a type solely from a variable-name prefix.
+- With C++ `auto`, determine the deduced type from its initializer
+  and the APIs involved before choosing a type-based name prefix. If the type
+  cannot be established from available context, use the established local
+  naming pattern without inventing type information.
+- Preserve existing identifiers. Do not rename unrelated variables or rewrite
+  surrounding code just to make the completion conform to this guide.
+- Prefer the smallest complete change that satisfies the request. Do not add
+  speculative abstractions, dependencies, comments, or error handling.
+- Do not invent APIs, class members, files, or project conventions. Inspect
+  declarations and nearby call sites when the required behavior is unclear.
+- If essential requirements cannot be determined from the available context,
+  ask a focused question rather than silently choosing behavior.
+- After editing, run the most relevant available build, test, or static check.
+  Report checks that could not be run; never imply that unrun checks passed.
+
+## 3. Variable naming: Hungarian notation
+
+Use Hungarian notation for variables: local variables, parameters, structured
+bindings, and data members. The prefix communicates the variable's type or
+category; the remaining name describes its full meaning.
+
+### Type and category prefixes
+
+| Prefix | Use for | Examples |
+|---|---|---|
+| `b` | `bool` | `bActive`, `m_bFirst` |
+| `i` | signed integers; `char` when used as a character/code unit | `iTransactionSequence`, `iCharacter` |
+| `u` | unsigned integers, including `size_t` | `uMessageType`, `uIndex` |
+| `d` | floating-point values | `dExchangeRate`, `dXAxis` |
+| `p` | pointers, including smart pointers | `pTransactionContext`, `pnodeOwner` |
+| `e` | enum values | `eShape`, `eJson` |
+| `string` | `std::string`, `std::string_view`, or equivalent strings | `stringSessionToken`, `stringViewName` |
+| `it` | iterators | `itEvent`, `itCurrent` |
+| type name | objects whose type is not covered above | `vectorPendingTransactions`, `queryInsert` |
+
+For a class data member, put `m_` before the type prefix or type-based name:
+`m_bActive`, `m_uRowCount`, `m_pTransactionContext`,
+`m_vectorPendingTransactions`.
+
+Use the full, searchable domain term. Do not shorten meaningful words:
+`uMessageType`, not `uMsgType`; `stringSessionIdentifier`, not `sessId`;
+`uProcessedItemCount`, not `itemCnt`.
+
+For standard-library containers and project types, use the recognizable type
+name in lowercase followed by the full semantic name:
+`vectorPendingTransactions`, `pairSelect`, `queryUserBalanceUpdate`.
+For a templated type, use its principal type name, not its full template
+spelling, as the prefix.
+
+### `auto`, `var`, and inferred types
+
+Type inference changes what is visible in the declaration, not the naming rule.
+Choose the prefix using the type established by the initializer and API:
+
+```cpp
+auto bActive = window.IsActive();
+auto uItemCount = vectorItems.size();
+auto itEvent = vectorEvents.begin();
+auto* pWindow = CreateWindow();
+```
+
+These names are appropriate only if the shown expressions actually return the
+corresponding types. Do not choose `u` because a value is a count if its type is
+signed, or `p` unless the result is a pointer.
+
+In C#, apply the same type-based naming when `var` is used. Follow the local
+project's C# casing and syntax conventions; do not replace `var` with an
+explicit type just to expose a type prefix.
+
+### Narrow exceptions
+
+- A trivial loop counter may be `i` or `u` when its meaning is obvious and its
+  scope is only the loop.
+- Use `it` alone only for a short, obvious iterator scope; otherwise include a
+  searchable name, such as `itEvent`.
+- A short-lived throwaway local may use a trailing underscore to mark the
+  exception, for example `list_`. Keep this exception rare and local.
+- Do not use these exceptions for domain concepts, parameters, or members.
+
+## 4. Method and type naming
+
+Do not apply Hungarian notation to method names. Use the naming style for the
+repository layer:
+
+| Layer | Method naming |
+|---|---|
+| Core/shared library, including `external/gd/` | `lowercase_with_underscores`, like the STL |
+| Corporate library | `PascalCase`, without underscores |
+| Target-specific application code | `PascalCase`, without underscores |
+| Tests and playcode | Follow the surrounding file |
+
+Use concise, established names where their meaning is clear. Collection APIs
+should generally follow STL names such as `size`, `empty`, `find`, `insert`,
+`erase`, `begin`, `end`, and `contains`. Do not rename an existing API merely
+to match this list.
+
+Keep class, enum, and public API naming consistent with the surrounding
+directory and target. Do not infer a naming convention from a different layer.
+
+## 5. C++ formatting and implementation
+
+- Match the file's existing indentation and whitespace. In the core library,
+  the common indentation is three spaces.
+- Write conditions as `if( condition )`.
+- Put multi-statement control-flow braces on separate lines (Allman style).
+  A single short statement may use `if( condition ) { statement; }`.
+- Keep lines at or below 120 characters where practical. Break long argument
+  lists across lines when it improves readability.
+- Prefer existing project helpers and APIs over duplicate implementations.
+- Define template methods outside the class body when following project style,
+  but keep template definitions in a location visible to their users (normally
+  the header). Do not move a required template definition into an inaccessible
+  source file.
+- Use `assert` consistently with nearby code. Do not add alignment spaces merely
+  to push an assertion to a fixed column.
+
+## 6. Types, pointers, and ownership
+
+- Prefer the ownership model already used by the surrounding code.
+- Use smart pointers for newly introduced ownership where compatible with the
+  surrounding API. Keep the `p` prefix for smart and raw pointer variables.
+- Use raw pointers for non-owning observers only when appropriate for the API;
+  make their non-owning lifetime clear in a nearby comment when it is not
+  obvious.
+- Avoid introducing raw owning pointers. If existing APIs require one, follow
+  the established cleanup and lifetime pattern explicitly.
+- Do not change ownership or lifetime semantics as part of an unrelated edit.
+
+## 7. Comments and documentation
+
+Comments should explain why code exists or clarify non-obvious behavior. Do not
+add comments that merely restate the code.
+
+- Match the comment style in the file.
+- Document public or non-obvious methods when useful. Use Doxygen tags such as
+  `@brief`, `@param`, `@return`, and `@tparam` where they apply; do not add empty
+  or irrelevant tags.
+- Document each template parameter with `@tparam` when documenting a template.
+- Use `///<` for a data-member comment when a short same-line explanation is
+  appropriate.
+- Preserve existing search tags when editing tagged code. Use the project's tag
+  format: `tagname [tag: context_words] [summary: short summary]`.
+
+## 8. Repository-specific context
+
+`external/gd/` contains the shared GD library and is a core part of this
+repository. Prefer reusing its existing types and utilities when working in
+project code. Do not inspect or modify unrelated `external/` libraries unless
+the task specifically concerns them.
+
+Useful GD headers:
+
+| Header | Namespace / purpose |
+|---|---|
+| `gd_types.h` | `gd::types`: core type identifiers |
+| `gd_variant.h` | `gd`: owning `variant` value |
+| `gd_variant_view.h` | `gd`: non-owning `variant_view` |
+| `gd_variant_arg.h` | `gd`: `arg`, `args_view`, and `args` |
+| `gd_arguments.h` | `gd::argument`: compact arguments buffer |
+| `gd_arguments_shared.h` | `gd::argument::shared`: shared/COW arguments |
+| `gd_arguments_io.h` | `gd::argument`: arguments serialization |
+| `gd_table.h` | `gd::table`: table primitives |
+| `gd_table_table.h` | `gd::table`: fixed-column table |
+| `gd_table_arguments.h` | `gd::table::arguments`: table with dynamic row columns |
+| `gd_table_column.h` | `gd::table::detail`: column metadata |
+| `gd_table_index.h` | `gd::table`: integer index |
+| `gd_table_io.h` | `gd::table`: table serialization and output |
+
+Treat this list as navigation help, not a replacement for reading the relevant
+declarations and implementations. Verify exact signatures and semantics in the
+code before using an API.

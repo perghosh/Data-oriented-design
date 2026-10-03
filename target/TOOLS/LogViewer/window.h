@@ -195,7 +195,7 @@ private:
    LRESULT Dispatch(UINT uMessage, WPARAM uParam, LPARAM iParam)
    {
       auto eEvent = gd_win::translate_s(uMessage); // translate to portable event, ignored here but useful for debugging
-      if(eEvent != gd_win::eEventNone)
+      if(eEvent != gd_win::eNone)
       {
          if (m_pbitsetMessageMap->test(eEvent) == false)
          {

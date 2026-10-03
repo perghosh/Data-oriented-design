@@ -14,7 +14,7 @@
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
    gd_win::event_map_registry registryMaps;
-   registryMaps.append({ "Mouse", std::bitset<gd_win::uMaxMessageId>(0x);
+   //registryMaps.append({ "Mouse", std::bitset<gd_win::uMaxMessageId>(0x);
 
    CDrawWindow window;
    if(window.Create(L"Blank Window", 800, 600) == false) return 0;
@@ -26,5 +26,5 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 void RegisterWindowMap(gd_win::event_map_registry & registryMaps)
 {
-   registryMaps.append({ "main", );
+   //registryMaps.append({ "main", );
 }
