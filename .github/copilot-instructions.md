@@ -75,7 +75,11 @@ By enforcing full semantic names on anything with domain meaning, we guarantee t
 | `it` | iterator | `for( auto it : vectorValue )`, `for( auto it = std::begin( container ) )` |
 | `m_` | member variables | `uint64_t m_uRowCount;`, `std::vector<int> m_vectorNumbers;` |
 | `string` | all string objects | `std::string stringName;`, `std::string_view stringViewName;` |
+
+| suffix | Description | Examples |
+| ------- | ----------- | -------- |
 | `_` | if variable is just used on the same row and declaration is verbose, then it is ok to name it to something short and add underscore at the end | `std::vector<object_name> list_;` |
+
 
 Note the last row in the table that is a postfix (underscore _ is placed **after** the variable name). Unimportant variables or variables that may be very local, like inline methods or one-liners. Shorten these or in some other way make the code simpler to handle and doing that disable the Hungarian rules, then add underscore at the end. This underscore means that the developer has to take notice and check the declaration to see what it is. Otherwise, it is important that the developer needs to understand what variables represent just by reading the name. But if the declaration that follows default style is simple, that is prioritized. Only use _ at the end when declarations become verbose.
 
@@ -250,32 +254,15 @@ Examples
 
 ---
 
-## Project Structure
+## Core functionality is located in
 external/gd/          # GD (General Development) library — the primary shared library and very important for code reuse across targets!!
-external/catch2/      # Test framework
-external/pugixml/     # XML
-external/sqlite/      # SQLite
-external/boost/       # Boost safe_numerics(used sparingly, only used for regex and not important)
-external/jsoncons/    # JSON
-source/application/   # Reusable application-level code (ApplicationBasic, database metadata)
-cmake/                # CMake helper scripts (include_external.cmake)
-target/TOOLS/FileCleaner/  # "cleaner" CLI tool — file organization/searching
-target/TOOLS/Backup/       # Backup tool
-target/server/http/        # HTTP server
-misc/howto/                # HOWTO example executables
-test/                      # General gd library tests but most targets will have their own tests in subdirectories of test/
-All projects have their own subfolder called playground, here it is ok to test and play around with code. This is the place where you can write code that is not yet ready to be moved.
-
-## The core in GD Library (`external/gd/`)
-
-GD (General Development) is the core internal library — header+implementation pairs, C++20, no external dependencies beyond STL. Full TOC: `external/gd/_docs_/TOC.md`.
+All projects use code from this folder. It is the core of the codebase and contains the most important shared functionality.
+Ignore all other code in external/ folders unless you are working on that specific external library.
 
 ### Types & Utilities
 | Header | Namespace | Key types / purpose |
 |--------|-----------|---------------------|
 | `gd_types.h` | `gd::types` | `enumTypeNumber`, `enumTypeGroup`, `enumType` — core type ID system |
-| `gd_compiler.h` | `gd` | C++ standard and compiler detection macros |
-| `gd_binary.h` | `gd` | Binary data utilities |
 
 ### Variant / Value types
 | Header | Namespace | Key types / purpose |
@@ -301,15 +288,6 @@ GD (General Development) is the core internal library — header+implementation 
 | `gd_table_index.h` | `gd::table` | `index_int64` — fast binary-search index over a table column |
 | `gd_table_io.h` | `gd::table` | Stream tables as CSV, JSON, SQL, CLI; tag dispatchers |
 
----
 
-## REMEMBER
-
-- **ALWAYS use Hungarian notation** - it's non-negotiable
-- **Prefixes indicate type** - helps with code readability
-- **Suffixes indicate scope** - `_` for parameters/temporary, `_g` for global, `_s` for static, `_d` for code that is only used for debug purposes, etc.
-- **Full semantic names** for domain concepts - keep code searchable
-- **Consistency is key** - follow these rules throughout the codebase
-- **Use shorter, context-aware names** when the context is clear to avoid overly descriptive long identifiers.
 
 

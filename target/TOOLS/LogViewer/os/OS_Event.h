@@ -56,35 +56,35 @@ enum eEvent
 // Anything outside the range falls through to eEventNone.
 inline constexpr UINT uMaxMessageId = 0x400;
 
-inline constexpr std::array<eEvent, uMaxMessageId> gaNativeToEvent = []
-   {
-      std::array<eEvent, uMaxMessageId> a = {};    // all eEventNone by default
-      a[WM_PAINT] = eEventPaint;
-      a[WM_SIZE] = eEventResize;
-      a[WM_MOVE] = eEventMove;
-      a[WM_CLOSE] = eEventClose;
-      a[WM_DESTROY] = eEventDestroy;
-      a[WM_CREATE] = eEventCreate;
-      a[WM_KEYDOWN] = eEventKeyDown;
-      a[WM_KEYUP] = eEventKeyUp;
-      a[WM_CHAR] = eEventChar;
-      a[WM_MOUSEMOVE] = eEventMouseMove;
-      a[WM_LBUTTONDOWN] = eEventMouseDown;
-      a[WM_LBUTTONUP] = eEventMouseUp;
-      a[WM_MOUSEWHEEL] = eEventMouseWheel;
-      a[WM_MOUSEHOVER] = eEventMouseEnter;
-      a[WM_MOUSELEAVE] = eEventMouseLeave;
-      a[WM_SETFOCUS] = eEventFocusIn;
-      a[WM_KILLFOCUS] = eEventFocusOut;
-      a[WM_TIMER] = eEventTimer;
-      return a;
-   }();
+inline constexpr std::array<eEvent, uMaxMessageId> garrayNativeToEvent = []
+{
+   std::array<eEvent, uMaxMessageId> a_ = {};    // all eEventNone by default
+   a_[WM_PAINT] = eEventPaint;
+   a_[WM_SIZE] = eEventResize;
+   a_[WM_MOVE] = eEventMove;
+   a_[WM_CLOSE] = eEventClose;
+   a_[WM_DESTROY] = eEventDestroy;
+   a_[WM_CREATE] = eEventCreate;
+   a_[WM_KEYDOWN] = eEventKeyDown;
+   a_[WM_KEYUP] = eEventKeyUp;
+   a_[WM_CHAR] = eEventChar;
+   a_[WM_MOUSEMOVE] = eEventMouseMove;
+   a_[WM_LBUTTONDOWN] = eEventMouseDown;
+   a_[WM_LBUTTONUP] = eEventMouseUp;
+   a_[WM_MOUSEWHEEL] = eEventMouseWheel;
+   a_[WM_MOUSEHOVER] = eEventMouseEnter;
+   a_[WM_MOUSELEAVE] = eEventMouseLeave;
+   a_[WM_SETFOCUS] = eEventFocusIn;
+   a_[WM_KILLFOCUS] = eEventFocusOut;
+   a_[WM_TIMER] = eEventTimer;
+   return a_;
+}();
 
 // Translate native message id into portable event id. O(1).
 inline eEvent translate_s(UINT uNative)
 {
    if(uNative >= uMaxMessageId) return eEventNone;
-   return gaNativeToEvent[uNative];
+   return garrayNativeToEvent[uNative];
 }
 
 // @API [tag: event, map, container] [description: Manage registration of event maps.] [jump: event_map__] 
@@ -162,7 +162,7 @@ public:
    event_map() = default;
    ~event_map() = default;
 
-   event_map(const event_map_registr::entry& entry) : m_entry{ entry } { }
+   event_map(const event_map_registry::entry& entry) : m_entry{ entry } { }
    event_map(const std::string& stringId, const std::bitset<event_map_registry::m_uMaxEventId_s>& bitset) : m_entry{ stringId, bitset } { set_map(stringId, bitset); }
 
    /// Register an event map with a given identifier
