@@ -2,29 +2,18 @@
 
 _GD_WIN_BEGIN
 
-
-void event_map_registry::append(const entry& entry_)
-{
-   m_vectorEntry.push_back(entry_);
-}
-
-#include "OS_Event.h"
-
-#include "OS_Event.h"
-
-
-void add(const std::string& stringId, std::initializer_list<std::string_view> stringEvent)
+void event_map_registry::add(const std::string& stringId, std::initializer_list<std::string_view> stringEvent)
 {
    std::bitset<uMaxMessageId> bitset_;
    for(const auto& eventName : stringEvent)
    {
-      eEvent eId = to_event_g(eventName.data());
-      if(eId != eEventNone)
+      eWindowEvent eId = to_event_g(eventName.data());
+      if(eId != eWindowEvent::eNone)
       {
          bitset_.set(static_cast<size_t>(eId));
       }
    }
-   add(stringId, bitset);
+   add(stringId, bitset_);
 }
 
 /// Insert or update an entry by identifier ----------------------------------- insert

@@ -24,7 +24,7 @@ set( TARGET_SOURCE_FILES_
    ${APPLICATION_DIRECTORY_}/database/Metadata_Statements.cpp
 )
 
-file(GLOB TARGET_AUTOMATION_FILES_ "automation/*.cpp")
+file(GLOB TARGET_AREA_FILES_ "os/*.cpp" "ui/*.cpp")
 
 if(WIN32)
    # Add Windows specific code
@@ -74,7 +74,7 @@ if( USE_TARGET_ )
       ${GD_SOURCES_ALL} ${external_pugixml} ${external_sqlite}
       ${TARGET_FILES_}   
       ${TARGET_SOURCE_FILES_}
-      ${TARGET_AUTOMATION_FILES_}
+      ${TARGET_AREA_FILES_}
       "window.cpp"
       "WindowApplication.cpp"
       "main.cpp"

@@ -5,8 +5,10 @@
 #include <bitset>
 #include <initializer_list>
 #include <vector>
+#include <string>
+#include <string_view>
 
-#include "window.h"
+#include <windows.h>
 
 #ifndef _GD_WIN_BEGIN
 #define _GD_WIN_BEGIN namespace gd_win {
@@ -20,7 +22,7 @@ _GD_WIN_BEGIN
 /* # 
  */
 
-enum eWindowEvent
+enum eWindowEvent : unsigned int
 {
    eNone = 0,
 
@@ -72,15 +74,15 @@ enum eWindowEvent
 
 // Translate selected standard Windows messages below WM_USER to shared meanings.
 // Private WM_USER/WM_APP messages are application-specific and are not mapped.
-inline constexpr UINT uMaxMessageId = 0x400;
+inline constexpr unsigned int uMaxMessageId = 0x400;
 
 inline constexpr std::array<eWindowEvent, uMaxMessageId> garrayNativeToEvent = []
 {
    std::array<eWindowEvent, uMaxMessageId> arrayEvents = {}; // Initialize all entries to eEventNone
    // ## Map native messages to portable events ...............................
-   const auto map_message_ = [&arrayEvents](eWindowEvent ePortableEvent, std::initializer_list<UINT> initializerListMessages)
+   const auto map_message_ = [&arrayEvents](eWindowEvent ePortableEvent, std::initializer_list<unsigned int> initializerListMessages)
    {
-      for(const UINT uNativeMessage : initializerListMessages) { arrayEvents[uNativeMessage] = ePortableEvent; }
+      for(const unsigned int uNativeMessage : initializerListMessages) { arrayEvents[uNativeMessage] = ePortableEvent; }
    };
 
    map_message_(ePaint, { WM_PAINT });
@@ -161,10 +163,10 @@ public:
    ~event_map_registry() = default;
 
    /// Legacy append method
-   void append(const entry& entry_) { m_vectorEntry.push_back(entry_); }
+   void add(const entry& entry_) { m_vectorEntry.push_back(entry_); }
 
    /// Add a new entry with a given identifier and bitset of supported events
-   void add(const std::string& stringId, const std::bitset<uMaxMessageId>& bitset);
+   void add(const std::string& stringId, const std::bitset<uMaxMessageId>& bitset) { m_vectorEntry.push_back({ stringId, bitset }); }
    void add(const std::string& stringId, std::initializer_list<std::string_view> stringEvent);
 
 

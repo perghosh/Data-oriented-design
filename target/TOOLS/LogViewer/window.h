@@ -59,6 +59,9 @@ struct CMessageKey // ( virtual key, repeat count )
    }
 };
 
+template<> struct CMessage<gd_win::eWindowEvent::eMouseDown> : CMessageMouse {};
+template<> struct CMessage<gd_win::eWindowEvent::eMouseMove> : CMessageMouse {};
+
 template<> struct CMessage<WM_PAINT> : CMessageNone {};
 template<> struct CMessage<WM_CLOSE> : CMessageNone {};
 template<> struct CMessage<WM_DESTROY> : CMessageNone {};
@@ -142,9 +145,11 @@ public:
    void Bind(OBJECT* pobject, METHOD pmethod)
    {
       using cracker = CMessage<uMessage>;
-      static_assert(detail::CBindable<METHOD, OBJECT*, typename cracker::arguments>::value,
-         "handler signature does not match the arguments of this message, see CMessage<> for the message");
+      static_assert(detail::CBindable<METHOD, OBJECT*, typename cracker::arguments>::value, "handler signature does not match the arguments of this message, see CMessage<> for the message");
+      auto eEvent = gd_win::translate_s(uMessage);
+      m_bitsetMessageMap.set(eEvent); // for debugging, see Dispatch()
 
+      /*
       m_mapHandler[uMessage] = [pobject, pmethod](WPARAM uParam, LPARAM iParam) -> LRESULT
          {
             auto tupleArgument = std::tuple_cat(std::make_tuple(pobject), cracker::Crack_s(uParam, iParam));
@@ -158,6 +163,7 @@ public:
                return static_cast<LRESULT>(std::apply(pmethod, tupleArgument));
             }
          };
+         */
    }
 
    /// Create the window, message bindings should be done before this call so WM_CREATE is seen
@@ -167,8 +173,7 @@ public:
       if(Register_s(hinstance) == false) return false;
 
       // `this` travels in lpParam and is picked up in WM_NCCREATE by WindowProc_s
-      HWND hwnd = CreateWindowExW(0, pwszClassName_s, stringTitle.c_str(), uStyle,
-         CW_USEDEFAULT, CW_USEDEFAULT, iWidth, iHeight, hwndParent, nullptr, hinstance, this);
+      HWND hwnd = CreateWindowExW(0, pwszClassName_s, stringTitle.c_str(), uStyle, CW_USEDEFAULT, CW_USEDEFAULT, iWidth, iHeight, hwndParent, nullptr, hinstance, this);
       return hwnd != nullptr;
    }
 
@@ -197,16 +202,21 @@ private:
       auto eEvent = gd_win::translate_s(uMessage); // translate to portable event, ignored here but useful for debugging
       if(eEvent != gd_win::eNone)
       {
-         if (m_pbitsetMessageMap->test(eEvent) == false)
+         if (m_bitsetMessageMap.test(eEvent) == true)
          {
-            OutputDebugStringA((std::to_string(uMessage) + " " + std::to_string(eEvent) + "\n").c_str());
+            //OutputDebugStringA((std::to_string(uMessage) + " " + std::to_string(eEvent) + "\n").c_str());
+         }
+         else
+         {
+            return Default(uMessage, uParam, iParam);
          }
       }
 
-
+/*/
       auto it = m_mapHandler.find(uMessage);
       if(it == m_mapHandler.end()) return Default(uMessage, uParam, iParam);
       return it->second(uParam, iParam);
+      */
    }
 
    static bool Register_s(HINSTANCE hinstance);
@@ -216,7 +226,7 @@ private:
 
 private:
    static constexpr const wchar_t* pwszClassName_s = L"win::CWindow";
-   std::bitset<100>* m_pbitsetMessageMap{};
+   std::bitset<100> m_bitsetMessageMap{};
    HWND m_hwnd = nullptr;
    std::unordered_map<UINT, handler> m_mapHandler;
 };
