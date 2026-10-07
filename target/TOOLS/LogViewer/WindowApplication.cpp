@@ -3,7 +3,7 @@
 
 
 
-
+/*
 
 CDrawWindow::CDrawWindow()
 {
@@ -68,3 +68,4 @@ void CDrawWindow::OnPaint()
    DeleteObject(brush);
 }
 
+*/
