@@ -71,7 +71,7 @@ if( USE_TARGET_ )
    set(TARGET_NAME_ "LogViewer")
 
    add_executable(${TARGET_NAME_}
-      ${GD_SOURCES_ALL} ${external_pugixml} ${external_sqlite}
+      ${GD_SOURCES_ALL} ${GDWIN__BASE_PATH} ${external_pugixml} ${external_sqlite}
       ${TARGET_FILES_}   
       ${TARGET_SOURCE_FILES_}
       ${TARGET_AREA_FILES_}

@@ -41,6 +41,8 @@ file(GLOB GD_SOURCES_TABLE ${GD_BASE_PATH}/table/*.cpp ${GD_BASE_PATH}/table/*.h
 
 set(GD_MODULES__BASE_PATH ${CMAKE_SOURCE_DIR}/external/gd_modules)
 
+set(GDWIN__BASE_PATH ${CMAKE_SOURCE_DIR}/external/gdwin)
+
 file(GLOB_RECURSE GD_MODULES__SOURCES_ALL ${GD_MODULES__BASE_PATH}/*.cpp ${GD_MODULES__BASE_PATH}/*.h)
 file(GLOB GD_MODULES__DBMETA ${GD_MODULES__BASE_PATH}/dbmeta/*.cpp ${GD_MODULES__BASE_PATH}/dbmeta/*.h)
 
