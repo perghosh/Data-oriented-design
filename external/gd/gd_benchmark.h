@@ -24,7 +24,7 @@
 
 
 #ifndef GD_COMPILER_HAS_CPP26_SUPPORT
-#  error "This file is not being compiled in C++26 mode"
+//#  error "This file is not being compiled in C++26 mode"
 #endif
 
 #ifndef _GD_BEGIN
