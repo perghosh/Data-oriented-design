@@ -498,6 +498,7 @@ public:
       gd::variant_view as_variant_view() const { return get_variant_view(); }
       std::string_view as_string_view() const { return get_string_view(); }
       std::span<uint8_t> as_binary_view() const { return get_binary_view(); }
+      void*        as_pointer() const  { return get_raw_pointer(); }
 
 
       bool         get_bool() const;

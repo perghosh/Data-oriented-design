@@ -91,6 +91,8 @@ if( USE_TARGET_ )
    # target_compile_definitions(${TARGET_NAME_} PRIVATE GD_DATABASE_SQLITE_USE)
 
    if(MSVC)
+      target_compile_options(${TARGET_NAME_} PRIVATE /std:c++latest)           # Use latest C++ standard
+
       # Windows/MSVC specific settings with SIMD optimizations
 
       if(CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -281,5 +283,5 @@ endif()
 
 
 # Optional: CPack for creating installers
-include(CPack)
-cpack_add_component(LogViewer DISPLAY_NAME "LogViewer Executable and Documentation")
+# include(CPack)
+# cpack_add_component(LogViewer DISPLAY_NAME "LogViewer Executable and Documentation")

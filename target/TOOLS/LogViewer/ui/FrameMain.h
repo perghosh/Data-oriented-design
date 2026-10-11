@@ -1,7 +1,9 @@
 #pragma once
 
 
-#include "../window.h"
+//#include "../window.h"
+
+#include "gdwin/gdwin_window.h"
 
 /** @CLASS [name: CFrameMain] [description:  ]
  * \brief
@@ -11,7 +13,7 @@
  \code
  \endcode
  */
-class CFrameMain : public CWindow
+class CFrameMain : public gdwin::window<>
 {
    // @API [tag: construction]
 public:
@@ -23,7 +25,7 @@ public:
    CFrameMain& operator=(const CFrameMain& o) { common_construct(o); return *this; }
    CFrameMain& operator=(CFrameMain&& o) noexcept { common_construct(std::move(o)); return *this; }
 
-   ~CFrameMain() {}
+   ~CFrameMain() override = default;
 private:
    // common copy
    void common_construct(const CFrameMain& o) {}

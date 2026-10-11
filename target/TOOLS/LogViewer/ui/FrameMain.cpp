@@ -3,8 +3,8 @@
 
 CFrameMain::CFrameMain()
 {
-   Bind(gd_win::eWindowEvent::eMouseDown);
-   Bind(gd_win::eWindowEvent::eMouseMove);
+   //Bind(gd_win::eWindowEvent::eMouseDown);
+   //Bind(gd_win::eWindowEvent::eMouseMove);
 }
 
 void CFrameMain::OnMouseDown(UINT, POINT point)
