@@ -39,6 +39,7 @@
 
 _GDWIN_BEGIN
 std::expected<bool, std::string> register_window_g( const gd::argument::arguments& argumentsWindow, std::string_view stringClass);
+std::expected<bool, std::string> register_window_g(const gd::argument::arguments& argumentsWindow);
 bool create_window_g(const gd::argument::arguments& argumentsWindow, std::string_view stringClass, std::string_view stringTitle, int iX, int iY, int iWidth, int iHeight, DWORD uStyle = WS_OVERLAPPEDWINDOW, HWND hwndParent = nullptr);
 void crack_message_s(gdwin::eWindowEvent eEvent, WPARAM uParam, LPARAM iParam, gd::argument::arguments& argumentsOut);
 _GDWIN_END
