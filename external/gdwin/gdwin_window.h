@@ -38,10 +38,11 @@
 #endif
 
 _GDWIN_BEGIN
+int run_s();
 std::expected<bool, std::string> register_window_g( const gd::argument::arguments& argumentsWindow, std::string_view stringClass);
 std::expected<bool, std::string> register_window_g(const gd::argument::arguments& argumentsWindow);
-bool create_window_g(const gd::argument::arguments& argumentsWindow, std::string_view stringClass, std::string_view stringTitle, int iX, int iY, int iWidth, int iHeight, DWORD uStyle, HWND hwndParent = nullptr);
-void crack_message_s(gdwin::eWindowEvent eEvent, WPARAM uParam, LPARAM iParam, gd::argument::arguments& argumentsOut);
+bool create_window_g(const gd::argument::arguments& argumentsWindow, std::string_view stringClass, std::string_view stringTitle, int iX, int iY, int iWidth, int iHeight, DWORD uStyle, HWND hwndParent = nullptr, void* puserdata_ = nullptr);
+void crack_message_s(gdwin::eWindowEvent eEvent, WPARAM uParam, LPARAM iParam, gd::argument::arguments& argumentsMessage);
 _GDWIN_END
 
 _GDWIN_BEGIN
@@ -159,22 +160,14 @@ public:
    void Invalidate(bool bErase = true) { InvalidateRect(m_hwnd, nullptr, bErase ? TRUE : FALSE); }
 
 
-   LRESULT Call(UINT uMessage, WPARAM uParam, LPARAM iParam);
+   LRESULT call(UINT uMessage, WPARAM uParam, LPARAM iParam);
 
    /// Call from a handler when default processing should run as well
-   LRESULT CallDefault(UINT uMessage, WPARAM uParam, LPARAM iParam) const { return DefWindowProcW(m_hwnd, uMessage, uParam, iParam); }
+   LRESULT call_default(UINT uMessage, WPARAM uParam, LPARAM iParam) const { return DefWindowProcW(m_hwnd, uMessage, uParam, iParam); }
 
-   /// Message loop, returns the exit code from PostQuitMessage
-   static int Run_s()
-   {
-      MSG msg = {};
-      while(GetMessageW(&msg, nullptr, 0, 0) > 0)
-      {
-         TranslateMessage(&msg);
-         DispatchMessageW(&msg);
-      }
-      return static_cast<int>(msg.wParam);
-   }
+public:
+   static void* get_callback_s() { return (void*)window_procedure_s; }
+
 
 private:
    LRESULT dispatch(UINT uMessage, WPARAM uParam, LPARAM iParam)
@@ -184,21 +177,20 @@ private:
       {
          if(m_bitsetMessageMap.test(eEvent) == true)
          {
-            return Call(uMessage, uParam, iParam);
+            return call(uMessage, uParam, iParam);
          }
       }
 
-      return CallDefault(uMessage, uParam, iParam);
+      return call_default(uMessage, uParam, iParam);
    }
 
-
    /// The one and only window procedure, finds the window for the HWND and forwards
-   static LRESULT CALLBACK WindowProc_s(HWND hwnd, UINT uMessage, WPARAM uParam, LPARAM iParam);
+   static LRESULT CALLBACK window_procedure_s(HWND hwnd, UINT uMessage, WPARAM uParam, LPARAM iParam);
+   /// Crack a native message into a portable event and arguments. This is for debugging and testing, as the framework will only call OnEvent for messages that have been bound.
+   static void crack_message_s( gdwin::eWindowEvent eEvent, WPARAM uParam, LPARAM iParam, gd::argument::arguments& argumentsMessage);
 
-   static void CrackMessage_s( gdwin::eWindowEvent eEvent, WPARAM uParam, LPARAM iParam, gd::argument::arguments& argumentsOut);
 
-
-private:
+public:
    std::bitset<100> m_bitsetMessageMap{};
    HWND m_hwnd = nullptr;
 };
@@ -213,12 +205,16 @@ inline void window<EVENT_RESULT>::bind(UINT uMessage)
 template <typename EVENT_RESULT>
 bool window<EVENT_RESULT>::create(const std::string& stringTitle, gd::argument::arguments argumentsWindow)
 {
+#if defined(UNICODE) || defined(_UNICODE)
    HINSTANCE hinstance = GetModuleHandleW(nullptr);
+#else
+   HINSTANCE hinstance = GetModuleHandleA(nullptr);
+#endif
 
    auto [bRegistered, stringClass] = get_window_class();
    if(bRegistered == false && stringClass.empty() == false)
    {
-      auto pfnCallback = get_callback();
+      auto pfnCallback = get_callback_s();
       gd::argument::arguments argumentsRegister;
       argumentsRegister["instance"] = (void*)hinstance;
       argumentsRegister["class"] = stringClass.data();
@@ -256,10 +252,72 @@ bool window<EVENT_RESULT>::create(const std::string& stringTitle, gd::argument::
    int iWidth = argumentsWindow["width"].as_int();
    int iHeight = argumentsWindow["height"].as_int();
 
-   return create_window_g(argumentsWindow, stringClass, stringTitle, iX, iY, iWidth, iHeight, uStyle);
+   return create_window_g(argumentsWindow, stringClass, stringTitle, iX, iY, iWidth, iHeight, uStyle, nullptr, this);
 }
 
+template <typename EVENT_RESULT>
+LRESULT window<EVENT_RESULT>::call(UINT uMessage, WPARAM uParam, LPARAM iParam)
+{
+   std::array<std::byte, 128> buffer_;
+   gd::argument::arguments argumentsMessage(buffer_);
+   auto eEvent = gdwin::translate_s(uMessage);
+   crack_message_s(eEvent, uParam, iParam, argumentsMessage);
+   auto result = on_event(eEvent, &argumentsMessage, (uint64_t)uMessage);
+   return result.as_int64();
+ }
 
+template <typename EVENT_RESULT>
+LRESULT CALLBACK window<EVENT_RESULT>::window_procedure_s(HWND hwnd, UINT uMessage, WPARAM uParam, LPARAM iParam)
+{
+   window<EVENT_RESULT>* pwindow_ = nullptr;
+   pwindow_ = reinterpret_cast<window<EVENT_RESULT>*>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+   /*
+   if(uMessage == WM_NCCREATE)
+   {
+      pwindow_ = static_cast<window<EVENT_RESULT>*>(reinterpret_cast<CREATESTRUCTW*>(iParam)->lpCreateParams);
+      if(pwindow_ != nullptr)
+      {
+         pwindow_->m_hwnd = hwnd;
+         SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pwindow_));
+      }
+   }
+   else
+   {
+      pwindow_ = reinterpret_cast<window<EVENT_RESULT>*>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+   }
+   */
+
+
+   //auto pwindow_ = reinterpret_cast<window*>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+   if(pwindow_ != nullptr)
+   {
+      return pwindow_->dispatch(uMessage, uParam, iParam);
+   }
+   else
+   {
+      if(uMessage == WM_NCCREATE)
+      {
+         CREATESTRUCT* pCreateStruct = reinterpret_cast<CREATESTRUCT*>(iParam);
+         pwindow_ = reinterpret_cast<window*>(pCreateStruct->lpCreateParams);
+#if defined(UNICODE) || defined(_UNICODE)
+         SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pwindow_));
+#else
+         SetWindowLongPtrA(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pwindow_));
+#endif
+         pwindow_->m_hwnd = hwnd;
+         return pwindow_->dispatch(uMessage, uParam, iParam);
+      }
+   }
+   return DefWindowProcW(hwnd, uMessage, uParam, iParam);
+}
+
+template <typename EVENT_RESULT>
+void window<EVENT_RESULT>::crack_message_s(gdwin::eWindowEvent eEvent, WPARAM uParam, LPARAM iParam, gd::argument::arguments& argumentsMessage)
+{
+   //std::array<std::byte, 128> buffer_;
+   //gd::argument::arguments argumentsMessage(buffer_);  
+   crack_message_s(eEvent, uParam, iParam, argumentsMessage);
+}
 
 
 _GDWIN_END

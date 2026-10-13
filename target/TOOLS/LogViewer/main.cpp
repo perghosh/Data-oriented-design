@@ -14,14 +14,16 @@
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-   gd_win::event_map_registry registryMaps;
+   using namespace gdwin;
+
+   gdwin::event_registry registryMaps;
    //registryMaps.append({ "Mouse", std::bitset<gd_win::uMaxMessageId>(0x);
 
    CFrameMain framemain;
-   if (framemain.create("Blank Window", { {"style", "overlappedwindow"}, {"width", 800}, {"height", 600}}) == false) return 0;
+   if (framemain.create("Blank Window", { {"style", "overlappedwindow"}, {"width", 800}, {"height", 600},{ "callback", gdwin::window<>::get_callback_s() }}) == false) return 0;
 
    framemain.Show(nCmdShow);
-   return CWindow::Run_s();
+   return run_s();
 }
 
 

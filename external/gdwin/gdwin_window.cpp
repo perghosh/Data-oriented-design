@@ -4,6 +4,17 @@
 
 _GDWIN_BEGIN
 
+int run_s()
+{
+    MSG msg = {};
+    while(GetMessageW(&msg, nullptr, 0, 0) > 0)
+    {
+        TranslateMessage(&msg);
+        DispatchMessageW(&msg);
+    }
+    return static_cast<int>(msg.wParam);
+}
+
 std::expected<bool, std::string> register_window_g(const gd::argument::arguments& argumentsWindow, std::string_view stringClass)
 {                                                                                                  assert(stringClass.size() > 0);
    HINSTANCE hinstance = (HINSTANCE)argumentsWindow["instance"].as_pointer();                      assert(hinstance != nullptr);
@@ -52,7 +63,7 @@ std::expected<bool, std::string> register_window_g(const gd::argument::arguments
    return register_window_g(argumentsWindow, stringClass);
 }
 
-bool create_window_g(const gd::argument::arguments& argumentsWindow, std::string_view stringClass, std::string_view stringTitle, int iX, int iY, int iWidth, int iHeight, DWORD uStyle, HWND hwndParent)
+bool create_window_g(const gd::argument::arguments& argumentsWindow, std::string_view stringClass, std::string_view stringTitle, int iX, int iY, int iWidth, int iHeight, DWORD uStyle, HWND hwndParent, void* puserdata_)
 {
     HINSTANCE hinstance = (HINSTANCE)argumentsWindow["hinstance"].as_pointer();
     if(hinstance == nullptr) { hinstance = GetModuleHandle(nullptr); }
@@ -60,9 +71,9 @@ bool create_window_g(const gd::argument::arguments& argumentsWindow, std::string
 #if defined(UNICODE) || defined(_UNICODE)
     std::wstring stringClassW(stringClass.begin(), stringClass.end());
     std::wstring stringTitleW(stringTitle.begin(), stringTitle.end());
-    HWND hwnd = CreateWindowExW(0, stringClassW.data(), stringTitleW.data(), uStyle, iX, iY, iWidth, iHeight, hwndParent, nullptr, hinstance, nullptr);
+    HWND hwnd = CreateWindowExW(0, stringClassW.data(), stringTitleW.data(), uStyle, iX, iY, iWidth, iHeight, hwndParent, nullptr, hinstance, puserdata_);
 #else
-    HWND hwnd = CreateWindowExA(0, stringClass.data(), stringTitle.data(), uStyle, iX, iY, iWidth, iHeight, hwndParent, nullptr, hinstance, nullptr);
+    HWND hwnd = CreateWindowExA(0, stringClass.data(), stringTitle.data(), uStyle, iX, iY, iWidth, iHeight, hwndParent, nullptr, hinstance, puserdata_);
 #endif   
     return hwnd != nullptr;
 }

@@ -31,30 +31,31 @@ private:
    void common_construct(const CFrameMain& o) {}
    void common_construct(CFrameMain&& o) noexcept {}
 
-   // @API [tag: operator]
+// @API [tag: operator]
 public:
 
 
-   // ## methods ------------------------------------------------------------------
+// ## methods ------------------------------------------------------------------
 public:
-   // @API [tag: get, set]
+// @API [tag: get, set]
 
-   // @API [tag: operation]
+// @API [tag: operation]
+   std::pair<bool, std::string_view> get_window_class() const override { return { false, std::string_view("CFrameMain")}; }
 
 
 protected:
-   // @API [tag: internal]
-   void OnMouseDown(UINT, POINT point);
-   void OnMouseMove(UINT, POINT point);
+// @API [tag: internal]
+void OnMouseDown(UINT, POINT point);
+void OnMouseMove(UINT, POINT point);
 
 public:
-   // @API [tag: debug]
+// @API [tag: debug]
 
-   // ## attributes ----------------------------------------------------------------
+// ## attributes ----------------------------------------------------------------
 public:
 
 
-   // @API [tag: free-functions]
+// @API [tag: free-functions]
 public:
 
 
