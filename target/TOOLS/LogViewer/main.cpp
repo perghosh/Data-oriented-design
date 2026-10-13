@@ -18,7 +18,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
    //registryMaps.append({ "Mouse", std::bitset<gd_win::uMaxMessageId>(0x);
 
    CFrameMain framemain;
-   if(framemain.create("Blank Window", {{"width", 800}, {"height", 600}}) == false) return 0;
+   if (framemain.create("Blank Window", { {"style", "overlappedwindow"}, {"width", 800}, {"height", 600}}) == false) return 0;
 
    framemain.Show(nCmdShow);
    return CWindow::Run_s();

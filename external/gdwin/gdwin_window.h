@@ -182,7 +182,7 @@ private:
       auto eEvent = gdwin::translate_s(uMessage); // translate to portable event, ignored here but useful for debugging
       if(eEvent != gdwin::eNone)
       {
-         if (m_bitsetMessageMap.test(eEvent) == true)
+         if(m_bitsetMessageMap.test(eEvent) == true)
          {
             return Call(uMessage, uParam, iParam);
          }
@@ -229,8 +229,28 @@ bool window<EVENT_RESULT>::create(const std::string& stringTitle, gd::argument::
       }
    }
 
-   std::array<std::byte, 128> buffer_{};
-   uint32_t uStyle = argumentsWindow.get_argument<uint32_t>("style", WS_OVERLAPPEDWINDOW);
+   uint32_t uStyle = 0;
+   auto argumentsStyle = argumentsWindow["style"];
+   if (argumentsStyle.is_string() == true)                                     // value are passed as string, so we need to convert them to valid style values
+   {
+      std::string_view stringStyle = argumentsStyle.as_string_view();
+      if(stringStyle == "popup") { uStyle = WS_POPUP; }
+      else if(stringStyle == "child") { uStyle = WS_CHILD; }
+      else if(stringStyle == "minimized") { uStyle = WS_MINIMIZE; }
+      else if(stringStyle == "maximized") { uStyle = WS_MAXIMIZE; }
+      else if(stringStyle == "disabled") { uStyle = WS_DISABLED; }
+      else if(stringStyle == "visible") { uStyle = WS_VISIBLE; }
+      else if(stringStyle == "clipchildren") { uStyle = WS_CLIPCHILDREN; }
+      else if(stringStyle == "clipsiblings") { uStyle = WS_CLIPSIBLINGS; }
+      else if(stringStyle == "overlappedwindow") { uStyle = WS_OVERLAPPEDWINDOW; }
+      else if(stringStyle == "popupwindow") { uStyle = WS_POPUPWINDOW; }
+      else if(stringStyle == "childwindow") { uStyle = WS_CHILDWINDOW; }
+   }
+   else
+   {
+      uStyle = argumentsStyle.as_uint();                                         // value are passed as integer, not string and this neeed to be a valid style value, otherwise the window will not be created
+   }
+
    int iX = argumentsWindow["x"].as_int();
    int iY = argumentsWindow["y"].as_int();
    int iWidth = argumentsWindow["width"].as_int();
