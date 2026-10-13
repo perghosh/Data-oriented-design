@@ -40,7 +40,7 @@
 _GDWIN_BEGIN
 std::expected<bool, std::string> register_window_g( const gd::argument::arguments& argumentsWindow, std::string_view stringClass);
 std::expected<bool, std::string> register_window_g(const gd::argument::arguments& argumentsWindow);
-bool create_window_g(const gd::argument::arguments& argumentsWindow, std::string_view stringClass, std::string_view stringTitle, int iX, int iY, int iWidth, int iHeight, DWORD uStyle = WS_OVERLAPPEDWINDOW, HWND hwndParent = nullptr);
+bool create_window_g(const gd::argument::arguments& argumentsWindow, std::string_view stringClass, std::string_view stringTitle, int iX, int iY, int iWidth, int iHeight, DWORD uStyle, HWND hwndParent = nullptr);
 void crack_message_s(gdwin::eWindowEvent eEvent, WPARAM uParam, LPARAM iParam, gd::argument::arguments& argumentsOut);
 _GDWIN_END
 
@@ -230,13 +230,13 @@ bool window<EVENT_RESULT>::create(const std::string& stringTitle, gd::argument::
    }
 
    std::array<std::byte, 128> buffer_{};
-   gd::argument::arguments argumentsCreate(buffer_);
+   uint32_t uStyle = argumentsWindow.get_argument<uint32_t>("style", WS_OVERLAPPEDWINDOW);
    int iX = argumentsWindow["x"].as_int();
    int iY = argumentsWindow["y"].as_int();
    int iWidth = argumentsWindow["width"].as_int();
    int iHeight = argumentsWindow["height"].as_int();
 
-   return create_window_g(argumentsWindow, stringClass, stringTitle, iX, iY, iWidth, iHeight);
+   return create_window_g(argumentsWindow, stringClass, stringTitle, iX, iY, iWidth, iHeight, uStyle);
 }
 
 

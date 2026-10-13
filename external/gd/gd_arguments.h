@@ -1407,18 +1407,18 @@ public:
    [[nodiscard]] argument get_argument( std::tuple<std::string_view, size_t> index_ ) const { return find_argument( std::get<0>(index_), (unsigned)std::get<1>(index_) ); }
    [[nodiscard]] argument get_argument(std::string_view stringName, unsigned uSecondIndex, tag_section ) const;
    template<class DEFAULT>
-   [[nodiscard]] DEFAULT get_argument(const std::string_view& stringName, DEFAULT defaultValue) const {
+   [[nodiscard]] DEFAULT get_argument(std::string_view stringName, DEFAULT defaultValue) const {
       argument  v = find_argument(stringName);
       if( v.is_null() ) return defaultValue;
       return static_cast<DEFAULT>(v);
    }
    template<class DEFAULT>
-   [[nodiscard]] DEFAULT get_argument(const std::string_view& stringName, unsigned uIndex, DEFAULT defaultValue) const {
+   [[nodiscard]] DEFAULT get_argument(std::string_view stringName, unsigned uIndex, DEFAULT defaultValue) const {
       argument  v = find(stringName, uIndex);
       if( v.is_null() ) return defaultValue;
       return static_cast<DEFAULT>(v);
    }
-   [[nodiscard]] std::string get_argument(const std::string_view& stringName, const std::string& stringDefault) const {
+   [[nodiscard]] std::string get_argument(std::string_view stringName, const std::string& stringDefault) const {
       argument  v = find_argument(stringName);
       if( v.is_null() ) return stringDefault;
       return v.get_string();

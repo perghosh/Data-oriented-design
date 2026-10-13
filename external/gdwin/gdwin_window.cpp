@@ -8,9 +8,6 @@ std::expected<bool, std::string> register_window_g(const gd::argument::arguments
 {                                                                                                  assert(stringClass.size() > 0);
    HINSTANCE hinstance = (HINSTANCE)argumentsWindow["instance"].as_pointer();                      assert(hinstance != nullptr);
 
-
-
-
    bool bResult;
 #if defined(UNICODE) || defined(_UNICODE)
    WNDCLASSEXW wndclassex = {};
