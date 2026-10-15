@@ -160,24 +160,25 @@ public:
    void Invalidate(bool bErase = true) { InvalidateRect(m_hwnd, nullptr, bErase ? TRUE : FALSE); }
 
 
-   LRESULT call(UINT uMessage, WPARAM uParam, LPARAM iParam);
+   EVENT_RESULT call(UINT uMessage, WPARAM uParam, LPARAM iParam);
 
    /// Call from a handler when default processing should run as well
-   LRESULT call_default(UINT uMessage, WPARAM uParam, LPARAM iParam) const;
+   EVENT_RESULT call_default(UINT uMessage, WPARAM uParam, LPARAM iParam) const;
 
 public:
    static void* get_callback_s() { return (void*)window_procedure_s; }
 
 
 private:
-   LRESULT dispatch(UINT uMessage, WPARAM uParam, LPARAM iParam)
+   EVENT_RESULT dispatch(UINT uMessage, WPARAM uParam, LPARAM iParam)
    {
       auto eEvent = gdwin::translate_s(uMessage); // translate to portable event, ignored here but useful for debugging
       if(eEvent != gdwin::eNone)
       {
          if(m_bitsetMessageMap.test(eEvent) == true)
          {
-            return call(uMessage, uParam, iParam);
+            EVENT_RESULT result_ = call(uMessage, uParam, iParam);
+            if(result_.is_handled()) return result_;
          }
       }
 
@@ -185,7 +186,7 @@ private:
    }
 
    /// The one and only window procedure, finds the window for the HWND and forwards
-   static LRESULT CALLBACK window_procedure_s(HWND hwnd, UINT uMessage, WPARAM uParam, LPARAM iParam);
+   static EVENT_RESULT window_procedure_s(HWND hwnd, UINT uMessage, WPARAM uParam, LPARAM iParam);
    /// Crack a native message into a portable event and arguments. This is for debugging and testing, as the framework will only call OnEvent for messages that have been bound.
    static void crack_message_s( gdwin::eWindowEvent eEvent, WPARAM uParam, LPARAM iParam, gd::argument::arguments& argumentsMessage);
 
@@ -256,29 +257,30 @@ bool window<EVENT_RESULT>::create(const std::string& stringTitle, gd::argument::
 }
 
 template <typename EVENT_RESULT>
-LRESULT window<EVENT_RESULT>::call(UINT uMessage, WPARAM uParam, LPARAM iParam)
+EVENT_RESULT window<EVENT_RESULT>::call(UINT uMessage, WPARAM uParam, LPARAM iParam)
 {
    std::array<std::byte, 128> buffer_;
    gd::argument::arguments argumentsMessage(buffer_);
    auto eEvent = gdwin::translate_s(uMessage);
    crack_message_s(eEvent, uParam, iParam, argumentsMessage);
-   auto result = on_event(eEvent, &argumentsMessage, (uint64_t)uMessage);
-   return result.as_int64();
+   auto result_ = on_event(eEvent, &argumentsMessage, (uint64_t)uMessage);
+   return result_;
 }
 
 template <typename EVENT_RESULT>
-LRESULT window<EVENT_RESULT>::call_default(UINT uMessage, WPARAM uParam, LPARAM iParam) const 
+EVENT_RESULT window<EVENT_RESULT>::call_default(UINT uMessage, WPARAM uParam, LPARAM iParam) const
 { 
 #if defined(UNICODE) || defined(_UNICODE)
-   return DefWindowProcW(m_hwnd, uMessage, uParam, iParam);
+   auto lresult_ = DefWindowProcW(m_hwnd, uMessage, uParam, iParam);
 #else
-   return DefWindowProcA(m_hwnd, uMessage, uParam, iParam);
+   auto lresult_ = DefWindowProcA(m_hwnd, uMessage, uParam, iParam);
 #endif
+   return EVENT_RESULT::handled(static_cast<int64_t>(lresult_));
 }
 
 
 template <typename EVENT_RESULT>
-LRESULT CALLBACK window<EVENT_RESULT>::window_procedure_s(HWND hwnd, UINT uMessage, WPARAM uParam, LPARAM iParam)
+EVENT_RESULT window<EVENT_RESULT>::window_procedure_s(HWND hwnd, UINT uMessage, WPARAM uParam, LPARAM iParam)
 {
    window<EVENT_RESULT>* pwindow_ = nullptr;
    pwindow_ = reinterpret_cast<window<EVENT_RESULT>*>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
@@ -320,11 +322,11 @@ LRESULT CALLBACK window<EVENT_RESULT>::window_procedure_s(HWND hwnd, UINT uMessa
       }
    }
 #if defined(UNICODE) || defined(_UNICODE)
-   return DefWindowProcW(hwnd, uMessage, uParam, iParam);
+   auto lresult_ = DefWindowProcW(hwnd, uMessage, uParam, iParam);
 #else
-   return DefWindowProcA(hwnd, uMessage, uParam, iParam);
+   auto lresult_ = DefWindowProcA(hwnd, uMessage, uParam, iParam);
 #endif
-
+   return EVENT_RESULT::handled(static_cast<int64_t>(lresult_));
 }
 
 template <typename EVENT_RESULT>
