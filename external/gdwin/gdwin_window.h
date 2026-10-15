@@ -319,7 +319,12 @@ LRESULT CALLBACK window<EVENT_RESULT>::window_procedure_s(HWND hwnd, UINT uMessa
          return pwindow_->dispatch(uMessage, uParam, iParam);
       }
    }
+#if defined(UNICODE) || defined(_UNICODE)
    return DefWindowProcW(hwnd, uMessage, uParam, iParam);
+#else
+   return DefWindowProcA(hwnd, uMessage, uParam, iParam);
+#endif
+
 }
 
 template <typename EVENT_RESULT>
