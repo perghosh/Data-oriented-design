@@ -11,8 +11,15 @@
 
 
 
-
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+/** ----------------------------------------------------------------------------
+ * @brief Application entry point for a Windows GUI program that creates the main frame window, shows it, and starts the message loop. 
+ * @param hInstance Handle to the current application instance.
+ * @param hPrevInstance Handle to the previous instance; retained for compatibility and typically unused.
+ * @param lpCmdLine Command-line string for the application, excluding the executable name.
+ * @param nCmdShow Flag that specifies how the main window should be shown.
+ * @return Returns 0 if main window creation fails; otherwise returns the result of the message loop runner (`run_s()`).
+ */
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int iCommandShow)
 {
    using namespace gdwin;
 
@@ -22,7 +29,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
    CFrameMain framemain;
    if (framemain.create("Blank Window", { {"style", "overlappedwindow"}, {"width", 800}, {"height", 600},{ "callback", gdwin::window<>::get_callback_s() }}) == false) return 0;
 
-   framemain.Show(nCmdShow);
+   framemain.Show(iCommandShow);
    return run_s();
 }
 

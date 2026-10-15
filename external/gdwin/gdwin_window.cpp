@@ -63,17 +63,35 @@ std::expected<bool, std::string> register_window_g(const gd::argument::arguments
    return register_window_g(argumentsWindow, stringClass);
 }
 
-bool create_window_g(const gd::argument::arguments& argumentsWindow, std::string_view stringClass, std::string_view stringTitle, int iX, int iY, int iWidth, int iHeight, DWORD uStyle, HWND hwndParent, void* puserdata_)
+bool create_window_g(const gd::argument::arguments& argumentsWindow, std::string_view stringClass, std::string_view stringTitle, int iX, int iY, int iWidth, int iHeight, uint64_t uStyle, HWND hwndParent, void* puserdata_)
 {
-    HINSTANCE hinstance = (HINSTANCE)argumentsWindow["hinstance"].as_pointer();
-    if(hinstance == nullptr) { hinstance = GetModuleHandle(nullptr); }
+   HINSTANCE hinstance = (HINSTANCE)argumentsWindow["hinstance"].as_pointer(); // optional, if not provided, we will get the current module handle
+   if(hinstance == nullptr) { hinstance = GetModuleHandle(nullptr); }
+
+   uint64_t uStyleEx = 0;
+   auto argumentsStyleEx = argumentsWindow["styleex"];
+   if (argumentsStyleEx.is_string() == true)                                   // value are passed as string, so we need to convert them to valid style values
+   {
+      std::string_view stringStyleEx = argumentsStyleEx.as_string_view();
+      if (stringStyleEx == "dlgmodalframe") { uStyleEx = WS_EX_DLGMODALFRAME; }
+      else if (stringStyleEx == "noparentnotify") { uStyleEx = WS_EX_NOPARENTNOTIFY; }
+      else if (stringStyleEx == "topmost") { uStyleEx = WS_EX_TOPMOST; }
+      else if (stringStyleEx == "acceptfiles") { uStyleEx = WS_EX_ACCEPTFILES; }
+      else if (stringStyleEx == "transparent") { uStyleEx = WS_EX_TRANSPARENT; }
+   }
+   else if( argumentsStyleEx.is_integer() == true )
+   {
+      uStyleEx = argumentsStyleEx.as_uint();                                   // value are passed as integer, not string and this neeed to be a valid style value, otherwise the window will not be created
+   }
 
 #if defined(UNICODE) || defined(_UNICODE)
     std::wstring stringClassW(stringClass.begin(), stringClass.end());
     std::wstring stringTitleW(stringTitle.begin(), stringTitle.end());
-    HWND hwnd = CreateWindowExW(0, stringClassW.data(), stringTitleW.data(), uStyle, iX, iY, iWidth, iHeight, hwndParent, nullptr, hinstance, puserdata_);
+    HWND hwnd = CreateWindowExW(static_cast<DWORD>(uStyleEx), stringClassW.data(), stringTitleW.data(), static_cast<DWORD>(uStyle), iX, iY, iWidth, iHeight, hwndParent, nullptr, hinstance, puserdata_);
 #else
-    HWND hwnd = CreateWindowExA(0, stringClass.data(), stringTitle.data(), uStyle, iX, iY, iWidth, iHeight, hwndParent, nullptr, hinstance, puserdata_);
+   std::string stringClassA(stringClass.begin(), stringClass.end());
+   std::string stringTitleA(stringTitle.begin(), stringTitle.end());
+   HWND hwnd = CreateWindowExA(static_cast<DWORD>(uStyleEx), stringClassA.data(), stringTitleA.data(), static_cast<DWORD>(uStyle), iX, iY, iWidth, iHeight, hwndParent, nullptr, hinstance, puserdata_);
 #endif   
     return hwnd != nullptr;
 }

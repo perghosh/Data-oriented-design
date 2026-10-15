@@ -1,6 +1,4 @@
-// @FILE [tag: 
-#pragma once
-
+// @FILE [tag: application] [description: Manage application in LogViewer, acts as a node for the complete application] [type: source] [name: Application.h]
 
 #pragma once
 
@@ -42,28 +40,28 @@ private:
    void common_construct(const CApplication& o) {}
    void common_construct(CApplication&& o) noexcept {}
 
-   // @API [tag: operator]
+// @API [tag: operator]
 public:
 
 
-   // ## methods ------------------------------------------------------------------
+// ## methods ------------------------------------------------------------------
 public:
-   // @API [tag: get, set]
+// @API [tag: get, set]
 
-   // @API [tag: operation]
+// @API [tag: operation]
 
 
 protected:
-   // @API [tag: internal]
+// @API [tag: internal]
 
 public:
-   // @API [tag: debug]
+// @API [tag: debug]
 
-   // ## attributes ----------------------------------------------------------------
+// ## attributes ----------------------------------------------------------------
 public:
 
 
-   // @API [tag: free-functions]
+// @API [tag: free-functions]
 public:
 
 

@@ -41,29 +41,29 @@ private:
    void common_construct(const CDocument& o) {}
    void common_construct(CDocument&& o) noexcept {}
 
-   // @API [tag: operator]
+// @API [tag: operator]
 public:
 
 
-   // ## methods ------------------------------------------------------------------
+// ## methods ------------------------------------------------------------------
 public:
-   // @API [tag: get, set]
+// @API [tag: get, set]
 
-   // @API [tag: operation]
+// @API [tag: operation]
 
 
 protected:
-   // @API [tag: internal]
+// @API [tag: internal]
 
 public:
-   // @API [tag: debug]
+// @API [tag: debug]
 
-   // ## attributes ----------------------------------------------------------------
+// ## attributes ----------------------------------------------------------------
 public:
    CApplication* m_pApplication = nullptr;
 
 
-   // @API [tag: free-functions]
+// @API [tag: free-functions]
 public:
 
 

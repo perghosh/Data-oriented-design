@@ -41,7 +41,7 @@ _GDWIN_BEGIN
 int run_s();
 std::expected<bool, std::string> register_window_g( const gd::argument::arguments& argumentsWindow, std::string_view stringClass);
 std::expected<bool, std::string> register_window_g(const gd::argument::arguments& argumentsWindow);
-bool create_window_g(const gd::argument::arguments& argumentsWindow, std::string_view stringClass, std::string_view stringTitle, int iX, int iY, int iWidth, int iHeight, DWORD uStyle, HWND hwndParent = nullptr, void* puserdata_ = nullptr);
+bool create_window_g(const gd::argument::arguments& argumentsWindow, std::string_view stringClass, std::string_view stringTitle, int iX, int iY, int iWidth, int iHeight, uint64_t uStyle, HWND hwndParent = nullptr, void* puserdata_ = nullptr);
 void crack_message_s(gdwin::eWindowEvent eEvent, WPARAM uParam, LPARAM iParam, gd::argument::arguments& argumentsMessage);
 _GDWIN_END
 
@@ -163,7 +163,7 @@ public:
    LRESULT call(UINT uMessage, WPARAM uParam, LPARAM iParam);
 
    /// Call from a handler when default processing should run as well
-   LRESULT call_default(UINT uMessage, WPARAM uParam, LPARAM iParam) const { return DefWindowProcW(m_hwnd, uMessage, uParam, iParam); }
+   LRESULT call_default(UINT uMessage, WPARAM uParam, LPARAM iParam) const;
 
 public:
    static void* get_callback_s() { return (void*)window_procedure_s; }
@@ -264,7 +264,18 @@ LRESULT window<EVENT_RESULT>::call(UINT uMessage, WPARAM uParam, LPARAM iParam)
    crack_message_s(eEvent, uParam, iParam, argumentsMessage);
    auto result = on_event(eEvent, &argumentsMessage, (uint64_t)uMessage);
    return result.as_int64();
- }
+}
+
+template <typename EVENT_RESULT>
+LRESULT window<EVENT_RESULT>::call_default(UINT uMessage, WPARAM uParam, LPARAM iParam) const 
+{ 
+#if defined(UNICODE) || defined(_UNICODE)
+   return DefWindowProcW(m_hwnd, uMessage, uParam, iParam);
+#else
+   return DefWindowProcA(m_hwnd, uMessage, uParam, iParam);
+#endif
+}
+
 
 template <typename EVENT_RESULT>
 LRESULT CALLBACK window<EVENT_RESULT>::window_procedure_s(HWND hwnd, UINT uMessage, WPARAM uParam, LPARAM iParam)
@@ -316,7 +327,7 @@ void window<EVENT_RESULT>::crack_message_s(gdwin::eWindowEvent eEvent, WPARAM uP
 {
    //std::array<std::byte, 128> buffer_;
    //gd::argument::arguments argumentsMessage(buffer_);  
-   crack_message_s(eEvent, uParam, iParam, argumentsMessage);
+   gdwin::crack_message_s(eEvent, uParam, iParam, argumentsMessage);
 }
 
 
