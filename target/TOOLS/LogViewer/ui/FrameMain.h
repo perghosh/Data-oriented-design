@@ -3,6 +3,8 @@
 
 //#include "../window.h"
 
+#include "gdwin/control/gdwin_control_menu.h"
+
 #include "gdwin/gdwin_window.h"
 
 /** @CLASS [name: CFrameMain] [description:  ]
