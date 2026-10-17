@@ -1,4 +1,22 @@
+// @FILE [tag: string, transport] [description: ] [name: gd_string_transport.h] [type: header] 
+
 #pragma once
+
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <span>
+#include <string>
+#include <string_view>
+#include <utility>   
+
+#ifndef _GD_BEGIN
+#define _GD_BEGIN namespace gd {
+#define _GD_END }
+#endif
+
+_GD_BEGIN
 
 /** @CLASS [name: string_transport] [description:  ]
  * \brief
@@ -10,62 +28,92 @@
  */
 class string_transport
 {
-   // @API [tag: construction]
 public:
-   string_transport() : m_uStateEndLength(0), m_piText(nullptr) {}
-
-   string_transport( const char* piText ) : m_uStateEndLength(0) 
+   enum class enumConstant : uint64_t
    {
-      allocate(piText);
-   }
+      eFlagBorrowed     = 1ull << 61,
+      eFlagLiteral      = 1ull << 60,
+
+      eClearFlag        = 0x0FFFFFFF'FFFFFFFFull,
+
+      eBorrowSizeMask   = 0x00000000'FFFF0000ull,
+      eBorrowLengthMask = 0x00000000'0000FFFFull,
+
+      eSizeMask         = 0x0000FFFF'FFFFFFFFull,
+      eExtraMask        = 0xFFFFFF00'00000000ull
+   };
+
+// @API [tag: construction]
+public:
+   string_transport() : m_uStateAndSize(0), m_piText(nullptr) {}
+
+   explicit string_transport( const char* piText ) : m_uStateAndSize(0), m_piText(nullptr) { append(piText); }
+   // Borrow an external writable buffer (no allocation).
+   string_transport(char* piBuffer, std::size_t uBufferSize);
+
+   explicit string_transport(std::span<std::byte> spanBuffer)                  // Flexible adapter: accepts std::array<std::byte, N>, std::vector<std::byte>, etc.
+      : string_transport(reinterpret_cast<char*>(spanBuffer.data()), spanBuffer.size()) {}
+
+   explicit string_transport(std::span<char> spanBuffer)                       // Optional convenience for std::array<char, N> / char buffers.
+      : string_transport(spanBuffer.data(), spanBuffer.size()) {}
 
    // copy
-   string_transport(const string_transport& o) { common_construct(o); }
-   string_transport(string_transport&& o) noexcept { common_construct(std::move(o)); }
-   // assign
-   string_transport& operator=(const string_transport& o) { common_construct(o); return *this; }
-   string_transport& operator=(string_transport&& o) noexcept { common_construct(std::move(o)); return *this; }
+   string_transport(const string_transport& o): m_uStateAndSize(0), m_piText(nullptr) { common_construct(o); }
+   string_transport(string_transport&& o) noexcept : m_uStateAndSize(0), m_piText(nullptr) { common_construct(std::move(o)); }
 
-   ~string_transport() {}
+   // assign
+   string_transport& operator=(const string_transport& o)
+   {
+      if (this != &o) { common_construct(o); }
+      return *this;
+   }
+   string_transport& operator=(string_transport&& o) noexcept
+   {
+      if (this != &o) { common_construct(std::move(o)); }
+      return *this;
+   }
+
+   ~string_transport() { release(); }
 private:
-// common copy
-void common_construct(const string_transport& o) {}
-void common_construct(string_transport&& o) noexcept {}
+   void release() noexcept;
+   void common_construct(const string_transport& o);
+   void common_construct(string_transport&& o) noexcept;
 
 // @API [tag: operator]
 public:
-
+   string_transport& operator=(const char* piText);
+   string_transport& operator=(std::string_view stringText);
+   string_transport& operator+=(const char* piText) { append(piText); return *this; }
 
 // ## methods ------------------------------------------------------------------
 public:
 // @API [tag: get, set]
 
+// ## state
+   bool is_borrowed() const noexcept { return m_uStateAndSize & static_cast<uint64_t>(enumConstant::eFlagBorrowed); }
+   bool is_literal()  const noexcept { return m_uStateAndSize & static_cast<uint64_t>(enumConstant::eFlagLiteral); }
+   bool is_owned()    const noexcept { return !(m_uStateAndSize & (static_cast<uint64_t>(enumConstant::eFlagBorrowed) | static_cast<uint64_t>(enumConstant::eFlagLiteral))); }
+
+   void clear_flags() { m_uStateAndSize &= static_cast<uint64_t>(enumConstant::eClearFlag); }
+
+   void set_length(std::size_t uLength);
+
+
 // @API [tag: operation]
 
-void allocate(const char* piText)
-{
-   allocate(piText, std::strlen(piText));
-}
 
-void allocate(const char* piText, const uint64_t uLength)
-{
-   if ( m_piText != nullptr )
-   {
-      delete[] m_piText;
-      m_piText = nullptr;
-   }
+   // Optional convenience for std::array<char, N> / char buffers.
+   void append(const char* piText);
+   void append(const char* piText, const std::size_t uLength);
+   void append(std::string_view stringText) { append(stringText.data(), stringText.size()); }
+   void append(std::span<std::byte> spanBuffer) { append(reinterpret_cast<const char*>(spanBuffer.data()), spanBuffer.size()); }
 
-   m_piText = new char[uLength + 1];
-   for (uint64_t i = 0; i < uLength; ++i)
-   {
-      m_piText[i] = piText[i];
-   }
-   m_piText[uLength] = '\0';
+   void allocate(std::size_t uSize);
 
-   m_uStateEndLength = uLength + 1;
-}
-
-void append(const char* piText, const uint64_t uLength);
+   const char* c_str() const noexcept { return m_piText; } ///< returns the pointer to the string data
+   char* data() const noexcept { return m_piText; }   ///< returns the pointer to the string data
+   std::size_t size() const noexcept;   ///< buffer length or when not borrowed, the actual string length
+   std::size_t length() const noexcept; ///< the actual string length
 
 protected:
 // @API [tag: internal]
@@ -75,77 +123,109 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
-   uint64_t m_uStateEndLength;
+   uint64_t m_uStateAndSize;
    char* m_piText;
 
 
 // @API [tag: free-functions]
 public:
 
-
-
 };
 
-/*
+/// Construct string with borrowed buffer, the buffer must be writable and the size must be less than 65536 bytes (64KB)
+inline string_transport::string_transport(char* piBuffer, std::size_t uBufferSize) : m_uStateAndSize(0), m_piText(piBuffer)
+{                                                                                                   assert(piBuffer != nullptr);
+                                                                                                    assert(uBufferSize > 0);
+                                                                                                    assert(uBufferSize <= 0xFFFFu); // borrow-size field is 16-bit
+   // ## Set the borrowed flag and store the buffer size in the upper 16 bits of m_uStateAndSize
+   m_uStateAndSize = static_cast<uint64_t>(enumConstant::eFlagBorrowed);
+   m_uStateAndSize |= (static_cast<uint64_t>(uBufferSize) << 16) & static_cast<uint64_t>(enumConstant::eBorrowSizeMask);
+
+   set_length(0);
+   m_piText[0] = '\0';
+}
+
+/// Assignment operator for string_transport, appends the given C-string to the current string_transport buffer.
+inline string_transport& string_transport::operator=(const char* piText)
+{ 
+   append(piText);
+   return *this;
+}
+
+/// Assignment operator for string_transport, appends the given std::string_view to the current string_transport buffer.
+inline string_transport& string_transport::operator=(std::string_view stringText)
+{
+   append(stringText.data(), stringText.size());
+   return *this;
+}
+
+
 inline void string_transport::append(const char* piText)
 {
    auto uLength = std::strlen(piText);
    append(piText, uLength);
 }
 
-inline void string_transport::append(int32_t iValue)
+/// Returns the length of the string in string_transport buffer ---------------
+inline std::size_t string_transport::length() const noexcept
 {
-   std::string stringNumber = std::to_string(iValue); // Convert integer to string using std::to_string  
-   
-   uint64_t uLength = static_cast<uint64_t>(stringNumber.size());
-   append(stringNumber.c_str(), uLength);
-}
-
-inline void string_transport::append(double dValue)
-{
-   // allocate new memory for the combined string
-   auto uOldLlength = m_uStateEndLength;
-   uint64_t uNewLength = m_uStateEndLength + uLength;
-   allocate_add(uNewLength);
-
-   std::memcpy(m_piText + uOldLlength, piText, static_cast<size_t>(uLength));
-}
-*/
-
-
-inline void string_transport::append(const char* piText, const uint64_t uLength)
-{
-   // allocate new memory for the combined string
-   auto uOldLlength = m_uStateEndLength;
-   uint64_t uNewLength = m_uStateEndLength + uLength;
-   allocate_add(uNewLength);
-
-   std::memcpy(m_piText + uOldLlength, piText, static_cast<size_t>(uLength));
-}
-
-inline void string_transport::allocate( uint64_t uLength )
-{
-   if( m_piText != nullptr ) { delete[] m_piText; }
-   m_piText = new char[uLength + 1];
-   m_piText[uLength] = '\0';
-
-   m_uStateEndLength = uLength;
-}
-
-inline void string_transport::allocate_add(uint64_t uLength)
-{
-   // ## allocate new memory and compy existing text to new memory and the delete the old memory and set to the new memory
-   uint64_t uNewLength = m_uStateEndLength + uLength;
-   char* piText_ = new char[uNewLength + 1];
-
-   if( m_piText != nullptr && m_uStateEndLength > 0 )
+   std::size_t uSize;
+   if(is_borrowed() == true)
    {
-      std::memcpy(piText_, m_piText, static_cast<size_t>(m_uStateEndLength));
+      uSize = static_cast<std::size_t>(m_uStateAndSize & static_cast<uint64_t>(enumConstant::eBorrowLengthMask));
+   }
+   else
+   {
+      uSize = static_cast<std::size_t>(m_uStateAndSize & static_cast<uint64_t>(enumConstant::eSizeMask));
    }
 
-   piText_[m_uStateEndLength] = '\0';
-
-   delete[] m_piText;
-   m_piText = piText_;
-   m_uStateEndLength = uNewLength;
+   return uSize;
 }
+
+/// Returns the size of the string_transport buffer, if borrowed, it returns the size of the buffer that it borrows from, if owner then it returns the size of the buffer that it owns.
+inline std::size_t string_transport::size() const noexcept
+{
+   std::size_t uSize;
+   if(is_borrowed() == true )
+   {
+      uSize = static_cast<std::size_t>(m_uStateAndSize & static_cast<uint64_t>(enumConstant::eBorrowSizeMask));
+      uSize >>= 16;
+   }
+   else
+   {
+      uSize = static_cast<std::size_t>(m_uStateAndSize & static_cast<uint64_t>(enumConstant::eSizeMask));
+   }
+
+   return uSize;
+}
+
+/// ----------------------------------------------------------------------------
+/// Set the length for string_transport, if borrowed, the length must be less than the size of the 
+/// string_transport buffer that it borrows from, If owner then it can be any length.
+/// @param uLength The new length to set for the string_transport object.
+inline void string_transport::set_length(std::size_t uLength) 
+{ 
+   if(is_borrowed() == true)
+   {                                                                                                assert( uLength < size() );
+      // ## Set the lower 16 bits of m_uStateAndSize to the new length, preserving the borrowed flag and size in the upper bits.
+      const auto uLengthMask = static_cast<uint64_t>(enumConstant::eBorrowLengthMask);
+      m_uStateAndSize = (m_uStateAndSize & ~uLengthMask) | static_cast<uint64_t>(uLength);
+   }
+   else
+   {
+      m_uStateAndSize = static_cast<uint64_t>(uLength);
+   }
+}
+
+/// Release the string_transport buffer, if it is owned, it will delete the buffer, if it is borrowed, it will not delete the buffer.
+inline void string_transport::release() noexcept
+{
+   if( is_borrowed() == false )
+   {
+      delete[] m_piText;
+      m_piText = nullptr;
+   }
+   m_uStateAndSize = 0;    
+}
+
+_GD_END
