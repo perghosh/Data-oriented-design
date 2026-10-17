@@ -3,8 +3,20 @@
 
 CFrameMain::CFrameMain()
 {
-   //Bind(gd_win::eWindowEvent::eMouseDown);
-   //Bind(gd_win::eWindowEvent::eMouseMove);
+   bind(gdwin::eWindowEvent::eClose);                                          // bind the close event to this window (WM_CLOSE)
+   bind(gdwin::eWindowEvent::eDestroy);                                        // bind the destroy event to this window (WM_DESTROY)
+}
+
+gdwin::lresult CFrameMain::on_event(gdwin::eWindowEvent eEvent, gd::argument::arguments* pargumentsParam, uint64_t uNativeMessage)
+{
+   switch (eEvent)
+   {
+   case gdwin::eWindowEvent::eClose: { ::DestroyWindow(m_hwnd); } break;
+   case gdwin::eWindowEvent::eDestroy: { ::PostQuitMessage(0); } break;
+
+   }
+   
+   return gdwin::lresult();
 }
 
 void CFrameMain::OnMouseDown(UINT, POINT point)

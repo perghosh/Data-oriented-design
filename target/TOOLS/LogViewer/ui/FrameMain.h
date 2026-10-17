@@ -40,6 +40,7 @@ public:
 // @API [tag: get, set]
 
 // @API [tag: operation]
+   gdwin::lresult on_event(gdwin::eWindowEvent eEvent, gd::argument::arguments* pargumentsParam, uint64_t uNativeMessage) override;
    std::pair<bool, std::string_view> get_window_class() const override { return { false, std::string_view("CFrameMain")}; }
 
 
