@@ -1,3 +1,37 @@
+## Searching the code with cleaner
+
+`C:\Tools\cleaner.exe` is a fast CLI search tool. Use it from PowerShell instead of reading whole files
+or guessing, to keep output small. Call it by full path: `& 'C:\Tools\cleaner.exe' <command> ...`
+
+### Rules
+- Always pass `--current-directory "<folder>"`. It is the folder to search.
+- The filter is the first positional argument, e.g. `"*.h;*.cpp"`. Separate several with `;`.
+- Use `-R` to search subfolders. Without it only the top folder is searched.
+- Check option spelling. Unknown options print the help text and `ERROR: Unknown option`.
+  The pattern option is `--pattern` and regular expression patterns use `--rpattern`.
+- Separate several patterns with `,` or `;`.
+- For regex searching/counting with `list`, `find`, or `count`, repeat `--rpattern` for each expression.
+  Searching for multiple regex expressions is done by adding multiple `--rpattern` arguments, for example:
+  `& 'C:\Tools\cleaner.exe' count "*variant_view*.h;*variant_view*.cpp" -R --rpattern "set" --rpattern "compare" --current-directory "C:\dev\home\DOD\external\gd"`
+- `--segment` is optional. Leave it out to search code. Use `--segment comment` only to search comments
+  and `--segment string` only to search strings.
+- `--context N` shows N lines after each match. A second number (`--context 2,6`) sets lines before and after.
+- Limit output with `--max <count>` or a narrow filter such as `gd_table*.h`. Do not dump large results.
+- The exit code is often -1 even when the output is correct. Ignore it, and judge success from the output.
+- Output lines look like `path:line - [text]`. Progress lines ("Find in files: ...") are noise.
+
+### Commands
+- `list` searches one line at a time. This is the default for finding names, signatures and usages.
+- `find` is almost the same as `list` but is not line-bound, so patterns can span multiple lines.
+  It searches code only and strips comments and strings first. Use `--rpattern <regex>` for regular
+  expressions. Use `list` instead when the match is in a comment or string.
+- `count` counts lines per file or counts found words in file, words are placed in --pattern argument. Example for code size per file:
+  `cleaner count "*.h;*.cpp" -R --sort count --current-directory "<folder>"`
+- Use `count` for quick scoping only (frequency by file), then use `list` or `find` to get exact lines before editing.
+- `dir` lists files with filters.
+
+
+
 # Instructions for AI coding assistants
 
 These instructions describe the conventions used in this repository. Apply them

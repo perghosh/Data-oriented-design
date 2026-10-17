@@ -409,6 +409,14 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
          if( std::filesystem::exists(stringCurrentPath) == true && std::filesystem::is_directory(stringCurrentPath) == true)
          {
             PROPERTY_Set( "folder-current", stringCurrentPath );
+
+            // Set the current working directory to the specified path
+            std::error_code errorcode;
+            std::filesystem::current_path(stringCurrentPath, errorcode);
+            if(errorcode) 
+            {                                                                                      LOG_WARNING_RAW("Failed to set current working directory to: " + stringCurrentPath);            
+               return { false, "Failed to set current working directory to: " + stringCurrentPath };
+            }
          }
       }
 
