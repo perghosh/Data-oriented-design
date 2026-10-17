@@ -118,6 +118,20 @@ void Test( gd::table::dto::table& table_, const std::string& stringPath )
    }
 }
 
+#include "gd/gd_string_transport.h"
+
+TEST_CASE("[file] test", "[file]")
+{
+   std::array<std::byte, 1500> arrayBuffer;
+   string_transport stringText(arrayBuffer);
+
+   stringText = "Hello, World!";
+   stringText += " This is a test of the string_transport class.";
+   stringText.append(" It should handle string concatenation and memory management correctly.", 72);
+   
+   return stringText;
+}
+
 TEST_CASE("[file] test", "[file]")
 {
    std::string stringPath = "D://dev//testfiles";
