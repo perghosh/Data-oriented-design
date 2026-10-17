@@ -8,6 +8,7 @@
  *
  *    lresult__               Result object
  *    window__                Window class
+ *    on_event__              Main event handler
  */
 
 #ifndef WIN32_LEAN_AND_MEAN
@@ -122,10 +123,9 @@ _GDWIN_END
 
 _GDWIN_BEGIN
 
-// ## CWindow -------------------------------------------------------------------------------------
-
-/** @API [tag: window] [summary: The window class represents a portable window for handling events on Windows.] [jump: window__]
+/** ----------------------------------------------------------------------------
  * @brief The window class represents a portable window for handling events on Windows. It provides mechanisms for creating, displaying, and managing a window, as well as handling messages and events in a structured manner.
+ * @API [tag: window] [summary: The window class represents a portable window for handling events on Windows.] [jump: window__]
  */
 template<typename EVENT_RESULT = lresult>
 class window
@@ -145,6 +145,7 @@ public:
       }
    }
 
+   /// @API [tag: event] [summary: The on_event function is a virtual function that handles window events.] [jump: on_event__]
    virtual EVENT_RESULT on_event(gdwin::eWindowEvent eEvent, gd::argument::arguments* pargumentsParam, uint64_t uNativeMessage) { return EVENT_RESULT::not_handled(); }
    virtual bool on_get_error( gd::argument::arguments& argumentsError ) const { return false; }
    virtual std::pair<bool, std::string_view> get_window_class() const { return { true, std::string_view() }; }
@@ -271,9 +272,9 @@ template <typename EVENT_RESULT>
 EVENT_RESULT window<EVENT_RESULT>::call_default(UINT uMessage, WPARAM uParam, LPARAM iParam) const
 { 
 #if defined(UNICODE) || defined(_UNICODE)
-   auto lresult_ = DefWindowProcW(m_hwnd, uMessage, uParam, iParam);
+   auto lresult_ = ::DefWindowProcW(m_hwnd, uMessage, uParam, iParam);
 #else
-   auto lresult_ = DefWindowProcA(m_hwnd, uMessage, uParam, iParam);
+   auto lresult_ = ::DefWindowProcA(m_hwnd, uMessage, uParam, iParam);
 #endif
    return EVENT_RESULT::handled(static_cast<int64_t>(lresult_));
 }
@@ -283,25 +284,7 @@ template <typename EVENT_RESULT>
 EVENT_RESULT window<EVENT_RESULT>::window_procedure_s(HWND hwnd, UINT uMessage, WPARAM uParam, LPARAM iParam)
 {
    window<EVENT_RESULT>* pwindow_ = nullptr;
-   pwindow_ = reinterpret_cast<window<EVENT_RESULT>*>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
-   /*
-   if(uMessage == WM_NCCREATE)
-   {
-      pwindow_ = static_cast<window<EVENT_RESULT>*>(reinterpret_cast<CREATESTRUCTW*>(iParam)->lpCreateParams);
-      if(pwindow_ != nullptr)
-      {
-         pwindow_->m_hwnd = hwnd;
-         SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pwindow_));
-      }
-   }
-   else
-   {
-      pwindow_ = reinterpret_cast<window<EVENT_RESULT>*>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
-   }
-   */
-
-
-   //auto pwindow_ = reinterpret_cast<window*>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+   pwindow_ = reinterpret_cast<window<EVENT_RESULT>*>(::GetWindowLongPtrW(hwnd, GWLP_USERDATA));
    if(pwindow_ != nullptr)
    {
       return pwindow_->dispatch(uMessage, uParam, iParam);
@@ -313,18 +296,18 @@ EVENT_RESULT window<EVENT_RESULT>::window_procedure_s(HWND hwnd, UINT uMessage, 
          CREATESTRUCT* pCreateStruct = reinterpret_cast<CREATESTRUCT*>(iParam);
          pwindow_ = reinterpret_cast<window*>(pCreateStruct->lpCreateParams);
 #if defined(UNICODE) || defined(_UNICODE)
-         SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pwindow_));
+         ::SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pwindow_));
 #else
-         SetWindowLongPtrA(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pwindow_));
+         ::SetWindowLongPtrA(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pwindow_));
 #endif
          pwindow_->m_hwnd = hwnd;
          return pwindow_->dispatch(uMessage, uParam, iParam);
       }
    }
 #if defined(UNICODE) || defined(_UNICODE)
-   auto lresult_ = DefWindowProcW(hwnd, uMessage, uParam, iParam);
+   auto lresult_ = ::DefWindowProcW(hwnd, uMessage, uParam, iParam);
 #else
-   auto lresult_ = DefWindowProcA(hwnd, uMessage, uParam, iParam);
+   auto lresult_ = ::DefWindowProcA(hwnd, uMessage, uParam, iParam);
 #endif
    return EVENT_RESULT::handled(static_cast<int64_t>(lresult_));
 }
@@ -332,8 +315,6 @@ EVENT_RESULT window<EVENT_RESULT>::window_procedure_s(HWND hwnd, UINT uMessage, 
 template <typename EVENT_RESULT>
 void window<EVENT_RESULT>::crack_message_s(gdwin::eWindowEvent eEvent, WPARAM uParam, LPARAM iParam, gd::argument::arguments& argumentsMessage)
 {
-   //std::array<std::byte, 128> buffer_;
-   //gd::argument::arguments argumentsMessage(buffer_);  
    gdwin::crack_message_s(eEvent, uParam, iParam, argumentsMessage);
 }
 

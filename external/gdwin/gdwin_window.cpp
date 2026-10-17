@@ -1,5 +1,15 @@
 // @FILE [tag: window] [description: Window class for portable window handling windows] [name: gdwin_window.cpp] [type: source]
 
+/**
+ * @file gdwin_window.h
+ * @brief Window class for portable window handling on Windows.
+ *
+ *    register__            register a window class
+ *    create__              create a window
+ *    message__             message dispatching
+ */
+
+
 #include "gdwin_window.h"
 
 _GDWIN_BEGIN
@@ -15,6 +25,13 @@ int run_s()
     return static_cast<int>(msg.wParam);
 }
 
+/** ----------------------------------------------------------------------------
+ * @brief Registers a Win32 window class (Unicode or ANSI build) using values from an arguments container, and skips registration if the class is already registered.
+ * @param argumentsWindow Input arguments used to configure registration. It must provide an "instance" pointer (HINSTANCE) and a "callback" pointer (window procedure).
+ * @param stringClass The window class name to check and register.
+ * @return An `std::expected<bool, std::string>` containing `true` if the class already exists or registration succeeds, and `false` if registration fails.
+ * @API [tag: register, window] [summary: Registers a window class with the specified name and arguments.] [jump: register__]
+ */
 std::expected<bool, std::string> register_window_g(const gd::argument::arguments& argumentsWindow, std::string_view stringClass)
 {                                                                                                  assert(stringClass.size() > 0);
    HINSTANCE hinstance = (HINSTANCE)argumentsWindow["instance"].as_pointer();                      assert(hinstance != nullptr);
@@ -57,12 +74,32 @@ std::expected<bool, std::string> register_window_g(const gd::argument::arguments
    return bResult;
 }
 
+/** ----------------------------------------------------------------------------
+ * @brief Registers a window using the class name stored in the provided arguments and forwards the call to the overload that takes an explicit class name.
+ * @param argumentsWindow A set of window arguments that must include a non-empty "class" string value.
+ * @return An expected result containing a boolean success value on success, or an error message string on failure.
+ */
 std::expected<bool, std::string> register_window_g(const gd::argument::arguments& argumentsWindow)
 { 
    std::string_view stringClass = argumentsWindow["class"].as_string_view(); assert(stringClass.size() > 0);
    return register_window_g(argumentsWindow, stringClass);
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Creates a Win32 window using options from an argument map and explicit position, size, style, and parent values.
+ * @param argumentsWindow Optional window-creation options. Uses "hinstance" (module instance pointer) and "styleex" (extended style as string name or integer value).
+ * @param stringClass Registered window class name.
+ * @param stringTitle Window title text.
+ * @param iX Initial horizontal position of the window.
+ * @param iY Initial vertical position of the window.
+ * @param iWidth Initial window width, in pixels.
+ * @param iHeight Initial window height, in pixels.
+ * @param uStyle Window style flags (passed to CreateWindowEx as dwStyle).
+ * @param hwndParent Handle to the parent or owner window, or null if none.
+ * @param puserdata_ User data pointer passed as lpParam to window creation.
+ * @return true if the window handle was created successfully; otherwise false.
+ * @API [tag: create, window] [summary: Creates a window with the specified class, title, position, size, style, and parent.] [jump: create__]
+ */
 bool create_window_g(const gd::argument::arguments& argumentsWindow, std::string_view stringClass, std::string_view stringTitle, int iX, int iY, int iWidth, int iHeight, uint64_t uStyle, HWND hwndParent, void* puserdata_)
 {
    HINSTANCE hinstance = (HINSTANCE)argumentsWindow["hinstance"].as_pointer(); // optional, if not provided, we will get the current module handle
@@ -96,6 +133,14 @@ bool create_window_g(const gd::argument::arguments& argumentsWindow, std::string
     return hwnd != nullptr;
 }
 
+/** ----------------------------------------------------------------------------
+ * @brief Converts a Win32 window event and its parameters into a structured argument map.
+ * @param eEvent The window event type.
+ * @param uParam The WPARAM value associated with the event.
+ * @param iParam The LPARAM value associated with the event.
+ * @param argumentsOut The argument map to populate with event-specific data.
+ * @API [tag: message] [summary: Cracks a window message into its constituent arguments.] [jump: message__]
+ */
 void crack_message_s(gdwin::eWindowEvent eEvent, WPARAM uParam, LPARAM iParam, gd::argument::arguments& argumentsOut)
 {
    switch(eEvent)

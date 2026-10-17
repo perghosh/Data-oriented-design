@@ -2,12 +2,9 @@
 //
 
           
-#include "window.h"
-
 #include "os/OS_Event.h"
 #include "ui/FrameMain.h"
 #include "application.h"
-#include "windowapplication.h"
 
 
 

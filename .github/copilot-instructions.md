@@ -151,8 +151,8 @@ directory and target. Do not infer a naming convention from a different layer.
 - Prefer the ownership model already used by the surrounding code.
 - Use smart pointers for newly introduced ownership where compatible with the
   surrounding API. Keep the `p` prefix for smart and raw pointer variables.
-- Use raw pointers for non-owning observers only when appropriate for the API;
-  make their non-owning lifetime clear in a nearby comment when it is not
+- Use raw pointers for non-owning observers only when appropriate for the
+  API; make their non-owning lifetime clear in a nearby comment when it is not
   obvious.
 - Avoid introducing raw owning pointers. If existing APIs require one, follow
   the established cleanup and lifetime pattern explicitly.
@@ -201,3 +201,8 @@ Useful GD headers:
 Treat this list as navigation help, not a replacement for reading the relevant
 declarations and implementations. Verify exact signatures and semantics in the
 code before using an API.
+
+## 9. UI Control Classes
+
+Plan general, platform-neutral classes for UI controls across Windows, Linux,
+and macOS, backed by platform-specific native implementations.

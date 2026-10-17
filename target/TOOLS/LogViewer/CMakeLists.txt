@@ -75,8 +75,6 @@ if( USE_TARGET_ )
       ${TARGET_FILES_}   
       ${TARGET_SOURCE_FILES_}
       ${TARGET_AREA_FILES_}
-      "window.cpp"
-      "WindowApplication.cpp"
       "main.cpp"
    )
 
