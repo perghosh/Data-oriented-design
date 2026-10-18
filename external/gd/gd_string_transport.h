@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -362,5 +363,7 @@ inline void string_transport::release() noexcept
    m_piText = nullptr;
    m_uStateAndSize = 0;    
 }
+
+static_assert(sizeof(string_transport) == 16, "string_transport must be 16 bytes");
 
 _GD_END

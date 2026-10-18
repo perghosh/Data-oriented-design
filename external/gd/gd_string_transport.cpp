@@ -125,7 +125,7 @@ string_transport& string_transport::replace(size_type uIndex, size_type uCount, 
  * @param uSize The new buffer size (excluding the null terminator). Must be at least the current string length.
  */
 void string_transport::allocate(std::size_t uSize)
-{                                                                                                  assert(uSize >= length());
+{
    // ## Check if borrowed and if the new size is less than the current size, then return without allocating new memory
    auto uCurrentSize = size();                                                 // get the current size of the buffer, simpler to debug
    if( (is_borrowed() == true) && (uSize < uCurrentSize) ) { return; }
@@ -133,7 +133,8 @@ void string_transport::allocate(std::size_t uSize)
    char* piText_ = new char[uSize + 1];                                        // allocate new memory for the string_transport buffer, +1 for null terminator
    if( m_piText != nullptr )
    {
-      std::memcpy(piText_, m_piText, static_cast<size_t>(uCurrentSize + 1));
+      const auto uCopyLength = (std::min)(length() + 1, uSize + 1);            // characters in use plus terminator, never more than the new buffer holds
+      std::memcpy(piText_, m_piText, uCopyLength);
    }
    piText_[uSize] = '\0';                                                      // null terminate the new buffer
 
