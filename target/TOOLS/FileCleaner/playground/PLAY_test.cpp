@@ -129,7 +129,7 @@ TEST_CASE("[file] test string", "[file]")
    std::cout << "stringText: " << stringText.c_str() << std::endl;
 
    {
-      std::array<std::byte, 1500> arrayBuffer;
+      std::array<std::byte, 150> arrayBuffer;
       gd::string_transport stringText(arrayBuffer);
 
       stringText = "12345";

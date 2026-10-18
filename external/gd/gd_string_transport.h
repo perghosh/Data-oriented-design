@@ -41,7 +41,6 @@ public:
       eBorrowLengthMask = 0x00000000'0000FFFFull,
 
       eSizeMask         = 0x0000FFFF'FFFFFFFFull,
-      eExtraMask        = 0xFFFFFF00'00000000ull
    };
 
 public:
@@ -173,14 +172,14 @@ inline string_transport::string_transport(char* piBuffer, std::size_t uBufferSiz
 /// Assignment operator for string_transport, appends the given C-string to the current string_transport buffer.
 inline string_transport& string_transport::operator=(const char* piText)
 { 
-   append(piText);
+   assign(piText);
    return *this;
 }
 
 /// Assignment operator for string_transport, appends the given std::string_view to the current string_transport buffer.
 inline string_transport& string_transport::operator=(std::string_view stringText)
 {
-   append(stringText.data(), stringText.size());
+   assign(stringText);
    return *this;
 }
 
@@ -285,8 +284,8 @@ inline void string_transport::release() noexcept
    if( is_borrowed() == false )
    {
       delete[] m_piText;
-      m_piText = nullptr;
    }
+   m_piText = nullptr;
    m_uStateAndSize = 0;    
 }
 
