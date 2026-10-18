@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <cstring>
 #include <span>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <utility>   
@@ -42,6 +43,10 @@ public:
       eSizeMask         = 0x0000FFFF'FFFFFFFFull,
       eExtraMask        = 0xFFFFFF00'00000000ull
    };
+
+public:
+   using size_type = std::size_t;
+   static constexpr size_type npos = static_cast<size_type>(-1);
 
 // @API [tag: construction]
 public:
@@ -85,6 +90,18 @@ public:
    string_transport& operator=(std::string_view stringText);
    string_transport& operator+=(const char* piText) { append(piText); return *this; }
 
+   char& operator[](size_type uIndex) noexcept { return m_piText[uIndex]; }
+   const char& operator[](size_type uIndex) const noexcept { return m_piText[uIndex]; }
+
+   char& at(size_type uIndex);
+   const char& at(size_type uIndex) const;
+
+   char& front() noexcept { assert(length() > 0); return m_piText[0]; }
+   const char& front() const noexcept { assert(length() > 0); return m_piText[0]; }
+
+   char& back() noexcept { assert(length() > 0); return m_piText[length() - 1]; }
+   const char& back() const noexcept { assert(length() > 0); return m_piText[length() - 1]; }
+
 // ## methods ------------------------------------------------------------------
 public:
 // @API [tag: get, set]
@@ -102,11 +119,19 @@ public:
 // @API [tag: operation]
 
 
-   // Optional convenience for std::array<char, N> / char buffers.
    void append(const char* piText);
    void append(const char* piText, const std::size_t uLength);
    void append(std::string_view stringText) { append(stringText.data(), stringText.size()); }
    void append(std::span<std::byte> spanBuffer) { append(reinterpret_cast<const char*>(spanBuffer.data()), spanBuffer.size()); }
+
+   void clear();
+   void push_back(char iCharacter);
+   void pop_back();
+
+   string_transport& assign(std::string_view stringText);
+   string_transport& insert(size_type uIndex, std::string_view stringText);
+   string_transport& erase(size_type uIndex = 0, size_type uCount = npos);
+   string_transport& replace(size_type uIndex, size_type uCount, std::string_view stringText);
 
    void allocate(std::size_t uSize);
 
@@ -159,7 +184,44 @@ inline string_transport& string_transport::operator=(std::string_view stringText
    return *this;
 }
 
+/// Returns a reference to the character at the specified index in the string_transport buffer, with bounds checking.
+inline char& string_transport::at(size_type uIndex)
+{
+   if( uIndex >= length() ) { throw std::out_of_range("string_transport::at"); }
+   return m_piText[uIndex];
+}
 
+/// Returns a const reference to the character at the specified index in the string_transport buffer, with bounds checking.
+inline const char& string_transport::at(size_type uIndex) const
+{
+   if( uIndex >= length() ) { throw std::out_of_range("string_transport::at"); }
+   return m_piText[uIndex];
+}
+
+/// clear text (does not reallocate)
+inline void string_transport::clear()
+{
+   if( m_piText != nullptr ) { m_piText[0] = '\0'; }
+   set_length(0);
+}
+
+/// 
+inline void string_transport::push_back(char iCharacter)
+{
+   char piCharacter[2] = { iCharacter, '\0' };
+   append(piCharacter, 1);
+}
+
+/// 
+inline void string_transport::pop_back()
+{
+   auto uLength = length();
+   assert(uLength > 0);
+   m_piText[uLength - 1] = '\0';
+   set_length(uLength - 1);
+}
+
+/// Appends the given C-string to the current string_transport buffer. --------
 inline void string_transport::append(const char* piText)
 {
    auto uLength = std::strlen(piText);
