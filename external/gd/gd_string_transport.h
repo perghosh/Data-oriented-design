@@ -19,13 +19,87 @@
 
 _GD_BEGIN
 
-/** @CLASS [name: string_transport] [description:  ]
- * \brief
+/** @CLASS [tag: string, transport] [summary: string used for transport and minimal memory allocation]
+ * @brief Mutable character string that can use caller-provided storage.
  *
+ * Builds and edits text using either a borrowed writable buffer or owned
+ * heap storage. Borrowing a buffer avoids allocating destination storage
+ * while the text, including its terminating null character, fits.
+ * Operations such as insert() and replace() may use temporary storage.
  *
+ * @par Borrowed storage
+ * Construct from a writable char buffer, std::span<char>, or
+ * std::span<std::byte>. Compatible std::array and std::vector objects can
+ * be passed through these span constructors.
  *
- \code
- \endcode
+ * The buffer must contain between 1 and 65535 bytes, including space for
+ * the terminating null character. Construction initializes an empty string
+ * and overwrites the first byte; existing buffer contents are not imported.
+ *
+ * The caller owns the borrowed buffer. It must remain valid and at the same
+ * address while this object uses it. In particular, do not resize a backing
+ * vector if doing so could invalidate its data pointer.
+ *
+ * When growth exceeds the borrowed buffer's usable capacity, the object
+ * switches to owned heap storage. The borrowed buffer is never deleted.
+ *
+ * @par Length and storage size
+ * length() returns the number of stored characters, excluding the null
+ * terminator. Unlike std::string, size() returns the entire buffer size
+ * when borrowing, including the space reserved for the null terminator;
+ * for owned storage, size() returns the stored character count.
+ *
+ * @par Character access
+ * operator[] provides unchecked access; use an index less than length().
+ * at() throws std::out_of_range for an invalid character index.
+ * front(), back(), and pop_back() require a nonempty string.
+ *
+ * @par Ownership and lifetime
+ * Copying creates an independent owned copy. Moving transfers the pointer
+ * and storage state; moving a borrowed string does not extend the lifetime
+ * of its external buffer. Operations that allocate can invalidate pointers
+ * and references previously obtained from this object.
+ *
+ * @note A default-constructed or moved-from object has length zero and may
+ * return nullptr from c_str(). Do not treat it as a non-null empty C-string.
+ *
+ * @par Example: build text in a local buffer
+ * @code{.cpp}
+ * std::array<std::byte, 150> arrayBuffer;
+ * gd::string_transport stringText(arrayBuffer);
+ *
+ * stringText = "Hello";
+ * stringText += ", world";
+ * stringText.push_back('!');
+ *
+ * // Text: "Hello, world!"
+ * // length() == 13; size() == 150; is_borrowed() == true.
+ * @endcode
+ *
+ * @par Example: edit and access characters
+ * @code{.cpp}
+ * gd::string_transport stringText("Hello");
+ * stringText.insert(5, ", world");    // "Hello, world"
+ * stringText.replace(0, 5, "Hi");     // "Hi, world"
+ * stringText.erase(2, 2);             // "Hiworld"
+ * stringText.push_back('!');          // "Hiworld!"
+ *
+ * char iFirstCharacter = stringText.front();
+ * char iLastCharacter = stringText.back();
+ * stringText.at(0) = 'h';            // "hiworld!"
+ * stringText.pop_back();             // "hiworld"
+ * stringText.clear();                // length() == 0
+ * @endcode
+ *
+ * @par Example: append strings and views
+ * @code{.cpp}
+ * gd::string_transport stringText("Path: ");
+ * std::string stringDirectory = "data";
+ * stringText.append(stringDirectory);
+ * stringText.append(std::string_view("/input.txt"));
+ *
+ * // Text: "Path: data/input.txt"
+ * @endcode
  */
 class string_transport
 {
