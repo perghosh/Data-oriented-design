@@ -134,6 +134,13 @@ public:
    /// @API [tag: types] [description: The result of a benchmark run, containing statistics about the execution time.] [jump: result__]
    /// \brief The result of a benchmark run, containing statistics about the execution time.
    struct result {
+      std::size_t iterations() const noexcept { return m_uIterations; }
+      double mean() const noexcept { return m_dMean; }
+      double min_time() const noexcept { return m_dMinTime; }
+      double max_time() const noexcept { return m_dMaxTime; }
+      double standard_deviation() const noexcept { return m_dStandardDeviation; }
+      double total_duration_ns() const noexcept { return m_dTotalDurationNs; }
+
       std::size_t m_uIterations{ 0 };     ///< The number of iterations executed in the benchmark run.
       double m_dMean{ 0.0 };              ///< The mean execution time in nanoseconds.
       double m_dMinTime{ 0.0 };           ///< The minimum execution time in nanoseconds.

@@ -13,7 +13,7 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
-/*TEST_CASE("[benchmark] string_transport", "[benchmark]")
+TEST_CASE("[benchmark] string_transport", "[benchmark]")
 {
    std::array<std::byte, 150> arrayBuffer;
 
@@ -65,21 +65,21 @@
 
 
    std::cout << "Benchmark: string_transport using buffer\n";
-   std::cout << "Mean: " << resultTransport01.m_dMean << " ns\n";
-   std::cout << "Minimum: " << resultTransport01.m_dMinTime << " ns\n";
-   std::cout << "Maximum: " << resultTransport01.m_dMaxTime << " ns\n";
+   std::cout << "Mean: " << resultTransport01.mean() << " ns\n";
+   std::cout << "Minimum: " << resultTransport01.min_time() << " ns\n";
+   std::cout << "Maximum: " << resultTransport01.max_time() << " ns\n";
 
    std::cout << "\nBenchmark: string_transport with no buffer\n";
-   std::cout << "Mean: " << resultTransport02.m_dMean << " ns\n";
-   std::cout << "Minimum: " << resultTransport02.m_dMinTime << " ns\n";
-   std::cout << "Maximum: " << resultTransport02.m_dMaxTime << " ns\n";
+   std::cout << "Mean: " << resultTransport02.mean() << " ns\n";
+   std::cout << "Minimum: " << resultTransport02.min_time() << " ns\n";
+   std::cout << "Maximum: " << resultTransport02.max_time() << " ns\n";
 
    std::cout << "\nBenchmark: std::string\n";
-   std::cout << "Mean: " << resultTransport03.m_dMean << " ns\n";
-   std::cout << "Minimum: " << resultTransport03.m_dMinTime << " ns\n";
-   std::cout << "Maximum: " << resultTransport03.m_dMaxTime << " ns\n";
+   std::cout << "Mean: " << resultTransport03.mean() << " ns\n";
+   std::cout << "Minimum: " << resultTransport03.min_time() << " ns\n";
+   std::cout << "Maximum: " << resultTransport03.max_time() << " ns\n";
 
-}   */
+}
 
 
 TEST_CASE("[benchmark] string_transport02", "[benchmark]")
@@ -219,17 +219,17 @@ TEST_CASE("[benchmark] string_transport02", "[benchmark]")
    std::cout << "Maximum: " << resultVector3.m_dMaxTime << " ns\n";  */
 
    std::cout << "\nBenchmark: gd::argument::arguments with no buffer\n";
-   std::cout << "Mean: " << resultArgument.m_dMean << " ns\n";
-   std::cout << "Minimum: " << resultArgument.m_dMinTime << " ns\n";
-   std::cout << "Maximum: " << resultArgument.m_dMaxTime << " ns\n";
+   std::cout << "Mean: " << resultArgument.mean() << " ns\n";
+   std::cout << "Minimum: " << resultArgument.min_time() << " ns\n";
+   std::cout << "Maximum: " << resultArgument.max_time() << " ns\n";
    
    std::cout << "\nBenchmark: gd::argument::arguments with buffer\n";
-   std::cout << "Mean: " << resultArgument2.m_dMean << " ns\n";
-   std::cout << "Minimum: " << resultArgument2.m_dMinTime << " ns\n";
-   std::cout << "Maximum: " << resultArgument2.m_dMaxTime << " ns\n";
+   std::cout << "Mean: " << resultArgument2.mean() << " ns\n";
+   std::cout << "Minimum: " << resultArgument2.min_time() << " ns\n";
+   std::cout << "Maximum: " << resultArgument2.max_time() << " ns\n";
 
    std::cout << "\nBenchmark: assign with []\n";
-   std::cout << "Mean: " << resultArgument3.m_dMean << " ns\n";
-   std::cout << "Minimum: " << resultArgument3.m_dMinTime << " ns\n";
-   std::cout << "Maximum: " << resultArgument3.m_dMaxTime << " ns\n";
+   std::cout << "Mean: " << resultArgument3.mean() << " ns\n";
+   std::cout << "Minimum: " << resultArgument3.min_time() << " ns\n";
+   std::cout << "Maximum: " << resultArgument3.max_time() << " ns\n";
 }
