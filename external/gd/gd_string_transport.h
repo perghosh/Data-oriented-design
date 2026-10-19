@@ -11,7 +11,18 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <utility>   
+#include <utility> 
+
+/*
+ * # string_transport
+ * 
+ * Jump board
+ * 
+ * append__          Append text to the string_transport
+ * attributes__      Member attributes and state flags for string_transport
+ * construct__       Construct a string_transport object with optional borrowed buffer
+ * iterator__        Iterators for traversing characters in the string_transport
+ */
 
 #ifndef _GD_BEGIN
 #define _GD_BEGIN namespace gd {
@@ -119,22 +130,45 @@ public:
    };
 
 public:
+   using value_type = char;
+   using pointer = value_type*;
+   using const_pointer = const value_type*;
+   using reference = value_type&;
+   using const_reference = const value_type&;
    using size_type = std::size_t;
+   using difference_type = std::ptrdiff_t;
+
+   using iterator = pointer;
+   using const_iterator = const_pointer;
+   using reverse_iterator = std::reverse_iterator<iterator>;
+   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+
    static constexpr size_type npos = static_cast<size_type>(-1);
 
-// @API [tag: construction]
+// @API [tag: construction] [summary: construction and assignment] [jump: construct__]
 public:
    string_transport() : m_uStateAndSize(0), m_piText(nullptr) {}
 
    explicit string_transport( const char* piText ) : m_uStateAndSize(0), m_piText(nullptr) { append(piText); }
    // Borrow an external writable buffer (no allocation).
-   string_transport(char* piBuffer, std::size_t uBufferSize);
+   string_transport(char* piBuffer, size_type uBufferSize);
+
+   explicit string_transport(std::string_view stringText): m_uStateAndSize(0), m_piText(nullptr) { append(stringText); }
 
    explicit string_transport(std::span<std::byte> spanBuffer)                  // Flexible adapter: accepts std::array<std::byte, N>, std::vector<std::byte>, etc.
       : string_transport(reinterpret_cast<char*>(spanBuffer.data()), spanBuffer.size()) {}
 
    explicit string_transport(std::span<char> spanBuffer)                       // Optional convenience for std::array<char, N> / char buffers.
       : string_transport(spanBuffer.data(), spanBuffer.size()) {}
+
+   string_transport(std::string_view stringText, char* piBuffer, size_type uBufferSize)
+      : string_transport(piBuffer, uBufferSize) { append(stringText); }
+
+   string_transport(std::string_view stringText, std::span<std::byte> spanBuffer)
+      : string_transport(stringText, reinterpret_cast<char*>(spanBuffer.data()), spanBuffer.size()) {}
+
+   string_transport(std::string_view stringText, std::span<char> spanBuffer)
+      : string_transport(stringText, spanBuffer.data(), spanBuffer.size()) {}
 
    // copy
    string_transport(const string_transport& o): m_uStateAndSize(0), m_piText(nullptr) { common_construct(o); }
@@ -163,6 +197,7 @@ public:
    string_transport& operator=(const char* piText);
    string_transport& operator=(std::string_view stringText);
    string_transport& operator+=(const char* piText) { append(piText); return *this; }
+   string_transport& operator+=(std::string_view stringText) { append(stringText); return *this; }
 
    char& operator[](size_type uIndex) noexcept { return m_piText[uIndex]; }
    const char& operator[](size_type uIndex) const noexcept { return m_piText[uIndex]; }
@@ -187,18 +222,20 @@ public:
 
    void clear_flags() { m_uStateAndSize &= static_cast<uint64_t>(enumConstant::eClearFlag); }
 
-   void set_length(std::size_t uLength);
+   void set_length(size_type uLength);
+
+   std::string_view view() const noexcept { if (m_piText == nullptr) { return {}; } return std::string_view(m_piText, length()); }
+   std::string to_string() const { return std::string(view()); }
 
 
 // @API [tag: operation]
 
-
+// @API [tag: append] [summary: append text to the string] [jump: append__]
    void append(const char* piText);
-   void append(const char* piText, const std::size_t uLength);
+   void append(const char* piText, const size_type uLength);
    void append(std::string_view stringText) { append(stringText.data(), stringText.size()); }
    void append(std::span<std::byte> spanBuffer) { append(reinterpret_cast<const char*>(spanBuffer.data()), spanBuffer.size()); }
 
-   void clear();
    void push_back(char iCharacter);
    void pop_back();
 
@@ -207,12 +244,33 @@ public:
    string_transport& erase(size_type uIndex = 0, size_type uCount = npos);
    string_transport& replace(size_type uIndex, size_type uCount, std::string_view stringText);
 
+   void clear();
+
+// @API [tag: iterator] [summary: iterate over characters excluding the null terminator] [jump: iterator__]
+   iterator begin() noexcept { return m_piText; }
+   const_iterator begin() const noexcept { return m_piText; }
+   const_iterator cbegin() const noexcept { return begin(); }
+
+   iterator end() noexcept { return m_piText != nullptr ? m_piText + length() : nullptr; }
+   const_iterator end() const noexcept { return m_piText != nullptr ? m_piText + length() : nullptr; }
+   const_iterator cend() const noexcept { return end(); }
+
+   reverse_iterator rbegin() noexcept { return reverse_iterator(end()); }
+   const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator(end()); }
+   const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator(cend()); }
+
+   reverse_iterator rend() noexcept { return reverse_iterator(begin()); }
+   const_reverse_iterator rend() const noexcept { return const_reverse_iterator(begin()); }
+   const_reverse_iterator crend() const noexcept { return const_reverse_iterator(cbegin()); }
+
    void allocate(std::size_t uSize);
 
    const char* c_str() const noexcept { return m_piText; } ///< returns the pointer to the string data
-   char* data() const noexcept { return m_piText; }   ///< returns the pointer to the string data
-   std::size_t size() const noexcept;   ///< buffer length or when not borrowed, the actual string length
-   std::size_t length() const noexcept; ///< the actual string length
+   pointer data() noexcept { return m_piText; }
+   const_pointer data() const noexcept { return m_piText; }
+   size_type size() const noexcept { return length(); }  ///< buffer length or when not borrowed, the actual string length
+   size_type size_buffer() const noexcept;   ///< buffer length or when not borrowed, the actual string length
+   size_type length() const noexcept; ///< the actual string length
 
 protected:
 // @API [tag: internal]
@@ -220,10 +278,10 @@ protected:
 public:
 // @API [tag: debug]
 
-// ## attributes ----------------------------------------------------------------
+// ## attributes ---------------------------------------------------------------- [jump: attributes__]
 public:
-   uint64_t m_uStateAndSize;
-   char* m_piText;
+   uint64_t m_uStateAndSize;  ///< The state and size of the string_transport object, including flags for borrowed or literal storage and the length of the string.
+   char* m_piText;            ///< Character buffer used for storing the string data. It may point to a borrowed buffer or owned heap storage.
 
 
 // @API [tag: free-functions]
@@ -232,7 +290,7 @@ public:
 };
 
 /// Construct string with borrowed buffer, the buffer must be writable and the size must be less than 65536 bytes (64KB)
-inline string_transport::string_transport(char* piBuffer, std::size_t uBufferSize) : m_uStateAndSize(0), m_piText(piBuffer)
+inline string_transport::string_transport(char* piBuffer, size_type uBufferSize) : m_uStateAndSize(0), m_piText(piBuffer)
 {                                                                                                   assert(piBuffer != nullptr);
                                                                                                     assert(uBufferSize > 0);
                                                                                                     assert(uBufferSize <= 0xFFFFu); // borrow-size field is 16-bit
@@ -308,28 +366,28 @@ inline std::size_t string_transport::length() const noexcept
    std::size_t uSize;
    if(is_borrowed() == true)
    {
-      uSize = static_cast<std::size_t>(m_uStateAndSize & static_cast<uint64_t>(enumConstant::eBorrowLengthMask));
+      uSize = static_cast<size_type>(m_uStateAndSize & static_cast<uint64_t>(enumConstant::eBorrowLengthMask));
    }
    else
    {
-      uSize = static_cast<std::size_t>(m_uStateAndSize & static_cast<uint64_t>(enumConstant::eSizeMask));
+      uSize = static_cast<size_type>(m_uStateAndSize & static_cast<uint64_t>(enumConstant::eSizeMask));
    }
 
    return uSize;
 }
 
 /// Returns the size of the string_transport buffer, if borrowed, it returns the size of the buffer that it borrows from, if owner then it returns the size of the buffer that it owns.
-inline std::size_t string_transport::size() const noexcept
+inline string_transport::size_type string_transport::size_buffer() const noexcept
 {
-   std::size_t uSize;
+   size_type uSize;
    if(is_borrowed() == true )
    {
-      uSize = static_cast<std::size_t>(m_uStateAndSize & static_cast<uint64_t>(enumConstant::eBorrowSizeMask));
+      uSize = static_cast<size_type>(m_uStateAndSize & static_cast<uint64_t>(enumConstant::eBorrowSizeMask));
       uSize >>= 16;
    }
    else
    {
-      uSize = static_cast<std::size_t>(m_uStateAndSize & static_cast<uint64_t>(enumConstant::eSizeMask));
+      uSize = static_cast<size_type>(m_uStateAndSize & static_cast<uint64_t>(enumConstant::eSizeMask));
    }
 
    return uSize;
@@ -339,7 +397,7 @@ inline std::size_t string_transport::size() const noexcept
 /// Set the length for string_transport, if borrowed, the length must be less than the size of the 
 /// string_transport buffer that it borrows from, If owner then it can be any length.
 /// @param uLength The new length to set for the string_transport object.
-inline void string_transport::set_length(std::size_t uLength) 
+inline void string_transport::set_length(size_type uLength) 
 { 
    if(is_borrowed() == true)
    {                                                                                                assert( uLength < size() );
