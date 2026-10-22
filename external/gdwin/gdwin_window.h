@@ -65,16 +65,20 @@ struct lresult
    // Constructors / factories
    // ---------------------------------------------------------------------
 
-   constexpr lresult() = default;
+   lresult() = default;
+   lresult(int64_t iValue): m_eState(enumState::eHandled), m_iValue(iValue) {}
+   lresult(enumState eState, int64_t iValue = 0) : m_eState(eState), m_iValue(iValue) {}
+
+   lresult& operator=(int64_t iValue) { m_eState = enumState::eHandled; m_iValue = iValue; return *this; }
 
    /// "I handled this, and the LRESULT to return is `value`."
-   static constexpr lresult handled(int64_t iValue = 0) noexcept { return lresult{ enumState::eHandled, iValue }; }
+   lresult handled(int64_t iValue = 0) noexcept { return lresult{ enumState::eHandled, iValue }; }
 
    /// "I didn't handle this — run DefWindowProc."
-   static constexpr lresult not_handled() noexcept { return lresult{ enumState::eNotHandled, 0 }; }
+   lresult not_handled() const noexcept { return lresult{ enumState::eNotHandled, 0 }; }
 
    /// "I failed — the framework may call OnGetError for details."
-   static constexpr lresult error() noexcept { return lresult{ enumState::eError, 0 }; }
+   lresult error() const noexcept { return lresult{ enumState::eError, 0 }; }
 
    [[nodiscard]] constexpr bool is_handled()     const noexcept { return m_eState == enumState::eHandled; }
    [[nodiscard]] constexpr bool is_not_handled() const noexcept { return m_eState == enumState::eNotHandled; }
@@ -100,7 +104,7 @@ struct lresult
    }
 
    /// Decode a raw int64_t returned by OnEvent into an lresult.
-   [[nodiscard]] static constexpr lresult from_int64(int64_t iRaw) noexcept
+   [[nodiscard]] constexpr lresult from_int64(int64_t iRaw) noexcept
    {
       if(iRaw == m_iNotHandled_s) return not_handled();
       if(iRaw == m_iError_s)      return error();
@@ -115,8 +119,6 @@ struct lresult
    static constexpr int64_t m_iNotHandled_s = INT64_MIN;
    static constexpr int64_t m_iError_s = INT64_MIN + 1;
 
-private:
-   constexpr lresult(enumState s, int64_t v) noexcept : m_eState(s), m_iValue(v) {}
 };
 
 _GDWIN_END
@@ -146,7 +148,7 @@ public:
    }
 
    /// @API [tag: event] [summary: The on_event function is a virtual function that handles window events.] [jump: on_event__]
-   virtual EVENT_RESULT on_event(gdwin::eWindowEvent eEvent, gd::argument::arguments* pargumentsParam, uint64_t uNativeMessage) { return EVENT_RESULT::not_handled(); }
+   virtual EVENT_RESULT on_event(gdwin::eWindowEvent eEvent, gd::argument::arguments* pargumentsParam, uint64_t uNativeMessage) { return lresult(lresult::enumState::eNotHandled, 0 ); }
    virtual bool on_get_error( gd::argument::arguments& argumentsError ) const { return false; }
    virtual std::pair<bool, std::string_view> get_window_class() const { return { true, std::string_view() }; }
    virtual void* get_callback() { return (void*)nullptr; }
@@ -187,7 +189,7 @@ private:
    }
 
    /// The one and only window procedure, finds the window for the HWND and forwards
-   static EVENT_RESULT window_procedure_s(HWND hwnd, UINT uMessage, WPARAM uParam, LPARAM iParam);
+   static EVENT_RESULT CALLBACK window_procedure_s(HWND hwnd, UINT uMessage, WPARAM uParam, LPARAM iParam);
    /// Crack a native message into a portable event and arguments. This is for debugging and testing, as the framework will only call OnEvent for messages that have been bound.
    static void crack_message_s( gdwin::eWindowEvent eEvent, WPARAM uParam, LPARAM iParam, gd::argument::arguments& argumentsMessage);
 
@@ -276,7 +278,7 @@ EVENT_RESULT window<EVENT_RESULT>::call_default(UINT uMessage, WPARAM uParam, LP
 #else
    auto lresult_ = ::DefWindowProcA(m_hwnd, uMessage, uParam, iParam);
 #endif
-   return EVENT_RESULT::handled(static_cast<int64_t>(lresult_));
+   return lresult_;
 }
 
 
@@ -309,7 +311,7 @@ EVENT_RESULT window<EVENT_RESULT>::window_procedure_s(HWND hwnd, UINT uMessage, 
 #else
    auto lresult_ = ::DefWindowProcA(hwnd, uMessage, uParam, iParam);
 #endif
-   return EVENT_RESULT::handled(static_cast<int64_t>(lresult_));
+   return lresult(lresult_);
 }
 
 template <typename EVENT_RESULT>
