@@ -85,7 +85,7 @@ variant::variant(std::string_view stringJson, bool* pbSucceeded, gd::types::tag_
    const char* pbszBegin = stringJson.data();
    const char* pbszEnd = pbszBegin + stringJson.size();
 
-   switch (uType)
+   switch(uType)
    {
    case eTypeUnknown:
       break;
@@ -126,7 +126,7 @@ variant::variant(std::string_view stringJson, bool* pbSucceeded, gd::types::tag_
       bSucceeded = false;
    }
 
-   if (pbSucceeded != nullptr) *pbSucceeded = bSucceeded;
+   if(pbSucceeded != nullptr) *pbSucceeded = bSucceeded;
 }
 
 
