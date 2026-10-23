@@ -218,7 +218,7 @@ private:
       auto eEvent = gdwin::translate_s(uMessage); // translate to portable event, ignored here but useful for debugging
       if(eEvent != gdwin::eNone)
       {
-         if(m_bitsetMessageMap.test(eEvent) == true)
+         if(m_bitsetMessageMap.test(eEvent) == true)                          // Test if message is registered, if so then call OnEvent, otherwise call default
          {
             EVENT_RESULT result_ = call(uMessage, uParam, iParam);
             if(event_result_traits<EVENT_RESULT>::is_handled(result_) == true) return result_;
@@ -349,11 +349,11 @@ LRESULT CALLBACK window<EVENT_RESULT>::window_procedure_s(HWND hwnd, UINT uMessa
       }
    }
 #if defined(UNICODE) || defined(_UNICODE)
-   auto lresult_ = ::DefWindowProcW(hwnd, uMessage, uParam, iParam);
+   LRESULT iResult = ::DefWindowProcW(hwnd, uMessage, uParam, iParam);
 #else
-   auto lresult_ = ::DefWindowProcA(hwnd, uMessage, uParam, iParam);
+   LRESULT iResult = ::DefWindowProcA(hwnd, uMessage, uParam, iParam);
 #endif
-    return lresult_;
+    return iResult;
 }
 
 template <typename EVENT_RESULT>
