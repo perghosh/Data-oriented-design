@@ -48,8 +48,8 @@ public:
 
 protected:
 // @API [tag: internal]
-void OnMouseDown(UINT, POINT point);
-void OnMouseMove(UINT, POINT point);
+void OnMouseDown(gd::argument::arguments& arguments);
+void OnMouseMove(gd::argument::arguments& arguments);
 
 public:
 // @API [tag: debug]
