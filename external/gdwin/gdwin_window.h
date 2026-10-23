@@ -6,9 +6,14 @@
  * @file gdwin_window.h
  * @brief Window class for portable window handling on Windows.
  *
+ *    attributes__            Attributes of the lresult struct
+ *    construct__             Constructors and factories
+ *    conversion__            Conversion to/from the raw int64_t OnEvent return
+ *    getter_setter__         Getter and setter functions for lresult
  *    lresult__               Result object
  *    window__                Window class
  *    on_event__              Main event handler
+ *    event_result_traits__   Wrapper for mapping portable EVENT_RESULT to native Win32 LRESULT
  */
 
 #ifndef WIN32_LEAN_AND_MEAN
@@ -32,6 +37,7 @@
 #include "gd/gd_arguments.h"
 
 #include "gdwin_event.h"
+
 
 #ifndef _GDWIN_BEGIN
 #define _GDWIN_BEGIN namespace gdwin {
@@ -65,11 +71,15 @@ struct lresult
    // Constructors / factories
    // ---------------------------------------------------------------------
 
+// @API [tag: construction] [summary: constructors and factories] [jump: construct__]
+
    lresult() = default;
    lresult(int64_t iValue): m_eState(enumState::eHandled), m_iValue(iValue) {}
    lresult(enumState eState, int64_t iValue = 0) : m_eState(eState), m_iValue(iValue) {}
 
    lresult& operator=(int64_t iValue) { m_eState = enumState::eHandled; m_iValue = iValue; return *this; }
+
+// @API [tag: getter, setter] [summary: Getter and setter functions for lresult] [jump: getter_setter__]
 
    /// "I handled this, and the LRESULT to return is `value`."
    lresult handled(int64_t iValue = 0) noexcept { return lresult{ enumState::eHandled, iValue }; }
@@ -87,38 +97,68 @@ struct lresult
    /// The LRESULT to return to Windows. Only meaningful when is_handled().
    [[nodiscard]] constexpr int64_t value() const noexcept { return m_iValue; }
 
-   // ---------------------------------------------------------------------
-   // Conversion to/from the raw int64_t OnEvent return
-   // ---------------------------------------------------------------------
+// @API [tag: conversion] [summary: Conversion to/from the raw int64_t OnEvent return] [jump: conversion__]
 
    /// Map this result to the raw int64_t the framework expects.
-   [[nodiscard]] constexpr int64_t as_int64() const noexcept
-   {
-      switch(m_eState)
-      {
-      case enumState::eHandled:     return m_iValue;
-      case enumState::eNotHandled:  return m_iNotHandled_s;
-      case enumState::eError:       return m_iError_s;
-      }
-      return m_iNotHandled_s; // unreachable, silences warnings
-   }
+   [[nodiscard]] constexpr int64_t as_int64() const noexcept;
 
    /// Decode a raw int64_t returned by OnEvent into an lresult.
-   [[nodiscard]] constexpr lresult from_int64(int64_t iRaw) noexcept
-   {
-      if(iRaw == m_iNotHandled_s) return not_handled();
-      if(iRaw == m_iError_s)      return error();
-      return handled(iRaw);
-   }
+   [[nodiscard]] constexpr lresult from_int64(int64_t iRaw) noexcept;
 
+// @API [tag: attributes] [summary: Attributes of the lresult struct] [jump: attributes__]
+public:
    enumState m_eState = enumState::eNotHandled; ///< default to not handled, so uninitialized lresult is safe
    int64_t m_iValue = 0; ///< meaningful only when m_state == enumState::eHandled
 
-   // Reserved sentinels. Chosen outside any plausible LRESULT value.
-   // INT64_MIN and INT64_MIN+1 are safe on every platform we target.
-   static constexpr int64_t m_iNotHandled_s = INT64_MIN;
-   static constexpr int64_t m_iError_s = INT64_MIN + 1;
+   static constexpr int64_t m_iNotHandled_s = INT64_MIN; ///< sentinel value for not handled
+   static constexpr int64_t m_iError_s = INT64_MIN + 1; ///< sentinel value for error
 
+};
+
+/// @brief Map this result to the raw int64_t the framework expects -----------
+constexpr int64_t lresult::as_int64() const noexcept
+{
+   switch(m_eState)
+   {
+   case enumState::eHandled:     return m_iValue;
+   case enumState::eNotHandled:  return m_iNotHandled_s;
+   case enumState::eError:       return m_iError_s;
+   }
+   return m_iNotHandled_s; // unreachable, silences warnings
+}
+
+
+/// @brief Decode a raw int64_t returned by OnEvent into an lresult.-----------
+constexpr lresult lresult::from_int64(int64_t iRaw) noexcept
+{
+   if(iRaw == m_iNotHandled_s) return not_handled();
+   if(iRaw == m_iError_s)      return error();
+   return handled(iRaw);
+}
+
+
+// ----------------------------------------------------------------------------
+/// @API [tag: return] [summary: The event_result_traits struct provides a mapping between portable EVENT_RESULT types and native Win32 LRESULT values.] [jump: event_result_traits__]
+/// Trait that maps a portable EVENT_RESULT type to/from the native Win32 LRESULT.
+/// Specialize this for custom result wrappers.
+template<typename EVENT_RESULT>
+struct event_result_traits
+{
+   /// @brief Check if the event result indicates that the event was handled.
+   static bool          is_handled(const EVENT_RESULT& result_) { return result_.is_handled(); }
+   /// @brief Convert a native Win32 LRESULT to the portable EVENT_RESULT type.
+   static EVENT_RESULT  from_native(LRESULT lresult_) { return EVENT_RESULT{ static_cast<int64_t>(lresult_) }; }
+   /// @brief Convert a portable EVENT_RESULT type to the native Win32 LRESULT.
+   static LRESULT       to_native(const EVENT_RESULT& result_) { return static_cast<LRESULT>(result_.value()); }
+};
+
+/// Specialization for lresult, which is the default EVENT_RESULT type.
+template<>
+struct event_result_traits<lresult>
+{
+   static bool          is_handled(const lresult& result_) { return result_.is_handled(); }
+   static lresult       from_native(LRESULT lresult_) { return lresult(static_cast<int64_t>(lresult_)); }
+   static LRESULT       to_native(const lresult& result_) { return static_cast<LRESULT>(result_.value()); }
 };
 
 _GDWIN_END
@@ -181,7 +221,7 @@ private:
          if(m_bitsetMessageMap.test(eEvent) == true)
          {
             EVENT_RESULT result_ = call(uMessage, uParam, iParam);
-            if(result_.is_handled()) return result_;
+            if(event_result_traits<EVENT_RESULT>::is_handled(result_) == true) return result_;
          }
       }
 
@@ -189,7 +229,7 @@ private:
    }
 
    /// The one and only window procedure, finds the window for the HWND and forwards
-   static EVENT_RESULT CALLBACK window_procedure_s(HWND hwnd, UINT uMessage, WPARAM uParam, LPARAM iParam);
+   static LRESULT CALLBACK window_procedure_s(HWND hwnd, UINT uMessage, WPARAM uParam, LPARAM iParam);
    /// Crack a native message into a portable event and arguments. This is for debugging and testing, as the framework will only call OnEvent for messages that have been bound.
    static void crack_message_s( gdwin::eWindowEvent eEvent, WPARAM uParam, LPARAM iParam, gd::argument::arguments& argumentsMessage);
 
@@ -278,18 +318,19 @@ EVENT_RESULT window<EVENT_RESULT>::call_default(UINT uMessage, WPARAM uParam, LP
 #else
    auto lresult_ = ::DefWindowProcA(m_hwnd, uMessage, uParam, iParam);
 #endif
-   return lresult_;
+   return event_result_traits<EVENT_RESULT>::from_native(lresult_);
 }
 
 
 template <typename EVENT_RESULT>
-EVENT_RESULT window<EVENT_RESULT>::window_procedure_s(HWND hwnd, UINT uMessage, WPARAM uParam, LPARAM iParam)
+LRESULT CALLBACK window<EVENT_RESULT>::window_procedure_s(HWND hwnd, UINT uMessage, WPARAM uParam, LPARAM iParam)
 {
    window<EVENT_RESULT>* pwindow_ = nullptr;
    pwindow_ = reinterpret_cast<window<EVENT_RESULT>*>(::GetWindowLongPtrW(hwnd, GWLP_USERDATA));
    if(pwindow_ != nullptr)
    {
-      return pwindow_->dispatch(uMessage, uParam, iParam);
+      auto result_ = pwindow_->dispatch(uMessage, uParam, iParam);
+      return event_result_traits<EVENT_RESULT>::to_native(result_);
    }
    else
    {
@@ -303,7 +344,8 @@ EVENT_RESULT window<EVENT_RESULT>::window_procedure_s(HWND hwnd, UINT uMessage, 
          ::SetWindowLongPtrA(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pwindow_));
 #endif
          pwindow_->m_hwnd = hwnd;
-         return pwindow_->dispatch(uMessage, uParam, iParam);
+          auto result_ = pwindow_->dispatch(uMessage, uParam, iParam);
+          return event_result_traits<EVENT_RESULT>::to_native(result_);
       }
    }
 #if defined(UNICODE) || defined(_UNICODE)
@@ -311,7 +353,7 @@ EVENT_RESULT window<EVENT_RESULT>::window_procedure_s(HWND hwnd, UINT uMessage, 
 #else
    auto lresult_ = ::DefWindowProcA(hwnd, uMessage, uParam, iParam);
 #endif
-   return lresult(lresult_);
+    return lresult_;
 }
 
 template <typename EVENT_RESULT>
