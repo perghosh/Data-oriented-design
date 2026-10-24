@@ -44,12 +44,15 @@ public:
    gdwin::lresult on_event(gdwin::eWindowEvent eEvent, gd::argument::arguments* pargumentsParam, uint64_t uNativeMessage) override;
    std::pair<bool, std::string_view> get_window_class() const override { return { false, std::string_view("CFrameMain")}; }
 
+   void Create();
+
 
 protected:
 // @API [tag: internal]
    void OnMouseMove(gd::argument::arguments& arguments);
    void OnMouseDown(gd::argument::arguments& arguments);
    void OnKeyDown(gd::argument::arguments& arguments);
+   
 
 public:
 // @API [tag: debug]
