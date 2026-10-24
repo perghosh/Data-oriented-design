@@ -26,7 +26,7 @@ public:
    CFrameMain& operator=(const CFrameMain& o) { common_construct(o); return *this; }
    CFrameMain& operator=(CFrameMain&& o) noexcept { common_construct(std::move(o)); return *this; }
 
-   ~CFrameMain() override = default;
+   ~CFrameMain() override;
 private:
    // common copy
    void common_construct(const CFrameMain& o) {}
@@ -52,7 +52,7 @@ protected:
    void OnMouseMove(gd::argument::arguments& arguments);
    void OnMouseDown(gd::argument::arguments& arguments);
    void OnKeyDown(gd::argument::arguments& arguments);
-   
+   void OnCommand(gd::argument::arguments& arguments);
 
 public:
 // @API [tag: debug]

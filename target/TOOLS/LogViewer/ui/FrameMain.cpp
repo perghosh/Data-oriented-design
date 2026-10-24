@@ -1,12 +1,30 @@
 #include "FrameMain.h"
 
 
+enum enumMenu {
+   eOpen = 1000,
+   eSave,
+   eExit
+};
+
+
 CFrameMain::CFrameMain()
 {
+   bind(gdwin::eWindowEvent::eCommand);
    bind(gdwin::eWindowEvent::eMouseDown);                                      // bind the mouse down event to this window (WM_LBUTTONDOWN)
-   bind(gdwin::eWindowEvent::eMouseMove);                                      // bind the mouse move event to this window (WM_MOUSEMOVE)
+   //bind(gdwin::eWindowEvent::eMouseMove);                                      // bind the mouse move event to this window (WM_MOUSEMOVE)
    bind(gdwin::eWindowEvent::eClose);                                          // bind the close event to this window (WM_CLOSE)
    bind(gdwin::eWindowEvent::eDestroy);                                        // bind the destroy event to this window (WM_DESTROY)
+}
+
+CFrameMain::~CFrameMain()
+{
+   if( m_hMenu != nullptr )
+   {
+      if( m_hwnd != nullptr && ::GetMenu(m_hwnd) == m_hMenu ) { ::SetMenu(m_hwnd, nullptr); }
+      ::DestroyMenu(m_hMenu);
+      m_hMenu = nullptr;
+   }
 }
 
 gdwin::lresult CFrameMain::on_event(gdwin::eWindowEvent eEvent, gd::argument::arguments* pargumentsParam, uint64_t uNativeMessage)
@@ -16,12 +34,34 @@ gdwin::lresult CFrameMain::on_event(gdwin::eWindowEvent eEvent, gd::argument::ar
    case gdwin::eWindowEvent::eMouseMove: { OnMouseMove(*pargumentsParam); } break;
    case gdwin::eWindowEvent::eMouseDown: { OnMouseDown( *pargumentsParam ); } break;
    case gdwin::eWindowEvent::eKeyDown: { OnKeyDown( *pargumentsParam ); } break;
+   case gdwin::eWindowEvent::eCommand: { OnCommand( *pargumentsParam ); } break;
    case gdwin::eWindowEvent::eClose: { ::DestroyWindow(m_hwnd); } break;
-   case gdwin::eWindowEvent::eDestroy: { ::PostQuitMessage(0); } break;
+   case gdwin::eWindowEvent::eDestroy: { m_hMenu = nullptr; ::PostQuitMessage(0); } break;
    }
    
    return gdwin::lresult();
 }
+
+void CFrameMain::Create()
+{
+   HMENU hMenu;
+   HMENU hMenuFile;
+
+   hMenu = ::CreateMenu();
+
+   /* Create file menu */
+   hMenuFile = ::CreateMenu();
+   AppendMenu(hMenuFile, MF_STRING, eOpen, "Open");
+   AppendMenu(hMenuFile, MF_STRING, eSave, "Save");
+   AppendMenu(hMenuFile, MF_SEPARATOR, 0, NULL);
+   AppendMenu(hMenuFile, MF_STRING, eExit, "Exit");
+   AppendMenu(hMenu, MF_POPUP, (UINT_PTR)hMenuFile, "File");
+   m_hMenu = hMenu;
+
+   gdwin::window<>::create("Blank Window", { { "style", "overlappedwindow" },{ "width", 800 },{ "height", 600 },{ "callback", gdwin::window<>::get_callback_s() },{ "menu", m_hMenu } });
+
+}
+
 
 void CFrameMain::OnMouseMove(gd::argument::arguments& arguments)
 {
@@ -39,29 +79,8 @@ void CFrameMain::OnKeyDown(gd::argument::arguments& arguments)
    OutputDebugStringA(("Key down: " + arguments["key"].as_string() + "\n").c_str());
 }
 
-void CFrameMain::Create()
+void CFrameMain::OnCommand(gd::argument::arguments& arguments)
 {
-   enum enumMenu {
-      eOpen,
-      eSave,
-      eExit
-   };
-
-   HMENU hMenu;
-   HMENU hMenuFile;
-
-   hMenu = ::CreateMenu();
-
-   /* Create file menu */
-   hMenuFile = ::CreateMenu();
-   AppendMenu(hMenuFile, MF_STRING, eOpen, "Open");
-   AppendMenu(hMenuFile, MF_STRING, eSave, "Save");
-   AppendMenu(hMenuFile, MF_SEPARATOR, 0, NULL);
-   AppendMenu(hMenuFile, MF_STRING, eExit, "Exit");
-   AppendMenu(hMenu, MF_POPUP, (UINT_PTR)hMenuFile, "File");
-   m_hMenu = hMenu;
-
-   gdwin::window<>::create("Blank Window", { {"style", "overlappedwindow"}, {"width", 800}, {"height", 600},  { "callback", gdwin::window<>::get_callback_s() }, { "menu", m_hMenu }});
-
-}
-
+   uint32_t uCommandId = arguments["id"].as_uint();
+   OutputDebugStringA(("Command: " + arguments["id"].as_string() + "\n").c_str());
+}  

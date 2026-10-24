@@ -77,15 +77,15 @@ TEST_CASE("[benchmark] string_transport", "[.benchmark]")
 
 TEST_CASE("[benchmark] table dto", "[benchmark]")
 {
-   constexpr unsigned uRunIterations = 1000;
-   constexpr unsigned uWarmupCount = 10;
-   constexpr unsigned uBatchCount = 20;
+   constexpr unsigned uRunIterations = 10;
+   constexpr unsigned uWarmupCount = 1;
+   constexpr unsigned uBatchCount = 5;
 
    using namespace gd::table::dto;
    table tableDto((table::eTableFlagNull32 | table::eTableFlagRowStatus), { { "uint64", "C1" },{ "uint64", "C2" },{ "uint64", "C3" },{ "uint64", "SUM" } }, gd::table::tag_prepare{});
 
-   // Add 10000 rows to table
-   for(uint64_t u = 0; u < 10000; ++ u)
+   // Add 10000000 rows to table
+   for(uint64_t u = 0; u < 10'000'000; ++ u)
    {
       auto uRow = tableDto.row_add_one();
       tableDto.cell_set(uRow, 0, u);
