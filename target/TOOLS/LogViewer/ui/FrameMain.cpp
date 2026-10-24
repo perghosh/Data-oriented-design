@@ -63,45 +63,41 @@ void CFrameMain::Create()
 {
 
    HMENU hMenu;
-   HMENU hMenuFile;
-   HMENU hMenuView;
-   HMENU hMenuSearch;
-   HMENU hMenuTools;
-   HMENU hMenuHelp;
+   HMENU hSubMenu;
 
    hMenu = ::CreateMenu();
 
    /* Create file menu */
-   hMenuFile = ::CreateMenu();
-   AppendMenu(hMenuFile, MF_STRING, eOpen, "Open");
-   AppendMenu(hMenuFile, MF_STRING, eSave, "Save");
-   AppendMenu(hMenuFile, MF_STRING, eSaveAs, "Save as");
-   AppendMenu(hMenuFile, MF_SEPARATOR, 0, NULL);
-   AppendMenu(hMenuFile, MF_STRING, eExit, "Exit");
-   AppendMenu(hMenu, MF_POPUP, (UINT_PTR)hMenuFile, "File");
+   hSubMenu = ::CreateMenu();
+   AppendMenu(hSubMenu, MF_STRING, eOpen, "Open");
+   AppendMenu(hSubMenu, MF_STRING, eSave, "Save");
+   AppendMenu(hSubMenu, MF_STRING, eSaveAs, "Save as");
+   AppendMenu(hSubMenu, MF_SEPARATOR, 0, NULL);
+   AppendMenu(hSubMenu, MF_STRING, eExit, "Exit");
+   AppendMenu(hMenu, MF_POPUP, (UINT_PTR)hSubMenu, "File");
 
    /* Create view menu */
-   hMenuView = ::CreateMenu();
-   AppendMenu(hMenuView, MF_STRING, eRefresh, "Refresh");
-   AppendMenu(hMenuView, MF_STRING, eClear, "Clear");
-   AppendMenu(hMenuView, MF_CHECKED, eShowLineNumbers, "Show line numbers");
-   AppendMenu(hMenu, MF_POPUP, ( UINT_PTR )hMenuView, "View");
+   hSubMenu = ::CreateMenu();
+   AppendMenu(hSubMenu, MF_STRING, eRefresh, "Refresh");
+   AppendMenu(hSubMenu, MF_STRING, eClear, "Clear");
+   AppendMenu(hSubMenu, MF_CHECKED, eShowLineNumbers, "Show line numbers");
+   AppendMenu(hMenu, MF_POPUP, ( UINT_PTR )hSubMenu, "View");
 
    /* Create search menu */
-   hMenuSearch = ::CreateMenu();
-   AppendMenu(hMenuSearch, MF_STRING, eFind, "Find");
-   AppendMenu(hMenu, MF_POPUP, ( UINT_PTR )hMenuSearch, "Search");
+   hSubMenu = ::CreateMenu();
+   AppendMenu(hSubMenu, MF_STRING, eFind, "Find");
+   AppendMenu(hMenu, MF_POPUP, ( UINT_PTR )hSubMenu, "Search");
 
    /* Create tools menu */
-   hMenuTools = ::CreateMenu();
-   AppendMenu(hMenuTools, MF_STRING, eFilter, "Filter");
-   AppendMenu(hMenu, MF_POPUP, ( UINT_PTR )hMenuTools, "Tools");
+   hSubMenu = ::CreateMenu();
+   AppendMenu(hSubMenu, MF_STRING, eFilter, "Filter");
+   AppendMenu(hMenu, MF_POPUP, ( UINT_PTR )hSubMenu, "Tools");
 
    /* Create help menu */
-   hMenuHelp = ::CreateMenu();
-   AppendMenu(hMenuHelp, MF_STRING, eAbout, "About");
-   AppendMenu(hMenuHelp, MF_STRING, eHelp, "Help");
-   AppendMenu(hMenu, MF_POPUP, ( UINT_PTR )hMenuHelp, "Help");
+   hSubMenu = ::CreateMenu();
+   AppendMenu(hSubMenu, MF_STRING, eAbout, "About");
+   AppendMenu(hSubMenu, MF_STRING, eHelp, "Help");
+   AppendMenu(hMenu, MF_POPUP, ( UINT_PTR )hSubMenu, "Help");
 
    m_hMenu = hMenu;
 
