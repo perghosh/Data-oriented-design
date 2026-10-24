@@ -84,10 +84,10 @@ void CFrameMain::Create()
 
    /* Create view menu */
    hMenuView = ::CreateMenu();
-   AppendMenu(hMenuFile, MF_STRING, eRefresh, "Refresh");
-   AppendMenu(hMenuFile, MF_STRING, eClear, "Clear");
-   AppendMenu(hMenuFile, MF_CHECKED, eShowLineNumbers, "Show line numbers");
-   AppendMenu(hMenu, MF_POPUP, ( UINT_PTR )hMenuFile, "View");
+   AppendMenu(hMenuView, MF_STRING, eRefresh, "Refresh");
+   AppendMenu(hMenuView, MF_STRING, eClear, "Clear");
+   AppendMenu(hMenuView, MF_CHECKED, eShowLineNumbers, "Show line numbers");
+   AppendMenu(hMenu, MF_POPUP, ( UINT_PTR )hMenuView, "View");
 
    /* Create search menu */
    hMenuSearch = ::CreateMenu();
