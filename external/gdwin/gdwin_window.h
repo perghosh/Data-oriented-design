@@ -183,6 +183,15 @@ bool window<EVENT_RESULT>::create(const std::string& stringTitle, gd::argument::
       uStyle = argumentsStyle.as_uint();                                         // value are passed as integer, not string and this neeed to be a valid style value, otherwise the window will not be created
    }
 
+   
+   // ## If the style includes a system menu or caption, check for menu argument 
+   if( (uStyle & (WS_SYSMENU | WS_CAPTION)) != 0)
+   {
+      HMENU hMenu = nullptr;
+      hMenu = (HMENU)argumentsWindow["menu"].as_pointer();
+      if(hMenu != nullptr) { argumentsWindow.append("menu", hMenu); }
+   }
+
    int iX = argumentsWindow["x"].as_int();
    int iY = argumentsWindow["y"].as_int();
    int iWidth = argumentsWindow["width"].as_int();

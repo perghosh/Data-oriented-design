@@ -152,6 +152,16 @@
         "CMAKE_C_COMPILER": "clang-cl.exe",
         "CMAKE_CXX_COMPILER": "clang-cl.exe"
       }
+    },
+    {
+      "name": "x64-clang-release",
+      "displayName": "x64 Clang Release",
+      "inherits": "windows-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "clang-cl.exe",
+        "CMAKE_CXX_COMPILER": "clang-cl.exe"
+      }
     }
   ],
   "buildPresets": [
@@ -204,6 +214,11 @@
       "name": "x64-clang-relwithdebinfo",
       "configurePreset": "x64-clang-relwithdebinfo",
       "displayName": "Build Windows Clang RelWithDebInfo"
+    },
+    {
+      "name": "x64-clang-release",
+      "configurePreset": "x64-clang-release",
+      "displayName": "Build Windows Clang Release"
     }
   ]
 }

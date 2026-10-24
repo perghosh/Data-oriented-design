@@ -39,3 +39,29 @@ void CFrameMain::OnKeyDown(gd::argument::arguments& arguments)
    OutputDebugStringA(("Key down: " + arguments["key"].as_string() + "\n").c_str());
 }
 
+void CFrameMain::Create()
+{
+   enum enumMenu {
+      eOpen,
+      eSave,
+      eExit
+   };
+
+   HMENU hMenu;
+   HMENU hMenuFile;
+
+   hMenu = ::CreateMenu();
+
+   /* Create file menu */
+   hMenuFile = ::CreateMenu();
+   AppendMenu(hMenuFile, MF_STRING, eOpen, "Open");
+   AppendMenu(hMenuFile, MF_STRING, eSave, "Save");
+   AppendMenu(hMenuFile, MF_SEPARATOR, 0, NULL);
+   AppendMenu(hMenuFile, MF_STRING, eExit, "Exit");
+   AppendMenu(hMenu, MF_POPUP, (UINT_PTR)hMenuFile, "File");
+   m_hMenu = hMenu;
+
+   gdwin::window<>::create("Blank Window", { {"style", "overlappedwindow"}, {"width", 800}, {"height", 600},  { "callback", gdwin::window<>::get_callback_s() }, { "menu", m_hMenu }});
+
+}
+

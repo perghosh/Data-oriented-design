@@ -652,6 +652,7 @@ public:
       gd::variant as_variant() const { return derived().get_argument().as_variant(); }
       gd::variant_view as_variant_view() const { return derived().get_argument().as_variant_view(); }
       std::string_view as_string_view() const { return derived().get_argument().as_string_view(); }
+      void* as_pointer() const { return derived().get_argument().as_pointer(); }
    
       bool get_bool() const { return derived().get_argument().get_bool(); }
       int get_int() const { return derived().get_argument().get_int(); }
