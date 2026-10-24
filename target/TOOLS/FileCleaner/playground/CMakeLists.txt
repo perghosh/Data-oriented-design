@@ -292,7 +292,45 @@ if( USE_TEST_ )
    target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
    target_compile_definitions(${TEST_NAME_} PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN _CRT_SECURE_NO_WARNINGS)
 
-   if(MSVC)
+   if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+      if(MSVC)
+         target_compile_options(${TEST_NAME_} PRIVATE
+            $<$<CONFIG:Release>:/O2>
+            $<$<CONFIG:Release>:/Oy>
+            $<$<CONFIG:Release>:/DNDEBUG>
+            $<$<CONFIG:Release>:/clang:-Ofast>
+            $<$<CONFIG:Release>:/clang:-ffast-math>
+            $<$<CONFIG:Release>:/clang:-funroll-loops>
+            $<$<CONFIG:Release>:/clang:-fvectorize>
+            $<$<CONFIG:Release>:/clang:-fslp-vectorize>
+            $<$<CONFIG:Release>:/clang:-march=native>
+            $<$<CONFIG:Release>:/clang:-flto>
+         )
+
+         target_link_options(${TEST_NAME_} PRIVATE
+            $<$<CONFIG:Release>:/LTCG>
+            $<$<CONFIG:Release>:/OPT:REF>
+            $<$<CONFIG:Release>:/OPT:ICF>
+            $<$<CONFIG:Release>:/INCREMENTAL:NO>
+         )
+      else()
+         target_compile_options(${TEST_NAME_} PRIVATE
+            $<$<CONFIG:Release>:-Ofast>
+            $<$<CONFIG:Release>:-ffast-math>
+            $<$<CONFIG:Release>:-funroll-loops>
+            $<$<CONFIG:Release>:-fvectorize>
+            $<$<CONFIG:Release>:-fslp-vectorize>
+            $<$<CONFIG:Release>:-march=native>
+            $<$<CONFIG:Release>:-fomit-frame-pointer>
+            $<$<CONFIG:Release>:-flto>
+            $<$<CONFIG:Release>:-DNDEBUG>
+         )
+
+         target_link_options(${TEST_NAME_} PRIVATE
+            $<$<CONFIG:Release>:-flto>
+         )
+      endif()
+   elseif(MSVC)
       target_compile_options(${TEST_NAME_} PRIVATE
          $<$<CONFIG:Release>:/O2>
          $<$<CONFIG:Release>:/Oi>

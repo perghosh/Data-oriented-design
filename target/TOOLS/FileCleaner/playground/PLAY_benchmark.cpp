@@ -310,7 +310,97 @@ TEST_CASE("[benchmark] table dto", "[benchmark]")
       }, uRunIterations, uWarmupCount, uBatchCount);    // Measured calls and Warm-up calls and number of batched calls.
 
 
+   const auto resultSum07 = gd::benchmark::run_s(
+      [&tableDto, uCheckSum]()
+      {
+         struct row
+         {
+            uint64_t uC1;
+            uint64_t uC2;
+            uint64_t uC3;
+            uint64_t uSum;
+         };
 
+         constexpr uint64_t uUnroll = 4;
+         const uint64_t uRowCount = tableDto.size();
+         uint64_t uTotalSum0 = 0;
+         uint64_t uTotalSum1 = 0;
+         uint64_t uTotalSum2 = 0;
+         uint64_t uTotalSum3 = 0;
+
+         // Hämta bas-pekaren EN gång
+         auto* __restrict pBase = (row*)tableDto.cell_get(0, 0);
+
+         uint64_t uRow = 0;
+         for(; (uRow + (uUnroll - 1)) < uRowCount; uRow += uUnroll)
+         {
+            auto* __restrict prow0 = pBase + (uRow + 0);
+            auto* __restrict prow1 = pBase + (uRow + 1);
+            auto* __restrict prow2 = pBase + (uRow + 2);
+            auto* __restrict prow3 = pBase + (uRow + 3);
+
+            const uint64_t uSum0 = prow0->uC1 + prow0->uC2 + prow0->uC3;
+            const uint64_t uSum1 = prow1->uC1 + prow1->uC2 + prow1->uC3;
+            const uint64_t uSum2 = prow2->uC1 + prow2->uC2 + prow2->uC3;
+            const uint64_t uSum3 = prow3->uC1 + prow3->uC2 + prow3->uC3;
+
+            prow0->uSum = uSum0;
+            prow1->uSum = uSum1;
+            prow2->uSum = uSum2;
+            prow3->uSum = uSum3;
+
+            uTotalSum0 += uSum0;
+            uTotalSum1 += uSum1;
+            uTotalSum2 += uSum2;
+            uTotalSum3 += uSum3;
+         }
+
+         uint64_t uTotalSum = uTotalSum0 + uTotalSum1 + uTotalSum2 + uTotalSum3;
+
+         for(; uRow < uRowCount; ++uRow)
+         {
+            auto* __restrict prow = pBase + uRow;
+            const uint64_t uSum = prow->uC1 + prow->uC2 + prow->uC3;
+            prow->uSum = uSum;
+            uTotalSum += uSum;
+         }
+         assert(uTotalSum == uCheckSum);
+         return uTotalSum;
+
+      }, uRunIterations, uWarmupCount, uBatchCount);
+
+
+   const auto resultSum08 = gd::benchmark::run_s(
+      [&tableDto, uCheckSum]()
+      {
+         struct row
+         {
+            uint64_t uC1;
+            uint64_t uC2;
+            uint64_t uC3;
+            uint64_t uSum;
+         };
+
+         const uint64_t uRowCount = tableDto.size();
+         uint64_t uTotalSum = 0;
+
+         // Hämta bas-pekaren EN gång utanför loopen
+         auto* __restrict pBase = (row*)tableDto.cell_get(0, 0);
+
+         // En helt vanlig loop, precis som Sum05, men med konstant pekarsteg
+         for(uint64_t uRow = 0; uRow < uRowCount; ++uRow)
+         {
+            auto* __restrict prow = pBase + uRow;
+
+            const uint64_t uSum = prow->uC1 + prow->uC2 + prow->uC3;
+            prow->uSum = uSum;
+            uTotalSum += uSum;
+         }
+
+         assert(uTotalSum == uCheckSum);
+         return uTotalSum;
+
+      }, uRunIterations, uWarmupCount, uBatchCount);
    
    std::cout << "\nBenchmark: resultSum01\n";
    std::cout << "Mean: " << resultSum01.mean() << " ns\n";
@@ -353,6 +443,19 @@ TEST_CASE("[benchmark] table dto", "[benchmark]")
    std::cout << "Minimum: " << resultSum06.min_time() << " ns\n";
    std::cout << "Maximum: " << resultSum06.max_time() << " ns\n";
    std::cout << "Total in milliseconds: " << (resultSum06.total_duration_ns() / 1'000'000.0) << " ms\n";
+
+   std::cout << "\nBenchmark: resultSum07 struct + unroll 4 for OoO + restrict\n";
+   std::cout << "Mean: " << resultSum07.mean() << " ns\n";
+   std::cout << "Minimum: " << resultSum07.min_time() << " ns\n";
+   std::cout << "Maximum: " << resultSum07.max_time() << " ns\n";
+   std::cout << "Total in milliseconds: " << (resultSum07.total_duration_ns() / 1'000'000.0) << " ms\n";
+
+   std::cout << "\nBenchmark: resultSum08 struct + restrict\n";
+   std::cout << "Mean: " << resultSum08.mean() << " ns\n";
+   std::cout << "Minimum: " << resultSum08.min_time() << " ns\n";
+   std::cout << "Maximum: " << resultSum08.max_time() << " ns\n";
+   std::cout << "Total in milliseconds: " << (resultSum08.total_duration_ns() / 1'000'000.0) << " ms\n";
+
 
 }
 
@@ -539,7 +642,7 @@ namespace
    volatile uint64_t g_uBenchmarkSink = 0;
 }
 
-TEST_CASE("[benchmark] table dto unroll", "[benchmark]")
+TEST_CASE("[benchmark] table dto unroll", "[.benchmark]")
 {
    using namespace gd::table::dto;
 
