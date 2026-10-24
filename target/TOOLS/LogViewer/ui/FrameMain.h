@@ -59,6 +59,7 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
+   HMENU m_hMenu = nullptr;
 
 
 // @API [tag: free-functions]

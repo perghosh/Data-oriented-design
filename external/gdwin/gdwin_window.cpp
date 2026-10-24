@@ -105,6 +105,8 @@ bool create_window_g(const gd::argument::arguments& argumentsWindow, std::string
    HINSTANCE hinstance = (HINSTANCE)argumentsWindow["hinstance"].as_pointer(); // optional, if not provided, we will get the current module handle
    if(hinstance == nullptr) { hinstance = GetModuleHandle(nullptr); }
 
+   HMENU hMenu = (HMENU)argumentsWindow["menu"].as_pointer(); // menu handle, optional, if not provided, we will use nullptr
+
    uint64_t uStyleEx = 0;
    auto argumentsStyleEx = argumentsWindow["styleex"];
    if (argumentsStyleEx.is_string() == true)                                   // value are passed as string, so we need to convert them to valid style values
@@ -124,11 +126,11 @@ bool create_window_g(const gd::argument::arguments& argumentsWindow, std::string
 #if defined(UNICODE) || defined(_UNICODE)
     std::wstring stringClassW(stringClass.begin(), stringClass.end());
     std::wstring stringTitleW(stringTitle.begin(), stringTitle.end());
-    HWND hwnd = CreateWindowExW(static_cast<DWORD>(uStyleEx), stringClassW.data(), stringTitleW.data(), static_cast<DWORD>(uStyle), iX, iY, iWidth, iHeight, hwndParent, nullptr, hinstance, puserdata_);
+    HWND hwnd = CreateWindowExW(static_cast<DWORD>(uStyleEx), stringClassW.data(), stringTitleW.data(), static_cast<DWORD>(uStyle), iX, iY, iWidth, iHeight, hwndParent, hMenu, hinstance, puserdata_);
 #else
    std::string stringClassA(stringClass.begin(), stringClass.end());
    std::string stringTitleA(stringTitle.begin(), stringTitle.end());
-   HWND hwnd = CreateWindowExA(static_cast<DWORD>(uStyleEx), stringClassA.data(), stringTitleA.data(), static_cast<DWORD>(uStyle), iX, iY, iWidth, iHeight, hwndParent, nullptr, hinstance, puserdata_);
+   HWND hwnd = CreateWindowExA(static_cast<DWORD>(uStyleEx), stringClassA.data(), stringTitleA.data(), static_cast<DWORD>(uStyle), iX, iY, iWidth, iHeight, hwndParent, hMenu, hinstance, puserdata_);
 #endif   
     return hwnd != nullptr;
 }
