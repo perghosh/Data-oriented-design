@@ -45,7 +45,7 @@ void CFrameMain::Create()
       eOpen,
       eSave,
       eExit
-   }
+   };
 
    HMENU hMenuBar;
    HMENU hMenuFile;
@@ -54,10 +54,10 @@ void CFrameMain::Create()
 
    /* Create file menu */
    hMenuFile = ::CreateMenu();
-   AppendMenu(hMenuFile, MF_STRING, eOpen, "Open")
-   AppendMenu(hMenuFile, MF_STRING, eSave, "Save")
-   AppendMenu(hmenuFile, MF_SEPARATOR, 0, NULL)
-   AppendMenu(hMenuFile, MF_STRING, eExit, "Exit")
+   AppendMenu(hMenuFile, MF_STRING, eOpen, "Open");
+   AppendMenu(hMenuFile, MF_STRING, eSave, "Save");
+   AppendMenu(hMenuFile, MF_SEPARATOR, 0, NULL);
+   AppendMenu(hMenuFile, MF_STRING, eExit, "Exit");
    AppendMenu(hMenuBar, MF_POPUP, (UINT_PTR)hMenuFile, "File");
 
    gdwin::window<>::create("Blank Window", { {"style", "overlappedwindow"}, {"width", 800}, {"height", 600},{ "callback", gdwin::window<>::get_callback_s() }});
