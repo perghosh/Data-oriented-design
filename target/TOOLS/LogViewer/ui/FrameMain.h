@@ -11,7 +11,6 @@
  * \brief
  *
  *
- *
  \code
  \endcode
  */
@@ -48,8 +47,9 @@ public:
 
 protected:
 // @API [tag: internal]
-void OnMouseDown(gd::argument::arguments& arguments);
-void OnMouseMove(gd::argument::arguments& arguments);
+   void OnMouseMove(gd::argument::arguments& arguments);
+   void OnMouseDown(gd::argument::arguments& arguments);
+   void OnKeyDown(gd::argument::arguments& arguments);
 
 public:
 // @API [tag: debug]

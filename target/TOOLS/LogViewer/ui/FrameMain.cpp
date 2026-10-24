@@ -13,8 +13,9 @@ gdwin::lresult CFrameMain::on_event(gdwin::eWindowEvent eEvent, gd::argument::ar
 {
    switch (eEvent)
    {
-   case gdwin::eWindowEvent::eMouseDown: { OnMouseDown( *pargumentsParam ); } break;
    case gdwin::eWindowEvent::eMouseMove: { OnMouseMove(*pargumentsParam); } break;
+   case gdwin::eWindowEvent::eMouseDown: { OnMouseDown( *pargumentsParam ); } break;
+   case gdwin::eWindowEvent::eKeyDown: { OnKeyDown( *pargumentsParam ); } break;
    case gdwin::eWindowEvent::eClose: { ::DestroyWindow(m_hwnd); } break;
    case gdwin::eWindowEvent::eDestroy: { ::PostQuitMessage(0); } break;
    }
@@ -22,13 +23,19 @@ gdwin::lresult CFrameMain::on_event(gdwin::eWindowEvent eEvent, gd::argument::ar
    return gdwin::lresult();
 }
 
+void CFrameMain::OnMouseMove(gd::argument::arguments& arguments)
+{
+   OutputDebugStringA(("Left button move at: (" + arguments["x"].as_string() + ", " + arguments["y"].as_string() + ")\n").c_str());
+}
+
+
 void CFrameMain::OnMouseDown(gd::argument::arguments& arguments)
 {
    OutputDebugStringA(("Left button down at: (" + arguments["x"].as_string() + ", " + arguments["y"].as_string() + ")\n").c_str());
 }
 
-void CFrameMain::OnMouseMove(gd::argument::arguments& arguments)
+void CFrameMain::OnKeyDown(gd::argument::arguments& arguments)
 {
-   OutputDebugStringA(("Left button move at: (" + arguments["x"].as_string() + ", " + arguments["y"].as_string() + ")\n").c_str());
+   OutputDebugStringA(("Key down: " + arguments["key"].as_string() + "\n").c_str());
 }
 

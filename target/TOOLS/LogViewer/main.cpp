@@ -26,7 +26,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
    CFrameMain framemain;
    if (framemain.create("Blank Window", { {"style", "overlappedwindow"}, {"width", 800}, {"height", 600},{ "callback", gdwin::window<>::get_callback_s() }}) == false) return 0;
 
-   framemain.Show(iCommandShow);
+   framemain.show(iCommandShow);
    return run_s();
 }
 
