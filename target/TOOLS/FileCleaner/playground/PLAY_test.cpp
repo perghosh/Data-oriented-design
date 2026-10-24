@@ -118,6 +118,54 @@ void Test( gd::table::dto::table& table_, const std::string& stringPath )
    }
 }
 
+#include "gd/gd_string_transport.h"
+
+TEST_CASE("[file] test string", "[file]")
+{
+   gd::string_transport stringText("0123");
+   stringText.append("4");
+   stringText.append("5");
+   stringText.append("6");
+   std::cout << "stringText: " << stringText.c_str() << std::endl;
+
+   {
+      std::array<std::byte, 150> arrayBuffer;
+      gd::string_transport stringText(arrayBuffer);
+
+      stringText = "12345";
+      stringText += " 12345";
+      stringText.append(" 12345");
+      stringText.append(std::string("dfds"));
+      std::cout << "stringText: " << stringText.c_str() << std::endl;
+   }
+
+
+   {
+      std::array<std::byte, 1500> arrayBuffer;
+      gd::string_transport stringText(arrayBuffer);
+
+      stringText = "Hello, World!";
+      stringText += " This is a test of the string_transport class.";
+      stringText.append(" It should handle string concatenation and memory management correctly.");
+      stringText.append(std::string("dfds"));
+      std::cout << "stringText: " << stringText.c_str() << std::endl;
+   }
+
+   {
+      std::vector<std::byte> arrayBuffer(1500);
+      gd::string_transport stringText(arrayBuffer);
+
+      stringText = "Hello, World!";
+      stringText += " This is a test of the string_transport class.";
+      stringText.append(" It should handle string concatenation and memory management correctly.");
+      stringText.append(std::string("dfds"));
+      std::cout << "stringText: " << stringText.c_str() << std::endl;
+   }
+
+   
+   //return stringText;
+}
+
 TEST_CASE("[file] test", "[file]")
 {
    std::string stringPath = "D://dev//testfiles";

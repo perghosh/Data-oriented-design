@@ -2,7 +2,10 @@
 
 #include <charconv>
 #include <cmath>
+#include <cstdio>
+#include <cstdlib>
 #include <cwchar>
+#include <limits>
 
 
 #include "gd_types.h"
@@ -35,6 +38,17 @@ namespace gd {
 _GD_BEGIN
 #endif
 
+namespace {
+   template<typename INT, typename FLOAT>
+   INT float_to_int_s(FLOAT v)
+   {
+      if (std::isnan(v)) return 0;
+      if (v <= (FLOAT)std::numeric_limits<INT>::min()) return std::numeric_limits<INT>::min();
+      if (v >= (FLOAT)std::numeric_limits<INT>::max()) return std::numeric_limits<INT>::max();
+      return (INT)v;
+   }
+}
+
 using namespace variant_type;
 
 /** ---------------------------------------------------------------------------
@@ -60,37 +74,59 @@ using namespace variant_type;
  * @note The variant type is set with the eFlagAllocate flag for string types.
  * @see get_json_primitive_type() for type detection logic.
  */
-variant::variant( std::string_view stringJson, bool* pbSucceeded, gd::types::tag_json )
+variant::variant(std::string_view stringJson, bool* pbSucceeded, gd::types::tag_json)
 {
    bool bSucceeded = true;
-   unsigned uType = get_json_primitive_type( stringJson );
-   m_uType = uType;
-   switch( uType )
+   unsigned uType = get_json_primitive_type(stringJson);
+   m_uType = eTypeUnknown;
+   m_uSize = 0;
+   m_V.uint64 = 0;
+
+   const char* pbszBegin = stringJson.data();
+   const char* pbszEnd = pbszBegin + stringJson.size();
+
+   switch(uType)
    {
    case eTypeUnknown:
-      m_V.uint64 = 0;
       break;
    case eTypeBool:
+      m_uType = eTypeBool;
       m_V.b = stringJson == "true";
       break;
    case eTypeInt64:
-      m_V.int64 = std::stoll( std::string( stringJson ) );
-      break;
+   {
+      if (pbszBegin != pbszEnd && *pbszBegin == '+') pbszBegin++;               // from_chars rejects '+'
+      int64_t iValue = 0;
+      auto result_ = std::from_chars(pbszBegin, pbszEnd, iValue);
+      if (result_.ec == std::errc()) { m_uType = eTypeInt64; m_V.int64 = iValue; }
+      else bSucceeded = false;
+   }
+   break;
    case eTypeCDouble:
-      m_V.d = std::stod( std::string( stringJson ) );
-      break;
+   {
+      if (pbszBegin != pbszEnd && *pbszBegin == '+') pbszBegin++;
+      double dValue = 0;
+      auto result_ = std::from_chars(pbszBegin, pbszEnd, dValue);
+      if (result_.ec == std::errc()) { m_uType = eTypeCDouble; m_V.d = dValue; }
+      else bSucceeded = false;
+   }
+   break;
    case eTypeUtf8String:
-      m_uType = variant_type::eTypeString|variant_type::eFlagAllocate;
+   {
+      char* pbsz = (char*)allocate(stringJson.length() + 1u);
+      if (pbsz == nullptr) { bSucceeded = false; break; }
+      memcpy(pbsz, stringJson.data(), stringJson.length());
+      pbsz[stringJson.length()] = '\0';
+      m_V.pbsz = pbsz;
       m_uSize = (decltype(m_uSize))stringJson.length();
-      m_V.pbsz = (char*)allocate( m_uSize + 1u );
-      memcpy( m_V.pbsz, stringJson.data(), m_uSize );
-      m_V.pbsz[m_uSize] = '\0';
-      break;
+      m_uType = variant_type::eTypeString | variant_type::eFlagAllocate;
+   }
+   break;
    default:
       bSucceeded = false;
    }
-   
-   if( pbSucceeded != nullptr ) *pbSucceeded = bSucceeded;
+
+   if(pbSucceeded != nullptr) *pbSucceeded = bSucceeded;
 }
 
 
@@ -138,17 +174,24 @@ int variant::get_int() const
    case eTypeNumberUInt16      : return (int)m_V.uint16;
    case eTypeNumberUInt32      : return (int)m_V.uint32;
    case eTypeNumberUInt64      : return (int)m_V.uint64;
-   case eTypeNumberFloat       : return (int)m_V.f;
-   case eTypeNumberDouble      : return (int)m_V.d;
-   case eTypeNumberGuid        : return 0;
-   case eTypeNumberBinary      : return 0;
+   case eTypeNumberFloat       : return float_to_int_s<int>( m_V.f );
+   case eTypeNumberDouble      : return float_to_int_s<int>( m_V.d );
+   case eTypeNumberBinary:
+   {
+      if(m_uSize == 0 || m_uSize > sizeof(int32_t)) return 0;                  // reject empty or too large
+      int32_t iValue = 0;
+      memcpy(&iValue, m_V.pb, m_uSize);                                        // native byte order, zero-extended
+      return iValue;
+   }
+   case eTypeNumberGuid:
+   {
+      int32_t iValue;
+      memcpy(&iValue, m_V.pb, sizeof(iValue));                                 // first 4 bytes only
+      return iValue;
+   }
    case eTypeNumberUtf8String  : 
-   case eTypeNumberString      : return atoi( m_V.pbsz );
-#if defined(_MSC_VER)   
-   case eTypeNumberWString     : return _wtoi( m_V.pwsz );
-#else   
-   case eTypeNumberWString     : return wcstol( m_V.pwsz, 0, 10 );
-#endif   
+   case eTypeNumberString      : return (int)std::strtoll(m_V.pbsz, nullptr, 10);
+   case eTypeNumberWString     : return (int)std::wcstoll(m_V.pwsz, nullptr, 10);
    default:                                                                                        assert( false );
    }
 
@@ -170,17 +213,24 @@ unsigned int variant::get_uint() const
    case eTypeNumberUInt16      : return (unsigned int)m_V.uint16;
    case eTypeNumberUInt32      : return (unsigned int)m_V.uint32;
    case eTypeNumberUInt64      : return (unsigned int)m_V.uint64;
-   case eTypeNumberFloat       : return (unsigned int)m_V.f;
-   case eTypeNumberDouble      : return (unsigned int)m_V.d;
-   case eTypeNumberGuid        : return 0;
-   case eTypeNumberBinary      : return 0;
+   case eTypeNumberFloat       : return float_to_int_s<unsigned int>( m_V.f );
+   case eTypeNumberDouble      : return float_to_int_s<unsigned int>( m_V.d );   
+   case eTypeNumberBinary:
+   {
+      if(m_uSize == 0 || m_uSize > sizeof(uint32_t)) return 0;                 // reject empty or too large
+      uint32_t uValue = 0;
+      memcpy(&uValue, m_V.pb, m_uSize);                                        // native byte order, zero-extended
+      return uValue;
+   }
+   case eTypeNumberGuid:
+   {
+      uint32_t uValue;
+      memcpy(&uValue, m_V.pb, sizeof(uValue));                                 // first 4 bytes only
+      return uValue;
+   }
    case eTypeNumberUtf8String  : 
-   case eTypeNumberString      : return (unsigned int)atoi( m_V.pbsz );
-#if defined(_MSC_VER)   
-   case eTypeNumberWString     : return (unsigned int)_wtoi( m_V.pwsz );
-#else   
-   case eTypeNumberWString     : return (unsigned int)wcstol( m_V.pwsz, 0, 10 );
-#endif   
+   case eTypeNumberString      : return (unsigned int)std::strtoull(m_V.pbsz, nullptr, 10);
+   case eTypeNumberWString     : return (unsigned int)std::wcstoull(m_V.pwsz, nullptr, 10);
    default:                                                                                        assert( false );
    }
 
@@ -203,10 +253,21 @@ int64_t variant::get_int64() const
    case eTypeNumberUInt16      : return (int64_t)m_V.uint16;
    case eTypeNumberUInt32      : return (int64_t)m_V.uint32;
    case eTypeNumberUInt64      : return (int64_t)m_V.uint64;
-   case eTypeNumberFloat       : return (int64_t)m_V.f;
-   case eTypeNumberDouble      : return (int64_t)m_V.d;
-   case eTypeNumberGuid        : return 0;
-   case eTypeNumberBinary      : return 0;
+   case eTypeNumberFloat       : return float_to_int_s<int64_t>(m_V.f);
+   case eTypeNumberDouble      : return float_to_int_s<int64_t>(m_V.d);
+   case eTypeNumberBinary:
+   {
+      if(m_uSize == 0 || m_uSize > sizeof(int64_t)) return 0;                  // reject empty or too large
+      int64_t iValue = 0;
+      memcpy(&iValue, m_V.pb, m_uSize);                                        // native byte order, zero-extended
+      return iValue;
+   }
+   case eTypeNumberGuid:
+   {
+      int64_t iValue;
+      memcpy(&iValue, m_V.pb, sizeof(iValue));                                 // first 8 bytes only
+      return iValue;
+   }
    case eTypeNumberUtf8String  : 
    case eTypeNumberString      : return atoll( m_V.pbsz );
    case eTypeNumberWString     : return std::wcstoll( m_V.pwsz, 0, 10 );
@@ -231,18 +292,24 @@ uint64_t variant::get_uint64() const
    case eTypeNumberUInt16      : return (uint64_t)m_V.uint16;
    case eTypeNumberUInt32      : return (uint64_t)m_V.uint32;
    case eTypeNumberUInt64      : return (uint64_t)m_V.uint64;
-   case eTypeNumberFloat       : return (uint64_t)m_V.f;
-   case eTypeNumberDouble      : return (uint64_t)m_V.d;
-   case eTypeNumberGuid        : return 0;
-   case eTypeNumberBinary      : return 0;
-   case eTypeNumberUtf8String  : 
-   case eTypeNumberString      :
+   case eTypeNumberFloat       : return float_to_int_s<uint64_t>( m_V.f );
+   case eTypeNumberDouble      : return float_to_int_s<uint64_t>( m_V.d );
+   case eTypeNumberBinary:
    {
-      uint64_t v_;      
-      std::from_chars( m_V.pbsz, m_V.pbsz + length(), v_ );
-      return v_;
+      if(m_uSize == 0 || m_uSize > sizeof(uint64_t)) return 0;                 // reject empty or too large
+      uint64_t uValue = 0;
+      memcpy(&uValue, m_V.pb, m_uSize);                                        // native byte order, zero-extended
+      return uValue;
    }
-   case eTypeNumberWString     : return (uint64_t)std::wcstoll( m_V.pwsz, 0, 10 );
+   case eTypeNumberGuid:
+   {
+      uint64_t uValue;
+      memcpy(&uValue, m_V.pb, sizeof(uValue));                                 // first 8 bytes only
+      return uValue;
+   }
+   case eTypeNumberUtf8String  :
+   case eTypeNumberString      : return std::strtoull(m_V.pbsz, nullptr, 10);
+   case eTypeNumberWString     : return std::wcstoull(m_V.pwsz, nullptr, 10);
    default:                                                                                        assert( false );
    }
 
@@ -275,7 +342,7 @@ double variant::get_decimal() const
       return dValue;
       }
       break;
-   case eTypeNumberWString     :
+   case eTypeNumberWString     : return std::wcstod(m_V.pwsz, nullptr);
       break;
    }
 
@@ -291,7 +358,7 @@ std::string variant::get_string() const
    switch( type_number() )
    {
    case eTypeNumberUnknown     : return std::string();
-   //case eTypeNumberBit         : return std::string( gd_std::string_buffer::c_type( m_V.int8 ).c_str() );
+   case eTypeNumberBit         : return std::string((m_V.int8 & 0x01) ? "1" : "0");
    case eTypeNumberBool        : return std::to_string( m_V.b );
    case eTypeNumberInt8        : return std::to_string( m_V.int8 );
    case eTypeNumberInt16       : return std::to_string( m_V.int16 );

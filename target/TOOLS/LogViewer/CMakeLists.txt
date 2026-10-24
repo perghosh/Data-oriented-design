@@ -24,7 +24,7 @@ set( TARGET_SOURCE_FILES_
    ${APPLICATION_DIRECTORY_}/database/Metadata_Statements.cpp
 )
 
-file(GLOB TARGET_AUTOMATION_FILES_ "automation/*.cpp")
+file(GLOB TARGET_AREA_FILES_ "os/*.cpp" "ui/*.cpp")
 
 if(WIN32)
    # Add Windows specific code
@@ -71,11 +71,10 @@ if( USE_TARGET_ )
    set(TARGET_NAME_ "LogViewer")
 
    add_executable(${TARGET_NAME_}
-      ${GD_SOURCES_ALL} ${external_pugixml} ${external_sqlite}
+      ${GD_SOURCES_ALL} ${GDWIN_SOURCES_ALL} ${external_pugixml} ${external_sqlite}
       ${TARGET_FILES_}   
       ${TARGET_SOURCE_FILES_}
-      ${TARGET_AUTOMATION_FILES_}
-
+      ${TARGET_AREA_FILES_}
       "main.cpp"
    )
 
@@ -90,6 +89,8 @@ if( USE_TARGET_ )
    # target_compile_definitions(${TARGET_NAME_} PRIVATE GD_DATABASE_SQLITE_USE)
 
    if(MSVC)
+      target_compile_options(${TARGET_NAME_} PRIVATE /std:c++latest)           # Use latest C++ standard
+
       # Windows/MSVC specific settings with SIMD optimizations
 
       if(CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -280,5 +281,5 @@ endif()
 
 
 # Optional: CPack for creating installers
-include(CPack)
-cpack_add_component(LogViewer DISPLAY_NAME "LogViewer Executable and Documentation")
+# include(CPack)
+# cpack_add_component(LogViewer DISPLAY_NAME "LogViewer Executable and Documentation")

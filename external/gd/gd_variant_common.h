@@ -101,27 +101,33 @@ std::string to_string( const VARIANT& v_ )
 }
 
 
-/** --------------------------------------------------------------------------
- * Get the type of a json primitive from string
- */
-inline uint32_t get_json_primitive_type( std::string_view stringJsonPrimitive  )
+inline uint32_t get_json_primitive_type( std::string_view stringJson )
 {
-   if( stringJsonPrimitive.empty() || stringJsonPrimitive[0] == 'n' ) return gd::variant_type::eTypeUnknown;
-   else if( stringJsonPrimitive[0] == 't' || stringJsonPrimitive[0] == 'f' ) return gd::variant_type::eTypeBool;
-   else if( stringJsonPrimitive[0] == '-' || stringJsonPrimitive[0] == '+' ) stringJsonPrimitive.remove_prefix(1);
+   if( stringJson.empty() || stringJson == "null" ) return gd::variant_type::eTypeUnknown;
+   if( stringJson == "true" || stringJson == "false" ) return gd::variant_type::eTypeBool;
 
-   // ## Check for digits and count dots
-   bool bFoundDot = false;
-   for( char i_ : stringJsonPrimitive )
+   size_t uPos = 0;
+   if( stringJson[0] == '-' || stringJson[0] == '+' ) uPos++;
+   if( uPos == stringJson.size() ) return gd::variant_type::eTypeUtf8String;     // sign only
+
+   bool bDot = false, bExp = false, bDigit = false;
+   for( ; uPos < stringJson.size(); uPos++ )
    {
-      if( std::isdigit(i_) != 0 ) continue;
-      if( bFoundDot == false && i_ == '.' ) { bFoundDot = true; continue; }
-      
-      return gd::variant_type::eTypeString;
+      unsigned char c_ = (unsigned char)stringJson[uPos];
+      if( std::isdigit( c_ ) ) { bDigit = true; continue; }
+      if( c_ == '.' && bDot == false && bExp == false ) { bDot = true; continue; }
+      if( (c_ == 'e' || c_ == 'E') && bExp == false && bDigit == true )
+      {
+         bExp = true;
+         if( uPos + 1 < stringJson.size() && (stringJson[uPos+1] == '+' || stringJson[uPos+1] == '-') ) uPos++;
+         if( uPos + 1 >= stringJson.size() ) return gd::variant_type::eTypeUtf8String;   // exponent without digits
+         continue;
+      }
+      return gd::variant_type::eTypeUtf8String;
    }
 
-   if( bFoundDot == false ) return gd::variant_type::eTypeInt64;              // No dot means it's an integer
-   return gd::variant_type::eTypeCDouble;                                     // All numbers are decimal in json
+   if( bDigit == false ) return gd::variant_type::eTypeUtf8String;               // "." only
+   return (bDot || bExp) ? gd::variant_type::eTypeCDouble : gd::variant_type::eTypeInt64;
 }
 
 

@@ -2,19 +2,18 @@
 
 /**
 * @file gd_compiler.h
-* @brief Provide macros to identify the compiler and its support for the C++20 and C++23 standards.
+* @brief Provide macros to identify the compiler and its C++ standard support.
 *
 * It includes:
 * - Macros to detect the compiler being used (GCC, Clang, MSVC).
-* - Checks for C++20 and C++23 standard support based on the compiler version.
+* - Checks for C++17, C++20, C++23, and C++26 language modes.
 * - Platform-specific constants to identify the target platform.
 *
 * Supported compilers:
-* - GCC (GNU Compiler Collection) version 10 or higher for C++20 support, version 11 or higher for C++23 support.
-* - Clang version 10 or higher for C++20 support, version 12 or higher for C++23 support.
-* - MSVC (Microsoft Visual C++) version 1928 or higher for C++20 support, version 1930 or higher for C++23 support.
+* - GCC, Clang, and MSVC, using the language-version macro reported by the compiler.
 *
-* This file ensures compatibility and feature detection for projects targeting C++20 and C++23.
+* These macros indicate the selected language mode; they do not guarantee support for every
+* feature in that C++ standard.
 */
 
 #pragma once
@@ -60,10 +59,8 @@
 #    define GD_COMPILER_HAS_CPP23_SUPPORT 1
 #  endif
 
+#  if (__cplusplus >= 202400L) || (defined(_MSVC_LANG) && _MSVC_LANG >= 202400L)
+#    define GD_COMPILER_HAS_CPP26_SUPPORT 1
+#  endif
+
 #endif
-
-
-/*
-I want these two macros to be available globally, so I can use them in other files. and it needs to support GCC, Clang, and MSVC compilers.
-GD_COMPILER_HAS_CPP20_SUPPORT  GD_COMPILER_HAS_CPP23_SUPPORT
-*/
