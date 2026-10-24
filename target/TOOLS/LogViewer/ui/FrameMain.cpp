@@ -42,13 +42,34 @@ void CFrameMain::OnKeyDown(gd::argument::arguments& arguments)
 void CFrameMain::Create()
 {
    enum enumMenu {
+      /* file */
       eOpen,
       eSave,
-      eExit
+      eSaveAs,
+      eExit,
+
+      /* view */
+      eRefresh,
+      eClear,
+      eShowLineNumbers,
+
+      /* search */
+      eFind,
+
+      /* tools */
+      eFilter,
+
+      /* help */
+      eAbout,
+      eHelp
    };
 
    HMENU hMenu;
    HMENU hMenuFile;
+   HMENU hMenuView;
+   HMENU hMenuSearch;
+   HMENU hMenuTools;
+   HMENU hMenuHelp;
 
    hMenu = ::CreateMenu();
 
@@ -56,9 +77,34 @@ void CFrameMain::Create()
    hMenuFile = ::CreateMenu();
    AppendMenu(hMenuFile, MF_STRING, eOpen, "Open");
    AppendMenu(hMenuFile, MF_STRING, eSave, "Save");
+   AppendMenu(hMenuFile, MF_STRING, eSaveAs, "Save as");
    AppendMenu(hMenuFile, MF_SEPARATOR, 0, NULL);
    AppendMenu(hMenuFile, MF_STRING, eExit, "Exit");
    AppendMenu(hMenu, MF_POPUP, (UINT_PTR)hMenuFile, "File");
+
+   /* Create view menu */
+   hMenuView = ::CreateMenu();
+   AppendMenu(hMenuFile, MF_STRING, eRefresh, "Refresh");
+   AppendMenu(hMenuFile, MF_STRING, eClear, "Clear");
+   AppendMenu(hMenuFile, MF_CHECKED, eShowLineNumbers, "Show line numbers");
+   AppendMenu(hMenu, MF_POPUP, ( UINT_PTR )hMenuFile, "View");
+
+   /* Create search menu */
+   hMenuSearch = ::CreateMenu();
+   AppendMenu(hMenuSearch, MF_STRING, eFind, "Find");
+   AppendMenu(hMenu, MF_POPUP, ( UINT_PTR )hMenuSearch, "Search");
+
+   /* Create tools menu */
+   hMenuTools = ::CreateMenu();
+   AppendMenu(hMenuTools, MF_STRING, eFilter, "Filter");
+   AppendMenu(hMenu, MF_POPUP, ( UINT_PTR )hMenuTools, "Tools");
+
+   /* Create help menu */
+   hMenuHelp = ::CreateMenu();
+   AppendMenu(hMenuHelp, MF_STRING, eAbout, "About");
+   AppendMenu(hMenuHelp, MF_STRING, eHelp, "Help");
+   AppendMenu(hMenu, MF_POPUP, ( UINT_PTR )hMenuHelp, "Help");
+
    m_hMenu = hMenu;
 
    gdwin::window<>::create("Blank Window", { {"style", "overlappedwindow"}, {"width", 800}, {"height", 600},  { "callback", gdwin::window<>::get_callback_s() }, { "menu", m_hMenu }});
