@@ -291,5 +291,26 @@ if( USE_TEST_ )
    )
    target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
    target_compile_definitions(${TEST_NAME_} PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN _CRT_SECURE_NO_WARNINGS)
+
+   if(MSVC)
+      target_compile_options(${TEST_NAME_} PRIVATE
+         $<$<CONFIG:Release>:/O2>
+         $<$<CONFIG:Release>:/Oi>
+         $<$<CONFIG:Release>:/Ot>
+         $<$<CONFIG:Release>:/Ob2>
+         $<$<CONFIG:Release>:/Oy>
+         $<$<CONFIG:Release>:/GL>
+         $<$<CONFIG:Release>:/Gy>
+         $<$<CONFIG:Release>:/fp:fast>
+         $<$<CONFIG:Release>:/DNDEBUG>
+      )
+
+      target_link_options(${TEST_NAME_} PRIVATE
+         $<$<CONFIG:Release>:/LTCG>
+         $<$<CONFIG:Release>:/OPT:REF>
+         $<$<CONFIG:Release>:/OPT:ICF>
+         $<$<CONFIG:Release>:/INCREMENTAL:NO>
+      )
+   endif()
 endif()
 
