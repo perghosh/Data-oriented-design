@@ -1,4 +1,5 @@
 #include "DialogAbout.h"
+#include "DialogHelp.h"
 
 #include "FrameMain.h"
 
@@ -133,6 +134,14 @@ void CFrameMain::OnCommand(gd::argument::arguments& arguments)
       if( dialogAbout.do_modal(m_hwnd) == -1 )
       {
          OutputDebugStringA("About dialog failed to create.\n");
+      }
+   }
+   else if( uCommandId == eHelp )
+   {
+      CDialogHelp dialogHelp;
+      if( dialogHelp.do_modal(m_hwnd) == -1 )
+      {
+         OutputDebugStringA("Help dialog failed to create.\n");
       }
    }
 
