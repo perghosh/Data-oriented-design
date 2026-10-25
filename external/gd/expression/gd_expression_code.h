@@ -37,15 +37,16 @@
  *     x = x + 1
  * end
  *
- * for i = 1, 10, 1
+ * for i = 1, i <= 10, i = i + 1
  * begin
  *     x = x + i
  * end
  * ```
  *
- * `for` syntax: `for <var> = <start>, <limit>, <step>`
- * The three parts after `=` are plain expressions separated by commas.
- * Inside a for-body `break` and `continue` are supported.
+ * `for` syntax: `for <init>, <condition>, <step>`
+ * The three parts are plain expressions separated by top-level commas (commas
+ * inside parentheses or strings are ignored).  Inside a for-body `break` and
+ * `continue` are supported.
  *
  * ## Strings
  *
@@ -103,8 +104,8 @@ _GD_EXPRESSION_BEGIN
  * | eKindWhile      | condition            | index to jump to when condition is false |
  * | eKindLoopBack   | empty                | unconditional jump back to while/for     |
  * | eKindForInit    | init expression      | unused (-1)                              |
- * | eKindForCond    | condition            | index to jump past loop when false       |
- * | eKindForStep    | step expression      | m_iJump = index of eKindForCond          |
+ * | eKindForCondition | condition          | index to jump past loop when false       |
+ * | eKindForStep    | step expression      | m_iJump = index of eKindForCondition     |
  * | eKindBreak      | empty                | index past enclosing loop end            |
  * | eKindContinue   | empty                | index of loop step / condition           |
  */
@@ -118,8 +119,8 @@ struct statement
       eKindWhile     = 3,  ///< evaluate condition; false -> jump to m_iJump
       eKindLoopBack  = 4,  ///< end-of-loop-body: jump back (m_iJump = head)
       eKindForInit   = 5,  ///< for: init assignment, run once
-      eKindForCond   = 6,  ///< for: condition check; false -> jump past loop
-      eKindForStep   = 7,  ///< for: step expression; then jump to eKindForCond
+      eKindForCondition = 6,  ///< for: condition check; false -> jump past loop
+      eKindForStep   = 7,  ///< for: step expression; then jump to eKindForCondition
       eKindBreak     = 8,  ///< jump to first statement past enclosing loop
       eKindContinue  = 9,  ///< jump to loop step / condition
    };

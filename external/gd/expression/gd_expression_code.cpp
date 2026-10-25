@@ -102,6 +102,39 @@ constexpr uint8_t piCharClass_s[256] =
 
 static_assert( is_newline_(';') == true );
 
+/// Split a for header "init, condition, step" at top-level commas (not inside strings or parentheses).
+/// @return number of parts found (3 is valid), parts are trimmed
+inline size_t split_for_header_s( std::string_view stringHeader, std::string_view* pstringPart )
+{
+   size_t uCount = 0;
+   size_t uStart = 0;
+   int iDepth = 0;
+   for( size_t u = 0; u <= stringHeader.size(); ++u )
+   {
+      bool bEnd = ( u == stringHeader.size() );
+      if( bEnd == false )
+      {
+         char c = stringHeader[u];
+         if( is_string_delimiter_(c) )
+         {
+            ++u;
+            while( u < stringHeader.size() && stringHeader[u] != c ) { ++u; }
+            continue;
+         }
+         if( c == '(' ) { ++iDepth; continue; }
+         if( c == ')' ) { --iDepth; continue; }
+      }
+
+      if( bEnd == true || ( stringHeader[u] == ',' && iDepth == 0 ) )
+      {
+         if( uCount < 3 ) { pstringPart[uCount] = stringHeader.substr(uStart, u - uStart); }
+         ++uCount;
+         uStart = u + 1;
+      }
+   }
+   return uCount;
+}
+
 /**
  * @brief Internal block-stack entry used during compilation.
  *
@@ -121,7 +154,7 @@ struct block
 
    enumKind               m_eKind;
 
-   /// index of the eKindIf / eKindWhile / eKindForCond statement whose
+   /// index of the eKindIf / eKindWhile / eKindForCondition statement whose
    /// m_iJump should point past the block
    int32_t                m_iCondIndex = -1;
 
@@ -129,7 +162,7 @@ struct block
    /// (needs to be patched to jump past the else-body too)
    int32_t                m_iElseJumpIndex = -1;
 
-   /// for-loop: index of the eKindForCond statement (continue target)
+   /// for-loop: index of the eKindForCondition statement (continue target)
    int32_t                m_iForCondIndex  = -1;
 
    /// for-loop: index of the eKindForStep statement (loop-back target)
@@ -416,8 +449,8 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
          {
             // Emit step statement looping back to condition
             // The step tokens are already compiled inside the for-step statement.
-            // We just need a LoopBack pointing at eKindForCond.
-            statement statementLoopBack(statement::eKindLoopBack, frame_.m_iForCondIndex);
+            // We just need a LoopBack pointing at eKindForCondition.
+            statement statementLoopBack(statement::eKindLoopBack, frame_.m_iForStepIndex);
             m_vectorStatement.push_back(std::move(statementLoopBack));
             iHere = static_cast<int32_t>(m_vectorStatement.size());
 
@@ -523,8 +556,8 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
       }
 
       // ---- for -------------------------------------------------------------
-      // Syntax:  for <var> = <start>, <limit>, <step>
-      // Example: for i = 0, 10, 1
+      // Syntax:  for <init>, <condition>, <step>
+      // Example: for i = 0, i < 10, i = i + 1
       if( stringKeyword == "for" )
       {
          if( stringRest.empty() )
@@ -532,55 +565,22 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
             return { false, "[code::compile_s] 'for' without arguments at line " + std::to_string(iLine) };
          }
 
-         // Split "var = start, limit, step" by finding the '=' and the commas.
-         // We do a lightweight scan (respecting strings) rather than a full parse
-         // so we can handle the three expression parts independently.
+         // Split "init, condition, step" at top-level commas (Lua style, each part is an expression)
+         std::string_view piPart_[3];
+         if( split_for_header_s(stringRest, piPart_) != 3 )
+            return { false, "[code::compile_s] 'for' needs 'init, condition, step' at line " + std::to_string(iLine) };
 
-         auto find_char_ = [](std::string_view sv, char c, size_t uFrom = 0) -> size_t
-         {
-            for( size_t u = uFrom; u < sv.size(); ++u )
-            {
-               if( is_string_delimiter_(sv[u]) )
-               {
-                  // skip string literal
-                  ++u;
-                  char delim = sv[u - 1];
-                  while( u < sv.size() && sv[u] != delim ) { ++u; }
-               }
-               else if( sv[u] == c ) { return u; }
-            }
-            return std::string_view::npos;
-         };
+         std::string_view svStart = trim_s(piPart_[0]);
+         std::string_view svLimit = trim_s(piPart_[1]);
+         std::string_view svStep  = trim_s(piPart_[2]);
 
-         // locate '='
-         size_t uEq = find_char_(stringRest, '=');
-         if( uEq == std::string_view::npos )
-            return { false, "[code::compile_s] 'for' missing '=' at line " + std::to_string(iLine) };
-
-         std::string_view svVar       = trim_s(stringRest.substr(0, uEq));
-         std::string_view svAfterEq   = trim_s(stringRest.substr(uEq + 1));
-
-         // locate the two commas in the remainder
-         size_t uComma1 = find_char_(svAfterEq, ',');
-         if( uComma1 == std::string_view::npos )
-            return { false, "[code::compile_s] 'for' missing limit after start at line " + std::to_string(iLine) };
-
-         size_t uComma2 = find_char_(svAfterEq, ',', uComma1 + 1);
-         if( uComma2 == std::string_view::npos )
-            return { false, "[code::compile_s] 'for' missing step at line " + std::to_string(iLine) };
-
-         std::string_view svStart = trim_s(svAfterEq.substr(0, uComma1));
-         std::string_view svLimit = trim_s(svAfterEq.substr(uComma1 + 1, uComma2 - uComma1 - 1));
-         std::string_view svStep  = trim_s(svAfterEq.substr(uComma2 + 1));
-
-         if( svVar.empty()   ) return { false, "[code::compile_s] 'for' empty variable name at line " + std::to_string(iLine) };
-         if( svStart.empty() ) return { false, "[code::compile_s] 'for' empty start expression at line " + std::to_string(iLine) };
-         if( svLimit.empty() ) return { false, "[code::compile_s] 'for' empty limit expression at line " + std::to_string(iLine) };
+         if( svStart.empty() ) return { false, "[code::compile_s] 'for' empty init expression at line " + std::to_string(iLine) };
+         if( svLimit.empty() ) return { false, "[code::compile_s] 'for' empty condition expression at line " + std::to_string(iLine) };
          if( svStep.empty()  ) return { false, "[code::compile_s] 'for' empty step expression at line " + std::to_string(iLine) };
 
-         // -- ForInit: var = start
+         // -- ForInit: init expression, for example i = 1
          {
-            std::string stringInit = std::string(svVar) + " = " + std::string(svStart);
+            std::string stringInit = std::string(svStart);
             std::vector<token> vectorInit;
             auto [bOk, stringErr] = compile_expression_s(stringInit, vectorInit);
             if( bOk == false ) { return { false, stringErr }; }
@@ -590,17 +590,15 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
             m_vectorStatement.push_back(std::move(stmtInit_));
          }
 
-         // -- ForCond: var < limit  (or <= depending on convention)
-         //    We use `var < limit` with exclusive upper bound (Python style).
-         //    Change to `<=` here if inclusive is preferred.
+         // -- ForCond: condition expression, for example i < 10
          int32_t iForCondIndex = static_cast<int32_t>(m_vectorStatement.size());
          {
-            std::string stringCond = std::string(svVar) + " < " + std::string(svLimit);
+            std::string stringCond = std::string(svLimit);
             std::vector<token> vectorCond;
             auto [bOk, stringErr] = compile_expression_s(stringCond, vectorCond);
             if( bOk == false ) { return { false, stringErr }; }
 
-            statement stmtCond_(statement::eKindForCond, std::move(vectorCond));
+            statement stmtCond_(statement::eKindForCondition, std::move(vectorCond));
             m_vectorStatement.push_back(std::move(stmtCond_));
          }
 
@@ -615,19 +613,18 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
          frame_.m_eKind         = block::eKindFor;
          frame_.m_iForCondIndex = iForCondIndex;
          frame_.m_iForStepIndex = -1; // filled when `end` is processed
-         frame_.m_stringForVar  = std::string(svVar);
 
          // Store the step expression string in a temporary statement that we
          // will finalise at `end`.  We use a placeholder eKindExpr with the
          // pre-compiled tokens already in it; the executor will treat it as a
          // normal expression run.
          {
-            std::string stringStep = std::string(svVar) + " = " + std::string(svVar) + " + " + std::string(svStep);
+            std::string stringStep = std::string(svStep);
             std::vector<token> vectorStep;
             auto [bOk, stringErr] = compile_expression_s(stringStep, vectorStep);
             if( bOk == false ) { return { false, stringErr }; }
 
-            // Reserve the ForStep slot at the END (will be pushed at `end`).
+            // Reserve
             // Store tokens in the frame for now.
             frame_.m_iForStepIndex = -2; // sentinel: "tokens are ready in frame"
             // Temporarily stash in a statement stored in the frame's break vector
@@ -676,7 +673,7 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
             // would be the step slot, which we do NOT want on first entry).
             //
             // Re-design: emit ForCond with a "skip step" jump embedded.
-            // The executor for eKindForCond does:
+            // The executor for eKindForCondition does:
             //   if condition true  -> PC = m_iJump (past-loop) ... wait, that is backwards.
             //
             // Correct approach: on FALSE the condition jumps PAST the loop.
@@ -1338,59 +1335,22 @@ std::pair<bool, std::string> code::compile_lua(const char* piszBegin, const char
             }
          }
 
-         // Scan for '=' and commas, respecting string literals
-         auto find_char_lua_ = [](std::string_view sv, char iChar, size_t uFrom = 0) -> size_t
+         // Split "init, condition, step" at top-level commas (each part is an expression)
+         std::string_view piPart_[3];
+         if( split_for_header_s(stringForHeader, piPart_) != 3 )
+            return { false, "[code::compile_lua] 'for' needs 'init, condition, step' at line " + std::to_string(iLine) };
+
+         std::string_view stringFirst = trim_s(piPart_[0]);
+         std::string_view stringLast  = trim_s(piPart_[1]);
+         std::string_view stringDelta = trim_s(piPart_[2]);
+
+         if( stringFirst.empty() ) return { false, "[code::compile_lua] 'for' empty init expression at line " + std::to_string(iLine) };
+         if( stringLast.empty()  ) return { false, "[code::compile_lua] 'for' empty condition expression at line " + std::to_string(iLine) };
+         if( stringDelta.empty() ) return { false, "[code::compile_lua] 'for' empty step expression at line " + std::to_string(iLine) };
+
+         // -- ForInit: init expression, for example i = 1
          {
-            for( size_t u = uFrom; u < sv.size(); ++u )
-            {
-               if( is_string_delimiter_(sv[u]) )
-               {
-                  ++u;
-                  char iDelim = sv[u - 1];
-                  while( u < sv.size() && sv[u] != iDelim ) { ++u; }
-               }
-               else if( sv[u] == iChar ) { return u; }
-            }
-            return std::string_view::npos;
-         };
-
-         size_t uEqPos = find_char_lua_(stringForHeader, '=');
-         if( uEqPos == std::string_view::npos )
-            return { false, "[code::compile_lua] 'for' missing '=' at line " + std::to_string(iLine) };
-
-         std::string_view stringVar    = trim_s(stringForHeader.substr(0, uEqPos));
-         std::string_view stringAfterEq = trim_s(stringForHeader.substr(uEqPos + 1));
-
-         // First comma separates first from last
-         size_t uComma1 = find_char_lua_(stringAfterEq, ',');
-         if( uComma1 == std::string_view::npos )
-            return { false, "[code::compile_lua] 'for' missing last value at line " + std::to_string(iLine) };
-
-         std::string_view stringFirst = trim_s(stringAfterEq.substr(0, uComma1));
-         std::string_view stringAfterFirst = trim_s(stringAfterEq.substr(uComma1 + 1));
-
-         // Optional second comma separates last from delta
-         size_t uComma2 = find_char_lua_(stringAfterFirst, ',');
-         std::string_view stringLast;
-         std::string_view stringDelta;
-         if( uComma2 == std::string_view::npos )
-         {
-            stringLast  = trim_s(stringAfterFirst);
-            stringDelta = "1"; // Lua default delta
-         }
-         else
-         {
-            stringLast  = trim_s(stringAfterFirst.substr(0, uComma2));
-            stringDelta = trim_s(stringAfterFirst.substr(uComma2 + 1));
-         }
-
-         if( stringVar.empty()   ) return { false, "[code::compile_lua] 'for' empty variable at line " + std::to_string(iLine) };
-         if( stringFirst.empty() ) return { false, "[code::compile_lua] 'for' empty first value at line " + std::to_string(iLine) };
-         if( stringLast.empty()  ) return { false, "[code::compile_lua] 'for' empty last value at line " + std::to_string(iLine) };
-
-         // -- ForInit: var = first
-         {
-            std::string stringInit = std::string(stringVar) + " = " + std::string(stringFirst);
+            std::string stringInit = std::string(stringFirst);
             std::vector<token> vectorInit;
             auto [bOk, stringErr] = compile_expression_s(stringInit, vectorInit);
             if( bOk == false ) { return { false, stringErr }; }
@@ -1400,15 +1360,15 @@ std::pair<bool, std::string> code::compile_lua(const char* piszBegin, const char
             m_vectorStatement.push_back(std::move(stmtInit_));
          }
 
-         // -- ForCond: var <= last  (inclusive, matching Lua semantics)
+         // -- ForCond: condition expression, for example i <= 10
          int32_t iForCondIndex = static_cast<int32_t>(m_vectorStatement.size());
          {
-            std::string stringCond = std::string(stringVar) + " <= " + std::string(stringLast);
+            std::string stringCond = std::string(stringLast);
             std::vector<token> vectorCondition;
             auto [bOk, stringErr] = compile_expression_s(stringCond, vectorCondition);
             if( bOk == false ) { return { false, stringErr }; }
 
-            statement stmtCond_(statement::eKindForCond, std::move(vectorCondition));
+            statement stmtCond_(statement::eKindForCondition, std::move(vectorCondition));
             m_vectorStatement.push_back(std::move(stmtCond_));
          }
 
@@ -1427,9 +1387,9 @@ std::pair<bool, std::string> code::compile_lua(const char* piszBegin, const char
          stmtSkip_.m_iJump = iForStepIndex + 1; // body starts at step+1
          m_vectorStatement.push_back(std::move(stmtSkip_));
 
-         // Emit ForStep: var = var + delta
+         // Emit ForStep: step expression, for example i = i + 1
          {
-            std::string stringStep = std::string(stringVar) + " = " + std::string(stringVar) + " + " + std::string(stringDelta);
+            std::string stringStep = std::string(stringDelta);
             std::vector<token> vectorStep;
             auto [bOk, stringErr] = compile_expression_s(stringStep, vectorStep);
             if( bOk == false ) { return { false, stringErr }; }
@@ -1542,7 +1502,7 @@ std::pair<bool, std::string> code::execute(runtime& runtime_, value* pResult) co
       // -- if / while / for-cond: evaluate condition, branch on false --------
       case statement::eKindIf:
       case statement::eKindWhile:
-      case statement::eKindForCond:
+      case statement::eKindForCondition:
       {
          value valueCondition;
          if( stmt_.has_tokens() )

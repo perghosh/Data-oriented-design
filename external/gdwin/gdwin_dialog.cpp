@@ -1,3 +1,7 @@
+// @FILE [tag: dialog] [summary: Implementation of the base dialog class] [type: source] [name: gdwin_dialog.cpp]
+
+#include <array>
+
 #include "gdwin_dialog.h"
 
 _GDWIN_BEGIN
@@ -10,6 +14,46 @@ dialog::dialog(std::string_view stringTitle, int iClientWidth, int iClientHeight
    bind(gdwin::eWindowEvent::eDestroy);                                        // WM_DESTROY and WM_NCDESTROY
 }
 
+
+/** --------------------------------------------------------------------------- create
+ * @brief Creates a dialog window for the given parent window handle.
+ * @param hwndParent The handle to the parent window.
+ * @return A boolean indicating whether the dialog was successfully created.
+ */
+bool dialog::create(HWND hwndParent)
+{                                                                                                  assert( hwndParent != nullptr );
+   if(m_hwnd != nullptr) return true;
+
+   m_hwndOwner = hwndParent;
+
+   const uint32_t uStyle = WS_POPUP | WS_CAPTION | WS_SYSMENU;
+   const uint32_t uStyleEx = WS_EX_DLGMODALFRAME;
+
+   RECT rect = { 0, 0, m_iClientWidth, m_iClientHeight };
+   ::AdjustWindowRectEx(&rect, uStyle, FALSE, uStyleEx);                       // client size to outer window size
+
+   std::array<std::byte, 256> arrayBuffer;
+   gd::argument::arguments argumentsWindow{ arrayBuffer, { { "style", uStyle },{ "styleex", uStyleEx },{ "width", (int)(rect.right - rect.left) },{ "height", (int)(rect.bottom - rect.top) },{ "parent", (void*)hwndParent } } };
+   bool bCreated = gdwin::window<>::create(m_stringTitle, argumentsWindow);
+   if(bCreated == false) return false;
+
+   if(on_initialize() == false)
+   {
+      ::DestroyWindow(m_hwnd);
+      return false;
+   }
+
+   center();                                                                  // center dialog in window
+   return true;
+}
+
+/** --------------------------------------------------------------------------- on_event
+ * @brief Handles dialog window events by processing command, close, and destroy messages, and returns whether the event was handled.
+ * @param eEvent The high-level window event type to process.
+ * @param pargumentsParam A pointer to the event argument collection containing message-specific values such as command ID and notification code.
+ * @param uNativeMessage The underlying native Windows message identifier associated with the event.
+ * @return A gdwin::lresult indicating whether the event was handled and the associated result value
+ */
 gdwin::lresult dialog::on_event(gdwin::eWindowEvent eEvent, gd::argument::arguments* pargumentsParam, uint64_t uNativeMessage)
 {
    switch(eEvent)
@@ -50,38 +94,6 @@ gdwin::lresult dialog::on_event(gdwin::eWindowEvent eEvent, gd::argument::argume
    }
 
    return gdwin::lresult();                                                    // not handled, default processing
-}
-
-bool dialog::create(HWND hwndParent)
-{
-   if(m_hwnd != nullptr) return true;
-
-   m_hwndOwner = hwndParent;
-
-   const uint32_t uStyle = WS_POPUP | WS_CAPTION | WS_SYSMENU;
-   const uint32_t uStyleEx = WS_EX_DLGMODALFRAME;
-
-   RECT rect = { 0, 0, m_iClientWidth, m_iClientHeight };
-   ::AdjustWindowRectEx(&rect, uStyle, FALSE, uStyleEx);                       // client size to outer window size
-
-   bool bCreated = gdwin::window<>::create(m_stringTitle,
-      {
-         { "style", uStyle },
-         { "styleex", uStyleEx },
-         { "width", (int)(rect.right - rect.left) },
-         { "height", (int)(rect.bottom - rect.top) },
-         { "parent", (void*)hwndParent }
-      });
-   if(bCreated == false) return false;
-
-   if(on_initialize() == false)
-   {
-      ::DestroyWindow(m_hwnd);
-      return false;
-   }
-
-   center();
-   return true;
 }
 
 intptr_t dialog::do_modal(HWND hwndParent)
