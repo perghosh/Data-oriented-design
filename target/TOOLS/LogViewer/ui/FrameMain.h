@@ -66,6 +66,7 @@ protected:
 // ## attributes ----------------------------------------------------------------
 public:
   HMENU m_hMenu = nullptr;
+  HWND m_hwndRebar = nullptr;
   HWND m_hwndStatusBar = nullptr;
 
 

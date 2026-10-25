@@ -6,7 +6,7 @@
 #include "gd/gd_variant.h"
 #include "gd/gd_arguments_shared.h"
 #include "gd/gd_file.h"
-#include "gd_tools/html/gd_tools_html_document.h"
+//#include "gd_tools/html/gd_tools_html_document.h"
 
 #include "main.h"
 
