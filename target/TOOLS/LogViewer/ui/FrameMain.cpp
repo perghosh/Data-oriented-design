@@ -1,7 +1,11 @@
+
 #include "DialogAbout.h"
 #include "DialogHelp.h"
 
 #include "FrameMain.h"
+#include <commctrl.h>
+
+#pragma comment(lib, "Comctl32.lib")
 
 
 enum enumMenu {
@@ -31,6 +35,7 @@ enum enumMenu {
 CFrameMain::CFrameMain()
 {
    bind(gdwin::eWindowEvent::eCommand);
+   bind(gdwin::eWindowEvent::eResize);
    bind(gdwin::eWindowEvent::eMouseDown);                                      // bind the mouse down event to this window (WM_LBUTTONDOWN)
    //bind(gdwin::eWindowEvent::eMouseMove);                                      // bind the mouse move event to this window (WM_MOUSEMOVE)
    bind(gdwin::eWindowEvent::eClose);                                          // bind the close event to this window (WM_CLOSE)
@@ -55,8 +60,11 @@ gdwin::lresult CFrameMain::on_event(gdwin::eWindowEvent eEvent, gd::argument::ar
    case gdwin::eWindowEvent::eMouseDown: { OnMouseDown( *pargumentsParam ); } break;
    case gdwin::eWindowEvent::eKeyDown: { OnKeyDown( *pargumentsParam ); } break;
    case gdwin::eWindowEvent::eCommand: { OnCommand( *pargumentsParam ); } break;
+   case gdwin::eWindowEvent::eResize:
+      if( m_hwndStatusBar != nullptr ) { ::SendMessageW(m_hwndStatusBar, WM_SIZE, 0, 0); }
+      break;
    case gdwin::eWindowEvent::eClose: { ::DestroyWindow(m_hwnd); } break;
-   case gdwin::eWindowEvent::eDestroy: { m_hMenu = nullptr; ::PostQuitMessage(0); } break;
+   case gdwin::eWindowEvent::eDestroy: { m_hMenu = nullptr; m_hwndStatusBar = nullptr; ::PostQuitMessage(0); } break;
    }
    
    return gdwin::lresult();
@@ -104,11 +112,42 @@ void CFrameMain::Create()
 
    m_hMenu = hMenu;
 
-   gdwin::window<>::create("Blank Window", { {"style", "overlappedwindow"}, {"width", 800}, {"height", 600},  { "callback", gdwin::window<>::get_callback_s() }, { "menu", m_hMenu }});
+   INITCOMMONCONTROLSEX initCommonControls_{};
+   initCommonControls_.dwSize = sizeof(initCommonControls_);
+   initCommonControls_.dwICC = ICC_BAR_CLASSES;
+   if( ::InitCommonControlsEx(&initCommonControls_) == FALSE )
+   {
+      OutputDebugStringA("Could not initialize common controls for the status bar.\n");
+      return;
+   }
 
-}
+   bool bCreated = gdwin::window<>::create("Blank Window", { {"style", "overlappedwindow"}, {"width", 800}, {"height", 600},  { "callback", gdwin::window<>::get_callback_s() }, { "menu", m_hMenu }});
+   if( bCreated == false )
+   {
+      OutputDebugStringA("Could not create the main window.\n");
+      return;
+   }
 
-void CFrameMain::OnMouseMove(gd::argument::arguments& arguments)
+   m_hwndStatusBar = ::CreateWindowExW(0, STATUSCLASSNAMEW, L"Ready",
+      WS_CHILD | WS_VISIBLE | SBARS_SIZEGRIP, 0, 0, 0, 0,
+      m_hwnd, nullptr, ::GetModuleHandleW(nullptr), nullptr);
+   if( m_hwndStatusBar == nullptr )
+   {
+      OutputDebugStringA("Could not create the status bar.\n");
+      return;
+   }
+
+   SetStatusText("Ready");
+   ::SendMessageA(m_hwndStatusBar, WM_SIZE, 0, 0);
+ }
+
+ void CFrameMain::SetStatusText(const char* pszText)
+ {
+   if( m_hwndStatusBar != nullptr )
+      ::SendMessageA(m_hwndStatusBar, SB_SETTEXTA, 0, reinterpret_cast<LPARAM>(pszText));
+ }
+
+ void CFrameMain::OnMouseMove(gd::argument::arguments& arguments)
 {
    OutputDebugStringA(("Left button move at: (" + arguments["x"].as_string() + ", " + arguments["y"].as_string() + ")\n").c_str());
 }
@@ -128,6 +167,11 @@ void CFrameMain::OnKeyDown(gd::argument::arguments& arguments)
 void CFrameMain::OnCommand(gd::argument::arguments& arguments)
 {
    uint32_t uCommandId = arguments["id"].as_uint();
+   char pszMenuText[128] = {};
+   if( m_hMenu != nullptr && ::GetMenuStringA(m_hMenu, uCommandId, pszMenuText, 128, MF_BYCOMMAND) > 0 )
+   {
+      SetStatusText(pszMenuText);                                             // text of the menu item matching the command id
+   }
    if( uCommandId == eAbout )
    {
       CDialogAbout dialogAbout;

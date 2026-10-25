@@ -6,6 +6,12 @@
 
 _GDWIN_BEGIN
 
+/** --------------------------------------------------------------------------- dialog
+ * @brief Initializes a dialog object with the specified title, client width, and client height.
+ * @param stringTitle The title of the dialog window.
+ * @param iClientWidth The width of the client area of the dialog window.
+ * @param iClientHeight The height of the client area of the dialog window.
+ */
 dialog::dialog(std::string_view stringTitle, int iClientWidth, int iClientHeight)
    : m_stringTitle(stringTitle), m_iClientWidth(iClientWidth), m_iClientHeight(iClientHeight)
 {

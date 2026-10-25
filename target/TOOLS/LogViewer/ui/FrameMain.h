@@ -57,13 +57,16 @@ protected:
    void OnMouseDown(gd::argument::arguments& arguments);
    void OnKeyDown(gd::argument::arguments& arguments);
    void OnCommand(gd::argument::arguments& arguments);
+   
+   void SetStatusText(const char* pszText);
 
-public:
+ public:
 // @API [tag: debug]
 
 // ## attributes ----------------------------------------------------------------
 public:
-   HMENU m_hMenu = nullptr;
+  HMENU m_hMenu = nullptr;
+  HWND m_hwndStatusBar = nullptr;
 
 
 // @API [tag: free-functions]
