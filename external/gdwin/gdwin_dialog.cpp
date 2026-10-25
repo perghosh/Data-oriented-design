@@ -74,7 +74,7 @@ bool dialog::create(HWND hwndParent)
       });
    if(bCreated == false) return false;
 
-   if(on_init() == false)
+   if(on_initialize() == false)
    {
       ::DestroyWindow(m_hwnd);
       return false;

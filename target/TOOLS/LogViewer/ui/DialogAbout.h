@@ -21,5 +21,5 @@ public:
    std::pair<bool, std::string_view> get_window_class() const override { return { false, std::string_view("CDialogAbout") }; }
 
 protected:
-   bool on_init() override;
+   bool on_initialize() override;
 };

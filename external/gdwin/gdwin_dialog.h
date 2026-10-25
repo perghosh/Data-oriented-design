@@ -47,7 +47,7 @@ public:
 protected:
    // @API [tag: internal]
       /// Called when window is created, create controls here. Return false to cancel creation
-   virtual bool on_init() { return true; }
+   virtual bool on_initialize() { return true; }
    /// Called for WM_COMMAND, return true if handled. Not called for IDOK and IDCANCEL, see on_ok and on_cancel
    //virtual bool on_command(uint32_t uId, uint32_t uNotifyCode) { return false; }
    virtual void on_ok() { end_dialog(IDOK); }

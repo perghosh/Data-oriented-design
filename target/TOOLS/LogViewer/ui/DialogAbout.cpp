@@ -2,7 +2,7 @@
 
 #include "DialogAbout.h"
 
-bool CDialogAbout::on_init()
+bool CDialogAbout::on_initialize()
 {
    std::array<std::byte, 256> array_;
    gd::argument::arguments argumentsControl(array_);
