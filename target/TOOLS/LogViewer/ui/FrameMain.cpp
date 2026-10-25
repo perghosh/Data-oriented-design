@@ -1,3 +1,5 @@
+#include "DialogAbout.h"
+
 #include "FrameMain.h"
 
 
@@ -125,5 +127,14 @@ void CFrameMain::OnKeyDown(gd::argument::arguments& arguments)
 void CFrameMain::OnCommand(gd::argument::arguments& arguments)
 {
    uint32_t uCommandId = arguments["id"].as_uint();
+   if( uCommandId == eAbout )
+   {
+      CDialogAbout dialogAbout;
+      if( dialogAbout.do_modal(m_hwnd) == -1 )
+      {
+         OutputDebugStringA("About dialog failed to create.\n");
+      }
+   }
+
    OutputDebugStringA(("Command: " + arguments["id"].as_string() + "\n").c_str());
 }  

@@ -197,7 +197,9 @@ bool window<EVENT_RESULT>::create(const std::string& stringTitle, gd::argument::
    int iWidth = argumentsWindow["width"].as_int();
    int iHeight = argumentsWindow["height"].as_int();
 
-   return create_window_g(argumentsWindow, stringClass, stringTitle, iX, iY, iWidth, iHeight, uStyle, nullptr, this);
+   HWND hwndParent = (HWND)argumentsWindow["parent"].as_pointer();            // optional parent or owner window
+
+   return create_window_g(argumentsWindow, stringClass, stringTitle, iX, iY, iWidth, iHeight, uStyle, hwndParent, this);
 }
 
 /** --------------------------------------------------------------------------- call

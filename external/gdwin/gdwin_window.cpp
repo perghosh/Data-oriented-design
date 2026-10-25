@@ -132,7 +132,12 @@ bool create_window_g(const gd::argument::arguments& argumentsWindow, std::string
    std::string stringTitleA(stringTitle.begin(), stringTitle.end());
    HWND hwnd = CreateWindowExA(static_cast<DWORD>(uStyleEx), stringClassA.data(), stringTitleA.data(), static_cast<DWORD>(uStyle), iX, iY, iWidth, iHeight, hwndParent, hMenu, hinstance, puserdata_);
 #endif   
-    return hwnd != nullptr;
+    bool bOk = hwnd != nullptr;
+    if(bOk == false)
+    {
+       DWORD uError = GetLastError();
+    }
+    return bOk;
 }
 
 /** ----------------------------------------------------------------------------

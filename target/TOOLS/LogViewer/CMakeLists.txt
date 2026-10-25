@@ -24,7 +24,7 @@ set( TARGET_SOURCE_FILES_
    ${APPLICATION_DIRECTORY_}/database/Metadata_Statements.cpp
 )
 
-file(GLOB TARGET_AREA_FILES_ "os/*.cpp" "ui/*.cpp")
+file(GLOB TARGET_AREA_FILES_ CONFIGURE_DEPENDS "os/*.cpp" "ui/*.cpp")
 
 if(WIN32)
    # Add Windows specific code

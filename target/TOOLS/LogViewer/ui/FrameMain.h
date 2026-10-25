@@ -1,4 +1,8 @@
+// @FILE [tag: application, window] [summary: Application window] [name: FrameMain.h] [type: header]
+
 #pragma once
+
+#include <memory>
 
 
 //#include "../window.h"
