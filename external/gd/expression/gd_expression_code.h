@@ -133,8 +133,8 @@ struct statement
 
    statement(enumKind eKind, int32_t iJump) : m_eKind(eKind), m_iJump(iJump) {}
 
-   statement(enumKind eKind, std::vector<token>&& vectorToken_)
-      : m_eKind(eKind), m_vectorToken(std::move(vectorToken_)) {}
+   statement(enumKind eKind, std::vector<token>&& vectorToken)
+      : m_eKind(eKind), m_vectorToken(std::move(vectorToken)) {}
 
    // copy
    statement(const statement& o) { common_construct(o); }
@@ -143,6 +143,8 @@ struct statement
    // assign
    statement& operator=(const statement& o)      { common_construct(o);            return *this; }
    statement& operator=(statement&& o) noexcept  { common_construct(std::move(o)); return *this; }
+
+   statement& operator=(std::vector<token>&& vectorToken_) { m_vectorToken = std::move(vectorToken_); return *this; }
 
    ~statement() {}
 

@@ -125,7 +125,7 @@ inline size_t split_for_header_s( std::string_view stringHeader, std::string_vie
          if( c == ')' ) { --iDepth; continue; }
       }
 
-      if( bEnd == true || ( stringHeader[u] == ',' && iDepth == 0 ) )
+      if( bEnd == true || ( (stringHeader[u] == ',' || stringHeader[u] == ';') && iDepth == 0 ) )
       {
          if( uCount < 3 ) { pstringPart[uCount] = stringHeader.substr(uStart, u - uStart); }
          ++uCount;
@@ -565,35 +565,50 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
             return { false, "[code::compile_s] 'for' without arguments at line " + std::to_string(iLine) };
          }
 
+         statement stmtFor(statement::eKindForInit);
+         stmtFor.m_stringSource = std::string(stringRest);
+         stringTrimmed = stmtFor.m_stringSource;
+
+
          // Split "init, condition, step" at top-level commas (Lua style, each part is an expression)
          std::string_view piPart_[3];
-         if( split_for_header_s(stringRest, piPart_) != 3 )
-            return { false, "[code::compile_s] 'for' needs 'init, condition, step' at line " + std::to_string(iLine) };
+         if( split_for_header_s(stringRest, piPart_) != 3 ) return { false, "[code::compile_s] 'for' needs 'init, condition, step' at line " + std::to_string(iLine) };
 
-         std::string_view svStart = trim_s(piPart_[0]);
-         std::string_view svLimit = trim_s(piPart_[1]);
-         std::string_view svStep  = trim_s(piPart_[2]);
+         std::string_view stringStart = trim_s(piPart_[0]);
+         std::string_view stringLimit = trim_s(piPart_[1]);
+         std::string_view stringStep  = trim_s(piPart_[2]);
 
-         if( svStart.empty() ) return { false, "[code::compile_s] 'for' empty init expression at line " + std::to_string(iLine) };
-         if( svLimit.empty() ) return { false, "[code::compile_s] 'for' empty condition expression at line " + std::to_string(iLine) };
-         if( svStep.empty()  ) return { false, "[code::compile_s] 'for' empty step expression at line " + std::to_string(iLine) };
+         if( stringStart.empty() ) return { false, "[code::compile_s] 'for' empty init expression at line " + std::to_string(iLine) };
+         if( stringLimit.empty() ) return { false, "[code::compile_s] 'for' empty condition expression at line " + std::to_string(iLine) };
+         if( stringStep.empty()  ) return { false, "[code::compile_s] 'for' empty step expression at line " + std::to_string(iLine) };
 
          // -- ForInit: init expression, for example i = 1
          {
-            std::string stringInit = std::string(svStart);
-            std::vector<token> vectorInit;
-            auto [bOk, stringErr] = compile_expression_s(stringInit, vectorInit);
+            std::string stringInitialize = std::string(stringStart);
+            std::vector<token> vectorInitialize;
+            auto [bOk, stringErr] = compile_expression_s(stringInitialize, vectorInitialize);
             if( bOk == false ) { return { false, stringErr }; }
 
-            statement stmtInit_(statement::eKindForInit, std::move(vectorInit));
-            stmtInit_.m_stringSource = std::string(stringTrimmed);
-            m_vectorStatement.push_back(std::move(stmtInit_));
+            // ## if last character in vectorInitialize is equal, change to assaign
+            if(vectorInitialize.empty() == false)
+            {
+               token& tokenLast = vectorInitialize.back();
+               if(tokenLast.is_equal() == true) { tokenLast.set_assign(); }   // convert `=` to assignment operator
+            }
+
+            stmtFor = std::move(vectorInitialize);
+
+            /*
+            statement stmtFor(statement::eKindForInit, std::move(vectorInitialize));
+            stmtFor.m_stringSource = std::string(stringTrimmed);
+            */
+            m_vectorStatement.push_back(std::move(stmtFor));
          }
 
          // -- ForCond: condition expression, for example i < 10
          int32_t iForCondIndex = static_cast<int32_t>(m_vectorStatement.size());
          {
-            std::string stringCond = std::string(svLimit);
+            std::string stringCond = std::string(stringLimit);
             std::vector<token> vectorCond;
             auto [bOk, stringErr] = compile_expression_s(stringCond, vectorCond);
             if( bOk == false ) { return { false, stringErr }; }
@@ -619,7 +634,7 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
          // pre-compiled tokens already in it; the executor will treat it as a
          // normal expression run.
          {
-            std::string stringStep = std::string(svStep);
+            std::string stringStep = std::string(stringStep);
             std::vector<token> vectorStep;
             auto [bOk, stringErr] = compile_expression_s(stringStep, vectorStep);
             if( bOk == false ) { return { false, stringErr }; }

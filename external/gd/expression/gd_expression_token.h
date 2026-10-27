@@ -197,6 +197,7 @@ struct token
    uint32_t get_arg_count() const { return ( m_uType >> 16 ) & 0xFF; }   ///< actual arg count for varargs functions (0 = use method's in_count)
    void     set_arg_count(uint32_t uCount) { m_uType = (m_uType & 0xFF00FFFF) | ((uCount & 0xFF) << 16); }
 
+   bool is_equal() const { return (m_uType & 0xFF) == eOperatorEqual; }
    bool is_assign() const { return (m_uType & eTokenFlagAssign) != 0; }
    void set_assign(bool bSet = true) { if(bSet) m_uType |= eTokenFlagAssign; else m_uType &= ~eTokenFlagAssign; }
 
