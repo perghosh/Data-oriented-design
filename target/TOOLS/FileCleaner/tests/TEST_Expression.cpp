@@ -60,12 +60,20 @@ end
 
 std::string stringCode = R"(
 x = 1
-if x > 0
+for i = 1, i < 10, 1
 begin
-    y = x * 2
+   x = x + i;
 end
 )";
 
+/*
+x = 1
+for i = 1, i < 10, 1
+begin
+   x = x + i;
+end
+
+*/
 
    gd::expression::runtime runtime_;
    runtime_.add("x", int64_t(0));
