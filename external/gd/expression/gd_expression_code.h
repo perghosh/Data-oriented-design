@@ -71,6 +71,7 @@
 
 #include <cassert>
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -171,6 +172,7 @@ struct statement
    const std::vector<token>& get_tokens() const { return m_vectorToken; }
 
    void set_jump(int32_t iJump) { m_iJump = iJump; }
+   int32_t jump() const { return m_iJump; }
 
    bool has_tokens() const { return m_vectorToken.empty() == false; }
 
@@ -179,7 +181,7 @@ struct statement
    enumKind            m_eKind        = eKindExpr; ///< what this statement does
    int32_t             m_iJump        = -1;         ///< branch target index, -1 = none
    std::vector<token>  m_vectorToken;               ///< pre-compiled postfix tokens
-   std::string         m_stringSource;              ///< original source text (debug / error messages)
+   std::string_view    m_stringSource;              ///< view into code source buffer (debug / error messages)
 };
 
 
@@ -228,8 +230,19 @@ struct code
 
    ~code() {}
 
-   void common_construct(const code& o)      { m_vectorStatement = o.m_vectorStatement; }
-   void common_construct(code&& o) noexcept  { m_vectorStatement = std::move(o.m_vectorStatement); }
+   void common_construct(const code& o)
+   {
+      m_pSource         = o.m_pSource;                                        // shared immutable buffer, token views stay valid
+      m_uSourceLength   = o.m_uSourceLength;
+      m_vectorStatement = o.m_vectorStatement;
+   }
+   void common_construct(code&& o) noexcept
+   {
+      m_pSource         = std::move(o.m_pSource);
+      m_uSourceLength   = o.m_uSourceLength;
+      m_vectorStatement = std::move(o.m_vectorStatement);
+      o.m_uSourceLength = 0;
+   }
 
    // ## methods ---------------------------------------------------------------
 
@@ -240,7 +253,11 @@ struct code
    bool empty() const { return m_vectorStatement.empty(); }
 
    /// @brief remove all compiled statements, ready for a new compile
-   void clear() { m_vectorStatement.clear(); }
+   void clear() { m_vectorStatement.clear(); m_pSource.reset(); m_uSourceLength = 0; }
+
+   /// @brief copy source into owned buffer that all token and statement views point into
+   /// @return begin and end pointers into the owned buffer
+   std::pair<const char*, const char*> set_source(const char* piszBegin, const char* piszEnd);
 
    // ## compile ---------------------------------------------------------------
 
@@ -269,6 +286,8 @@ struct code
 
    // ## attributes ------------------------------------------------------------
 
+   std::shared_ptr<const char[]> m_pSource;  ///< owned source text, address is stable on move and shared on copy
+   size_t m_uSourceLength = 0;               ///< number of characters in m_pSource (excluding terminator)
    std::vector<statement> m_vectorStatement; ///< flat list of compiled statements
 
    // ## free (static) functions -----------------------------------------------

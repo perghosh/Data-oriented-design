@@ -1612,7 +1612,8 @@ std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vector
                int iIndex = runtime_.find_variable(stringVariable);
                if( iIndex >= 0 )
                {
-                  stackValue.push(value( runtime_.get_variable(iIndex) ));
+                  auto value_ = runtime_.get_variable(iIndex);
+                  stackValue.push(value( value_ ));
                }
                else
                {

@@ -28,9 +28,11 @@
  * integer write.  The inner loop is a plain `switch`.
  */
 
+#include <cstring>
 #include <stack>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 
 #include "gd_expression_code.h"
 
@@ -319,6 +321,30 @@ std::pair<bool, std::string> code::compile_expression_s( std::string_view string
 }
 
 
+/** ------------------------------------------------------------------------- set_source
+ * @brief Copy source text into a buffer owned by `code`.
+ *
+ * Tokens and statements only hold `string_view`s, so the text they point into
+ * must live as long as the compiled code.  Copy is done once per compile.
+ *
+ * @param piszBegin  start of source text
+ * @param piszEnd    one past source text
+ * @return begin and end pointers into the owned buffer
+ */
+std::pair<const char*, const char*> code::set_source(const char* piszBegin, const char* piszEnd)
+{                                                                                                  assert( piszBegin <= piszEnd );
+   size_t uLength = static_cast<size_t>(piszEnd - piszBegin);
+   std::shared_ptr<char[]> pBuffer(new char[uLength + 1]);
+   if( uLength > 0 ) { std::memcpy(pBuffer.get(), piszBegin, uLength); }
+   pBuffer[uLength] = '\0';
+
+   m_pSource       = std::move(pBuffer);
+   m_uSourceLength = uLength;
+
+   return { m_pSource.get(), m_pSource.get() + uLength };
+}
+
+
 // ===========================================================================
 // code::compile
 // ===========================================================================
@@ -337,6 +363,7 @@ std::pair<bool, std::string> code::compile_expression_s( std::string_view string
 std::pair<bool, std::string> code::compile(const char* piszBegin, const char* piszEnd, runtime& runtime_)
 {
    m_vectorStatement.clear();
+   std::tie(piszBegin, piszEnd) = set_source(piszBegin, piszEnd);
 
    // ## Block stack: one entry per open `begin` we have not yet seen `end` for
    std::vector<block> vectorBlock;
@@ -513,12 +540,12 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
 
          // Compile condition expression
          std::vector<token> vectorCond;
-         auto [bOk, stringErr] = compile_expression_s(stringRest, vectorCond);
-         if( bOk == false ) { return { false, stringErr }; }
+         auto [bOk, stringError] = compile_expression_s(stringRest, vectorCond);
+         if( bOk == false ) { return { false, stringError }; }
 
          int32_t iCondIndex = static_cast<int32_t>(m_vectorStatement.size());
          statement stmtIf_(statement::eKindIf, std::move(vectorCond));
-         stmtIf_.m_stringSource = std::string(stringTrimmed);
+         stmtIf_.m_stringSource = stringTrimmed;
          m_vectorStatement.push_back(std::move(stmtIf_));
 
          // Push a block frame; `begin` on the next line will confirm it,
@@ -540,12 +567,12 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
 
          // Compile condition
          std::vector<token> vectorCond;
-         auto [bOk, stringErr] = compile_expression_s(stringRest, vectorCond);
-         if( bOk == false ) { return { false, stringErr }; }
+         auto [bOk, stringError] = compile_expression_s(stringRest, vectorCond);
+         if( bOk == false ) { return { false, stringError }; }
 
          int32_t iCondIndex = static_cast<int32_t>(m_vectorStatement.size());
          statement stmtWhile_(statement::eKindWhile, std::move(vectorCond));
-         stmtWhile_.m_stringSource = std::string(stringTrimmed);
+         stmtWhile_.m_stringSource = stringTrimmed;
          m_vectorStatement.push_back(std::move(stmtWhile_));
 
          block frame_;
@@ -566,8 +593,7 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
          }
 
          statement stmtFor(statement::eKindForInit);
-         stmtFor.m_stringSource = std::string(stringRest);
-         stringTrimmed = stmtFor.m_stringSource;
+         stmtFor.m_stringSource = stringRest;
 
 
          // Split "init, condition, step" at top-level commas (Lua style, each part is an expression)
@@ -584,10 +610,9 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
 
          // -- ForInit: init expression, for example i = 1
          {
-            std::string stringInitialize = std::string(stringStart);
             std::vector<token> vectorInitialize;
-            auto [bOk, stringErr] = compile_expression_s(stringInitialize, vectorInitialize);
-            if( bOk == false ) { return { false, stringErr }; }
+            auto [bOk, stringError] = compile_expression_s(stringStart, vectorInitialize);
+            if( bOk == false ) { return { false, stringError }; }
 
             // ## if last character in vectorInitialize is equal, change to assaign
             if(vectorInitialize.empty() == false)
@@ -600,7 +625,7 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
 
             /*
             statement stmtFor(statement::eKindForInit, std::move(vectorInitialize));
-            stmtFor.m_stringSource = std::string(stringTrimmed);
+            stmtFor.m_stringSource = stringTrimmed;
             */
             m_vectorStatement.push_back(std::move(stmtFor));
          }
@@ -608,10 +633,9 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
          // -- ForCond: condition expression, for example i < 10
          int32_t iForCondIndex = static_cast<int32_t>(m_vectorStatement.size());
          {
-            std::string stringCond = std::string(stringLimit);
             std::vector<token> vectorCond;
-            auto [bOk, stringErr] = compile_expression_s(stringCond, vectorCond);
-            if( bOk == false ) { return { false, stringErr }; }
+            auto [bOk, stringError] = compile_expression_s(stringLimit, vectorCond);
+            if( bOk == false ) { return { false, stringError }; }
 
             statement stmtCond_(statement::eKindForCondition, std::move(vectorCond));
             m_vectorStatement.push_back(std::move(stmtCond_));
@@ -634,10 +658,9 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
          // pre-compiled tokens already in it; the executor will treat it as a
          // normal expression run.
          {
-            std::string stringStep = std::string(stringStep);
             std::vector<token> vectorStep;
-            auto [bOk, stringErr] = compile_expression_s(stringStep, vectorStep);
-            if( bOk == false ) { return { false, stringErr }; }
+            auto [bOk, stringError] = compile_expression_s(stringStep, vectorStep);
+            if( bOk == false ) { return { false, stringError }; }
 
             // Reserve
             // Store tokens in the frame for now.
@@ -833,14 +856,14 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
       // ---- plain expression -----------------------------------------------
       {
          std::vector<token> vectorPostfix;
-         auto [bOk, stringErr] = compile_expression_s(stringTrimmed, vectorPostfix);
+         auto [bOk, stringError] = compile_expression_s(stringTrimmed, vectorPostfix);
          if( bOk == false )
-            return { false, "[code::compile_s] expression error at line " + std::to_string(iLine) + ": " + stringErr };
+            return { false, "[code::compile_s] expression error at line " + std::to_string(iLine) + ": " + stringError };
 
          if( vectorPostfix.empty() == false )
          {
             statement stmtExpr_(statement::eKindExpr, std::move(vectorPostfix));
-            stmtExpr_.m_stringSource = std::string(stringTrimmed);
+            stmtExpr_.m_stringSource = stringTrimmed;
             m_vectorStatement.push_back(std::move(stmtExpr_));
          }
       }
@@ -971,6 +994,7 @@ std::string code::lua_translate_operators_s(std::string_view stringExpression)
 std::pair<bool, std::string> code::compile_lua(const char* piszBegin, const char* piszEnd, runtime& runtime_)
 {
    m_vectorStatement.clear();
+   std::tie(piszBegin, piszEnd) = set_source(piszBegin, piszEnd);
 
    std::vector<block> vectorBlock;
 
@@ -1114,12 +1138,12 @@ std::pair<bool, std::string> code::compile_lua(const char* piszBegin, const char
 
          // std::string stringTranslated = lua_translate_operators_s(stringCondition); // @TODO: For later, now use C++ operator
          std::vector<token> vectorCondition;
-         auto [bOk, stringErr] = compile_expression_s(stringCondition, vectorCondition);
-         if( bOk == false ) { return { false, stringErr }; }
+         auto [bOk, stringError] = compile_expression_s(stringCondition, vectorCondition);
+         if( bOk == false ) { return { false, stringError }; }
 
          int32_t iCondIndex = static_cast<int32_t>(m_vectorStatement.size());
          statement stmtIf_(statement::eKindIf, std::move(vectorCondition));
-         stmtIf_.m_stringSource = std::string(stringTrimmed);
+         stmtIf_.m_stringSource = stringTrimmed;
          m_vectorStatement.push_back(std::move(stmtIf_));
 
          block frame_;
@@ -1181,12 +1205,12 @@ std::pair<bool, std::string> code::compile_lua(const char* piszBegin, const char
 
          //std::string stringTranslated = lua_translate_operators_s( stringCondition ); // @TODO: For later, now use C++ operator
          std::vector<token> vectorCondition;
-         auto [bOk, stringErr] = compile_expression_s(stringCondition, vectorCondition);
-         if( bOk == false ) { return { false, stringErr }; }
+         auto [bOk, stringError] = compile_expression_s(stringCondition, vectorCondition);
+         if( bOk == false ) { return { false, stringError }; }
 
          int32_t iCondIndex = static_cast<int32_t>(m_vectorStatement.size());
          statement stmtElseIf_(statement::eKindIf, std::move(vectorCondition));
-         stmtElseIf_.m_stringSource = std::string(stringTrimmed);
+         stmtElseIf_.m_stringSource = stringTrimmed;
          m_vectorStatement.push_back(std::move(stmtElseIf_));
 
          frame_.m_iCondIndex = iCondIndex; // frame stays on stack, condition index updated
@@ -1248,12 +1272,12 @@ std::pair<bool, std::string> code::compile_lua(const char* piszBegin, const char
 
          // std::string stringTranslated = lua_translate_operators_s(stringCondition); @TODO: For later, now use C++ operator
          std::vector<token> vectorCondition;
-         auto [bOk, stringErr] = compile_expression_s(stringCondition, vectorCondition);
-         if( bOk == false ) { return { false, stringErr }; }
+         auto [bOk, stringError] = compile_expression_s(stringCondition, vectorCondition);
+         if( bOk == false ) { return { false, stringError }; }
 
          int32_t iCondIndex = static_cast<int32_t>(m_vectorStatement.size());
          statement stmtWhile_(statement::eKindWhile, std::move(vectorCondition));
-         stmtWhile_.m_stringSource = std::string(stringTrimmed);
+         stmtWhile_.m_stringSource = stringTrimmed;
          m_vectorStatement.push_back(std::move(stmtWhile_));
 
          block frame_;
@@ -1306,13 +1330,13 @@ std::pair<bool, std::string> code::compile_lua(const char* piszBegin, const char
          // Compile the until condition; when TRUE the loop exits
          // std::string stringTranslated = lua_translate_operators_s(stringRest); @TODO: For later, now use C++ operator
          std::vector<token> vectorCondition;
-         auto [bOk, stringErr] = compile_expression_s(stringRest, vectorCondition);
-         if( bOk == false ) { return { false, stringErr }; }
+         auto [bOk, stringError] = compile_expression_s(stringRest, vectorCondition);
+         if( bOk == false ) { return { false, stringError }; }
 
          // Emit eKindIf(until_cond): true -> jump past loop (past the LoopBack)
          int32_t iUntilCondIndex = static_cast<int32_t>(m_vectorStatement.size());
          statement stmtUntilCond_(statement::eKindIf, std::move(vectorCondition));
-         stmtUntilCond_.m_stringSource = std::string(stringTrimmed);
+         stmtUntilCond_.m_stringSource = stringTrimmed;
          m_vectorStatement.push_back(std::move(stmtUntilCond_));
 
          // Emit LoopBack -> body start
@@ -1365,23 +1389,21 @@ std::pair<bool, std::string> code::compile_lua(const char* piszBegin, const char
 
          // -- ForInit: init expression, for example i = 1
          {
-            std::string stringInit = std::string(stringFirst);
             std::vector<token> vectorInit;
-            auto [bOk, stringErr] = compile_expression_s(stringInit, vectorInit);
-            if( bOk == false ) { return { false, stringErr }; }
+            auto [bOk, stringError] = compile_expression_s(stringFirst, vectorInit);
+            if( bOk == false ) { return { false, stringError }; }
 
             statement stmtInit_(statement::eKindForInit, std::move(vectorInit));
-            stmtInit_.m_stringSource = std::string(stringTrimmed);
+            stmtInit_.m_stringSource = stringTrimmed;
             m_vectorStatement.push_back(std::move(stmtInit_));
          }
 
          // -- ForCond: condition expression, for example i <= 10
          int32_t iForCondIndex = static_cast<int32_t>(m_vectorStatement.size());
          {
-            std::string stringCond = std::string(stringLast);
             std::vector<token> vectorCondition;
-            auto [bOk, stringErr] = compile_expression_s(stringCond, vectorCondition);
-            if( bOk == false ) { return { false, stringErr }; }
+            auto [bOk, stringError] = compile_expression_s(stringLast, vectorCondition);
+            if( bOk == false ) { return { false, stringError }; }
 
             statement stmtCond_(statement::eKindForCondition, std::move(vectorCondition));
             m_vectorStatement.push_back(std::move(stmtCond_));
@@ -1404,10 +1426,9 @@ std::pair<bool, std::string> code::compile_lua(const char* piszBegin, const char
 
          // Emit ForStep: step expression, for example i = i + 1
          {
-            std::string stringStep = std::string(stringDelta);
             std::vector<token> vectorStep;
-            auto [bOk, stringErr] = compile_expression_s(stringStep, vectorStep);
-            if( bOk == false ) { return { false, stringErr }; }
+            auto [bOk, stringError] = compile_expression_s(stringDelta, vectorStep);
+            if( bOk == false ) { return { false, stringError }; }
 
             statement stmtStep_(statement::eKindForStep, std::move(vectorStep));
             stmtStep_.m_iJump = iForCondIndex; // step -> cond
@@ -1449,15 +1470,15 @@ std::pair<bool, std::string> code::compile_lua(const char* piszBegin, const char
       {
          // std::string stringTranslated = lua_translate_operators_s(stringTrimmed); // @NOTE: keep for later decision on whether to translate operators in expression statements (currently only ~= -> !=)
          std::vector<token> vectorPostfix;
-         // auto [bOk, stringErr] = compile_expression_s(stringTranslated, vectorPostfix); 
+         // auto [bOk, stringError] = compile_expression_s(stringTranslated, vectorPostfix); 
 
-         auto [bOk, stringErr] = compile_expression_s(stringTrimmed, vectorPostfix);
-         if( bOk == false ) { return { false, "[code::compile_lua] expression error at line " + std::to_string(iLine) + ": " + stringErr }; }
+         auto [bOk, stringError] = compile_expression_s(stringTrimmed, vectorPostfix);
+         if( bOk == false ) { return { false, "[code::compile_lua] expression error at line " + std::to_string(iLine) + ": " + stringError }; }
 
          if( vectorPostfix.empty() == false )
          {
             statement stmtExpr_(statement::eKindExpr, std::move(vectorPostfix));
-            stmtExpr_.m_stringSource = std::string(stringTrimmed);
+            stmtExpr_.m_stringSource = stringTrimmed;
             m_vectorStatement.push_back(std::move(stmtExpr_));
          }
       }
@@ -1508,7 +1529,7 @@ std::pair<bool, std::string> code::execute(runtime& runtime_, value* pResult) co
          if( stmt_.has_tokens() )
          {
             auto [bOk, stringError] = token::calculate_s(stmt_.m_vectorToken, &valueLast_, runtime_);
-            if( bOk == false ) return { false, "[code::execute] " + stringError + " in: " + stmt_.m_stringSource };
+            if( bOk == false ) return { false, "[code::execute] " + stringError + " in: " + std::string(stmt_.m_stringSource) };
          }
          ++iPC;
          break;
@@ -1532,8 +1553,8 @@ std::pair<bool, std::string> code::execute(runtime& runtime_, value* pResult) co
          }
          else
          {
-            if( stmt_.m_iJump < 0 ) { return { false, "[code::execute] unpatched jump in condition statement" }; }
-            iPC = stmt_.m_iJump; // condition false: jump past block
+            if( stmt_.jump() < 0 ) { return { false, "[code::execute] unpatched jump in condition statement" }; }
+            iPC = stmt_.jump(); // condition false: jump past block
          }
          break;
       }
@@ -1547,9 +1568,8 @@ std::pair<bool, std::string> code::execute(runtime& runtime_, value* pResult) co
             if( bOk == false ) { return { false, "[code::execute] for-step error: " + stringErr }; }
          }
 
-         if( stmt_.m_iJump < 0 )
-            return { false, "[code::execute] unpatched jump in for-step statement" };
-         iPC = stmt_.m_iJump; // jump back to ForCond
+         if( stmt_.jump() < 0 ) { return { false, "[code::execute] unpatched jump in for-step statement" }; }
+         iPC = stmt_.jump(); // jump back to ForCond
          break;
       }
 
@@ -1559,8 +1579,8 @@ std::pair<bool, std::string> code::execute(runtime& runtime_, value* pResult) co
       case statement::eKindBreak:
       case statement::eKindContinue:
       {
-         if( stmt_.m_iJump < 0 ) { return { false, "[code::execute] unpatched unconditional jump" }; }
-         iPC = stmt_.m_iJump;
+         if( stmt_.jump() < 0 ) { return { false, "[code::execute] unpatched unconditional jump" }; }
+         iPC = stmt_.jump();
          break;
       }
 
