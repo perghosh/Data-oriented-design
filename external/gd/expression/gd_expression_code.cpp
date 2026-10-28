@@ -137,6 +137,26 @@ inline size_t split_for_header_s( std::string_view stringHeader, std::string_vie
    return uCount;
 }
 
+/// Expand a bare step value (`for i = 1, i < 10, 1`) into postfix `i = i + 1`.
+/// Loop variable is taken from the first token in init, operator names are static so no text is allocated.
+inline void expand_for_step_s( const std::vector<token>& vectorInitialize, std::vector<token>& vectorStep )
+{
+   if( vectorStep.size() != 1 || vectorStep[0].get_token_type() != eTokenTypeValue ) { return; }
+   if( vectorInitialize.empty() == true || vectorInitialize[0].get_token_type() != eTokenTypeVariable ) { return; }
+
+   token tokenVariable( eTokenTypeVariable, vectorInitialize[0].get_name() );
+   token tokenAssign( tokenVariable );
+   tokenAssign.set_assign();
+   token tokenValue( vectorStep[0] );
+
+   vectorStep.clear();
+   vectorStep.push_back( tokenAssign );
+   vectorStep.push_back( tokenVariable );
+   vectorStep.push_back( tokenValue );
+   vectorStep.emplace_back( eTokenTypeOperator, token::operator_s( token::eOperatorAdd ) );
+   vectorStep.emplace_back( eTokenTypeOperator, token::operator_s( token::eOperatorAssign ) );
+}
+
 /**
  * @brief Internal block-stack entry used during compilation.
  *
@@ -641,167 +661,35 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
             m_vectorStatement.push_back(std::move(stmtCond_));
          }
 
-         // The for-body comes between ForCond and the ForStep.
-         // We reserve a slot for ForStep now and fill it after compilation of
-         // the body (at `end` time), BUT we actually need the step to run at
-         // the bottom of the loop body, not at the top.  The simpler approach:
-         // emit ForStep AFTER the body (at `end`), and store its expression
-         // in the block frame so we can emit it then.
+         // Layout:
+         //   [ForCond]   condition  -> past loop when false
+         //   [ForSkip]   ElseJump   -> body start  (skips step on first entry)
+         //   [ForStep]   step expr  -> ForCond
+         //   [body...]
+         //   [LoopBack]             -> ForStep
+         //   [past loop]
+         int32_t iForStepIndex = static_cast<int32_t>(m_vectorStatement.size()) + 1;
 
-         block frame_;
-         frame_.m_eKind         = block::eKindFor;
-         frame_.m_iForCondIndex = iForCondIndex;
-         frame_.m_iForStepIndex = -1; // filled when `end` is processed
+         statement stmtSkip_(statement::eKindElseJump);
+         stmtSkip_.m_iJump = iForStepIndex + 1;
+         m_vectorStatement.push_back(std::move(stmtSkip_));
 
-         // Store the step expression string in a temporary statement that we
-         // will finalise at `end`.  We use a placeholder eKindExpr with the
-         // pre-compiled tokens already in it; the executor will treat it as a
-         // normal expression run.
+         // -- ForStep: step expression, for example i = i + 1
          {
             std::vector<token> vectorStep;
             auto [bOk, stringError] = compile_expression_s(stringStep, vectorStep);
             if( bOk == false ) { return { false, stringError }; }
+            expand_for_step_s( m_vectorStatement[iForCondIndex - 1].m_vectorToken, vectorStep );
 
-            // Reserve
-            // Store tokens in the frame for now.
-            frame_.m_iForStepIndex = -2; // sentinel: "tokens are ready in frame"
-            // Temporarily stash in a statement stored in the frame's break vector
-            // ... cleaner: just store the compiled tokens directly in the frame.
-            // We add a dummy statement to m_vectorStatement now as a placeholder
-            // that `end` will overwrite with a proper eKindForStep.
-            // Actually: it is simpler and cheaper to emit the step statement
-            // at `end`, so we store the compiled tokens in a local that the
-            // frame needs to own.  We pack it into a one-element vector inside
-            // the frame by re-using m_vectorBreak as a token-index store — but
-            // that conflates types.  Instead we just store a full statement.
-            //
-            // Solution: extend block with an optional step statement.
-            // Since we cannot change the struct definition here (it is local),
-            // we emit a special eKindExpr placeholder statement, remember its
-            // index, and overwrite its kind/tokens at `end`.
+            statement stmtStep_(statement::eKindForStep, std::move(vectorStep));
+            stmtStep_.m_iJump = iForCondIndex;
+            m_vectorStatement.push_back(std::move(stmtStep_));
+         }                                                                     assert( static_cast<int32_t>(m_vectorStatement.size()) - 1 == iForStepIndex );
 
-            int32_t iStepSlot = static_cast<int32_t>(m_vectorStatement.size());
-            statement stmtStepSlot_(statement::eKindForStep, std::move(vectorStep));
-            stmtStepSlot_.m_iJump = iForCondIndex; // step loops back to condition
-            m_vectorStatement.push_back(std::move(stmtStepSlot_));
-
-            frame_.m_iForStepIndex = iStepSlot;
-
-            // BUT we want the step to execute AFTER the body, not before.
-            // Move it: remove it from the vector and re-insert at `end` time.
-            // We achieve this by saving the statement and erasing the slot.
-            // ... The cleanest flat-bytecode approach: just leave the step slot
-            // in its current position and jump OVER it from the condition into
-            // the body, then loop back to the step from the end of the body.
-            //
-            // Layout:
-            //   [N]   ForCond  (jump to past-loop if false)
-            //   [N+1] ForStep  (run step, then jump to ForCond) <- skip on first entry
-            //   [N+2] <body statements>
-            //   [M]   LoopBack -> N+1  (jump to step, not to cond)
-            //
-            // When ForCond is true we jump over the ForStep to N+2 (body start).
-            // At loop-back we jump to N+1 (step), which then jumps to N (cond).
-
-            // The ForStep's own jump (m_iJump) points to ForCond.
-            // We need ForCond to jump into the body (past the step slot) when true,
-            // and to jump past everything when false.
-            // "True branch" of ForCond: iStepSlot+1 (body start).
-            // We encode this as: execute falls through to body (PC = iCondIndex+1
-            // would be the step slot, which we do NOT want on first entry).
-            //
-            // Re-design: emit ForCond with a "skip step" jump embedded.
-            // The executor for eKindForCondition does:
-            //   if condition true  -> PC = m_iJump (past-loop) ... wait, that is backwards.
-            //
-            // Correct approach: on FALSE the condition jumps PAST the loop.
-            // On TRUE it falls through to the step slot, which we need to skip.
-            // So we need an extra skip on the first entry only — that is awkward.
-            //
-            // Simplest correct layout that avoids extra complexity:
-            //   [N]   ForInit
-            //   [N+1] ForCond  -> jump to [M+1] (past loop) when false
-            //   [N+2] <body statements>
-            //   [M]   ForStep  -> jump back to [N+1]
-            //   [M+1] (first past-loop statement)
-            //
-            // We achieve this by NOT emitting ForStep here.  Instead we store
-            // the pre-compiled step tokens in the block frame and emit the
-            // ForStep statement when `end` is processed, just before the
-            // LoopBack.  Then LoopBack points to ForStep, and ForStep points
-            // to ForCond.  ForCond on false jumps to M+2 (past LoopBack).
-
-            // Undo: remove the prematurely emitted step slot.
-            m_vectorStatement.pop_back();
-
-            // Store step tokens in the frame.  We pack them into a statement
-            // so the frame owns them cleanly.
-            statement statementStep(statement::eKindForStep);
-            statementStep.m_vectorToken = std::move(stmtStepSlot_.m_vectorToken);
-            statementStep.m_iJump       = iForCondIndex;
-
-            // Stash in the frame via the break vector as a raw index trick is
-            // ugly; instead add a dedicated member.  Since we own block
-            // locally and it already has m_iForStepIndex, let's store the
-            // statement temporarily in a std::vector<statement> member.
-            // But block is a local struct ... add a member there:
-            //   statement m_stmtStep;
-            // We cannot modify block from here because it was already
-            // defined above.  So we use a different trick: serialise the step
-            // tokens into m_stringForVar with a sentinel, then rebuild at end.
-            // This is messy.  The right solution: put `statement m_stmtStep`
-            // into block — but that requires moving the definition.
-            //
-            // Given the constraints of this single-file implementation we use
-            // the simplest correct approach: emit the step as a normal eKindExpr
-            // statement immediately after ForCond, emit a "skip" jump over it,
-            // then the body follows, and at `end` we emit a LoopBack to the
-            // step statement (not to ForCond).
-            //
-            // Final chosen layout (simplest, no deferred emission needed):
-            //
-            //   [N]   ForInit                          run once
-            //   [N+1] ForCond  jump->M+2 when false   check limit
-            //   [N+2] ForSkip  jump->N+3               skip step on first entry
-            //   [N+3] ForStep  jump->N+1               step expression + loop back
-            //   [N+4] <body>
-            //   [M]   LoopBack -> N+3                  run step then re-check
-            //   [M+1] (past loop)
-            //
-            // ForSkip is an unconditional jump (eKindElseJump reused).
-            // ForStep's m_iJump = N+1 (ForCond).
-            // ForCond's m_iJump = M+1.
-            // ForSkip's m_iJump = N+4 (first body statement).
-            // LoopBack's m_iJump = N+3 (ForStep).
-
-            // Emit ForStep now (at N+3 relative to current base)
-            int32_t iStepIndex = static_cast<int32_t>(m_vectorStatement.size());
-            statementStep.m_iJump = iForCondIndex; // step -> cond
-            m_vectorStatement.push_back(std::move(statementStep));
-            frame_.m_iForStepIndex = iStepIndex;
-
-            // Emit ForSkip (N+2, emitted BEFORE step, so swap):
-            // We need ForSkip at N+2 and ForStep at N+3, but we just pushed
-            // ForStep at N+2.  Swap:
-            // Insert ForSkip before ForStep.
-            int32_t iSkipIdx = iStepIndex; // will be N+2 after insert
-            statement stmtSkip_(statement::eKindElseJump); // unconditional jump
-            stmtSkip_.m_iJump = iStepIndex + 1; // jump to body start (N+4, i.e. one past ForStep)
-            m_vectorStatement.insert(m_vectorStatement.begin() + iSkipIdx,
-                                     std::move(stmtSkip_));
-
-            // After insert, ForStep is now at iStepIndex+1
-            frame_.m_iForStepIndex = iStepIndex + 1;
-            // Fix ForStep's own jump (was already set to iForCondIndex, still correct)
-
-            // ForCond at iForCondIndex: its false-jump will be patched at `end`.
-            // Continue: body starts at iStepIndex+2 = iSkipIdx+2
-            // Fix ForSkip jump to point to body start
-            m_vectorStatement[iSkipIdx].set_jump(iStepIndex + 2);
-
-            // continue/break in body will target step and past-loop respectively;
-            // those are patched at `end`.
-         }
+         block frame_;
+         frame_.m_eKind         = block::eKindFor;
+         frame_.m_iForCondIndex = iForCondIndex;
+         frame_.m_iForStepIndex = iForStepIndex;
 
          vectorBlock.push_back(std::move(frame_));
          continue;
@@ -1429,6 +1317,7 @@ std::pair<bool, std::string> code::compile_lua(const char* piszBegin, const char
             std::vector<token> vectorStep;
             auto [bOk, stringError] = compile_expression_s(stringDelta, vectorStep);
             if( bOk == false ) { return { false, stringError }; }
+            expand_for_step_s( m_vectorStatement[iForCondIndex - 1].m_vectorToken, vectorStep );
 
             statement stmtStep_(statement::eKindForStep, std::move(vectorStep));
             stmtStep_.m_iJump = iForCondIndex; // step -> cond

@@ -45,7 +45,8 @@
  *
  * `for` syntax: `for <init>, <condition>, <step>`
  * The three parts are plain expressions separated by top-level commas (commas
- * inside parentheses or strings are ignored).  Inside a for-body `break` and
+ * inside parentheses or strings are ignored).  A bare value as step (`for i = 1, i < 10, 1`)
+ * is expanded to `i = i + 1`.  Inside a for-body `break` and
  * `continue` are supported.
  *
  * ## Strings
