@@ -4136,60 +4136,17 @@ void table_column_buffer::plant( unsigned uColumn, const gd::variant_view& varia
 */
 void table_column_buffer::swap( uint64_t uRow1, uint64_t uRow2 )
 {                                                                                                  assert( uRow1 != uRow2 ); assert( uRow1 < get_row_count() ); assert( uRow2 < get_row_count() );
-   const unsigned u128Length = (sizeof(uint64_t) + sizeof(uint64_t));          // 128 bit length in bytes
+   // ## swap row data, byte-wise swap is alias-safe and auto-vectorized by the compiler
+   auto pRow1 = row_get(uRow1);
+   auto pRow2 = row_get(uRow2);
+   std::swap_ranges(pRow1, pRow1 + m_uRowSize, pRow2);
 
-   unsigned uCount128 = m_uRowSize / (sizeof(uint64_t) + sizeof(uint64_t)); // number of 128 bit sections
-   unsigned uTail = m_uRowSize % (sizeof(uint64_t) + sizeof(uint64_t));     // trailing 32 bit values (each row is allways 4 byte aligned)
-
-   auto pRow1 = row_get( uRow1 );                                              // pointer to first row data
-   auto pRow2 = row_get( uRow2 );                                              // pointer to second row data
-
-   // ## swap data between rows
-   for( unsigned u = 0; u < uCount128; u++ )
+   // ## if metadata for row then switch meta between rows ....................
+   if (is_rowmeta() == true)
    {
-#ifdef GD_X86X
-      __m128i iSwapData = _mm_loadu_si128( reinterpret_cast<const __m128i* >( pRow1 ) );
-      _mm_storeu_si128( reinterpret_cast<__m128i* >(pRow1), _mm_loadu_si128( reinterpret_cast<const __m128i* >( pRow2 ) ) );
-      _mm_storeu_si128( reinterpret_cast<__m128i* >(pRow2), iSwapData );
-#else
-      int64_t iSwapData = *(int64_t*)pRow1;
-      *(int64_t*)pRow1 = *(int64_t*)pRow2;
-      *(int64_t*)pRow2 = iSwapData;
-      int64_t iSwapData2 = *(int64_t*)(pRow1 + sizeof(int64_t));
-      *(int64_t*)(pRow1 + sizeof(int64_t)) = *(int64_t*)(pRow2 + sizeof(int64_t));
-      *(int64_t*)(pRow2 + sizeof(int64_t)) = iSwapData2;
-#endif
-      pRow1 += u128Length;
-      pRow2 += u128Length;
-   }
-                                                                                                   assert( uTail < 16 ); assert( (uTail % 4) == 0 );
-   while( uTail > 0 )
-   {
-      uint32_t uSwapData = *(uint32_t*)pRow1;
-      *(uint32_t*)pRow1 = *(uint32_t*)pRow2;
-      *(uint32_t*)pRow2 = uSwapData;
-
-      pRow1 += sizeof( uint32_t );
-      pRow2 += sizeof( uint32_t );
-      uTail -= sizeof( uint32_t );
-   }
-
-   // ## if metadata for row then switch meta between rows
-   if( is_rowmeta() == true )
-   {
-      pRow1 = row_get_meta( uRow1 );                                           // pointer to first meta data for row
-      pRow2 = row_get_meta( uRow2 );                                           // pointer to second meta data for row
-      uTail = m_uRowMetaSize;                                                                      assert( uTail < 16 ); assert( (uTail % 4) == 0 );
-      while( uTail > 0 )
-      {
-         uint32_t uSwapData = *(uint32_t*)pRow1;                               // read 4 byte
-         *(uint32_t*)pRow1 = *(uint32_t*)pRow2;                                // move 4 byte
-         *(uint32_t*)pRow2 = uSwapData;                                        // store 4 bytes read
-
-         pRow1 += sizeof( uint32_t );
-         pRow2 += sizeof( uint32_t );
-         uTail -= sizeof( uint32_t );
-      }
+      auto pMeta1 = row_get_meta(uRow1);
+      auto pMeta2 = row_get_meta(uRow2);
+      std::swap_ranges(pMeta1, pMeta1 + m_uRowMetaSize, pMeta2);
    }
 }
 
