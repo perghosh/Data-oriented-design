@@ -1403,7 +1403,7 @@ std::pair<bool, std::string> code::execute(runtime& runtime_, value* pResult) co
 {
    const int32_t iCount = static_cast<int32_t>(m_vectorStatement.size());
    int32_t iPC = 0;
-   value valueLast_;
+   value valueLast;
 
    while( iPC < iCount )
    {
@@ -1417,7 +1417,7 @@ std::pair<bool, std::string> code::execute(runtime& runtime_, value* pResult) co
       {
          if( stmt_.has_tokens() )
          {
-            auto [bOk, stringError] = token::calculate_s(stmt_.m_vectorToken, &valueLast_, runtime_);
+            auto [bOk, stringError] = token::calculate_s(stmt_.m_vectorToken, &valueLast, runtime_);
             if( bOk == false ) return { false, "[code::execute] " + stringError + " in: " + std::string(stmt_.m_stringSource) };
          }
          ++iPC;
@@ -1453,7 +1453,7 @@ std::pair<bool, std::string> code::execute(runtime& runtime_, value* pResult) co
       {
          if( stmt_.has_tokens() )
          {
-            auto [bOk, stringErr] = token::calculate_s(stmt_.m_vectorToken, &valueLast_, runtime_);
+            auto [bOk, stringErr] = token::calculate_s(stmt_.m_vectorToken, &valueLast, runtime_);
             if( bOk == false ) { return { false, "[code::execute] for-step error: " + stringErr }; }
          }
 
@@ -1480,7 +1480,7 @@ std::pair<bool, std::string> code::execute(runtime& runtime_, value* pResult) co
       } // switch
    } // while
 
-   if( pResult != nullptr ) { *pResult = valueLast_; }
+   if( pResult != nullptr ) { *pResult = valueLast; }
 
    return { true, {} };
 }
