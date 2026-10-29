@@ -7,6 +7,7 @@
  * 
  */
 
+#include <numeric>
 #include <variant>
 
 #include "gd_utf8.h"
@@ -1853,6 +1854,55 @@ void table_column_buffer::row_set( uint64_t uRow, const void* praw_, tag_raw )
    uint8_t* puRow = row_get( uRow );
    memcpy( puRow, praw_, m_uRowSize );
 }
+
+/// helper method used to allocate more memory for table when more rows are added
+static void reserve_s(table_column_buffer& table_, uint64_t uCount)
+{
+   // ## calculate size needed to store added row count and allocate memory
+   uint64_t uTotalTableSize = table_.size_reserved_total();                           // total table memory block size for table
+   uint64_t uTotalMetaSize = table_.size_meta_total();                                // meta block size part
+
+   uint64_t uTotalTableSizeCopyTo = table_.size_reserved_total(uCount);             // new block size to store more rows
+   uint64_t uTotalMetaSizeCopyTo = table_.size_meta_total(uCount);                  // new meta block size
+
+   uint64_t uCopyRowSize = uTotalTableSize - uTotalMetaSize;
+
+   uint8_t* puDataCopyTo = new uint8_t[uTotalTableSizeCopyTo];               // new buffer for table data (both data and meta data)
+
+   if(table_.m_puData != nullptr) memcpy(puDataCopyTo, table_.m_puData, uCopyRowSize);   // copy row data
+
+   if(table_.m_puMetaData != nullptr)
+   {
+      // ## copy meta data block to new increased table block
+      uint8_t* puMetaData = puDataCopyTo + (uTotalTableSizeCopyTo - uTotalMetaSizeCopyTo);// position where meta data starts
+      memcpy(puMetaData, table_.m_puMetaData, uTotalMetaSize);                      // copy old meta data
+      table_.m_puMetaData = puMetaData;                                               // set member meta data pointer to new block
+      memset(table_.m_puMetaData + uTotalMetaSize, 0, uTotalMetaSizeCopyTo - uTotalMetaSize);// clear rest of meta data
+   }
+   else if (uTotalMetaSizeCopyTo > 0)
+   {
+      table_.m_puMetaData = puDataCopyTo + (uTotalTableSizeCopyTo - uTotalMetaSizeCopyTo);// set meta position pointer if meta data is used
+   }
+
+   delete[] table_.m_puData;
+   table_.m_puData = puDataCopyTo;
+
+
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Ensures the column buffer has reserved capacity for at least the specified number of rows.  
+ * @param uCount The minimum number of rows to reserve space for.
+ */
+void table_column_buffer::reserve(uint64_t uCount)
+{
+   if (uCount <= m_uReservedRowCount) return;
+
+   reserve_s(*this, uCount);
+
+   m_uReservedRowCount = uCount;
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief adds more memory storing row/rows to table
@@ -4143,6 +4193,44 @@ void table_column_buffer::swap( uint64_t uRow1, uint64_t uRow2 )
    }
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Sort a range of rows on one column by building a sorted index and then applying it to the table.
+ *
+ * Builds a vector of row indexes for the range and sorts it with `std::stable_sort`. The sort compares
+ * cell values in `uColumn` as variant views. The sorted order is then applied to the table in place
+ * by following permutation cycles and swapping rows. Rows with equal values keep their relative order.
+ * Nothing happens if fewer than two rows are selected.
+ *
+ * @param uColumn Index of the column to sort on
+ * @param bAscending `true` to sort ascending, `false` to sort descending
+ * @param uFrom Index of the first row in the range to sort
+ * @param uCount Number of rows to sort, starting at `uFrom`
+ * @param tag_sort_index Tag used to select this index-based sort overload
+ */
+void table_column_buffer::sort(unsigned uColumn, bool bAscending, uint64_t uFrom, uint64_t uCount, tag_sort_index)
+{                                                                                                   assert(uColumn < get_column_count()); assert(uFrom + uCount <= get_row_count());
+   if(uCount < 2) return;
+
+   std::vector<uint64_t> vectorIndex(uCount);
+   std::iota(vectorIndex.begin(), vectorIndex.end(), uFrom);
+
+   std::stable_sort(vectorIndex.begin(), vectorIndex.end(), [this, uColumn, bAscending](uint64_t uLeft, uint64_t uRight)
+      {
+         auto v1_ = cell_get_variant_view(uLeft, uColumn);
+         auto v2_ = cell_get_variant_view(uRight, uColumn);
+         return bAscending ? (v1_ < v2_) : (v2_ < v1_);
+      });
+
+   // vectorIndex[k] = original row that should end up at position uFrom + k
+   // apply permutation in place by following cycles
+   for (uint64_t uPosition = 0; uPosition < uCount; uPosition++)
+   {
+      uint64_t uSource = vectorIndex[uPosition];
+      while(uSource - uFrom < uPosition) uSource = vectorIndex[uSource - uFrom]; // follow already moved rows
+      if(uSource - uFrom != uPosition) swap(uFrom + uPosition, uSource);
+   }
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief sort table rows based on selected column
@@ -4160,7 +4248,7 @@ stringTable = to_string( tableM1, tag_io_json{});
  * @param uCount number of rows to sort
 */
 void table_column_buffer::sort( unsigned uColumn, bool bAscending, uint64_t uFrom, uint64_t uCount, tag_sort_selection )
-{                                                                                                  assert( uColumn < get_column_count() ); assert( uFrom < get_row_count() ); assert( (uFrom + uFrom) <= get_row_count() );
+{                                                                                                  assert( uColumn < get_column_count() ); assert( uFrom < get_row_count() ); assert( (uFrom + uCount) <= get_row_count() );
    if( bAscending == true )
    {
       for( uint64_t uRow = uFrom, uRowEnd = uFrom + uCount - 1; uRow <= uRowEnd; uRow++ )

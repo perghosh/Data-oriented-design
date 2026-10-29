@@ -4,6 +4,25 @@
  * \file gd_table_column-buffer.h
  *
  * @brief Table used to transfer/move data, Use `gd::table::dto::table` class that is optimized for data transfer.
+ * 
+ * Sections — double-click a marker, then Ctrl+F3 / F3 to jump.
+ * 
+ * attribute__             table attributes (members)
+ * append__                append data to table
+ * cell__                  cell operations for table
+ * cell_get_find__         get cell value by search for value
+ * column__                column management
+ * column_find__           find column by name or index
+ * construct_table__       constructors and destructors
+ * find__                  find methods for locating data within the table
+ * harvest__               harvest data from table
+ * operator__              table operators
+ * plant__                 plant data into table
+ * range__                 range operations for table
+ * row__                   row operations for table
+ * serialize__             serialize table to stream
+ * sort__                  sort rows by column values
+ * 
  *
  | Area                | Methods (Examples)                                                                 | Description                                                                                   |
  |---------------------|------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
@@ -456,7 +475,7 @@ public:
    using difference_type = row_difference_type;
 
 
-   // ## @API [tag: construct] [description: table construction, lots of constructors to simplify how to create new tables]
+   // ## @API [tag: construct] [description: table construction, lots of constructors to simplify how to create new tables] [jump: construct_table__]
 public:
    /// @name construction
    /// Constructs table_column_buffer objects.
@@ -531,7 +550,7 @@ private:
    void common_construct( const detail::columns* pcolumns, const std::initializer_list<gd::variant_view>& listColumn );
    void common_construct( const detail::columns* pcolumns, const std::vector<gd::variant_view>& vectorColumn );
 
-   // ## @API [tag: operator] [description: table operators]
+   // ## @API [tag: operator] [description: table operators] [jump: operator__]
 public:
    std::vector<gd::variant_view> operator[]( uint64_t uRow ) const { return row_get_variant_view( uRow ); }
 
@@ -618,7 +637,7 @@ public:
 /** \name OPERATION
 *///@{
 
-   // ## @API [tag: column] [description: column management methods]
+// ## @API [tag: column] [description: column management methods] [jump: column__]
 
    /// @name column_add
    /// Add columns to table, this is typically done before adding values to table. Remember to call @see prepare before adding data
@@ -675,8 +694,8 @@ public:
 
    ///@}
 
+// @API [tag: column, find] [description: find and get operations for column] [jump: column_find__]
    // ### access column or find index for column/columns
-   // 0TAG0find_column.table_column_buffer
    /// @brief find column index for column name
    int column_find_index( const std::string_view& stringName ) const noexcept;
    /// @brief find column index for column alias
@@ -766,7 +785,7 @@ public:
    std::pair<bool, std::string> prepare();
 
 
-   // ## @API [tag: row] [description: row management methods]
+// ## @API [tag: row] [description: row management methods] [jump: row__]
 
    void row_set_state( uint64_t uRow, unsigned uFlags ) { assert( uRow < m_uReservedRowCount ); *row_get_state( uRow ) = uFlags; }
    void row_set_state( uint64_t uRow, unsigned uSet, unsigned uClear );
@@ -884,6 +903,7 @@ public:
    /// @name row_reserve_add
    /// reserve memory to store more rows in table
    ///@{
+   void reserve(uint64_t uCount);
    void row_reserve_add( uint64_t uCount );
    void row_reserve_add() { row_reserve_add( 1 ); }
    ///@}
@@ -939,7 +959,7 @@ public:
    /// return collection object wrapping rows
    gd::table::rows<table_column_buffer> rows() { return gd::table::rows<gd::table::table_column_buffer>( this ); }
 
-   // ## @API [tag: cell] [description: cell management methods]
+// ## @API [tag: cell] [description: cell management methods] [jump: cell__]
 
    uint64_t cell_offset( uint64_t uRow, unsigned uColumn ) noexcept; ///< get offset of cell in buffer
    uint64_t cell_offset(uint64_t uRow, const std::string_view& stringName) noexcept; ///< get offset of cell in buffer
@@ -971,7 +991,7 @@ public:
    /// get cell value using name or column index, if name then column gets index to speed up the process next time value is returned
    gd::variant_view cell_get_variant_view( uint64_t uRow, std::variant< unsigned, std::string_view >* pvariantColumn ) const noexcept;
 
-   // ## @API [tag: cell, get, find] [description: get cell values by searching for row]
+// ## @API [tag: cell, get, find] [description: get cell values by searching for row] [jump: cell_get_find__]
 
    const uint8_t* cell_get(  const std::vector< std::pair< std::variant< unsigned, std::string_view>, gd::variant_view > >& vectorFind, unsigned uColumn, tag_find ) const noexcept;
    gd::variant_view cell_get_variant_view(  const std::vector< std::pair< std::variant< unsigned, std::string_view>, gd::variant_view > >& vectorFind, unsigned uColumn, tag_find ) const noexcept;
@@ -1013,7 +1033,7 @@ public:
    cell_set(uint64_t uRow, const std::string_view& stringName, TYPE&& variantValue, tag_convert) { cell_set( uRow, stringName, variantValue.as_variant_view(), tag_convert{}); }
 
 
-   // ## @API [tag: find] [description: find methods for locating data within the table, most methods return the row index or -1 if not found]
+// ## @API [tag: find] [description: find methods for locating data within the table, most methods return the row index or -1 if not found] [jump: find__]
 
    int64_t find( unsigned uColumn, const gd::variant_view& variantviewFind ) const noexcept { return find( uColumn, 0, get_row_count(), variantviewFind ); }
    int64_t find( const std::string_view& stringName, const gd::variant_view& variantviewFind ) const noexcept { return find_variant_view( stringName, 0, get_row_count(), variantviewFind ); }
@@ -1091,7 +1111,7 @@ public:
    gd::argument::arguments::argument property_get( const std::string_view& stringName ) const { return m_argumentsProperty.get_argument( stringName ); }
    bool property_exists( const std::string_view& stringName ) const { return (m_argumentsProperty.find( stringName ) != nullptr); }
 
-   // ## @API [tag: append] [description: append row data from one table into this table]
+// ## @API [tag: append] [description: append row data from one table into this table] [jump: append__]
 
    void append( const table_column_buffer& tableFrom );
    void append( const table_column_buffer& tableFrom, tag_convert );
@@ -1126,7 +1146,7 @@ public:
    bool equal( const table_column_buffer& tableEqualTo ) const noexcept { return equal( tableEqualTo, 0, get_row_count() ); }
    ///@}
 
-   // ## @API [tag: harvest, read] [description: harvest is to extract data from the table into a different format or container]
+// ## @API [tag: harvest, read] [description: harvest is to extract data from the table into a different format or container] [jump: harvest__]
 
    template <typename TYPE>
    std::vector<TYPE> harvest( uint64_t uRow, unsigned uColumn, unsigned uCount, tag_row ) const noexcept;
@@ -1155,7 +1175,7 @@ public:
    void harvest( const std::vector< unsigned >& vectorColumn, const std::vector<uint64_t>& vectorRow, table_column_buffer& tableHarvest ) const;
    void harvest( const std::vector< std::string_view >& vectorColumnName, const std::vector<uint64_t>& vectorRow, table_column_buffer& tableHarvest ) const;
 
-   // ## @API [tag: plant, write] [description: plant is to insert data into the table from a different format or container]
+// ## @API [tag: plant, write] [description: plant is to insert data into the table from a different format or container] [jump: plant__]
 
    void plant( const table_column_buffer& table, tag_name );
    void plant( const table_column_buffer& table, tag_name, tag_convert );
@@ -1175,14 +1195,16 @@ public:
    void plant( unsigned uColumn, const gd::variant_view& variantviewValue );
    void plant( unsigned uColumn, const gd::variant_view& variantviewValue, uint64_t uFrom, uint64_t uCount );
 
-   // ## @API [tag: sort, reorder] [description: sort is to reorder the rows in the table based on the values in a specific column]
+// ## @API [tag: sort, reorder] [description: sort is to reorder the rows in the table based on the values in a specific column] [jump: sort__]
    void swap( uint64_t uRow1, uint64_t uRow2 );
 
    // https://github.com/kevinhermawan/sortire
 
+   void sort(unsigned uColumn, bool bAscending, uint64_t uFrom, uint64_t uCount, tag_sort_index);
    void sort( unsigned uColumn, bool bAscending, uint64_t uFrom, uint64_t uCount, tag_sort_selection );
    void sort( unsigned uColumn, bool bAscending, uint64_t uFrom, uint64_t uCount, tag_sort_bubble );
 
+   void sort(unsigned uColumn, bool bAscending, tag_sort_index) { sort(uColumn, bAscending, 0, get_row_count(), tag_sort_index{}); }
    void sort( unsigned uColumn, bool bAscending ) { sort( uColumn, bAscending, 0, get_row_count(), tag_sort_selection{} ); }
 
    void sort_null(unsigned uColumn, bool bAscending, uint64_t uFrom, uint64_t uCount, tag_sort_bubble);
@@ -1199,7 +1221,7 @@ public:
    template<typename TAG_ALGORITHM>
    void sort( const std::string_view& stringColumnName, bool bAscending, uint64_t uFrom, uint64_t uCount, TAG_ALGORITHM tag_ ) { sort( column_get_index(stringColumnName), bAscending, uFrom, uCount, tag_); }
 
-   // ## @API [tag: range] [description: generate range objects from table, ranges mark sections in table]
+// ## @API [tag: range] [description: generate range objects from table, ranges mark sections in table] [jump: range__]
 
    /// return range for complete table
    range get_range() const { return range( 0, 0, get_row_count() - 1, get_column_count() ); }
@@ -1228,7 +1250,7 @@ public:
    /// Erase selected rows, rows should be sorted in descending order
    void erase(const std::vector<uint64_t>& vectorRowIndex, tag_raw) { erase(vectorRowIndex.data(), (uint64_t)vectorRowIndex.size(), tag_raw{}); }
 
-   // ## @API [tag: serialize] [description: read and write methods to store parts of the table and complete table as binary data]
+// ## @API [tag: serialize] [description: read and write methods to store parts of the table and complete table as binary data] [jump: serialize__]
 
    std::byte* serialize( std::byte* pBuffer, bool bSave );
    std::byte* serialize( std::byte* pBuffer, bool bSave, tag_member );
@@ -1261,7 +1283,7 @@ public:
 //@}
 
 
-// ## @API [tag: attribute, member] [description: member data to table]
+// ## @API [tag: attribute, member] [description: member data to table] [jump: attribute__]
 public:
    uint8_t* m_puData = nullptr;        ///< data to hold values in table
    uint8_t* m_puMetaData = nullptr;    ///< data block with row meta information

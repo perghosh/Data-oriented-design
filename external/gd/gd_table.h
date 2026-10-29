@@ -151,6 +151,8 @@ struct tag_column_variant {};
 
 /// tag dispatcher used for methods working with something where the first is sorted
 struct tag_first_sorted {};
+/// tag dispatcher for index sort
+struct tag_sort_index {};
 /// tag dispatcher for selection sort
 struct tag_sort_selection {};
 /// tag dispatcher for bubble sort
