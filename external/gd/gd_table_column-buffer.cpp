@@ -4188,6 +4188,65 @@ void table_column_buffer::sort(unsigned uColumn, bool bAscending, uint64_t uFrom
    }
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Sort a range of rows on one column by caching the key values and gathering rows in sorted order.
+ *
+ * The key for each row is read once into a vector together with the row index, and that vector is
+ * sorted with `std::stable_sort`. This avoids reading the cell (column lookup, null check, variant
+ * construction) on every comparison. The sorted order is then applied by copying the rows, in order,
+ * into a temporary buffer and copying that buffer back over the range in one block. This gives sequential
+ * memory access instead of swapping whole rows along permutation cycles.
+ *
+ * @note Keys are not allowed to be null, same as the other sort methods. Rows with equal values keep their relative order.
+ *
+ * @param uColumn Index of the column to sort on
+ * @param bAscending `true` to sort ascending, `false` to sort descending
+ * @param uFrom Index of the first row in the range to sort
+ * @param uCount Number of rows to sort, starting at `uFrom`
+ * @param tag_sort_key Tag used to select this key caching sort overload
+ */
+void table_column_buffer::sort( unsigned uColumn, bool bAscending, uint64_t uFrom, uint64_t uCount, tag_sort_key )
+{                                                                                                  assert( uColumn < get_column_count() ); assert( (uFrom + uCount) <= get_row_count() );
+   if( uCount < 2 ) return;
+
+   // ## cache key and row index, the key is read once for each row ...........
+   std::vector< std::pair< gd::variant_view, uint64_t > > vectorKey;
+   vectorKey.reserve( uCount );
+   for( uint64_t uRow = uFrom, uEnd = uFrom + uCount; uRow < uEnd; uRow++ )
+   {
+      vectorKey.emplace_back( cell_get_variant_view( uRow, uColumn ), uRow );                      assert( vectorKey.back().first.is_null() == false );
+   }
+
+   if( bAscending == true )
+   {
+      std::stable_sort( vectorKey.begin(), vectorKey.end(), []( const auto& pairLeft, const auto& pairRight ) { return pairLeft.first < pairRight.first; } );
+   }
+   else
+   {
+      std::stable_sort( vectorKey.begin(), vectorKey.end(), []( const auto& pairLeft, const auto& pairRight ) { return pairRight.first < pairLeft.first; } );
+   }
+
+   // ## gather rows in sorted order into temporary buffer, keys are not used after this point
+   //    (keys for non primitive values point into the row buffer that is overwritten below)
+   std::vector<uint8_t> vectorData( uCount * m_uRowSize );
+   for( uint64_t uPosition = 0; uPosition < uCount; uPosition++ )
+   {
+      memcpy( vectorData.data() + (uPosition * m_uRowSize), row_get( vectorKey[uPosition].second ), m_uRowSize );
+   }
+   memcpy( row_get( uFrom ), vectorData.data(), vectorData.size() );                               // copy sorted rows back in one block
+
+   // ## same for meta data if table has meta data for rows
+   if( is_rowmeta() == true )
+   {
+      std::vector<uint8_t> vectorMetaData( uCount * m_uRowMetaSize );
+      for( uint64_t uPosition = 0; uPosition < uCount; uPosition++ )
+      {
+         memcpy( vectorMetaData.data() + (uPosition * m_uRowMetaSize), row_get_meta( vectorKey[uPosition].second ), m_uRowMetaSize );
+      }
+      memcpy( row_get_meta( uFrom ), vectorMetaData.data(), vectorMetaData.size() );
+   }
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief sort table rows based on selected column

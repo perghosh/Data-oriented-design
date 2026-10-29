@@ -157,6 +157,8 @@ struct tag_sort_index {};
 struct tag_sort_selection {};
 /// tag dispatcher for bubble sort
 struct tag_sort_bubble {};
+/// tag dispatcher for key cache sort, keys are read once and rows are gathered in sorted order
+struct tag_sort_key {};
 /// tag dispatcher for some type of find logic
 struct tag_find {}; 
 
