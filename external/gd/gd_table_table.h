@@ -899,6 +899,8 @@ public:
 
    // https://github.com/kevinhermawan/sortire
 
+   void sort(unsigned uColumn, bool bAscending, uint64_t uFrom, uint64_t uCount, tag_sort_index);
+   void sort(unsigned uColumn, bool bAscending, uint64_t uFrom, uint64_t uCount, tag_sort_key);
    void sort( unsigned uColumn, bool bAscending, uint64_t uFrom, uint64_t uCount, tag_sort_selection );
    void sort( unsigned uColumn, bool bAscending, uint64_t uFrom, uint64_t uCount, tag_sort_bubble );
 
