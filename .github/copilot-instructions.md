@@ -107,11 +107,24 @@ Use the full, searchable domain term. Do not shorten meaningful words:
 `uMessageType`, not `uMsgType`; `stringSessionIdentifier`, not `sessId`;
 `uProcessedItemCount`, not `itemCnt`.
 
-For standard-library containers and project types, use the recognizable type
-name in lowercase followed by the full semantic name:
+For standard-library containers and project types, use the complete object name
+ in lowercase followed by the full semantic name:
 `vectorPendingTransactions`, `pairSelect`, `queryUserBalanceUpdate`.
 For a templated type, use its principal type name, not its full template
 spelling, as the prefix.
+
+Global variables
+
+Global variables should follow the same Hungarian notation rules as class data members, with the `g_` prefix to indicate global scope:
+`bIsInitialized_g`, `uMaxConnections_g`, `pMainWindow_g`,
+`vectorPendingTransactions_g`.
+
+Interface variables
+Interface variables should follow the same Hungarian notation rules as other variables, with the `*_i` suffix added to indicate an interface type:
+For example, `pShape_i` for a pointer to an `IShape` interface, or `itJson_i` for an iterator over `IJsonSerializable` objects.
+
+Debug variables should follow the same Hungarian notation rules as other variables, with the `*_d` suffix added to indicate debug scope:
+`bIsActive_d`, `uItemCount_d`, `dbg_pWindow_d`.
 
 ### `auto`, `var`, and inferred types
 

@@ -69,8 +69,8 @@ namespace variant_type
    struct tag_utf8 {};                                                         // tag for utf8 formated text
    struct tag_scientific {};                                                   // tag for use when you need exact numbers
    struct tag_explicit {};                                                     // tag used to avoid implicit convertions using variant items
-
-   using tag_std_variant = gd::types::tag_variant;                             // operations involving variant from stl
+   using  tag_same_type = gd::types::tag_same;
+   using  tag_std_variant = gd::types::tag_variant;                            // operations involving variant from stl
 
    enum enumGroup
    {

@@ -431,6 +431,7 @@ public:
    bool compare_convert( const variant_view& v ) const { return compare_convert_s( *this, v ); }
 
    bool less( const variant_view& v ) const;
+   bool less(const variant_view& v, gd::variant_type::tag_same_type) const;
    uint32_t length() const { return m_uSize; }
    uint32_t length_in_bytes() const;
    uint32_t clength_in_bytes() const;

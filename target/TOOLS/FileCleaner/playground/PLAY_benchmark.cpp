@@ -894,3 +894,106 @@ TEST_CASE("[benchmark] three sort methods for table", "[benchmark]")
 
 }
 
+inline void cache_evict_all()
+{
+   static std::vector<uint8_t> vectorTrash(128 * 1024 * 1024);
+   for (size_t u = 0; u < vectorTrash.size(); u += 64) { vectorTrash[u]++; }
+   std::atomic_signal_fence(std::memory_order_seq_cst);                      // stop compiler from removing the loop
+}
+
+
+TEST_CASE("[benchmark] three sort methods for table using rstring", "[benchmark]")
+{
+   constexpr unsigned uRunIterations = 5;
+   constexpr unsigned uWarmupCount = 0;
+   constexpr unsigned uBatchCount = 2;
+   constexpr unsigned uCreateRowCount = 10000;
+
+   using namespace gd::table::dto;
+
+   // Generate 100000 rows of data for the table with random values
+   std::mt19937_64 generatorRandom(42);                                     // fixed seed gives repeatable data
+   std::uniform_int_distribution<uint64_t> distributionInteger(0, 1'000'000);
+   std::uniform_real_distribution<double> distributionDouble(0.0, 1'000.0);
+   std::uniform_int_distribution<int> distributionCharacter('a', 'z');
+
+   table tableSource((table::eTableFlagNull32 | table::eTableFlagRowStatus), { { "uint64", 0, "C1" },{ "string", 8, "C2" },{ "double", 0, "C3" },{ "double", 0, "C4" },{ "int32", 0, "C5" },{ "uint32", 0, "C6" },{ "rstring", 50, "C7" } }, gd::table::tag_prepare{});
+
+   for (uint64_t u = 0; u < uCreateRowCount; ++u)
+   {
+      auto uRow = tableSource.row_add_one();
+
+      std::string stringValue(8, ' ');
+      std::string stringValue2(25, ' ');
+      for (auto& iCharacter : stringValue) { iCharacter = static_cast<char>(distributionCharacter(generatorRandom)); }
+      for (auto& iCharacter : stringValue2) { iCharacter = static_cast<char>(distributionCharacter(generatorRandom)); }
+
+      std::string stringValue6 = "01234567890123456789";
+      stringValue6 += stringValue2;
+
+      tableSource.cell_set(uRow, 0u, distributionInteger(generatorRandom));
+      tableSource.cell_set(uRow, 1u, std::string_view(stringValue));
+      tableSource.cell_set(uRow, 2u, distributionDouble(generatorRandom));
+      tableSource.cell_set(uRow, 3u, distributionDouble(generatorRandom));
+      tableSource.cell_set(uRow, 4u, static_cast<int32_t>(distributionInteger(generatorRandom) % 1000));
+      tableSource.cell_set(uRow, 5u, static_cast<uint32_t>(distributionInteger(generatorRandom) % 1000));
+      tableSource.cell_set(uRow, 6u, std::string_view(stringValue6));
+   }
+
+   REQUIRE(tableSource.size() == uCreateRowCount);
+
+   uint64_t uRowCount = tableSource.size();
+   table tableTarget((table::eTableFlagNull32 | table::eTableFlagRowStatus), { { "uint64", 0, "C1" },{ "string", 8, "C2" },{ "double", 0, "C3" },{ "double", 0, "C4" },{ "int32", 0, "C5" },{ "uint32", 0, "C6" },{ "rstring", 50, "C7" } }, gd::table::tag_prepare{});
+   tableTarget.reserve(uRowCount);
+
+   auto print_result = [](const char* pbszName, const auto& result)
+      {
+         std::cout << "\nBenchmark: " << pbszName << "\n";
+         std::cout << "Mean: " << (result.mean() / 1'000.0) << " us\n";
+         std::cout << "Minimum: " << (result.min_time() / 1'000.0) << " us\n";
+         std::cout << "Maximum: " << (result.max_time() / 1'000.0) << " us\n";
+         std::cout << "Total in milliseconds: " << (result.total_duration_ns() / 1'000'000.0) << " ms\n";
+      };
+
+   for (unsigned uSortColumn = 0; uSortColumn < 7; ++uSortColumn)
+   {
+
+      const auto resultSort01 = gd::benchmark::run_s(
+         [&]()
+         {
+            // cache_evict_all();
+            tableTarget.row_clear();
+            tableTarget.append(tableSource);
+            tableTarget.sort(uSortColumn, true);
+            return tableTarget.size();
+         }, uRunIterations, uWarmupCount, uBatchCount);
+
+      const auto resultSort02 = gd::benchmark::run_s(
+         [&]()
+         {
+            // cache_evict_all();
+            tableTarget.row_clear();
+            tableTarget.append(tableSource);
+            tableTarget.sort(uSortColumn, true, gd::table::tag_sort_index{});
+            return tableTarget.size();
+         }, uRunIterations, uWarmupCount, uBatchCount);
+
+      const auto resultSort03 = gd::benchmark::run_s(
+         [&]()
+         {
+            // cache_evict_all();
+            tableTarget.row_clear();
+            tableTarget.append(tableSource);
+            tableTarget.sort(uSortColumn, true, gd::table::tag_sort_key{});
+            return tableTarget.size();
+         }, uRunIterations, uWarmupCount, uBatchCount);
+
+
+      std::cout << "\n\nColumn: " << uSortColumn << " =======================";
+
+      print_result("sort table 01", resultSort01);
+      print_result("sort table 02", resultSort02);
+      print_result("sort table 03", resultSort03);
+   }
+
+}

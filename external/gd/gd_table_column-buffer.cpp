@@ -4211,19 +4211,30 @@ void table_column_buffer::sort( unsigned uColumn, bool bAscending, uint64_t uFro
 
    // ## cache key and row index, the key is read once for each row ...........
    std::vector< std::pair< gd::variant_view, uint64_t > > vectorKey;
-   vectorKey.reserve( uCount );
+   vectorKey.reserve(uCount);
+
    for( uint64_t uRow = uFrom, uEnd = uFrom + uCount; uRow < uEnd; uRow++ )
-   {
-      vectorKey.emplace_back( cell_get_variant_view( uRow, uColumn ), uRow );                      assert( vectorKey.back().first.is_null() == false );
+   {                                                                                                assert( cell_is_null()( uRow, uColumn ) == false ); // keys are not allowed to be null
+      vectorKey.emplace_back( cell_get_variant_view( uRow, uColumn, tag_raw{}), uRow);              
    }
 
-   if( bAscending == true )
+
+   // ## sort keys, type is the same for all keys so select comparator once
+   auto uType = vectorKey.front().first.type_number();
+
+   auto sort_ = [&vectorKey, bAscending](auto&& compare_)
+      {
+         if(bAscending == true) { std::stable_sort(vectorKey.begin(), vectorKey.end(), [&compare_](const auto& pairLeft, const auto& pairRight) { return compare_(pairLeft.first, pairRight.first); }); }
+         else { std::stable_sort(vectorKey.begin(), vectorKey.end(), [&compare_](const auto& pairLeft, const auto& pairRight) { return compare_(pairRight.first, pairLeft.first); }); }
+      };
+
+   switch (uType)
    {
-      std::stable_sort( vectorKey.begin(), vectorKey.end(), []( const auto& pairLeft, const auto& pairRight ) { return pairLeft.first < pairRight.first; } );
-   }
-   else
-   {
-      std::stable_sort( vectorKey.begin(), vectorKey.end(), []( const auto& pairLeft, const auto& pairRight ) { return pairRight.first < pairLeft.first; } );
+   case gd::types::eTypeNumberInt32:  sort_([](const auto& v1, const auto& v2) { return v1.m_V.int32 < v2.m_V.int32; });  break;
+   case gd::types::eTypeNumberInt64:  sort_([](const auto& v1, const auto& v2) { return v1.m_V.int64 < v2.m_V.int64; });  break;
+   case gd::types::eTypeNumberUInt64: sort_([](const auto& v1, const auto& v2) { return v1.m_V.uint64 < v2.m_V.uint64; }); break;
+   case gd::types::eTypeNumberDouble: sort_([](const auto& v1, const auto& v2) { return v1.m_V.d < v2.m_V.d; });      break;
+   default:                           sort_([](const auto& v1, const auto& v2) { return v1.less(v2, gd::variant_type::tag_same_type{}); }); break;
    }
 
    // ## gather rows in sorted order into temporary buffer, keys are not used after this point

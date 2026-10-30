@@ -153,6 +153,7 @@ struct tag_name {};           ///< name is used in some form
 struct tag_priority {};       ///< priority is used in some form, like high/low
 struct tag_reference {};      ///< reference is used in some form, like a pointer or link
 struct tag_role {};           ///< role is used in some form, like user role or permission
+struct tag_same {};           ///< same (type, value or something else) is used in some form, like matching types
 struct tag_state {};          ///< state is used in some form, like current condition
 struct tag_status {};         ///< status is used in some form, like active/inactive
 struct tag_success {};        ///< success is used in some form
