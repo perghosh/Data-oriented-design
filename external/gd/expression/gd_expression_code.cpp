@@ -750,7 +750,7 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
 
          if( vectorPostfix.empty() == false )
          {
-            statement stmtExpr_(statement::eKindExpr, std::move(vectorPostfix));
+            statement stmtExpr_(statement::eKindExpression, std::move(vectorPostfix));
             stmtExpr_.m_stringSource = stringTrimmed;
             m_vectorStatement.push_back(std::move(stmtExpr_));
          }
@@ -1366,7 +1366,7 @@ std::pair<bool, std::string> code::compile_lua(const char* piszBegin, const char
 
          if( vectorPostfix.empty() == false )
          {
-            statement stmtExpr_(statement::eKindExpr, std::move(vectorPostfix));
+            statement stmtExpr_(statement::eKindExpression, std::move(vectorPostfix));
             stmtExpr_.m_stringSource = stringTrimmed;
             m_vectorStatement.push_back(std::move(stmtExpr_));
          }
@@ -1407,32 +1407,32 @@ std::pair<bool, std::string> code::execute(runtime& runtime_, value* pResult) co
 
    while( iPC < iCount )
    {
-      const statement& stmt_ = m_vectorStatement[static_cast<size_t>(iPC)];
+      const statement& statement_ = m_vectorStatement[static_cast<size_t>(iPC)];
 
-      switch( stmt_.get_kind() )
+      switch( statement_.get_kind() )
       {
-      // -- plain expression -------------------------------------------------
-      case statement::eKindExpr:
+      // ## plain expression ..................................................
+      case statement::eKindExpression:
       case statement::eKindForInit:
       {
-         if( stmt_.has_tokens() )
+         if( statement_.has_tokens() )
          {
-            auto [bOk, stringError] = token::calculate_s(stmt_.m_vectorToken, &valueLast, runtime_);
-            if( bOk == false ) return { false, "[code::execute] " + stringError + " in: " + std::string(stmt_.m_stringSource) };
+            auto [bOk, stringError] = token::calculate_s(statement_.m_vectorToken, &valueLast, runtime_);
+            if( bOk == false ) return { false, "[code::execute] " + stringError + " in: " + std::string(statement_.m_stringSource) };
          }
          ++iPC;
          break;
       }
 
-      // -- if / while / for-cond: evaluate condition, branch on false --------
+      // ## if / while / for-cond: evaluate condition, branch on false ........
       case statement::eKindIf:
       case statement::eKindWhile:
       case statement::eKindForCondition:
       {
          value valueCondition;
-         if( stmt_.has_tokens() )
+         if( statement_.has_tokens() )
          {
-            auto [bOk, stringErr] = token::calculate_s(stmt_.m_vectorToken, &valueCondition, runtime_);
+            auto [bOk, stringErr] = token::calculate_s(statement_.m_vectorToken, &valueCondition, runtime_);
             if( bOk == false ) { return { false, "[code::execute] condition error: " + stringErr }; }
          }
 
@@ -1442,41 +1442,38 @@ std::pair<bool, std::string> code::execute(runtime& runtime_, value* pResult) co
          }
          else
          {
-            if( stmt_.jump() < 0 ) { return { false, "[code::execute] unpatched jump in condition statement" }; }
-            iPC = stmt_.jump(); // condition false: jump past block
+            if( statement_.jump() < 0 ) { return { false, "[code::execute] unpatched jump in condition statement" }; }
+            iPC = statement_.jump(); // condition false: jump past block
          }
          break;
       }
 
-      // -- for-step: run step expression then jump back to condition ---------
+      // ## for-step: run step expression then jump back to condition .........
       case statement::eKindForStep:
       {
-         if( stmt_.has_tokens() )
+         if( statement_.has_tokens() )
          {
-            auto [bOk, stringErr] = token::calculate_s(stmt_.m_vectorToken, &valueLast, runtime_);
+            auto [bOk, stringErr] = token::calculate_s(statement_.m_vectorToken, &valueLast, runtime_);
             if( bOk == false ) { return { false, "[code::execute] for-step error: " + stringErr }; }
          }
 
-         if( stmt_.jump() < 0 ) { return { false, "[code::execute] unpatched jump in for-step statement" }; }
-         iPC = stmt_.jump(); // jump back to ForCond
+         if( statement_.jump() < 0 ) { return { false, "[code::execute] unpatched jump in for-step statement" }; }
+         iPC = statement_.jump(); // jump back to ForCond
          break;
       }
 
-      // -- unconditional jumps (else-skip, loop-back, break, continue) -------
+      // ## unconditional jumps (else-skip, loop-back, break, continue) .......
       case statement::eKindElseJump:
       case statement::eKindLoopBack:
       case statement::eKindBreak:
       case statement::eKindContinue:
       {
-         if( stmt_.jump() < 0 ) { return { false, "[code::execute] unpatched unconditional jump" }; }
-         iPC = stmt_.jump();
+         if( statement_.jump() < 0 ) { return { false, "[code::execute] unpatched unconditional jump" }; }
+         iPC = statement_.jump();
          break;
       }
 
-      default:
-      {
-         return { false, "[code::execute] unknown statement kind" };
-      }
+      default: { return { false, "[code::execute] unknown statement kind" }; }
       } // switch
    } // while
 
@@ -1516,8 +1513,8 @@ std::string code::dump() const
 
    for( size_t u = 0; u < m_vectorStatement.size(); ++u )
    {
-      const statement& stmt_ = m_vectorStatement[u];
-      uint8_t uKind = static_cast<uint8_t>(stmt_.m_eKind);
+      const statement& statement_ = m_vectorStatement[u];
+      uint8_t uKind = static_cast<uint8_t>(statement_.m_eKind);
 
       // index
       stringOut += '[';
@@ -1534,10 +1531,10 @@ std::string code::dump() const
          stringOut += "Unknown  ";
 
       // jump
-      if( stmt_.m_iJump >= 0 )
+      if( statement_.m_iJump >= 0 )
       {
          stringOut += "-> ";
-         stringOut += std::to_string(stmt_.m_iJump);
+         stringOut += std::to_string(statement_.m_iJump);
          stringOut += ' ';
       }
       else
@@ -1546,19 +1543,19 @@ std::string code::dump() const
       }
 
       // source
-      if( stmt_.m_stringSource.empty() == false )
+      if( statement_.m_stringSource.empty() == false )
       {
          stringOut += '`';
-         stringOut += stmt_.m_stringSource.substr(0, 60);
-         if( stmt_.m_stringSource.size() > 60 ) stringOut += "...";
+         stringOut += statement_.m_stringSource.substr(0, 60);
+         if( statement_.m_stringSource.size() > 60 ) stringOut += "...";
          stringOut += '`';
       }
 
       // token count
-      if( stmt_.m_vectorToken.empty() == false )
+      if( statement_.m_vectorToken.empty() == false )
       {
          stringOut += "  (";
-         stringOut += std::to_string(stmt_.m_vectorToken.size());
+         stringOut += std::to_string(statement_.m_vectorToken.size());
          stringOut += " tokens)";
       }
 

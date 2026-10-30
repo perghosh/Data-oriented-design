@@ -115,16 +115,16 @@ struct statement
 {
    enum enumKind : uint8_t
    {
-      eKindExpr      = 0,  ///< plain expression, always executed
-      eKindIf        = 1,  ///< evaluate condition; false -> jump to m_iJump
-      eKindElseJump  = 2,  ///< end-of-if-body: unconditional jump past else
-      eKindWhile     = 3,  ///< evaluate condition; false -> jump to m_iJump
-      eKindLoopBack  = 4,  ///< end-of-loop-body: jump back (m_iJump = head)
-      eKindForInit   = 5,  ///< for: init assignment, run once
+      eKindExpression   = 0,  ///< plain expression, always executed
+      eKindIf           = 1,  ///< evaluate condition; false -> jump to m_iJump
+      eKindElseJump     = 2,  ///< end-of-if-body: unconditional jump past else
+      eKindWhile        = 3,  ///< evaluate condition; false -> jump to m_iJump
+      eKindLoopBack     = 4,  ///< end-of-loop-body: jump back (m_iJump = head)
+      eKindForInit      = 5,  ///< for: init assignment, run once
       eKindForCondition = 6,  ///< for: condition check; false -> jump past loop
-      eKindForStep   = 7,  ///< for: step expression; then jump to eKindForCondition
-      eKindBreak     = 8,  ///< jump to first statement past enclosing loop
-      eKindContinue  = 9,  ///< jump to loop step / condition
+      eKindForStep      = 7,  ///< for: step expression; then jump to eKindForCondition
+      eKindBreak        = 8,  ///< jump to first statement past enclosing loop
+      eKindContinue     = 9,  ///< jump to loop step / condition
    };
 
    // ## construction ----------------------------------------------------------
@@ -179,7 +179,7 @@ struct statement
 
    // ## attributes ------------------------------------------------------------
 
-   enumKind            m_eKind        = eKindExpr; ///< what this statement does
+   enumKind            m_eKind        = eKindExpression; ///< what this statement does
    int32_t             m_iJump        = -1;         ///< branch target index, -1 = none
    std::vector<token>  m_vectorToken;               ///< pre-compiled postfix tokens
    std::string_view    m_stringSource;              ///< view into code source buffer (debug / error messages)
