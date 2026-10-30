@@ -626,7 +626,7 @@ TEST_CASE("[benchmark] string_transport02", "[.benchmark]")
 
 
 
-TEST_CASE("[benchmark] sort table", "[benchmark]")
+TEST_CASE("[benchmark] sort table", "[.benchmark]")
 {
    constexpr unsigned uRunIterations = 10;
    constexpr unsigned uWarmupCount = 1;
@@ -801,169 +801,96 @@ TEST_CASE("[benchmark] sort table", "[benchmark]")
 
 
 
-/**
- * @file test_sort_threads.cpp
- * @brief Threaded test for `tag_sort_index` and `tag_sort_key` in table_column_buffer
- *
- * Each thread owns its own copy of the table, sorts it with both algorithms for three columns and
- * both sort orders, and checks the result against an expected table that was sorted single threaded
- * before any thread started. Timings are collected in one shared map protected with a mutex.
- * Failures are counted in an atomic counter because Catch2 assertions (REQUIRE) are not thread safe
- * and are only used in the main thread after all threads have joined.
- *
- * @note This tests that separate table objects can be sorted at the same time. It does not test
- *       sorting one single table object from several threads, that is not supported.
- */
+TEST_CASE("[benchmark] three sort methods for table", "[benchmark]")
+{
+   constexpr unsigned uRunIterations = 5;
+   constexpr unsigned uWarmupCount = 1;
+   constexpr unsigned uBatchCount = 2;
+   constexpr unsigned uCreateRowCount = 10000;
 
-#include <string>
-#include <string_view>
+   using namespace gd::table::dto;
 
+   // Generate 100000 rows of data for the table with random values
+   std::mt19937_64 generatorRandom(42);                                     // fixed seed gives repeatable data
+   std::uniform_int_distribution<uint64_t> distributionInteger(0, 1'000'000);
+   std::uniform_real_distribution<double> distributionDouble(0.0, 1'000.0);
+   std::uniform_int_distribution<int> distributionCharacter('a', 'z');
 
+   table tableSource((table::eTableFlagNull32 | table::eTableFlagRowStatus), { { "uint64", 0, "C1" },{ "string", 8, "C2" },{ "double", 0, "C3" },{ "double", 0, "C4" },{ "int32", 0, "C5" },{ "uint32", 0, "C6" },{ "string", 50, "C7" } }, gd::table::tag_prepare{});
 
-namespace {
-
-   constexpr unsigned ROW_COUNT_TEST = 1000;                                      // rows in table that is sorted
-   constexpr unsigned COLUMN_COUNT_TEST = 3;                                      // sorted columns, 0 = uint64, 1 = string, 2 = long string
-   constexpr unsigned ALGORITHM_COUNT_TEST = 2;                                   // 0 = index sort, 1 = key cache sort
-   constexpr unsigned REPEAT_COUNT_TEST = 5;                                      // number of times each thread repeats every sort
-
-   /// create table with 7 mixed columns and random rows, same seed gives same data
-   gd::table::table_column_buffer table_random_s(uint64_t uSeed)
+   for (uint64_t u = 0; u < uCreateRowCount; ++u)
    {
-      using namespace gd::table;
+      auto uRow = tableSource.row_add_one();
 
-      table_column_buffer tableRandom(0u, { { "uint64", 0, "FKey" },{ "string", 20, "FText" },{ "string", 200, "FLong" },{ "int32", 0, "FInteger" },
-                                             { "double", 0, "FDouble" },{ "int16", 0, "FShort" },{ "uint32", 0, "FCount" } }, tag_prepare{});
+      std::string stringValue(8, ' ');
+      std::string stringValue2(25, ' ');
+      for (auto& iCharacter : stringValue) { iCharacter = static_cast<char>(distributionCharacter(generatorRandom)); }
+      for (auto& iCharacter : stringValue2) { iCharacter = static_cast<char>(distributionCharacter(generatorRandom)); }
 
-      std::mt19937_64 mt19937Random(uSeed);
-      for (unsigned uRow = 0; uRow < ROW_COUNT_TEST; uRow++)
-      {
-         std::string stringText = std::to_string(mt19937Random() % 1'000'000'000);
-         std::string stringLong(100 + (mt19937Random() % 60), 'a');             // max 159 characters
-         stringLong += std::to_string(mt19937Random());                         // max 20 digits, 179 in total and below column size 200
-         tableRandom.row_add({ (uint64_t)mt19937Random(), std::string_view(stringText), std::string_view(stringLong),
-                                (int32_t)mt19937Random(), (double)(mt19937Random() % 100000), (int16_t)mt19937Random(), (uint32_t)uRow }, tag_convert{});
-      }
+      std::string stringValue6 = "01234567890123456789";
+      stringValue6 += stringValue2;
 
-      return tableRandom;
+      tableSource.cell_set(uRow, 0u, distributionInteger(generatorRandom));
+      tableSource.cell_set(uRow, 1u, std::string_view(stringValue));
+      tableSource.cell_set(uRow, 2u, distributionDouble(generatorRandom));
+      tableSource.cell_set(uRow, 3u, distributionDouble(generatorRandom));
+      tableSource.cell_set(uRow, 4u, static_cast<int32_t>(distributionInteger(generatorRandom) % 1000));
+      tableSource.cell_set(uRow, 5u, static_cast<uint32_t>(distributionInteger(generatorRandom) % 1000)); 
+      tableSource.cell_set(uRow, 6u, std::string_view(stringValue6));
    }
 
-   /// check that rows are ordered in selected column
-   bool is_sorted_s(const gd::table::table_column_buffer& table_, unsigned uColumn, bool bAscending)
-   {
-      for (uint64_t uRow = 1; uRow < table_.get_row_count(); uRow++)
+   REQUIRE(tableSource.size() == uCreateRowCount);
+
+   uint64_t uRowCount = tableSource.size();
+   table tableTarget((table::eTableFlagNull32 | table::eTableFlagRowStatus), { { "uint64", 0, "C1" },{ "string", 8, "C2" },{ "double", 0, "C3" },{ "double", 0, "C4" },{ "int32", 0, "C5" },{ "uint32", 0, "C6" },{ "string", 50, "C7" } }, gd::table::tag_prepare{});
+   tableTarget.reserve(uRowCount);
+
+   auto print_result = [](const char* pbszName, const auto& result)
       {
-         auto variantviewPrevious = table_.cell_get_variant_view(uRow - 1, uColumn);
-         auto variantviewCurrent = table_.cell_get_variant_view(uRow, uColumn);
-         if (bAscending == true && variantviewCurrent < variantviewPrevious) return false;
-         if (bAscending == false && variantviewPrevious < variantviewCurrent) return false;
-      }
-      return true;
-   }
-
-   /// sort with selected algorithm
-   void sort_s(gd::table::table_column_buffer& table_, unsigned uColumn, bool bAscending, unsigned uAlgorithm)
-   {
-      using namespace gd::table;
-      if (uAlgorithm == 0) table_.sort(uColumn, bAscending, 0, ROW_COUNT_TEST, tag_sort_index{});
-      else                 table_.sort(uColumn, bAscending, 0, ROW_COUNT_TEST, tag_sort_key{});
-   }
-
-   /// name used for algorithm in result
-   std::string_view name_s(unsigned uAlgorithm) { return uAlgorithm == 0 ? "index" : "key"; }
-
-   /// index in expected vector for column and sort order
-   unsigned expected_index_s(unsigned uColumn, bool bAscending) { return (uColumn * 2) + (bAscending ? 0u : 1u); }
-
-} // namespace
-
-
-TEST_CASE("[table] sort threads", "[.thread]") {
-   using namespace gd::table;
-
-   const unsigned uThreadCount = std::clamp(std::thread::hardware_concurrency(), 2u, 8u);
-   const table_column_buffer tableRandom = table_random_s(12345);            // source data, only read by threads
-
-   // ## create expected result single threaded, every thread compares against these
-   //    index sort and key sort are both stable so the result is identical for equal keys
-   std::vector<table_column_buffer> vectorExpected;
-   for (unsigned uColumn = 0; uColumn < COLUMN_COUNT_TEST; uColumn++)
-   {
-      for (bool bAscending : { true, false })
-      {
-         table_column_buffer tableExpected(tableRandom);
-         tableExpected.sort(uColumn, bAscending, 0, ROW_COUNT_TEST, tag_sort_index{});
-         INFO("column " << uColumn << ", ascending " << bAscending);
-         REQUIRE(is_sorted_s(tableExpected, uColumn, bAscending) == true);
-         vectorExpected.push_back(std::move(tableExpected));
-      }
-   }
-
-   // ## shared state, threads report to this
-   std::mutex mutexResult;                                                     // protects mapResult
-   std::map<std::string, std::vector<uint64_t>> mapResult;                     // name of run -> elapsed nanoseconds for each run in each thread
-   std::atomic<unsigned> atomicFailureCount{ 0 };                              // number of runs that gave wrong result
-   std::latch latchStart(uThreadCount);                                      // all threads start sorting at the same time
-
-   auto sort_thread_ = [&](unsigned uThread)
-      {
-         [[maybe_unused]] auto uThread_d = uThread;
-         latchStart.arrive_and_wait();
-
-         for (unsigned uRepeat = 0; uRepeat < REPEAT_COUNT_TEST; uRepeat++)
-         {
-            for (unsigned uColumn = 0; uColumn < COLUMN_COUNT_TEST; uColumn++)
-            {
-               for (bool bAscending : { true, false })
-               {
-                  for (unsigned uAlgorithm = 0; uAlgorithm < ALGORITHM_COUNT_TEST; uAlgorithm++)
-                  {
-                     table_column_buffer tableSort(tableRandom);                // each run sorts its own unsorted copy
-
-                     auto timeBegin = std::chrono::steady_clock::now();
-                     sort_s(tableSort, uColumn, bAscending, uAlgorithm);
-                     auto timeEnd = std::chrono::steady_clock::now();
-                     auto uNanoseconds = (uint64_t)std::chrono::duration_cast<std::chrono::nanoseconds>(timeEnd - timeBegin).count();
-
-                     // ### check result, do not use REQUIRE in thread, count failures instead
-                     const auto& tableExpected = vectorExpected[expected_index_s(uColumn, bAscending)];
-                     bool bOk = is_sorted_s(tableSort, uColumn, bAscending) && tableSort.equal(tableExpected, 0, ROW_COUNT_TEST);
-                     if (bOk == false) atomicFailureCount++;
-
-                     // ### report to shared result
-                     std::string stringName(name_s(uAlgorithm));
-                     stringName += bAscending ? " asc " : " desc ";
-                     stringName += std::to_string(uColumn);
-
-                     std::lock_guard<std::mutex> lockResult(mutexResult);
-                     mapResult[stringName].push_back(uNanoseconds);
-                  }
-               }
-            }
-         }
+         std::cout << "\nBenchmark: " << pbszName << "\n";
+         std::cout << "Mean: " << (result.mean() / 1'000.0) << " us\n";
+         std::cout << "Minimum: " << (result.min_time() / 1'000.0) << " us\n";
+         std::cout << "Maximum: " << (result.max_time() / 1'000.0) << " us\n";
+         std::cout << "Total in milliseconds: " << (result.total_duration_ns() / 1'000'000.0) << " ms\n";
       };
 
-   // ## start threads and wait for them
-   std::vector<std::thread> vectorThread;
-   vectorThread.reserve(uThreadCount);
-   for (unsigned uThread = 0; uThread < uThreadCount; uThread++) vectorThread.emplace_back(sort_thread_, uThread);
-   for (auto& threadJoin : vectorThread) threadJoin.join();
-
-   // ## verify shared result
-   REQUIRE(atomicFailureCount.load() == 0);
-   REQUIRE(mapResult.size() == (COLUMN_COUNT_TEST * 2 * ALGORITHM_COUNT_TEST));
-   for (const auto& itResult : mapResult)
+   for(unsigned uSortColumn = 0; uSortColumn < 7; ++uSortColumn)
    {
-      REQUIRE(itResult.second.size() == (size_t)uThreadCount * REPEAT_COUNT_TEST);
+
+      const auto resultSort01 = gd::benchmark::run_s(
+         [&]()
+         {
+            tableTarget.row_clear();
+            tableTarget.append(tableSource);
+            tableTarget.sort(uSortColumn, true);
+            return tableTarget.size();
+         }, uRunIterations, uWarmupCount, uBatchCount);
+
+      const auto resultSort02 = gd::benchmark::run_s(
+         [&]()
+         {
+            tableTarget.row_clear();
+            tableTarget.append(tableSource);
+            tableTarget.sort(uSortColumn, true, gd::table::tag_sort_index{});
+            return tableTarget.size();
+         }, uRunIterations, uWarmupCount, uBatchCount);
+
+      const auto resultSort03 = gd::benchmark::run_s(
+         [&]()
+         {
+            tableTarget.row_clear();
+            tableTarget.append(tableSource);
+            tableTarget.sort(uSortColumn, true, gd::table::tag_sort_key{});
+            return tableTarget.size();
+         }, uRunIterations, uWarmupCount, uBatchCount);
+
+
+      std::cout << "\n\nColumn: " << uSortColumn << " =======================";
+
+      print_result("sort table 01", resultSort01);
+      print_result("sort table 02", resultSort02);
+      print_result("sort table 03", resultSort03);
    }
 
-   // ## print summary, nanoseconds are measured while all threads sort at the same time
-   std::cout << "threads: " << uThreadCount << ", rows: " << ROW_COUNT_TEST << "\n";
-   for (const auto& itResult : mapResult)
-   {
-      const auto& vectorNanosecond = itResult.second;
-      uint64_t uMean = std::accumulate(vectorNanosecond.begin(), vectorNanosecond.end(), uint64_t(0)) / vectorNanosecond.size();
-      uint64_t uMinimum = *std::min_element(vectorNanosecond.begin(), vectorNanosecond.end());
-      std::cout << itResult.first << ": mean " << uMean << " ns, min " << uMinimum << " ns\n";
-   }
 }
+
