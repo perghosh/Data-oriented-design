@@ -561,6 +561,8 @@ public:
 
    cell<table_column_buffer> operator[](const std::pair<uint64_t, unsigned>& pairCell) noexcept { return cell<table_column_buffer>(this, pairCell.first, pairCell.second); }
    cell<table_column_buffer> operator[](const std::pair<uint64_t, unsigned>& pairCell) const noexcept { return cell<table_column_buffer>(const_cast<table_column_buffer*>(this), pairCell.first, pairCell.second); }
+   cell<table_column_buffer> operator[](const cell_reference& cellreferenceCell) noexcept { return cell<table_column_buffer>(this, cellreferenceCell.m_uRow, cellreferenceCell.m_uColumn); }
+   cell<table_column_buffer> operator[](const cell_reference& cellreferenceCell) const noexcept { return cell<table_column_buffer>(const_cast<table_column_buffer*>(this), cellreferenceCell.m_uRow, cellreferenceCell.m_uColumn); }
    cell<table_column_buffer> operator[](const std::pair<uint64_t, std::string_view>& pairCell) noexcept {
       auto column_ = column_get_index(pairCell.second);
       return cell<table_column_buffer>(this, pairCell.first, column_);

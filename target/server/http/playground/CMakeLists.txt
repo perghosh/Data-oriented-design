@@ -236,7 +236,7 @@ if( USE_TEST_ )
    target_compile_definitions(${TEST_NAME_} PRIVATE GD_DATABASE_SQLITE_USE )
 endif()
 
-set( USE_TEST_ ON )
+set( USE_TEST_ OFF )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_Html")
    add_executable(${TEST_NAME_}

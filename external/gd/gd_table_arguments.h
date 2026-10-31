@@ -370,6 +370,8 @@ public:
 
    cell<table> operator[](const std::pair<uint64_t, unsigned>& pairCell) noexcept { return cell<table>(this, pairCell.first, pairCell.second); }
    cell<table> operator[](const std::pair<uint64_t, unsigned>& pairCell) const noexcept { return cell<table>(const_cast<table*>(this), pairCell.first, pairCell.second); }
+   cell<table> operator[](const cell_reference& cellreferenceCell) noexcept { return cell<table>(this, cellreferenceCell.m_uRow, cellreferenceCell.m_uColumn); }
+   cell<table> operator[](const cell_reference& cellreferenceCell) const noexcept { return cell<table>(const_cast<table*>(this), cellreferenceCell.m_uRow, cellreferenceCell.m_uColumn); }
    cell<table> operator[](const std::pair<uint64_t, std::string_view>& pairCell) noexcept {
       auto column_ = column_get_index(pairCell.second);
       return cell<table>(this, pairCell.first, column_);
