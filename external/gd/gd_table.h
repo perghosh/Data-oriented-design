@@ -204,7 +204,7 @@ struct tag_reference {};
 using tag_variadic = gd::types::tag_variadic;
 
 template<typename T>
-concept table_cell_like = requires( const T& c ) {
+concept is_table_cell = requires( const T& c ) {
    typename T::table_type;                                  // identity marker
    { c.get() } -> std::convertible_to<gd::variant_view>;
    { c.m_uRow } -> std::convertible_to<uint64_t>;
@@ -231,7 +231,7 @@ struct cell
    }
 
    template<typename OTHER_TABLE>
-      requires table_cell_like<cell<OTHER_TABLE>>
+      requires is_table_cell<cell<OTHER_TABLE>>
    cell& operator=( const cell<OTHER_TABLE>& o ) { m_ptable->cell_set( m_uRow, m_uColumn, o.get(), tag_convert{}); }
 
 
