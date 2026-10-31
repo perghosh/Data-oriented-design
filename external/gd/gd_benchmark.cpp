@@ -2,8 +2,7 @@
 
 #include "gd_benchmark.h"
 
-#include <iomanip>
-#include <sstream>
+#include <format>
 #include <stdexcept>
 
 #if defined(_WIN32)
@@ -67,15 +66,39 @@ std::string benchmark::to_string_s(const result& result_, std::string_view strin
       dDivisor = 1.0; // Default to nanoseconds if no measurement type is provided
    }
 
-   std::ostringstream streamReport;
-   streamReport << std::fixed << std::setprecision(3);
-   streamReport << "Iterations: " << result_.iterations() << "\n";
-   streamReport << "Mean: " << (result_.mean() / dDivisor) << stringMeassurment << "\n";
-   streamReport << "Min Time: " << (result_.min_time() / dDivisor) << stringMeassurment << "\n";
-   streamReport << "Max Time: " << (result_.max_time() / dDivisor) << stringMeassurment << "\n";
-   streamReport << "Standard Deviation: " << (result_.standard_deviation() / dDivisor) << stringMeassurment << "\n";
-   streamReport << "Total Duration: " << (result_.total_duration() / dDivisor) << stringMeassurment;
-   return streamReport.str();
+   auto format_value_ = [](double dValue) -> std::string
+   {
+      std::string stringValue = std::format("{:.2f}", dValue);
+      const auto uDot = stringValue.find('.');
+      if( uDot != std::string::npos )
+      {
+         while( stringValue.empty() == false && stringValue.back() == '0' )
+         {
+            stringValue.pop_back();
+         }
+
+         if( stringValue.empty() == false && stringValue.back() == '.' )
+         {
+            stringValue.pop_back();
+         }
+      }
+
+      return stringValue;
+   };
+
+   return std::format(
+      "Iterations: {}\n"
+      "Mean: {} {}\n"
+      "Min Time: {} {}\n"
+      "Max Time: {} {}\n"
+      "Standard Deviation: {} {}\n"
+      "Total Duration: {} {}\n",
+      result_.iterations(),
+      format_value_(result_.mean() / dDivisor), stringMeassurment,
+      format_value_(result_.min_time() / dDivisor), stringMeassurment,
+      format_value_(result_.max_time() / dDivisor), stringMeassurment,
+      format_value_(result_.standard_deviation() / dDivisor), stringMeassurment,
+      format_value_(result_.total_duration() / dDivisor), stringMeassurment);
 }
 
 

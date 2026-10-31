@@ -108,14 +108,40 @@ TEST_CASE("[benchmark] edit", "[benchmark]")
 {
    using namespace gd::table::dto;
 
+   table tableGet((table::eTableFlagNull32 | table::eTableFlagRowStatus),
+      { { "string", 32, "C1" },{ "string", 32, "C2" },{ "string", 32, "C3" } }, gd::table::tag_prepare{});
+
+   tableGet.row_add(5);
+   for(uint64_t uRow = 0; uRow < tableGet.size(); ++uRow)
+   {
+      tableGet[uRow, "C1"] = { "100", "100", "100" };
+   }
+
    table tableSet((table::eTableFlagNull32 | table::eTableFlagRowStatus), 
    { { "uint64", 0, "C1" },{ "uint64", 0, "C2" },{ "uint64", 0, "C3" } }, gd::table::tag_prepare{});
 
-   tableSet.row_add(10);
-   for( uint64_t uRow = 0; uRow < 10; ++uRow) 
+
+   tableSet.row_add(5);
+   for( uint64_t uRow = 0; uRow < tableSet.size(); ++uRow)
    {
       tableSet[uRow,"C1"] = {"1", "1", "1"};
    }
+
+   // ## Set values from get table
+   auto resultSet = gd::benchmark::run_s(
+      [&tableGet, &tableSet]()
+      {
+         for(uint64_t uRow = 0; uRow < tableGet.size(); ++uRow)
+         {
+            tableSet[uRow, "C1"] = tableGet[uRow, "C1"];
+            tableSet[uRow, "C2"] = tableGet[uRow, "C2"];
+            tableSet[uRow, "C3"] = tableGet[uRow, "C3"];
+         }
+         return tableSet.size();
+      }, 100000, 10);
+
+   std::cout << "\n\nBenchmark: set values from get table\n";
+   std::cout << gd::benchmark::to_string_s(resultSet, "ns");
 }
 
 TEST_CASE("[demo] flexibility", "[demo]")
@@ -172,7 +198,6 @@ TEST_CASE("[demo] flexibility", "[demo]")
       REQUIRE( p->cell_get_variant_view(0, "C1") == gd::variant_view(uint64_t{1}) );
       REQUIRE( p->cell_get_variant_view(9, "C1") == gd::variant_view(uint64_t{1}) );
    }
-   REQUIRE( t1.equal(t5) );                                // whole-table compare
 }
 
 

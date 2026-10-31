@@ -38,7 +38,7 @@
 #endif
 
 #ifndef _GD_BEGIN
-#define _GD_BEGIN namespace gdwin {
+#define _GD_BEGIN namespace gd {
 #define _GD_END }
 #endif
 
@@ -384,13 +384,13 @@ public:
 // @API [tag: conversion] [description: Generate output data from a benchmark result] [jump: output__]
 
    /// Converts a benchmark result into an argument::arguments object for easier access and manipulation of the result data. 
-   argument::arguments to_arguments_s(const result& result_);
+   static gd::argument::arguments to_arguments_s(const result& result_);
 
    /// Converts a benchmark result into an argument::arguments object with more descriptive keys for easier access and manipulation of the result data.
-   argument::arguments to_arguments_print_s(const result& result_);
+   static gd::argument::arguments to_arguments_print_s(const result& result_);
 
    /// Convert to string for printing or logging.
-   std::string to_string_s(const result& result_, std::string_view stringMeassurment );
+   static std::string to_string_s(const result& result_, std::string_view stringMeassurment );
 
 
    // inside the class (or at namespace scope)
