@@ -24,73 +24,96 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
-
-TEST_CASE("[benchmark] string_transport", "[.benchmark]")
+TEST_CASE("[benchmark] hot and cold", "[benchmark]")
 {
-   std::array<std::byte, 150> arrayBuffer;
+   constexpr unsigned uRunIterations = 100;
+   constexpr unsigned uWarmupCount = 3;
+   constexpr unsigned uCreateRowCount = 10000;
 
-   const auto resultTransport01 = gd::benchmark::run_s(
-      [&arrayBuffer]()
+   using namespace gd::table::dto;
+
+   // Generate 100000 rows of data for the table with random values
+   std::mt19937_64 generatorRandom(42);                                     // fixed seed gives repeatable data
+   std::uniform_int_distribution<uint64_t> distributionInteger(0, 1'000'000);
+   std::uniform_real_distribution<double> distributionDouble(0.0, 1'000.0);
+   std::uniform_int_distribution<int> distributionCharacter('a', 'z');
+
+   table tableSource((table::eTableFlagNull32 | table::eTableFlagRowStatus), { { "uint64", 0, "C1" },{ "string", 8, "C2" },{ "double", 0, "C3" },{ "double", 0, "C4" },{ "int32", 0, "C5" },{ "uint32", 0, "C6" },{ "rstring", 50, "C7" } }, gd::table::tag_prepare{});
+
+   for(uint64_t u = 0; u < uCreateRowCount; ++u)
+   {
+      auto uRow = tableSource.row_add_one();
+
+      std::string stringValue(8, ' ');
+      std::string stringValue2(25, ' ');
+      for(auto& iCharacter : stringValue) { iCharacter = static_cast<char>(distributionCharacter(generatorRandom)); }
+      for(auto& iCharacter : stringValue2) { iCharacter = static_cast<char>(distributionCharacter(generatorRandom)); }
+
+      std::string stringValue6 = "01234567890123456789";
+      stringValue6 += stringValue2;
+
+      tableSource.cell_set(uRow, 0u, distributionInteger(generatorRandom));
+      tableSource.cell_set(uRow, 1u, std::string_view(stringValue));
+      tableSource.cell_set(uRow, 2u, distributionDouble(generatorRandom));
+      tableSource.cell_set(uRow, 3u, distributionDouble(generatorRandom));
+      tableSource.cell_set(uRow, 4u, static_cast<int32_t>(distributionInteger(generatorRandom) % 1000));
+      tableSource.cell_set(uRow, 5u, static_cast<uint32_t>(distributionInteger(generatorRandom) % 1000));
+      tableSource.cell_set(uRow, 6u, std::string_view(stringValue6));
+   }
+
+   REQUIRE(tableSource.size() == uCreateRowCount);
+
+   uint64_t uRowCount = tableSource.size();
+   table tableTarget((table::eTableFlagNull32 | table::eTableFlagRowStatus), { { "uint64", 0, "C1" },{ "string", 8, "C2" },{ "double", 0, "C3" },{ "double", 0, "C4" },{ "int32", 0, "C5" },{ "uint32", 0, "C6" },{ "rstring", 50, "C7" } }, gd::table::tag_prepare{});
+   tableTarget.reserve(uRowCount);
+
+   auto print_result = [](const char* pbszName, const auto& result)
       {
-         gd::string_transport stringText(arrayBuffer);
-         stringText = "0123456789!";
-         stringText += " 0123456789!";
-         stringText += " 0123456789!";
-         stringText += " 0123456789!";
-         stringText += " 0123456789!";
-         stringText += " 0123456789!";
-         return stringText;
-      }, 100000, 100, 100);    // Measured calls and Warm-up calls.
+         std::cout << "\n\n#######\nBenchmark: " << pbszName << "\n";
+         std::cout << "Mean: " << (result.mean() / 1'000.0) << " us\n";
+         std::cout << "Minimum: " << (result.min_time() / 1'000.0) << " us\n";
+         std::cout << "Maximum: " << (result.max_time() / 1'000.0) << " us\n";
+         std::cout << "Total in milliseconds: " << (result.total_duration() / 1'000'000.0) << " ms\n";
+      };
 
-   const auto resultTransport02 = gd::benchmark::run_s(
-      []()
-      {
-         gd::string_transport stringText;
-         stringText = "0123456789!";
-         stringText += " 0123456789!";
-         stringText += " 0123456789!";
-         stringText += " 0123456789!";
-         stringText += " 0123456789!";
-         stringText += " 0123456789!";
-         return stringText;
-      }, 100000, 100, 100);    // Measured calls and Warm-up calls.
+   gd::benchmark::flusher flusherCold(gd::benchmark::flush_settings::l2_s());
+   const std::vector<int> vectorInput(100'000, 0);
+   for(unsigned uSortColumn = 0; uSortColumn < 7; ++uSortColumn)
+   {
+      const auto resultSort01 = gd::benchmark::run_s(
+         [&]()
+         {
+            tableTarget.row_clear();
+            tableTarget.append(tableSource);
+            tableTarget.sort(uSortColumn, true, gd::table::tag_sort_key{});
+            return tableTarget.size();
+         }, uRunIterations, uWarmupCount);
 
-   const auto resultTransport03 = gd::benchmark::run_s(
-      []()
-      {
-         std::string stringText;
-         stringText = "0123456789!";
-         stringText += " 0123456789!";
-         stringText += " 0123456789!";
-         stringText += " 0123456789!";
-         stringText += " 0123456789!";
-         stringText += " 0123456789!";
-         return stringText;
-      }, 100000, 100, 100);    // Measured calls and Warm-up calls.
+      
+
+      const auto resultSort02 = gd::benchmark::run_cold_s(
+         [&]()
+         {
+            tableTarget.row_clear();
+            tableTarget.append(tableSource);
+            tableTarget.sort(uSortColumn, true, gd::table::tag_sort_key{});
+            return tableTarget.size();
+         }, flusherCold, uRunIterations, uWarmupCount );
 
 
 
-   std::cout << "Benchmark: string_transport using buffer\n";
-   std::cout << "Mean: " << resultTransport01.mean() << " ns\n";
-   std::cout << "Minimum: " << resultTransport01.min_time() << " ns\n";
-   std::cout << "Maximum: " << resultTransport01.max_time() << " ns\n";
+      std::cout << "\n\nColumn: " << uSortColumn << " =======================";
 
-   std::cout << "\nBenchmark: string_transport with no buffer\n";
-   std::cout << "Mean: " << resultTransport02.mean() << " ns\n";
-   std::cout << "Minimum: " << resultTransport02.min_time() << " ns\n";
-   std::cout << "Maximum: " << resultTransport02.max_time() << " ns\n";
+      print_result("sort table 01", resultSort01);
+      print_result("sort table 02 (cold)", resultSort02);
+   }
 
-   std::cout << "\nBenchmark: std::string\n";
-   std::cout << "Mean: " << resultTransport03.mean() << " ns\n";
-   std::cout << "Minimum: " << resultTransport03.min_time() << " ns\n";
-   std::cout << "Maximum: " << resultTransport03.max_time() << " ns\n";
 }
 
 TEST_CASE("[benchmark] table dto", "[.benchmark]")
 {
-   constexpr unsigned uRunIterations = 10;
+   constexpr unsigned uRunIterations = 50;
    constexpr unsigned uWarmupCount = 1;
-   constexpr unsigned uBatchCount = 5;
 
    using namespace gd::table::dto;
    table tableDto((table::eTableFlagNull32 | table::eTableFlagRowStatus), { { "uint64", "C1" },{ "uint64", "C2" },{ "uint64", "C3" },{ "uint64", "SUM" } }, gd::table::tag_prepare{});
@@ -141,7 +164,7 @@ TEST_CASE("[benchmark] table dto", "[.benchmark]")
          assert(uTotalSum == uCheckSum);
          return uTotalSum;
 
-      }, uRunIterations, uWarmupCount, uBatchCount);    // Measured calls and Warm-up calls and number of batched calls.
+      }, uRunIterations, uWarmupCount);    // Measured calls and Warm-up calls.
 
    const auto resultSum02 = gd::benchmark::run_s(
       [&tableDto, uCheckSum]()
@@ -165,7 +188,7 @@ TEST_CASE("[benchmark] table dto", "[.benchmark]")
          assert(uTotalSum == uCheckSum);
          return uTotalSum;
 
-      }, uRunIterations, uWarmupCount, uBatchCount);    // Measured calls and Warm-up calls and number of batched calls.
+      }, uRunIterations, uWarmupCount);    // Measured calls and Warm-up calls.
 
    const auto resultSum03 = gd::benchmark::run_s(
       [&tableDto, uCheckSum]()
@@ -186,7 +209,7 @@ TEST_CASE("[benchmark] table dto", "[.benchmark]")
          assert(uTotalSum == uCheckSum);
          return uTotalSum;
 
-      }, uRunIterations, uWarmupCount, uBatchCount);    // Measured calls and Warm-up calls and number of batched calls.
+      }, uRunIterations, uWarmupCount);    // Measured calls and Warm-up calls.
 
    const auto resultSumSpecial = gd::benchmark::run_s(
       [&tableDto, uCheckSum]()
@@ -207,7 +230,7 @@ TEST_CASE("[benchmark] table dto", "[.benchmark]")
          assert(uTotalSum == uCheckSum);
          return uTotalSum;
 
-      }, uRunIterations, uWarmupCount, uBatchCount);    // Measured calls and Warm-up calls and number of batched calls.
+      }, uRunIterations, uWarmupCount);    // Measured calls and Warm-up calls.
 
 
    const auto resultSum04 = gd::benchmark::run_s(
@@ -233,7 +256,7 @@ TEST_CASE("[benchmark] table dto", "[.benchmark]")
          assert(uTotalSum == uCheckSum);
          return uTotalSum;
 
-      }, uRunIterations, uWarmupCount, uBatchCount);    // Measured calls and Warm-up calls and number of batched calls.
+      }, uRunIterations, uWarmupCount);    // Measured calls and Warm-up calls.
 
    const auto resultSum05 = gd::benchmark::run_s(
       [&tableDto, uCheckSum]()
@@ -259,7 +282,7 @@ TEST_CASE("[benchmark] table dto", "[.benchmark]")
          assert(uTotalSum == uCheckSum);
          return uTotalSum;
 
-      }, uRunIterations, uWarmupCount, uBatchCount);    // Measured calls and Warm-up calls and number of batched calls.
+      }, uRunIterations, uWarmupCount);    // Measured calls and Warm-up calls.
 
    const auto resultSum06 = gd::benchmark::run_s(
       [&tableDto, uCheckSum]()
@@ -318,7 +341,7 @@ TEST_CASE("[benchmark] table dto", "[.benchmark]")
          assert(uTotalSum == uCheckSum);
          return uTotalSum;
 
-      }, uRunIterations, uWarmupCount, uBatchCount);    // Measured calls and Warm-up calls and number of batched calls.
+      }, uRunIterations, uWarmupCount);    // Measured calls and Warm-up calls.
 
 
    const auto resultSum07 = gd::benchmark::run_s(
@@ -378,7 +401,7 @@ TEST_CASE("[benchmark] table dto", "[.benchmark]")
          assert(uTotalSum == uCheckSum);
          return uTotalSum;
 
-      }, uRunIterations, uWarmupCount, uBatchCount);
+      }, uRunIterations, uWarmupCount);
 
 
    const auto resultSum08 = gd::benchmark::run_s(
@@ -411,226 +434,36 @@ TEST_CASE("[benchmark] table dto", "[.benchmark]")
          assert(uTotalSum == uCheckSum);
          return uTotalSum;
 
-      }, uRunIterations, uWarmupCount, uBatchCount);
+      }, uRunIterations, uWarmupCount);
    
-   std::cout << "\nBenchmark: resultSum01\n";
-   std::cout << "Mean: " << resultSum01.mean() << " ns\n";
-   std::cout << "Minimum: " << resultSum01.min_time() << " ns\n";
-   std::cout << "Maximum: " << resultSum01.max_time() << " ns\n";
-   std::cout << "Total in milliseconds: " << (resultSum01.total_duration_ns() / 1'000'000.0) << " ms\n";
+   auto print_result_ = [](std::string_view stringBenchmarkName, const auto& result_)
+   {
+      std::cout << "\nBenchmark: " << stringBenchmarkName << "\n";
+      std::cout << "Mean: " << result_.mean() << " ns\n";
+      std::cout << "Minimum: " << result_.min_time() << " ns\n";
+      std::cout << "Maximum: " << result_.max_time() << " ns\n";
+      std::cout << "Total in milliseconds: " << (result_.total_duration() / 1'000'000.0) << " ms\n";
+   };
 
-   std::cout << "\nBenchmark: resultSum02\n";
-   std::cout << "Mean: " << resultSum02.mean() << " ns\n";
-   std::cout << "Minimum: " << resultSum02.min_time() << " ns\n";
-   std::cout << "Maximum: " << resultSum02.max_time() << " ns\n";
-   std::cout << "Total in milliseconds: " << (resultSum02.total_duration_ns() / 1'000'000.0) << " ms\n";
-
-   std::cout << "\nBenchmark: resultSum03 no null check\n";
-   std::cout << "Mean: " << resultSum03.mean() << " ns\n";
-   std::cout << "Minimum: " << resultSum03.min_time() << " ns\n";
-   std::cout << "Maximum: " << resultSum03.max_time() << " ns\n";
-   std::cout << "Total in milliseconds: " << (resultSum03.total_duration_ns() / 1'000'000.0) << " ms\n";
-
-   std::cout << "\nBenchmark: resultSumSpecial no null check\n";
-   std::cout << "Mean: " << resultSumSpecial.mean() << " ns\n";
-   std::cout << "Minimum: " << resultSumSpecial.min_time() << " ns\n";
-   std::cout << "Maximum: " << resultSumSpecial.max_time() << " ns\n";
-   std::cout << "Total in milliseconds: " << (resultSumSpecial.total_duration_ns() / 1'000'000.0) << " ms\n";
-
-   std::cout << "\nBenchmark: resultSum04 struct three values\n";
-   std::cout << "Mean: " << resultSum04.mean() << " ns\n";
-   std::cout << "Minimum: " << resultSum04.min_time() << " ns\n";
-   std::cout << "Maximum: " << resultSum04.max_time() << " ns\n";
-   std::cout << "Total in milliseconds: " << (resultSum04.total_duration_ns() / 1'000'000.0) << " ms\n";
-
-   std::cout << "\nBenchmark: resultSum05 struct three values with checksum\n";
-   std::cout << "Mean: " << resultSum05.mean() << " ns\n";
-   std::cout << "Minimum: " << resultSum05.min_time() << " ns\n";
-   std::cout << "Maximum: " << resultSum05.max_time() << " ns\n";
-   std::cout << "Total in milliseconds: " << (resultSum05.total_duration_ns() / 1'000'000.0) << " ms\n";
-
-   std::cout << "\nBenchmark: resultSum06 struct + unroll 4 for OoO\n";
-   std::cout << "Mean: " << resultSum06.mean() << " ns\n";
-   std::cout << "Minimum: " << resultSum06.min_time() << " ns\n";
-   std::cout << "Maximum: " << resultSum06.max_time() << " ns\n";
-   std::cout << "Total in milliseconds: " << (resultSum06.total_duration_ns() / 1'000'000.0) << " ms\n";
-
-   std::cout << "\nBenchmark: resultSum07 struct + unroll 4 for OoO + restrict\n";
-   std::cout << "Mean: " << resultSum07.mean() << " ns\n";
-   std::cout << "Minimum: " << resultSum07.min_time() << " ns\n";
-   std::cout << "Maximum: " << resultSum07.max_time() << " ns\n";
-   std::cout << "Total in milliseconds: " << (resultSum07.total_duration_ns() / 1'000'000.0) << " ms\n";
-
-   std::cout << "\nBenchmark: resultSum08 struct + restrict\n";
-   std::cout << "Mean: " << resultSum08.mean() << " ns\n";
-   std::cout << "Minimum: " << resultSum08.min_time() << " ns\n";
-   std::cout << "Maximum: " << resultSum08.max_time() << " ns\n";
-   std::cout << "Total in milliseconds: " << (resultSum08.total_duration_ns() / 1'000'000.0) << " ms\n";
-
-
+   print_result_("resultSum01", resultSum01);
+   print_result_("resultSum02", resultSum02);
+   print_result_("resultSum03 no null check", resultSum03);
+   print_result_("resultSumSpecial no null check", resultSumSpecial);
+   print_result_("resultSum04 struct three values", resultSum04);
+   print_result_("resultSum05 struct three values with checksum", resultSum05);
+   print_result_("resultSum06 struct + unroll 4 for OoO", resultSum06);
+   print_result_("resultSum07 struct + unroll 4 for OoO + restrict", resultSum07);
+   print_result_("resultSum08 struct + restrict", resultSum08);
 }
 
-
-TEST_CASE("[benchmark] string_transport02", "[.benchmark]")
-{
-   /*const auto resultTransport03 = gd::benchmark::run_s(
-      []()
-      {
-         int i;
-         gd::benchmark::do_not_optimize_s(i);
-         std::string stringText;
-         stringText = "0123456789!";
-         stringText += " 0123456789!";
-         stringText += " 0123456789!";
-         stringText += " 0123456789!";
-         stringText += " 0123456789!";
-         stringText += " 0123456789!";
-         return stringText;
-      }, 100000, 100, 100);    // Measured calls and Warm-up calls.
-
-   const auto resultVector = gd::benchmark::run_s(
-      []()
-      {
-         int i;
-         gd::benchmark::do_not_optimize_s(i);
-         std::vector<char> vectorChar;
-         vectorChar.push_back('0');
-         vectorChar.push_back('1');
-         vectorChar.push_back('2');
-         vectorChar.push_back('3');
-         vectorChar.push_back('4');
-         vectorChar.push_back('5');
-         return vectorChar;
-      }, 100000, 100, 100);    // Measured calls and Warm-up calls.
-
-   const auto resultVector2 = gd::benchmark::run_s(
-      []()
-      {
-         int i;
-         gd::benchmark::do_not_optimize_s(i);
-         std::vector<std::string> vectorString;
-         vectorString.push_back("0123456789!");
-         vectorString.push_back("0123456789!");
-         vectorString.push_back("0123456789!");
-         vectorString.push_back("0123456789!");
-         vectorString.push_back("0123456789!");
-         vectorString.push_back("0123456789!");
-         return vectorString;
-      }, 100000, 100, 100);    // Measured calls and Warm-up calls.
-  
-
-   const auto resultVector3 = gd::benchmark::run_s(
-      []()
-      {
-         int i;
-         gd::benchmark::do_not_optimize_s(i);
-         std::vector<gd::string_transport> vectorString;
-         vectorString.emplace_back("0123456789!");
-         vectorString.emplace_back("0123456789!");
-         vectorString.emplace_back("0123456789!");
-         vectorString.emplace_back("0123456789!");
-         vectorString.emplace_back("0123456789!");
-         vectorString.emplace_back("0123456789!");
-         return vectorString;
-      }, 100000, 100, 100);    // Measured calls and Warm-up calls.  */
-
-   const auto resultArgument = gd::benchmark::run_s(
-      []()
-      {
-         int i;
-         gd::benchmark::do_not_optimize_s(i);
-         gd::argument::arguments arguments;
-         arguments.append("one","0123456789!");
-         arguments.append("two","0123456789!");
-         arguments.append("three","0123456789!");
-         arguments.append("four","0123456789!");
-         arguments.append("five","0123456789!");
-         arguments.append("six","0123456789!");
-         //arguments["seven"] = "0123456789!";
-         return arguments;
-      }, 100000, 100, 100);    // Measured calls and Warm-up calls.
-
-   std::array<std::byte, 280> arrayBuffer;
-
-   const auto resultArgument2 = gd::benchmark::run_s(
-      [&arrayBuffer]()
-      {
-         int i;
-         gd::benchmark::do_not_optimize_s(i);
-         gd::argument::arguments arguments(arrayBuffer);
-         arguments.append("one", "0123456789!");
-         arguments.append("two", "0123456789!");
-         arguments.append("three", "0123456789!");
-         arguments.append("four", "0123456789!");
-         arguments.append("five", "0123456789!");
-         arguments.append("six", "0123456789!");
-         //arguments["seven"] = "0123456789!";
-         return arguments;
-      }, 100000, 100, 100);    // Measured calls and Warm-up calls.
-
-   const auto resultArgument3 = gd::benchmark::run_s(
-      [&arrayBuffer]()
-      {
-         int i;
-         gd::benchmark::do_not_optimize_s(i);
-         gd::argument::arguments arguments;
-         arguments["one"] = "0123456789!";
-         arguments["two"] = "0123456789!";
-         arguments["three"] = "0123456789!";
-         arguments["four"] = "0123456789!";
-         arguments["five"] = "0123456789!";
-         arguments["six"] = "0123456789!";
-         arguments["seven"] = "0123456789!";
-         arguments["eight"] = "0123456789!";
-         //arguments["seven"] = "0123456789!";
-         return arguments;
-      }, 100000, 100, 100);    // Measured calls and Warm-up calls.
-
-
-  /* std::cout << "\nBenchmark: std::string\n";
-   std::cout << "Mean: " << resultTransport03.m_dMean << " ns\n";
-   std::cout << "Minimum: " << resultTransport03.m_dMinTime << " ns\n";
-   std::cout << "Maximum: " << resultTransport03.m_dMaxTime << " ns\n";
-
-   std::cout << "\nBenchmark: std::vector<char>\n";
-   std::cout << "Mean: " << resultVector.m_dMean << " ns\n";
-   std::cout << "Minimum: " << resultVector.m_dMinTime << " ns\n";
-   std::cout << "Maximum: " << resultVector.m_dMaxTime << " ns\n";
-
-   std::cout << "\nBenchmark: std::vector<std::string>\n";
-   std::cout << "Mean: " << resultVector2.m_dMean << " ns\n";
-   std::cout << "Minimum: " << resultVector2.m_dMinTime << " ns\n";
-   std::cout << "Maximum: " << resultVector2.m_dMaxTime << " ns\n";
-
-   std::cout << "\nBenchmark: std::vector<gd::string_transport>\n";
-   std::cout << "Mean: " << resultVector3.m_dMean << " ns\n";
-   std::cout << "Minimum: " << resultVector3.m_dMinTime << " ns\n";
-   std::cout << "Maximum: " << resultVector3.m_dMaxTime << " ns\n";  */
-
-   std::cout << "\nBenchmark: gd::argument::arguments with no buffer\n";
-   std::cout << "Mean: " << resultArgument.mean() << " ns\n";
-   std::cout << "Minimum: " << resultArgument.min_time() << " ns\n";
-   std::cout << "Maximum: " << resultArgument.max_time() << " ns\n";
-   
-   std::cout << "\nBenchmark: gd::argument::arguments with buffer\n";
-   std::cout << "Mean: " << resultArgument2.mean() << " ns\n";
-   std::cout << "Minimum: " << resultArgument2.min_time() << " ns\n";
-   std::cout << "Maximum: " << resultArgument2.max_time() << " ns\n";
-
-   std::cout << "\nBenchmark: assign with []\n";
-   std::cout << "Mean: " << resultArgument3.mean() << " ns\n";
-   std::cout << "Minimum: " << resultArgument3.min_time() << " ns\n";
-   std::cout << "Maximum: " << resultArgument3.max_time() << " ns\n";
-}
 
 
 
 
 TEST_CASE("[benchmark] sort table", "[.benchmark]")
 {
-   constexpr unsigned uRunIterations = 10;
-   constexpr unsigned uWarmupCount = 1;
-   constexpr unsigned uBatchCount = 5;
+   constexpr unsigned uRunIterations = 50;
+   constexpr unsigned uWarmupCount = 3;
    constexpr unsigned uCreateRowCount = 1000;
 
    using namespace gd::table::dto;
@@ -674,7 +507,7 @@ TEST_CASE("[benchmark] sort table", "[.benchmark]")
          tableTarget.append(tableSource);
          tableTarget.sort(0u, true);
          return tableTarget.size();
-      }, uRunIterations, uWarmupCount, uBatchCount);
+      }, uRunIterations, uWarmupCount);
 
    // check if table is sorted correctly
    for (uint64_t uRow = 1; uRow < tableTarget.size(); ++uRow)
@@ -691,7 +524,7 @@ TEST_CASE("[benchmark] sort table", "[.benchmark]")
          tableTarget.append(tableSource);
          tableTarget.sort(1u, true);
          return tableTarget.size();
-      }, uRunIterations, uWarmupCount, uBatchCount);
+      }, uRunIterations, uWarmupCount);
 
    const auto resultSort03 = gd::benchmark::run_s(
       [&tableSource, &tableTarget]()
@@ -700,7 +533,7 @@ TEST_CASE("[benchmark] sort table", "[.benchmark]")
          tableTarget.append(tableSource);
          tableTarget.sort(6u, true);
          return tableTarget.size();
-      }, uRunIterations, uWarmupCount, uBatchCount);
+      }, uRunIterations, uWarmupCount);
 
 
    const auto resultSort04 = gd::benchmark::run_s(
@@ -710,7 +543,7 @@ TEST_CASE("[benchmark] sort table", "[.benchmark]")
          tableTarget.append(tableSource);
          tableTarget.sort(0u, true, gd::table::tag_sort_index{});
          return tableTarget.size();
-      }, uRunIterations, uWarmupCount, uBatchCount);
+      }, uRunIterations, uWarmupCount);
 
    const auto resultSort05 = gd::benchmark::run_s(
       [&tableSource, &tableTarget]()
@@ -719,7 +552,7 @@ TEST_CASE("[benchmark] sort table", "[.benchmark]")
          tableTarget.append(tableSource);
          tableTarget.sort(1u, true, gd::table::tag_sort_index{});
          return tableTarget.size();
-      }, uRunIterations, uWarmupCount, uBatchCount);
+      }, uRunIterations, uWarmupCount);
 
    const auto resultSort06 = gd::benchmark::run_s(
       [&tableSource, &tableTarget]()
@@ -728,7 +561,7 @@ TEST_CASE("[benchmark] sort table", "[.benchmark]")
          tableTarget.append(tableSource);
          tableTarget.sort(6u, true, gd::table::tag_sort_index{});
          return tableTarget.size();
-      }, uRunIterations, uWarmupCount, uBatchCount);
+      }, uRunIterations, uWarmupCount);
 
    const auto resultSort07 = gd::benchmark::run_s(
       [&tableSource, &tableTarget]()
@@ -737,7 +570,7 @@ TEST_CASE("[benchmark] sort table", "[.benchmark]")
          tableTarget.append(tableSource);
          tableTarget.sort(0u, true, gd::table::tag_sort_key{});
          return tableTarget.size();
-      }, uRunIterations, uWarmupCount, uBatchCount);
+      }, uRunIterations, uWarmupCount);
 
    // check if table is sorted correctly after key sort
    for (uint64_t uRow = 1; uRow < tableTarget.size(); ++uRow)
@@ -754,7 +587,7 @@ TEST_CASE("[benchmark] sort table", "[.benchmark]")
          tableTarget.append(tableSource);
          tableTarget.sort(1u, true, gd::table::tag_sort_key{});
          return tableTarget.size();
-      }, uRunIterations, uWarmupCount, uBatchCount);
+      }, uRunIterations, uWarmupCount);
 
    const auto resultSort09 = gd::benchmark::run_s(
       [&tableSource, &tableTarget]()
@@ -763,7 +596,7 @@ TEST_CASE("[benchmark] sort table", "[.benchmark]")
          tableTarget.append(tableSource);
          tableTarget.sort(6u, true, gd::table::tag_sort_key{});
          return tableTarget.size();
-      }, uRunIterations, uWarmupCount, uBatchCount);
+      }, uRunIterations, uWarmupCount);
 
 
    // check if table is sorted correctly
@@ -783,7 +616,7 @@ TEST_CASE("[benchmark] sort table", "[.benchmark]")
          std::cout << "Mean: " << result.mean() << " ns\n";
          std::cout << "Minimum: " << result.min_time() << " ns\n";
          std::cout << "Maximum: " << result.max_time() << " ns\n";
-         std::cout << "Total in milliseconds: " << (result.total_duration_ns() / 1'000'000.0) << " ms\n";
+         std::cout << "Total in milliseconds: " << (result.total_duration() / 1'000'000.0) << " ms\n";
       };
 
    print_result("sort table 01", resultSort01);
@@ -801,11 +634,10 @@ TEST_CASE("[benchmark] sort table", "[.benchmark]")
 
 
 
-TEST_CASE("[benchmark] three sort methods for table", "[benchmark]")
+TEST_CASE("[benchmark] three sort methods for table", "[.benchmark]")
 {
-   constexpr unsigned uRunIterations = 5;
+   constexpr unsigned uRunIterations = 10;
    constexpr unsigned uWarmupCount = 1;
-   constexpr unsigned uBatchCount = 2;
    constexpr unsigned uCreateRowCount = 10000;
 
    using namespace gd::table::dto;
@@ -851,7 +683,7 @@ TEST_CASE("[benchmark] three sort methods for table", "[benchmark]")
          std::cout << "Mean: " << (result.mean() / 1'000.0) << " us\n";
          std::cout << "Minimum: " << (result.min_time() / 1'000.0) << " us\n";
          std::cout << "Maximum: " << (result.max_time() / 1'000.0) << " us\n";
-         std::cout << "Total in milliseconds: " << (result.total_duration_ns() / 1'000'000.0) << " ms\n";
+         std::cout << "Total in milliseconds: " << (result.total_duration() / 1'000'000.0) << " ms\n";
       };
 
    for(unsigned uSortColumn = 0; uSortColumn < 7; ++uSortColumn)
@@ -864,7 +696,7 @@ TEST_CASE("[benchmark] three sort methods for table", "[benchmark]")
             tableTarget.append(tableSource);
             tableTarget.sort(uSortColumn, true);
             return tableTarget.size();
-         }, uRunIterations, uWarmupCount, uBatchCount);
+         }, uRunIterations, uWarmupCount);
 
       const auto resultSort02 = gd::benchmark::run_s(
          [&]()
@@ -873,7 +705,7 @@ TEST_CASE("[benchmark] three sort methods for table", "[benchmark]")
             tableTarget.append(tableSource);
             tableTarget.sort(uSortColumn, true, gd::table::tag_sort_index{});
             return tableTarget.size();
-         }, uRunIterations, uWarmupCount, uBatchCount);
+         }, uRunIterations, uWarmupCount);
 
       const auto resultSort03 = gd::benchmark::run_s(
          [&]()
@@ -882,7 +714,7 @@ TEST_CASE("[benchmark] three sort methods for table", "[benchmark]")
             tableTarget.append(tableSource);
             tableTarget.sort(uSortColumn, true, gd::table::tag_sort_key{});
             return tableTarget.size();
-         }, uRunIterations, uWarmupCount, uBatchCount);
+         }, uRunIterations, uWarmupCount);
 
 
       std::cout << "\n\nColumn: " << uSortColumn << " =======================";
@@ -902,11 +734,10 @@ inline void cache_evict_all()
 }
 
 
-TEST_CASE("[benchmark] three sort methods for table using rstring", "[benchmark]")
+TEST_CASE("[benchmark] three sort methods for table using rstring", "[.benchmark]")
 {
-   constexpr unsigned uRunIterations = 5;
+   constexpr unsigned uRunIterations = 10;
    constexpr unsigned uWarmupCount = 0;
-   constexpr unsigned uBatchCount = 2;
    constexpr unsigned uCreateRowCount = 10000;
 
    using namespace gd::table::dto;
@@ -952,7 +783,7 @@ TEST_CASE("[benchmark] three sort methods for table using rstring", "[benchmark]
          std::cout << "Mean: " << (result.mean() / 1'000.0) << " us\n";
          std::cout << "Minimum: " << (result.min_time() / 1'000.0) << " us\n";
          std::cout << "Maximum: " << (result.max_time() / 1'000.0) << " us\n";
-         std::cout << "Total in milliseconds: " << (result.total_duration_ns() / 1'000'000.0) << " ms\n";
+         std::cout << "Total in milliseconds: " << (result.total_duration() / 1'000'000.0) << " ms\n";
       };
 
    for (unsigned uSortColumn = 0; uSortColumn < 7; ++uSortColumn)
@@ -966,7 +797,7 @@ TEST_CASE("[benchmark] three sort methods for table using rstring", "[benchmark]
             tableTarget.append(tableSource);
             tableTarget.sort(uSortColumn, true);
             return tableTarget.size();
-         }, uRunIterations, uWarmupCount, uBatchCount);
+         }, uRunIterations, uWarmupCount);
 
       const auto resultSort02 = gd::benchmark::run_s(
          [&]()
@@ -976,7 +807,7 @@ TEST_CASE("[benchmark] three sort methods for table using rstring", "[benchmark]
             tableTarget.append(tableSource);
             tableTarget.sort(uSortColumn, true, gd::table::tag_sort_index{});
             return tableTarget.size();
-         }, uRunIterations, uWarmupCount, uBatchCount);
+         }, uRunIterations, uWarmupCount);
 
       const auto resultSort03 = gd::benchmark::run_s(
          [&]()
@@ -986,7 +817,7 @@ TEST_CASE("[benchmark] three sort methods for table using rstring", "[benchmark]
             tableTarget.append(tableSource);
             tableTarget.sort(uSortColumn, true, gd::table::tag_sort_key{});
             return tableTarget.size();
-         }, uRunIterations, uWarmupCount, uBatchCount);
+         }, uRunIterations, uWarmupCount);
 
 
       std::cout << "\n\nColumn: " << uSortColumn << " =======================";
