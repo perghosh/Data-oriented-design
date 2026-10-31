@@ -203,6 +203,15 @@ struct tag_reference {};
 
 using tag_variadic = gd::types::tag_variadic;
 
+template<typename T>
+concept table_cell_like = requires( const T& c ) {
+   typename T::table_type;                                  // identity marker
+   { c.get() } -> std::convertible_to<gd::variant_view>;
+   { c.m_uRow } -> std::convertible_to<uint64_t>;
+   { c.m_uColumn } -> std::convertible_to<unsigned>;
+};
+
+
 /**
  * \brief wrapper for cell objects owned by table
  *
@@ -220,6 +229,12 @@ struct cell
       for( const auto& v_ : listValue ) m_ptable->cell_set( m_uRow, uColumn++, v_, tag_convert{} );
       return *this;
    }
+
+   template<typename OTHER_TABLE>
+      requires table_cell_like<cell<OTHER_TABLE>>
+   cell& operator=( const cell<OTHER_TABLE>& o ) { m_ptable->cell_set( m_uRow, m_uColumn, o.get(), tag_convert{}); }
+
+
 
    operator bool() const      { return m_ptable->cell_get_variant_view( m_uRow, m_uColumn ); }
    operator int8_t() const    { return m_ptable->cell_get_variant_view( m_uRow, m_uColumn ); }
@@ -244,6 +259,7 @@ struct cell
    operator std::wstring() const { return m_ptable->cell_get_variant_view( m_uRow, m_uColumn ).as_wstring(); }
    operator std::string_view() const { return m_ptable->cell_get_variant_view( m_uRow, m_uColumn ).as_string_view(); }
 
+   gd::variant_view get() const { return m_ptable->cell_get_variant_view( m_uRow, m_uColumn ); }
    gd::variant as_variant( const std::string_view& stringType );
    gd::variant as_variant( unsigned uType );
 
