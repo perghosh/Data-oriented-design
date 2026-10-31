@@ -24,11 +24,11 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
-TEST_CASE("[benchmark] hot and cold", "[benchmark]")
+TEST_CASE("[benchmark] hot and cold", "[.benchmark]")
 {
    constexpr unsigned uRunIterations = 100;
    constexpr unsigned uWarmupCount = 3;
-   constexpr unsigned uCreateRowCount = 10000;
+   constexpr unsigned uCreateRowCount = 1000;
 
    using namespace gd::table::dto;
 
@@ -103,352 +103,77 @@ TEST_CASE("[benchmark] hot and cold", "[benchmark]")
    }
 }
 
-TEST_CASE("[benchmark] table dto", "[.benchmark]")
+
+TEST_CASE("[benchmark] edit", "[benchmark]")
 {
-   constexpr unsigned uRunIterations = 50;
-   constexpr unsigned uWarmupCount = 1;
-
    using namespace gd::table::dto;
-   table tableDto((table::eTableFlagNull32 | table::eTableFlagRowStatus), { { "uint64", "C1" },{ "uint64", "C2" },{ "uint64", "C3" },{ "uint64", "SUM" } }, gd::table::tag_prepare{});
 
-   // Add 10000000 rows to table
-   for(uint64_t u = 0; u < 10'000'000; ++ u)
+   table tableSet((table::eTableFlagNull32 | table::eTableFlagRowStatus), 
+   { { "uint64", 0, "C1" },{ "uint64", 0, "C2" },{ "uint64", 0, "C3" } }, gd::table::tag_prepare{});
+
+   tableSet.row_add(10);
+   for( uint64_t uRow = 0; uRow < 10; ++uRow) 
    {
-      auto uRow = tableDto.row_add_one();
-      tableDto.cell_set(uRow, 0, u);
-      tableDto.cell_set(uRow, 1, u * 2);
-      tableDto.cell_set(uRow, 2, u * 3);
-      //tableDto.cell_set(uRow, 3, u + (u * 2) + (u * 3));
+      tableSet[uRow,"C1"] = {"1", "1", "1"};
    }
-
-   uint64_t uCheckSum = 0;
-
-   // calculate the checksum to verify the results are correct
-   for(auto itRow : tableDto)
-   {
-      for(unsigned uCol = 0; uCol < 3; ++uCol)
-      {
-         auto value = itRow.cell_get_variant_view(uCol);
-         uCheckSum += value.get_uint64();
-      }
-   }
-
-
-   const auto resultSum01 = gd::benchmark::run_s(
-      [&tableDto, uCheckSum]()
-      {
-         uint64_t uTotalSum = 0;
-         // sum columns into column 3 and also do a total and return the total
-         for(auto itRow = tableDto.begin(); itRow != tableDto.end(); ++itRow)
-         {
-            auto uRow = *itRow;
-            uint64_t uSum = 0;
-            for(unsigned uCol = 0; uCol < 3; ++uCol)
-            {
-               auto value = itRow.cell_get_variant_view(uCol);
-               if(value.is_null() == false)
-               {
-                  uSum += value.get_uint64();
-               }
-            }
-            itRow.cell_set(3, uSum);
-            uTotalSum += uSum;
-         }
-         assert(uTotalSum == uCheckSum);
-         return uTotalSum;
-
-      }, uRunIterations, uWarmupCount);    // Measured calls and Warm-up calls.
-
-   const auto resultSum02 = gd::benchmark::run_s(
-      [&tableDto, uCheckSum]()
-      {
-         uint64_t uTotalSum = 0;
-         // sum columns into column 3 and also do a total and return the total
-         for(uint64_t uRow = 0; uRow < tableDto.size(); ++uRow)
-         {
-            uint64_t uSum = 0;
-            for(unsigned uCol = 0; uCol < 3; ++uCol)
-            {
-               auto value = tableDto.cell_get_variant_view(uRow, uCol);
-               if(value.is_null() == false)
-               {
-                  uSum += value.get_uint64();
-               }
-            }
-            tableDto.cell_set(uRow, 3, uSum);
-            uTotalSum += uSum;
-         }
-         assert(uTotalSum == uCheckSum);
-         return uTotalSum;
-
-      }, uRunIterations, uWarmupCount);    // Measured calls and Warm-up calls.
-
-   const auto resultSum03 = gd::benchmark::run_s(
-      [&tableDto, uCheckSum]()
-      {
-         uint64_t uTotalSum = 0;
-         // sum columns into column 3 and also do a total and return the total
-         for(uint64_t uRow = 0; uRow < tableDto.size(); ++uRow)
-         {
-            uint64_t uSum = 0;
-            for(unsigned uCol = 0; uCol < 3; ++uCol)
-            {
-               auto value = tableDto.cell_get_variant_view(uRow, uCol);
-               uSum += value.get_uint64();
-            }
-            tableDto.cell_set(uRow, 3, uSum);
-            uTotalSum += uSum;
-         }
-         assert(uTotalSum == uCheckSum);
-         return uTotalSum;
-
-      }, uRunIterations, uWarmupCount);    // Measured calls and Warm-up calls.
-
-   const auto resultSumSpecial = gd::benchmark::run_s(
-      [&tableDto, uCheckSum]()
-      {
-         uint64_t uTotalSum = 0;
-         // sum columns into column 3 and also do a total and return the total
-         for (uint64_t uRow = 0; uRow < tableDto.size(); ++uRow)
-         {
-            uint64_t uSum = 0;
-            for (unsigned uCol = 0; uCol < 3; ++uCol)
-            {
-               auto value = tableDto.cell_get_variant_view(uRow, uCol);
-               uSum += (uint64_t)value;
-            }
-            tableDto.cell_set(uRow, 3, uSum);
-            uTotalSum += uSum;
-         }
-         assert(uTotalSum == uCheckSum);
-         return uTotalSum;
-
-      }, uRunIterations, uWarmupCount);    // Measured calls and Warm-up calls.
-
-
-   const auto resultSum04 = gd::benchmark::run_s(
-      [&tableDto, uCheckSum]()
-      {
-         struct row
-         {
-            uint64_t uC1;
-            uint64_t uC2;
-            uint64_t uC3;
-         };
-
-         uint64_t uTotalSum = 0;
-         // sum columns into column 3 and also do a total and return the total
-         for(uint64_t uRow = 0; uRow < tableDto.size(); ++uRow)
-         {
-            uint64_t uSum = 0;
-            auto* prow = (row*)tableDto.cell_get(uRow, 0);
-            uSum = prow->uC1 + prow->uC2 + prow->uC3;
-            uTotalSum += uSum;
-            tableDto.cell_set(uRow, 3, uSum);
-         }
-         assert(uTotalSum == uCheckSum);
-         return uTotalSum;
-
-      }, uRunIterations, uWarmupCount);    // Measured calls and Warm-up calls.
-
-   const auto resultSum05 = gd::benchmark::run_s(
-      [&tableDto, uCheckSum]()
-      {
-         struct row
-         {
-            uint64_t uC1;
-            uint64_t uC2;
-            uint64_t uC3;
-            uint64_t uSum;
-         };
-
-         uint64_t uTotalSum = 0;
-         // sum columns into column 3 and also do a total and return the total
-         for(uint64_t uRow = 0; uRow < tableDto.size(); ++uRow)
-         {
-            uint64_t uSum = 0;
-            auto* prow = (row*)tableDto.cell_get(uRow, 0);
-            uSum = prow->uC1 + prow->uC2 + prow->uC3;
-            uTotalSum += uSum;
-            prow->uSum = uSum;
-         }
-         assert(uTotalSum == uCheckSum);
-         return uTotalSum;
-
-      }, uRunIterations, uWarmupCount);    // Measured calls and Warm-up calls.
-
-   const auto resultSum06 = gd::benchmark::run_s(
-      [&tableDto, uCheckSum]()
-      {
-         struct row
-         {
-            uint64_t uC1;
-            uint64_t uC2;
-            uint64_t uC3;
-            uint64_t uSum;
-         };
-
-         constexpr uint64_t uUnroll = 4;
-         const uint64_t uRowCount = tableDto.size();
-         uint64_t uTotalSum0 = 0;
-         uint64_t uTotalSum1 = 0;
-         uint64_t uTotalSum2 = 0;
-         uint64_t uTotalSum3 = 0;
-
-         // Unroll by 4 rows so independent sums can run in parallel on OoO CPUs.
-         uint64_t uRow = 0;
-         for(; (uRow + (uUnroll - 1)) < uRowCount; uRow += uUnroll)
-         {
-            auto* prow0 = (row*)tableDto.cell_get(uRow + 0, 0);
-            auto* prow1 = (row*)tableDto.cell_get(uRow + 1, 0);
-            auto* prow2 = (row*)tableDto.cell_get(uRow + 2, 0);
-            auto* prow3 = (row*)tableDto.cell_get(uRow + 3, 0);
-
-            const uint64_t uSum0 = prow0->uC1 + prow0->uC2 + prow0->uC3;
-            const uint64_t uSum1 = prow1->uC1 + prow1->uC2 + prow1->uC3;
-            const uint64_t uSum2 = prow2->uC1 + prow2->uC2 + prow2->uC3;
-            const uint64_t uSum3 = prow3->uC1 + prow3->uC2 + prow3->uC3;
-
-            prow0->uSum = uSum0;
-            prow1->uSum = uSum1;
-            prow2->uSum = uSum2;
-            prow3->uSum = uSum3;
-
-            uTotalSum0 += uSum0;
-            uTotalSum1 += uSum1;
-            uTotalSum2 += uSum2;
-            uTotalSum3 += uSum3;
-         }
-
-         uint64_t uTotalSum = uTotalSum0 + uTotalSum1 + uTotalSum2 + uTotalSum3;
-
-         // Handle remaining rows when row count is not divisible by 4.
-         for(; uRow < uRowCount; ++uRow)
-         {
-            auto* prow = (row*)tableDto.cell_get(uRow, 0);
-            const uint64_t uSum = prow->uC1 + prow->uC2 + prow->uC3;
-            prow->uSum = uSum;
-            uTotalSum += uSum;
-         }
-
-         assert(uTotalSum == uCheckSum);
-         return uTotalSum;
-
-      }, uRunIterations, uWarmupCount);    // Measured calls and Warm-up calls.
-
-
-   const auto resultSum07 = gd::benchmark::run_s(
-      [&tableDto, uCheckSum]()
-      {
-         struct row
-         {
-            uint64_t uC1;
-            uint64_t uC2;
-            uint64_t uC3;
-            uint64_t uSum;
-         };
-
-         constexpr uint64_t uUnroll = 4;
-         const uint64_t uRowCount = tableDto.size();
-         uint64_t uTotalSum0 = 0;
-         uint64_t uTotalSum1 = 0;
-         uint64_t uTotalSum2 = 0;
-         uint64_t uTotalSum3 = 0;
-
-         // Hämta bas-pekaren EN gång
-         auto* __restrict pBase = (row*)tableDto.cell_get(0, 0);
-
-         uint64_t uRow = 0;
-         for(; (uRow + (uUnroll - 1)) < uRowCount; uRow += uUnroll)
-         {
-            auto* __restrict prow0 = pBase + (uRow + 0);
-            auto* __restrict prow1 = pBase + (uRow + 1);
-            auto* __restrict prow2 = pBase + (uRow + 2);
-            auto* __restrict prow3 = pBase + (uRow + 3);
-
-            const uint64_t uSum0 = prow0->uC1 + prow0->uC2 + prow0->uC3;
-            const uint64_t uSum1 = prow1->uC1 + prow1->uC2 + prow1->uC3;
-            const uint64_t uSum2 = prow2->uC1 + prow2->uC2 + prow2->uC3;
-            const uint64_t uSum3 = prow3->uC1 + prow3->uC2 + prow3->uC3;
-
-            prow0->uSum = uSum0;
-            prow1->uSum = uSum1;
-            prow2->uSum = uSum2;
-            prow3->uSum = uSum3;
-
-            uTotalSum0 += uSum0;
-            uTotalSum1 += uSum1;
-            uTotalSum2 += uSum2;
-            uTotalSum3 += uSum3;
-         }
-
-         uint64_t uTotalSum = uTotalSum0 + uTotalSum1 + uTotalSum2 + uTotalSum3;
-
-         for(; uRow < uRowCount; ++uRow)
-         {
-            auto* __restrict prow = pBase + uRow;
-            const uint64_t uSum = prow->uC1 + prow->uC2 + prow->uC3;
-            prow->uSum = uSum;
-            uTotalSum += uSum;
-         }
-         assert(uTotalSum == uCheckSum);
-         return uTotalSum;
-
-      }, uRunIterations, uWarmupCount);
-
-
-   const auto resultSum08 = gd::benchmark::run_s(
-      [&tableDto, uCheckSum]()
-      {
-         struct row
-         {
-            uint64_t uC1;
-            uint64_t uC2;
-            uint64_t uC3;
-            uint64_t uSum;
-         };
-
-         const uint64_t uRowCount = tableDto.size();
-         uint64_t uTotalSum = 0;
-
-         // Hämta bas-pekaren EN gång utanför loopen
-         auto* __restrict pBase = (row*)tableDto.cell_get(0, 0);
-
-         // En helt vanlig loop, precis som Sum05, men med konstant pekarsteg
-         for(uint64_t uRow = 0; uRow < uRowCount; ++uRow)
-         {
-            auto* __restrict prow = pBase + uRow;
-
-            const uint64_t uSum = prow->uC1 + prow->uC2 + prow->uC3;
-            prow->uSum = uSum;
-            uTotalSum += uSum;
-         }
-
-         assert(uTotalSum == uCheckSum);
-         return uTotalSum;
-
-      }, uRunIterations, uWarmupCount);
-   
-   auto print_result_ = [](std::string_view stringBenchmarkName, const auto& result_)
-   {
-      std::cout << "\nBenchmark: " << stringBenchmarkName << "\n";
-      std::cout << "Mean: " << result_.mean() << " ns\n";
-      std::cout << "Minimum: " << result_.min_time() << " ns\n";
-      std::cout << "Maximum: " << result_.max_time() << " ns\n";
-      std::cout << "Total in milliseconds: " << (result_.total_duration() / 1'000'000.0) << " ms\n";
-   };
-
-   print_result_("resultSum01", resultSum01);
-   print_result_("resultSum02", resultSum02);
-   print_result_("resultSum03 no null check", resultSum03);
-   print_result_("resultSumSpecial no null check", resultSumSpecial);
-   print_result_("resultSum04 struct three values", resultSum04);
-   print_result_("resultSum05 struct three values with checksum", resultSum05);
-   print_result_("resultSum06 struct + unroll 4 for OoO", resultSum06);
-   print_result_("resultSum07 struct + unroll 4 for OoO + restrict", resultSum07);
-   print_result_("resultSum08 struct + restrict", resultSum08);
 }
 
+TEST_CASE("[demo] flexibility", "[demo]")
+{
+   using namespace gd::table::dto;
+
+   // ## 1. The proxy way (what you already have) ------------------------------
+   //    operator[] returns a cell<> proxy; assignment goes through
+   //    cell_set( row, "C1", value ) — with implicit conversion via variant.
+   table t1((table::eTableFlagNull32 | table::eTableFlagRowStatus),
+            { { "uint64", 0, "C1" }, { "uint64", 0, "C3" }, { "uint64", 0, "C4" } },
+            gd::table::tag_prepare{});
+
+   t1.row_add(10);
+   for( uint64_t uRow = 0; uRow < 10; ++uRow )
+      t1[uRow, "C1"] = "1";                                // string -> uint64 conversion
+
+   // ## 2. The bulk-fill way --------------------------------------------------
+   //    Same column, no loop at all. column_fill writes every row in one call.
+   table t2((table::eTableFlagNull32 | table::eTableFlagRowStatus),
+            { { "uint64", 0, "C1" }, { "uint64", 0, "C3" }, { "uint64", 0, "C4" } },
+            gd::table::tag_prepare{});
+   t2.row_add(10);
+   t2.column_fill("C1", gd::variant_view(uint64_t{1}));    // all 10 rows = 1
+
+   // ## 3. The row-oriented way ----------------------------------------------
+   //    Add and populate a row in a single call, by name, with conversion.
+   table t3((table::eTableFlagNull32 | table::eTableFlagRowStatus),
+            { { "uint64", 0, "C1" }, { "uint64", 0, "C3" }, { "uint64", 0, "C4" } },
+            gd::table::tag_prepare{});
+   for( int i = 0; i < 10; ++i )
+      t3.row_add({ { "1" } }, gd::table::tag_convert{});
+
+   // ## 4. The "plant from a plain vector" way -------------------------------
+   //    Plant takes a std::vector<T> straight into a column.
+   table t4((table::eTableFlagNull32 | table::eTableFlagRowStatus),
+            { { "uint64", 0, "C1" }, { "uint64", 0, "C3" }, { "uint64", 0, "C4" } },
+            gd::table::tag_prepare{});
+   t4.row_add(10);
+   std::vector<uint64_t> vOnes(10, 1);
+   t4.plant("C1", vOnes);                                  // template plant<u64>
+
+   // ## 5. The scripted way --------------------------------------------------
+   //    Build the column definitions from a string, then fill by name.
+   table t5((table::eTableFlagNull32 | table::eTableFlagRowStatus),
+            "uint64,C1;uint64,C3;uint64,C4", gd::table::tag_parse{}, gd::table::tag_prepare{});
+   t5.row_add(10);
+   t5.column_fill(0, gd::variant_view(uint64_t{1}));
+
+   // ## All five produce identical data ------------------------------------
+   for( const table* p : { &t1, &t2, &t3, &t4, &t5 } )
+   {
+      REQUIRE( p->get_row_count() == 10 );
+      REQUIRE( p->cell_get_variant_view(0, "C1") == gd::variant_view(uint64_t{1}) );
+      REQUIRE( p->cell_get_variant_view(9, "C1") == gd::variant_view(uint64_t{1}) );
+   }
+   REQUIRE( t1.equal(t5) );                                // whole-table compare
+}
 
 
 

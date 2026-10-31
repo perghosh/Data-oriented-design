@@ -215,6 +215,11 @@ struct cell
    cell( TABLE* ptable, uint64_t uRow, unsigned uColumn ): m_ptable(ptable), m_uRow(uRow), m_uColumn(uColumn) { assert( m_ptable != nullptr ); assert( m_uRow < m_ptable->get_row_count() ); assert( m_uColumn < m_ptable->get_column_count() ); }
 
    cell& operator=( const gd::variant_view& variantviewValue ) { m_ptable->cell_set( m_uRow, m_uColumn, variantviewValue, tag_convert{} ); return *this; }
+   cell& operator=( std::initializer_list<gd::variant_view> listValue ) {
+      unsigned uColumn = m_uColumn;
+      for( const auto& v_ : listValue ) m_ptable->cell_set( m_uRow, uColumn++, v_, tag_convert{} );
+      return *this;
+   }
 
    operator bool() const      { return m_ptable->cell_get_variant_view( m_uRow, m_uColumn ); }
    operator int8_t() const    { return m_ptable->cell_get_variant_view( m_uRow, m_uColumn ); }
@@ -241,6 +246,9 @@ struct cell
 
    gd::variant as_variant( const std::string_view& stringType );
    gd::variant as_variant( unsigned uType );
+
+   cell& set_null()           { m_ptable->cell_set_null( m_uRow, m_uColumn ); return *this; }
+   cell& set_not_null()       { m_ptable->cell_set_not_null( m_uRow, m_uColumn ); return *this; }
 
    
    //operator gd::variant_view() const { return m_ptable->cell_get_variant_view( m_uRow, m_uColumn ); }

@@ -4214,7 +4214,7 @@ void table_column_buffer::sort( unsigned uColumn, bool bAscending, uint64_t uFro
    vectorKey.reserve(uCount);
 
    for( uint64_t uRow = uFrom, uEnd = uFrom + uCount; uRow < uEnd; uRow++ )
-   {                                                                                                assert( cell_is_null()( uRow, uColumn ) == false ); // keys are not allowed to be null
+   {                                                                                                assert( cell_is_null( uRow, uColumn ) == false ); // keys are not allowed to be null
       vectorKey.emplace_back( cell_get_variant_view( uRow, uColumn, tag_raw{}), uRow);              
    }
 
