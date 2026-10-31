@@ -4231,30 +4231,34 @@ void table_column_buffer::sort( unsigned uColumn, bool bAscending, uint64_t uFro
    switch (uType)
    {
    case gd::types::eTypeNumberInt32:  sort_([](const auto& v1, const auto& v2) { return v1.m_V.int32 < v2.m_V.int32; });  break;
+   case gd::types::eTypeNumberUInt32: sort_([](const auto& v1, const auto& v2) { return v1.m_V.uint32 < v2.m_V.uint32; });  break;
    case gd::types::eTypeNumberInt64:  sort_([](const auto& v1, const auto& v2) { return v1.m_V.int64 < v2.m_V.int64; });  break;
    case gd::types::eTypeNumberUInt64: sort_([](const auto& v1, const auto& v2) { return v1.m_V.uint64 < v2.m_V.uint64; }); break;
    case gd::types::eTypeNumberDouble: sort_([](const auto& v1, const auto& v2) { return v1.m_V.d < v2.m_V.d; });      break;
    default:                           sort_([](const auto& v1, const auto& v2) { return v1.less(v2, gd::variant_type::tag_same_type{}); }); break;
    }
 
-   // ## gather rows in sorted order into temporary buffer, keys are not used after this point
-   //    (keys for non primitive values point into the row buffer that is overwritten below)
-   std::vector<uint8_t> vectorData( uCount * m_uRowSize );
-   for( uint64_t uPosition = 0; uPosition < uCount; uPosition++ )
-   {
-      memcpy( vectorData.data() + (uPosition * m_uRowSize), row_get( vectorKey[uPosition].second ), m_uRowSize );
-   }
-   memcpy( row_get( uFrom ), vectorData.data(), vectorData.size() );                               // copy sorted rows back in one block
+   // ## one temporary buffer, used first for the rows and then for the row meta data
+   uint64_t uBufferSize = uCount * m_uRowSize;
+   if (is_rowmeta() == true) { uBufferSize = std::max(uBufferSize, uCount * m_uRowMetaSize); }
 
-   // ## same for meta data if table has meta data for rows
-   if( is_rowmeta() == true )
+   auto pData = std::make_unique_for_overwrite<uint8_t[]>(uBufferSize);
+
+   // ## gather rows in sorted order, keys are not used after this point
+   for (uint64_t uPosition = 0; uPosition < uCount; uPosition++)
    {
-      std::vector<uint8_t> vectorMetaData( uCount * m_uRowMetaSize );
-      for( uint64_t uPosition = 0; uPosition < uCount; uPosition++ )
+      memcpy(pData.get() + (uPosition * m_uRowSize), row_get(vectorKey[uPosition].second), m_uRowSize);
+   }
+   memcpy(row_get(uFrom), pData.get(), uCount * m_uRowSize);
+
+   // ## same for meta data, reusing the buffer
+   if (is_rowmeta() == true)
+   {
+      for (uint64_t uPosition = 0; uPosition < uCount; uPosition++)
       {
-         memcpy( vectorMetaData.data() + (uPosition * m_uRowMetaSize), row_get_meta( vectorKey[uPosition].second ), m_uRowMetaSize );
+         memcpy(pData.get() + (uPosition * m_uRowMetaSize), row_get_meta(vectorKey[uPosition].second), m_uRowMetaSize);
       }
-      memcpy( row_get_meta( uFrom ), vectorMetaData.data(), vectorMetaData.size() );
+      memcpy(row_get_meta(uFrom), pData.get(), uCount * m_uRowMetaSize);
    }
 }
 
