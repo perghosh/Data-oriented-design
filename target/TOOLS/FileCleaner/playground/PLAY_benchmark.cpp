@@ -101,7 +101,6 @@ TEST_CASE("[benchmark] hot and cold", "[benchmark]")
       print_result("sort table 01 (warm)", resultSort01);
       print_result("sort table 02 (cold)", resultSort02);
    }
-
 }
 
 TEST_CASE("[benchmark] table dto", "[.benchmark]")
