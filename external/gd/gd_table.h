@@ -228,7 +228,15 @@ struct cell_reference
    cell_reference() : m_uRow(uint64_t(-1)), m_uColumn(unsigned(-1)) {}
    cell_reference( uint64_t uRow, unsigned uColumn ) : m_uRow(uRow), m_uColumn(uColumn) {}
 
+   uint64_t row() const noexcept { return m_uRow; }    ///< zero-based row index
+   unsigned column() const noexcept { return m_uColumn; } ///< zero-based column index
+
    bool empty() const noexcept { return m_uRow == uint64_t(-1) || m_uColumn == unsigned(-1); }
+
+   /// convert cell_reference to A1 style string, returns empty string if cell_reference is empty
+   std::string to_string_a1() const noexcept { return to_a1_s(*this); }
+   /// convert cell_reference to R1C1 style string, returns empty string if cell_reference is empty
+   std::string to_string_r1c1() const noexcept { return to_r1c1_s(*this); }
 
    static bool parse_s( std::string_view stringCellReference, cell_reference& cellreferenceValue ) noexcept {
       return parse_r1c1_s( stringCellReference, cellreferenceValue ) || parse_a1_s( stringCellReference, cellreferenceValue );
@@ -354,6 +362,28 @@ struct cell_reference
       if( parse_r1c1_s( stringCellReference, cellreferenceValue ) ) return cellreferenceValue;
       return {};
    }
+
+   /// ------------------------------------------------------------------------
+   /// convert cell_reference to A1 style string, returns empty string if cell_reference is empty
+   static std::string to_a1_s( cell_reference cell_ ) noexcept {
+      if(cell_.empty()) return {};
+      std::string stringResult;
+      uint64_t uColumn = static_cast<uint64_t>(cell_.column()) + 1;
+      while(uColumn > 0) {
+         --uColumn;
+         stringResult.insert(stringResult.begin(), static_cast<char>('A' + uColumn % 26));
+         uColumn /= 26;
+      }
+      return stringResult + std::to_string(cell_.row() + 1);
+   }
+
+   /// ------------------------------------------------------------------------
+   /// convert cell_reference to R1C1 style string, returns empty string if cell_reference
+   static std::string to_r1c1_s(cell_reference cell_) noexcept {
+      if(cell_.empty()) return {};
+      return "R" + std::to_string(cell_.row() + 1) + "C" + std::to_string(cell_.column() + 1);
+   }
+
 
    uint64_t m_uRow;    ///< zero based row index
    unsigned m_uColumn; ///< zero based column index
@@ -740,11 +770,10 @@ struct range
 //@}
 
 // ## attributes --------------------------------------------------------------
-   uint64_t m_uRow1;
-   uint32_t m_uColumn1;
-   uint64_t m_uRow2;
-   uint32_t m_uColumn2;
-
+   uint64_t m_uRow1 = uint64_t(-1);   ///< top left row index
+   uint32_t m_uColumn1 = uint32_t(-1);///< top left column index
+   uint64_t m_uRow2 = uint64_t(-1);   ///< bottom right row index
+   uint32_t m_uColumn2 = uint32_t(-1);///< bottom right column index
 // ## free functions ----------------------------------------------------------
 
 };
@@ -850,8 +879,9 @@ struct page
 };
 
 inline uint64_t page::get_page_count() const noexcept {                                            assert( m_uPageSize != 0 ); 
-   if( m_uRowCount < m_uPageSize ) return 1;
-   return (uint64_t)ceil( get_row_count() / m_uPageSize ); 
+   const uint64_t uRowCount = get_row_count();
+   if(m_uPageSize == 0 || uRowCount == 0) return 1;
+   return (uRowCount + m_uPageSize - 1) / m_uPageSize;
 }
 
 
