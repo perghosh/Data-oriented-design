@@ -29,6 +29,7 @@
  *   run_s__                       - Runs a performance benchmark on a given function or lambda statically.
  *   s_pSink__                     - Address sink used by do_not_optimize_s on compilers without inline asm.
  *   do_not_optimize_s__           - Prevents the compiler from optimizing away a value.
+ *   output__                      - Functions to convert benchmark results into human-readable formats or argument objects.
  */
 
 
@@ -292,120 +293,95 @@ public:
 public:
    std::string m_stringName; ///< The name of the benchmark, used for identification and reporting.
 
+private:
+   struct no_setup { void operator()() const noexcept {} };
 
 // @API [tag: free-functions]
 public:
 
-   /// @API [tag: run] [description: Runs a performance benchmark on a given function or lambda statically.] [jump: run_s__]
-   /// \brief Runs a performance benchmark on a given function or lambda statically.
-   /// \param function_ Callable that takes no arguments.
-   /// \param uIterations Number of measured samples.
-   /// \param uWarmups Number of untimed warm-up calls.
-   /// \param uBatch Number of calls timed together in one sample. Reported times are per call.
-   template <typename FUNCTION>
-      requires std::invocable<FUNCTION>
-   static result run_s(FUNCTION&& function_, std::size_t uIterations = 1000, std::size_t uWarmups = 100) {
+   /** ------------------------------------------------------------------------
+    * @brief Measures execution time of a callable over warmup and measured iterations, then returns aggregated timing statistics.
+    * @tparam SETUP Type of the setup callable invoked before each measurement sample.
+    * @tparam FUNCTION Type of the callable whose execution time is measured.
+    * @param setup_ Callable executed before each sample to prepare state; its execution time is not measured.
+    * @param function_ Callable being benchmarked; if it returns a value, the value is passed to an optimization barrier.
+    * @param pflusher_ Optional flusher used before each measured call to flush relevant state (for example caches); may be null.
+    * @param uIterations Number of measured samples used to compute min, max, mean, total, and standard deviation.
+    * @param uWarmups Number of warmup samples run before measurement to stabilize execution conditions.
+    * @return A result object containing iteration count and timing statistics in nanoseconds, including mean, minimum, maximum, total duration, and standard deviation.
+    */
+   template <typename SETUP, typename FUNCTION>
+   static result measure_s(SETUP&& setup_, FUNCTION&& function_, flusher* pflusher_,
+                           std::size_t uIterations, std::size_t uWarmups) {
       constexpr bool bIsVoid = requires { { function_() } -> std::same_as<void>; };
 
-      // ## Warm-up phase
-      for (std::size_t uI = 0; uI < uWarmups; ++uI) {
-         if constexpr (bIsVoid) { function_(); }
-         else { do_not_optimize_s(function_()); }
-      }
-
-      // ## Measurement phase & Statistics (Welford's algorithm)
-      double dMinTime = std::numeric_limits<double>::max();    // Initialize to maximum possible value
-      double dMaxTime = std::numeric_limits<double>::lowest(); // Initialize to minimum possible value
-      double dMean = 0.0;                                      // Mean execution time
-      double dM2 = 0.0;                                        // Sum of squares of differences from the current mean
-
-      auto total_start_ = std::chrono::steady_clock::now();    // Start total duration timer
-
-      for (std::size_t u = 1; u <= uIterations; ++u) {
-         auto start_ = std::chrono::steady_clock::now();       // Start sample timer
-
-         if constexpr (bIsVoid) { function_(); }               // Void: just call it
-         else { do_not_optimize_s(function_()); }              // Value: prevent optimization
-
-         auto end_ = std::chrono::steady_clock::now();         // End sample timer
-         std::chrono::duration<double, std::nano> elapsed_ = end_ - start_;
-         double dDuration = elapsed_.count();                  // Duration per call in nanoseconds
-
-         if (dDuration < dMinTime) dMinTime = dDuration;        // Update minimum time if current duration is less
-         if (dDuration > dMaxTime) dMaxTime = dDuration;        // Update maximum time if current duration is more
-
-         double dDelta = dDuration - dMean;
-         dMean += dDelta / u;
-         dM2 += dDelta * (dDuration - dMean);
-      }
-
-      auto total_end_ = std::chrono::steady_clock::now();      // End total duration timer
-      std::chrono::duration<double, std::nano> total_elapsed_ = total_end_ - total_start_;
-
-      double dVariance = (uIterations > 1) ? (dM2 / (uIterations - 1)) : 0.0;
-      double dStdDev = std::sqrt(dVariance);
-
-      return result{
-         .m_uIterations = uIterations,
-         .m_dMean = dMean,
-         .m_dMinTime = dMinTime,
-         .m_dMaxTime = dMaxTime,
-         .m_dStandardDeviation = dStdDev,
-         .m_dTotalDurationNs = total_elapsed_.count()
-      };
-   }
-
-   /// Like run_s, but flushes caches before every sample. The flush is not measured.
-   /// Each sample is a single call, because batching would make every call but the first warm.
-   template <typename FUNCTION>
-      requires std::invocable<FUNCTION>
-   static result run_cold_s(FUNCTION&& function_, flusher& flusher_, std::size_t uIterations = 100, std::size_t uWarmups = 0) {
-      constexpr bool bIsVoid = requires { { function_() } -> std::same_as<void>; }; // Determine if the callable returns void
-
-      // ### Warm-up phase
-      for(std::size_t uI = 0; uI < uWarmups; ++uI)                            // optional: primes code pages, lazy init, etc.
-      {
-         flusher_.flush();
-         if constexpr (bIsVoid) { function_(); }
-         else { do_not_optimize_s(function_()); }
-      }
-
-      double dMinTime = std::numeric_limits<double>::max(); // Initialize to min to maximum possible value
-      double dMaxTime = std::numeric_limits<double>::lowest(); // Initialize max to minimum possible value
-      double dMean = 0.0;  // Mean execution time
-      double dM2 = 0.0;    // Sum of squares of differences from the current mean
-      double dTotal = 0.0; // Total duration of all measured calls
-
-      // ### Measurement phase & Statistics (Welford's algorithm)
-      for(std::size_t u = 1; u <= uIterations; ++u) {
-         flusher_.flush();                                       // not measured
+      // ## Benchmark execution of the callable, including setup and optional flush, returning the measured duration in nanoseconds.
+      auto benchmark_ = [&]() -> double {
+         setup_();                                              // not measured
+         if (pflusher_ != nullptr) { pflusher_->flush(); }      // not measured
          std::atomic_thread_fence(std::memory_order_seq_cst);
 
          auto start_ = std::chrono::steady_clock::now();
          if constexpr (bIsVoid) { function_(); }
          else { do_not_optimize_s(function_()); }
          auto end_ = std::chrono::steady_clock::now();
+         return std::chrono::duration<double, std::nano>(end_ - start_).count();
+      };
 
-         double dDuration = std::chrono::duration<double, std::nano>(end_ - start_).count();
-         dTotal += dDuration;                                    // sum of measured time only, flush excluded
+      for(std::size_t uI = 0; uI < uWarmups; ++uI) { benchmark_(); }
+
+      double dMinTime = std::numeric_limits<double>::max(); // Initialize min to maximum possible value for comparison
+      double dMaxTime = std::numeric_limits<double>::lowest(); // Initialize max to minimum possible value for comparison
+      double dMean = 0.0;  // For Welford's online algorithm to compute mean
+      double dM2 = 0.0;    // For Welford's online algorithm to compute variance
+      double dTotal = 0.0; // Total duration of all measured iterations
+
+      // ## Measure the callable over the specified number of iterations, updating statistics using Welford's algorithm for numerical stability.
+      for(std::size_t u = 1; u <= uIterations; ++u) {
+         double dDuration = benchmark_();
+         dTotal += dDuration;
          if (dDuration < dMinTime) dMinTime = dDuration;
          if (dDuration > dMaxTime) dMaxTime = dDuration;
-
          double dDelta = dDuration - dMean;
          dMean += dDelta / u;
          dM2 += dDelta * (dDuration - dMean);
       }
 
-      double dVariance = (uIterations > 1) ? (dM2 / (uIterations - 1)) : 0.0; // sample variance
-      return result{
+      double dVariance = (uIterations > 1) ? (dM2 / (uIterations - 1)) : 0.0;
+      return result{ 
          .m_uIterations = uIterations, 
          .m_dMean = dMean, 
          .m_dMinTime = dMinTime,
          .m_dMaxTime = dMaxTime, 
          .m_dStandardDeviation = std::sqrt(dVariance), 
-         .m_dTotalDurationNs = dTotal
+         .m_dTotalDurationNs = dTotal 
       };
    }
+
+public:
+   /// Warm run: no setup, no flush.
+   template <typename FUNCTION>
+      requires std::invocable<FUNCTION>
+   static result run_s(FUNCTION&& function_, std::size_t uIterations = 1000, std::size_t uWarmups = 100) {
+      return measure_s(no_setup{}, function_, nullptr, uIterations, uWarmups);
+   }
+
+   /// Cold run: same as run_s, plus a flush before every sample (not measured).
+   template <typename FUNCTION>
+      requires std::invocable<FUNCTION>
+   static result run_cold_s(FUNCTION&& function_, flusher& flusher_, std::size_t uIterations = 1000, std::size_t uWarmups = 100) {
+      return measure_s(no_setup{}, function_, &flusher_, uIterations, uWarmups);
+   }
+
+   /// Setup before every sample (not measured). pflusher_ == nullptr gives the warm counterpart.
+   template <typename SETUP, typename FUNCTION>
+      requires std::invocable<SETUP> && std::invocable<FUNCTION>
+   static result run_prepared_s(SETUP&& setup_, FUNCTION&& function_, flusher* pflusher_ = nullptr,
+                                std::size_t uIterations = 1000, std::size_t uWarmups = 100) {
+      return measure_s(setup_, function_, pflusher_, uIterations, uWarmups);
+   }
+
+// @API [tag: conversion] [description: Generate output data from a benchmark result] [jump: output__]
 
    /// Converts a benchmark result into an argument::arguments object for easier access and manipulation of the result data. 
    argument::arguments to_arguments_s(const result& result_);

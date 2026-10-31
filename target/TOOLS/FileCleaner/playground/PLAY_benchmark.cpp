@@ -76,35 +76,29 @@ TEST_CASE("[benchmark] hot and cold", "[benchmark]")
          std::cout << "Total in milliseconds: " << (result.total_duration() / 1'000'000.0) << " ms\n";
       };
 
-   gd::benchmark::flusher flusherCold(gd::benchmark::flush_settings::l2_s());
-   const std::vector<int> vectorInput(100'000, 0);
+   //gd::benchmark::flusher flusherCold(gd::benchmark::flush_settings::l2_s());
+   //const std::vector<int> vectorInput(100'000, 0);
+   gd::benchmark::flusher flusherCold(gd::benchmark::flush_settings::all_s());
+
+   auto setup_ = [&tableSource, &tableTarget]()
+      {
+         tableTarget.row_clear();
+         tableTarget.append(tableSource);
+      };
+
    for(unsigned uSortColumn = 0; uSortColumn < 7; ++uSortColumn)
    {
-      const auto resultSort01 = gd::benchmark::run_s(
-         [&]()
+      auto sort_ = [&tableTarget, uSortColumn]()
          {
-            tableTarget.row_clear();
-            tableTarget.append(tableSource);
             tableTarget.sort(uSortColumn, true, gd::table::tag_sort_key{});
             return tableTarget.size();
-         }, uRunIterations, uWarmupCount);
+         };
 
-      
-
-      const auto resultSort02 = gd::benchmark::run_cold_s(
-         [&]()
-         {
-            tableTarget.row_clear();
-            tableTarget.append(tableSource);
-            tableTarget.sort(uSortColumn, true, gd::table::tag_sort_key{});
-            return tableTarget.size();
-         }, flusherCold, uRunIterations, uWarmupCount );
-
-
+      const auto resultSort01 = gd::benchmark::run_prepared_s(setup_, sort_, nullptr, uRunIterations, uWarmupCount);
+      const auto resultSort02 = gd::benchmark::run_prepared_s(setup_, sort_, &flusherCold, uRunIterations, uWarmupCount);
 
       std::cout << "\n\nColumn: " << uSortColumn << " =======================";
-
-      print_result("sort table 01", resultSort01);
+      print_result("sort table 01 (warm)", resultSort01);
       print_result("sort table 02 (cold)", resultSort02);
    }
 
