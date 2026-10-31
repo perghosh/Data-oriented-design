@@ -446,11 +446,15 @@ struct cell
    operator std::string_view() const { return m_ptable->cell_get_variant_view( m_uRow, m_uColumn ).as_string_view(); }
 
    gd::variant_view get() const { return m_ptable->cell_get_variant_view( m_uRow, m_uColumn ); }
+   gd::variant_view as_variant_view() const { return m_ptable->cell_get_variant_view(m_uRow, m_uColumn); }
    gd::variant as_variant( const std::string_view& stringType );
    gd::variant as_variant( unsigned uType );
 
+   cell_reference as_reference() const { return cell_reference(m_uRow, m_uColumn); }
+
    cell& set_null()           { m_ptable->cell_set_null( m_uRow, m_uColumn ); return *this; }
    cell& set_not_null()       { m_ptable->cell_set_not_null( m_uRow, m_uColumn ); return *this; }
+   bool is_null() const       { return m_ptable->cell_is_null(m_uRow, m_uColumn); }
 
    
    //operator gd::variant_view() const { return m_ptable->cell_get_variant_view( m_uRow, m_uColumn ); }
