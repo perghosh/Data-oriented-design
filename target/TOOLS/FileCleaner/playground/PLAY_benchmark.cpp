@@ -25,6 +25,19 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
+TEST_CASE("[benchmark] arguments", "[benchmark]")
+{
+   using namespace gd::argument::shared;
+
+   std::array<std::byte, 64> array_;
+   arguments arguments_(array_);
+
+   arguments_.append("0123456789", 42);
+   arguments_.append("012345678901234567890", 42);
+
+
+}
+
 TEST_CASE("[benchmark] hot and cold", "[.benchmark]")
 {
    constexpr unsigned uRunIterations = 100;

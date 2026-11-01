@@ -80,21 +80,6 @@
 
 #if GD_COMPILER_HAS_CPP20_SUPPORT
 
-/*
-| class | Description |
-| - | - |
-| argument | Manage values in `arguments` |
-|   |   |
-
-mdtable
-
-// structured binding
-// https://devblogs.microsoft.com/oldnewthing/20201015-00/?p=104369
-
-*/
-
-
-
 
 #if defined( __clang__ )
    #pragma clang diagnostic push
@@ -366,6 +351,11 @@ public:
       ~buffer() {}
 
    // ## methods
+      bool is_borrowed() const noexcept { return (m_uFlags & eFlagBorrowed) != 0; }
+      bool is_shared() const { assert(m_iReferenceCount > 0 && "Something is very wrong, should not be 0 or negative"); return m_iReferenceCount > 1; }
+      bool is_static_buffer() const { return this == &arguments::m_buffer_s; }
+      void set_owner(bool bOwner = true) { if(bOwner == true) { m_uFlags &= ~eFlagBorrowed; } else { m_uFlags |= eFlagBorrowed; } }
+
       uint64_t size() const { return m_uSize; }
       void size( uint64_t uSize ) { assert( uSize <= m_uBufferSize ); m_uSize = uSize; }
       uint64_t buffer_size() const { return m_uBufferSize; }
@@ -380,10 +370,6 @@ public:
          m_iReferenceCount--;
          if( m_iReferenceCount == 0 && is_borrowed() == false ) { delete [] (uint8_t*)this; }   // never delete caller memory
       }
-
-      bool is_borrowed() const noexcept { return (m_uFlags & eFlagBorrowed) != 0; }
-      bool is_shared() const { assert( m_iReferenceCount > 0 && "Something is very wrong, should not be 0 or negative"); return m_iReferenceCount > 1; }
-      bool is_static_buffer() const { return this == &arguments::m_buffer_s; }
 
    // ## attributes
       uint64_t m_uSize;             ///< used size in buffer
@@ -912,7 +898,7 @@ public: //0TAG0construct.arguments
    /// Borrow caller memory, header is placed in the first sizeof(buffer) bytes, the rest is data.
    arguments(pointer pBuffer, unsigned int uSize)
    {                                                                                               assert(pBuffer != nullptr); assert(uSize > sizeof(buffer)); assert(reinterpret_cast<uintptr_t>(pBuffer) % alignof(buffer) == 0);
-      const uint64_t uCapacity = (uSize - sizeof(buffer)) & ~uint64_t(3);    // multiple of 4, reserve() asserts on that
+      const uint64_t uCapacity = (uSize - sizeof(buffer));
       m_pbuffer = new (pBuffer) buffer(0, uCapacity, buffer::eFlagBorrowed); // needs #include <new>
    }
 
@@ -972,11 +958,10 @@ public: //0TAG0construct.arguments
       explicit arguments(const CONTAINER& containerData)
    {
       const uint64_t uSize = static_cast<uint64_t>(containerData.size()) * sizeof(typename CONTAINER::value_type);
-      if(uSize == 0) { return; }                                             // empty stays on the static empty buffer
+      if(uSize == 0) { return; }                                               // empty stays on the static empty buffer
       assert((uSize % 4) == 0 && "arguments data is 32 bit aligned");
-      reserve((uSize + 3) & ~uint64_t(3));                                   // one block: header + data, 64 byte aligned
-      memcpy(m_pbuffer->data(), containerData.data(), static_cast<size_t>(uSize));
-      buffer_set_size(uSize);
+      const uint64_t uCapacity = uSize - sizeof(buffer);                       // decrease size by header size, this is the capacity of the data area
+      m_pbuffer = new (static_cast<void*>(const_cast<typename CONTAINER::value_type*>(containerData.data()))) buffer(0, uCapacity, buffer::eFlagBorrowed);
    }
 
    /// Borrow the storage of a writable container (vector<uint8_t>, array<uint8_t,N>, ...).

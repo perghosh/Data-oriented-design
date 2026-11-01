@@ -2528,6 +2528,7 @@ bool arguments::reserve(uint64_t uCount)
 
       uBufferSize -= sizeof( buffer );                                         // decrease actual buffer data size with buffer, first in buffer is tha class buffer
       m_pbuffer->buffer_size( uBufferSize );
+      m_pbuffer->set_owner();
 
       return true;
    }
