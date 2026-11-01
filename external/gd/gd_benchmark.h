@@ -46,93 +46,10 @@ _GD_BEGIN
 
 
 
-/** @CLASS [tag: benchmark, timing, performance] [summary: measures callable execution time and reports statistics]
- * @brief Measures execution time for a function or lambda over repeated calls.
+/** @CLASS [tag: benchmark, timing, performance] [summary: measures callable execution time and reports statistics] * @brief Measures execution time for a function or lambda over repeated calls. * * run_s() first executes untimed warm-up calls, then measures each requested * iteration using std::chrono::steady_clock. It returns timing * statistics without retaining the result in a benchmark object. * * Three entry points share one implementation, measure_s(): * - run_s(): warm run, no setup and no flush. * - run_cold_s(): like run_s(), but a flusher evicts cache before every sample. * - run_prepared_s(): a setup callable runs before every sample, with an *   optional flusher. Use it when the measured call changes its own input. * * The callable must accept no arguments. Capture any required inputs in a * lambda. Both void-returning and value-returning callables are supported. * Returned values are passed to do_not_optimize_s(); they are not included * in the benchmark result. * * @par Iterations and warm-up * The default run performs 100 warm-up calls followed by 1000 measured calls. * Supply at least one measured iteration; zero iterations does not produce * meaningful minimum and maximum values. * * Warm-up calls invoke the same callable and can change captured state. * Exceptions from the callable propagate to the caller. * * @par Result fields * All duration values are expressed in nanoseconds: * - m_uIterations: number of measured calls, excluding warm-up calls. * - m_dMean: average measured execution time. * - m_dMinTime: fastest measured iteration. * - m_dMaxTime: slowest measured iteration. * - m_dStandardDeviation: sample standard deviation; zero for one iteration. * - m_dTotalDurationNs: sum of the measured durations. Warm-up, setup and *   flush time are not included. * * Each field has an accessor: iterations(), mean(), min_time(), max_time(), * standard_deviation() and total_duration(). * * @par Reporting * The run functions and the conversion functions are static and do not * require a benchmark object. * A benchmark object optionally stores a name in m_stringName. * The name is not automatically attached to results or printed. * * to_arguments_s() and to_arguments_print_s() are static methods that * convert a result into gd::argument::arguments. Both currently produce * the same descriptive keys, such as "Iterations" and "Mean (ns)". * * @par Measurement considerations * Use an optimized build and compare runs under similar conditions. * Very short operations may be dominated by timer overhead; consider doing * several operations inside each measured call. * * do_not_optimize_s() is a best-effort optimization barrier. Its effectiveness * depends on the compiler; the current MSVC implementation does not provide * a strong compiler barrier. Inspect optimized code for critical measurements. *
+ * ---------------------------------------------------------------------------- * @par Example: measure copying and sorting a small collection * @code{.cpp} * #include <algorithm> * #include <iostream> * #include <vector> * #include "gd_benchmark.h" * * const std::vector<int> vectorInput{ 9, 3, 7, 1, 5 }; * * const auto resultSort = gd::benchmark::run_s( *    [&vectorInput]() *    { *       auto vectorSorted = vectorInput; *       std::sort(vectorSorted.begin(), vectorSorted.end()); *       return vectorSorted; *    }, *    1000,   // Measured calls. *    100);   // Warm-up calls. * * // This measures copying, allocation, and sorting together. * std::cout << "Mean: " << resultSort.mean() << " ns\n"; * std::cout << "Minimum: " << resultSort.min_time() << " ns\n"; * std::cout << "Maximum: " << resultSort.max_time() << " ns\n"; * @endcode * * ---------------------------------------------------------------------------- * @par Example: convert a result into named arguments * @code{.cpp} * // Uses resultSort from the preceding example. * gd::benchmark benchmarkSort("Copy and sort");                        // The object only holds a name. * auto argumentsResult = gd::benchmark::to_arguments_s(resultSort);   // Static, no object needed. * * std::cout << benchmarkSort.m_stringName << ": " *           << argumentsResult["Mean (ns)"].as_double() << " ns\n"; * * // Or format the result directly as text, here with nanoseconds as unit. * std::cout << gd::benchmark::to_string_s(resultSort, "ns"); * @endcode
  *
- * run_s() first executes untimed warm-up calls, then measures each requested
- * iteration using std::chrono::high_resolution_clock. It returns timing
- * statistics without retaining the result in a benchmark object.
- *
- * The callable must accept no arguments. Capture any required inputs in a
- * lambda. Both void-returning and value-returning callables are supported.
- * Returned values are passed to do_not_optimize_s(); they are not included
- * in the benchmark result.
- *
- * @par Iterations and warm-up
- * The default run performs 100 warm-up calls followed by 1000 measured calls.
- * Supply at least one measured iteration; zero iterations does not produce
- * meaningful minimum and maximum values.
- *
- * Warm-up calls invoke the same callable and can change captured state.
- * Exceptions from the callable propagate to the caller.
- *
- * @par Result fields
- * All duration values are expressed in nanoseconds:
- * - m_uIterations: number of measured calls, excluding warm-up calls.
- * - m_dMean: average measured execution time.
- * - m_dMinTime: fastest measured iteration.
- * - m_dMaxTime: slowest measured iteration.
- * - m_dStandardDeviation: sample standard deviation; zero for one iteration.
- * - m_dTotalDurationNs: elapsed time for the complete measurement phase,
- *   including timer and statistics overhead, but excluding warm-up.
- *
- * @par Reporting
- * run_s() is static and does not require a benchmark object.
- * A benchmark object optionally stores a name in m_stringName.
- * The name is not automatically attached to results or printed.
- *
- * to_arguments_s() and to_arguments_print_s() are instance methods that
- * convert a result into gd::argument::arguments. Both currently produce
- * the same descriptive keys, such as "Iterations" and "Mean (ns)".
- *
- * @par Measurement considerations
- * Use an optimized build and compare runs under similar conditions.
- * Very short operations may be dominated by timer overhead; consider doing
- * several operations inside each measured call.
- *
- * do_not_optimize_s() is a best-effort optimization barrier. Its effectiveness
- * depends on the compiler; the current MSVC implementation does not provide
- * a strong compiler barrier. Inspect optimized code for critical measurements.
- *
- * ----------------------------------------------------------------------------
- * @par Example: measure copying and sorting a small collection
- * @code{.cpp}
- * #include <algorithm>
- * #include <iostream>
- * #include <vector>
- * #include "gd_benchmark.h"
- *
- * const std::vector<int> vectorInput{ 9, 3, 7, 1, 5 };
- *
- * const auto resultSort = gd::benchmark::run_s(
- *    [&vectorInput]()
- *    {
- *       auto vectorSorted = vectorInput;
- *       std::sort(vectorSorted.begin(), vectorSorted.end());
- *       return vectorSorted;
- *    },
- *    1000,   // Measured calls.
- *    100);   // Warm-up calls.
- *
- * // This measures copying, allocation, and sorting together.
- * std::cout << "Mean: " << resultSort.m_dMean << " ns\n";
- * std::cout << "Minimum: " << resultSort.m_dMinTime << " ns\n";
- * std::cout << "Maximum: " << resultSort.m_dMaxTime << " ns\n";
- * @endcode
- *
- * ----------------------------------------------------------------------------
- * @par Example: convert a result into named arguments
- * @code{.cpp}
- * // Uses resultSort from the preceding example.
- * gd::benchmark benchmarkSort("Copy and sort");
- * auto argumentsResult = benchmarkSort.to_arguments_s(resultSort);
- *
- * std::cout << benchmarkSort.m_stringName << ": "
- *           << argumentsResult["Mean (ns)"].as_double() << " ns\n";
- * @endcode
- * 
- * ----------------------------------------------------------------------------
- * @par Example: measure a cold run after flushing the cache
+ * ---------------------------------------------------------------------------- * @par Example: measure a cold run after flushing the cache
  * @code{.cpp}
  * #include <algorithm>
  * #include <iostream>
@@ -160,7 +77,7 @@ _GD_BEGIN
  * std::cout << "Maximum: " << resultCold.max_time() << " ns\n";
  * @endcode
  *
- * ----------------------------------------------------------------------------
+ * ----------------------------------------------------------------------------
  * @par Example: flush only the data under test, or part of a cache level
  * @code{.cpp}
  * // Evict just the input buffer with clflush (x86 only). Everything else stays warm.
@@ -174,12 +91,71 @@ _GD_BEGIN
  * const auto resultPartial = gd::benchmark::run_cold_s( [&vectorInput]() { return vectorInput.size(); }, flusherCold, 200 );
  * @endcode
  *
+ * ----------------------------------------------------------------------------
+ * @par Example: prepare state before every sample, warm and cold
+ * run_prepared_s() calls a setup callable before every sample, warm-up samples
+ * included. Use it when the measured call changes its own input. Without setup,
+ * sorting would run on already sorted data from the second sample and on.
+ *
+ * Order for each sample: setup, flush (if a flusher is passed), start timer,
+ * call, stop timer. Setup and flush are not measured. Data written by setup
+ * is therefore evicted again before the measured call in the cold run.
+ * @code{.cpp}
+ * #include <algorithm>
+ * #include <iostream>
+ * #include <random>
+ * #include <vector>
+ * #include "gd_benchmark.h"
+ *
+ * constexpr std::size_t uRunIterations = 100;
+ * constexpr std::size_t uWarmupCount = 3;
+ *
+ * // Fixed seed gives the same data every run.
+ * std::mt19937_64 generatorRandom( 42 );
+ * std::vector<uint64_t> vectorSource( 100'000 );
+ * for( auto& uValue : vectorSource ) { uValue = generatorRandom() % 1'000'000; }
+ *
+ * std::vector<uint64_t> vectorTarget;
+ * vectorTarget.reserve( vectorSource.size() );
+ *
+ * // Restore unsorted data before every sample.
+ * auto setup_ = [&vectorSource, &vectorTarget]() { vectorTarget = vectorSource; };
+ *
+ * // The measured work. Returning a value keeps the sort from being optimized away.
+ * auto sort_ = [&vectorTarget]()
+ * {
+ *    std::sort( vectorTarget.begin(), vectorTarget.end() );
+ *    return vectorTarget.size();
+ * };
+ *
+ * gd::benchmark::flusher flusherCold( gd::benchmark::flush_settings::all_s() );
+ *
+ * // nullptr as flusher gives the warm counterpart.
+ * const auto resultWarm = gd::benchmark::run_prepared_s( setup_, sort_, nullptr, uRunIterations, uWarmupCount );
+ * const auto resultCold = gd::benchmark::run_prepared_s( setup_, sort_, &flusherCold, uRunIterations, uWarmupCount );
+ *
+ * // Durations are nanoseconds, divide to print microseconds.
+ * auto print_result_ = []( const char* pbszName, const gd::benchmark::result& result_ )
+ * {
+ *    std::cout << "\n" << pbszName << "\n";
+ *    std::cout << "Mean: " << ( result_.mean() / 1'000.0 ) << " us\n";
+ *    std::cout << "Minimum: " << ( result_.min_time() / 1'000.0 ) << " us\n";
+ *    std::cout << "Maximum: " << ( result_.max_time() / 1'000.0 ) << " us\n";
+ *    std::cout << "Total: " << ( result_.total_duration() / 1'000'000.0 ) << " ms\n";
+ * };
+ *
+ * print_result_( "sort (warm)", resultWarm );
+ * print_result_( "sort (cold)", resultCold );
+ *
+ * // The same setup_ works with other measured callables, for example one
+ * // sort_ lambda per column when the data under test is a table.
+ * @endcode
+ *
  * @note The copy in the first example is measured together with the sort, as in the warm sample.
  *       Each sample is a single call, so the same flusher can be reused with different settings.
- *       Pin the thread to one core so the flush and the measured call hit
- *
- */
-class benchmark
+ *       In the prepared example the copy in setup_ is not measured, only the sort is.
+ *       Pin the thread to one core so the flush and the measured call hit the same caches.
+ * */class benchmark
 {
 public:
    /// @API [tag: types] [description: The result of a benchmark run, containing statistics about the execution time.] [jump: result__]

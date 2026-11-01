@@ -213,6 +213,7 @@ public:
    using tag_argument      = gd::types::tag_argument;                         // argument related operations
    using tag_name          = gd::types::tag_name;                             // there is some name related logic involved
    using tag_description   = gd::types::tag_description;                      // tag dispatcher where description is useful
+   using tag_borrow        = gd::types::tag_borrow;                           // tag dispatcher to borrow memory from external container
    struct tag_no_initializer_list {};                                         // do not select initializer_list versions
    struct tag_internal {};                                                    // tag dispatcher for internal use
 

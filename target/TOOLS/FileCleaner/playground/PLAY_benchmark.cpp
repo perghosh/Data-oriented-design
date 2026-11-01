@@ -25,7 +25,7 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
-TEST_CASE("[benchmark] hot and cold", "[benchmark]")
+TEST_CASE("[benchmark] hot and cold", "[.benchmark]")
 {
    constexpr unsigned uRunIterations = 100;
    constexpr unsigned uWarmupCount = 3;

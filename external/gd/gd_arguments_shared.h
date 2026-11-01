@@ -4,6 +4,15 @@
  * @file gd_arguments_shared.h
  *
  * @brief Pack primitive and common derived values into a byte buffer for efficient storage and access with focus on performance. Like key-value pairs in one single buffer.
+ * 
+ * Sections — double-click a marker, then Ctrl+F3 / F3 to jump.
+ *
+ *   append__                    append, append_argument, append_if, append_object
+ *   buffer__                    buffer_data, buffer_size, buffer_offset, buffer_resize, buffer_reserve
+ *   construct_arguments__       construction methods for creating arguments instances
+ *   members__                   member variables of the arguments class
+ *
+ * 
  *
  | Area                | Methods (Examples)                                                                 | Description                                                                                   |
  |---------------------|------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
@@ -208,6 +217,7 @@ public:
    using tag_argument      = gd::types::tag_argument;                          // argument related operatiions
    using tag_name          = gd::types::tag_name;                              // there is some name related logic involved
    using tag_description   = gd::types::tag_description;                       // tag dispatcher where description is usefull
+   using tag_borrow        = gd::types::tag_borrow;                            // tag dispatcher to borrow memory from external container
    struct tag_no_initializer_list {};                                          // do not select initializer_list versions
    struct tag_internal {};                                                     // tag dispatcher for internal use
 
@@ -339,7 +349,7 @@ public:
 
 public:
 
-   /**
+   /** @API [tag: buffer] [description: store data for arguments, all data is stored in one single block of memory] [jump: buffer__]
     * \brief store data for arguments, all data is stored in one single block of memory
     *
     * This structure is allocated with extra memory to hold the actual data.
@@ -347,14 +357,15 @@ public:
     */
    struct buffer
    {
+      enum enumFlag : uint32_t { eFlagBorrowed = 0x01 };
    // ## construction
 
-      buffer(): m_uSize( 0 ), m_uBufferSize( 0 ), m_iReferenceCount( 1 ) {}
-      buffer( uint64_t uSize, uint64_t uBufferSize ): m_uSize( uSize ), m_uBufferSize( uBufferSize ), m_iReferenceCount( 1 ) {}
+      buffer(): m_uSize( 0 ), m_uBufferSize( 0 ), m_iReferenceCount( 1 ), m_uFlags(0) {}
+      buffer( uint64_t uSize, uint64_t uBufferSize ): m_uSize( uSize ), m_uBufferSize( uBufferSize ), m_iReferenceCount( 1 ), m_uFlags(0) {}
+      buffer(uint64_t uSize, uint64_t uBufferSize, uint32_t uFlags) : m_uSize(uSize), m_uBufferSize(uBufferSize), m_iReferenceCount(1), m_uFlags(uFlags) {}
       ~buffer() {}
 
    // ## methods
-
       uint64_t size() const { return m_uSize; }
       void size( uint64_t uSize ) { assert( uSize <= m_uBufferSize ); m_uSize = uSize; }
       uint64_t buffer_size() const { return m_uBufferSize; }
@@ -365,14 +376,12 @@ public:
       int add_reference() { m_iReferenceCount++; return m_iReferenceCount; }
       /// release buffer, if reference count is zero then delete buffer.
       ///    Never call this on the empty m_buffer_s and arguments will avoid this when you work with member methods.
-      void release() {                                                                             assert( m_iReferenceCount > 0 ); assert( this != &m_buffer_s );
+      void release() {                                                         assert( m_iReferenceCount > 0 ); assert( this != &m_buffer_s );
          m_iReferenceCount--;
-         if(m_iReferenceCount == 0)
-         {
-            delete [] (uint8_t*)this;
-         }
+         if( m_iReferenceCount == 0 && is_borrowed() == false ) { delete [] (uint8_t*)this; }   // never delete caller memory
       }
 
+      bool is_borrowed() const noexcept { return (m_uFlags & eFlagBorrowed) != 0; }
       bool is_shared() const { assert( m_iReferenceCount > 0 && "Something is very wrong, should not be 0 or negative"); return m_iReferenceCount > 1; }
       bool is_static_buffer() const { return this == &arguments::m_buffer_s; }
 
@@ -380,9 +389,10 @@ public:
       uint64_t m_uSize;             ///< used size in buffer
       uint64_t m_uBufferSize;       ///< total buffer size
       int      m_iReferenceCount;   ///< reference count (number of "users")
+      uint32_t m_uFlags;            ///< buffer flags
    };
 
-
+   static_assert(sizeof(buffer) == 24);
 
 
    struct argument  //0TAG0argument
@@ -895,10 +905,16 @@ public:
    using iterator =           iterator_<arguments>;
    using const_iterator =     iterator_<const arguments>;
 
-
+// @API [tag: construct] [description: construction methods for creating arguments instances] [jump: construct_arguments__]
 // ## construction -------------------------------------------------------------
 public: //0TAG0construct.arguments
    arguments() {}
+   /// Borrow caller memory, header is placed in the first sizeof(buffer) bytes, the rest is data.
+   arguments(pointer pBuffer, unsigned int uSize)
+   {                                                                                               assert(pBuffer != nullptr); assert(uSize > sizeof(buffer)); assert(reinterpret_cast<uintptr_t>(pBuffer) % alignof(buffer) == 0);
+      const uint64_t uCapacity = (uSize - sizeof(buffer)) & ~uint64_t(3);    // multiple of 4, reserve() asserts on that
+      m_pbuffer = new (pBuffer) buffer(0, uCapacity, buffer::eFlagBorrowed); // needs #include <new>
+   }
 
    /** Set buffer and size, use this to avoid heap allocations (if internal data grows over buffer size you will get heap allocation)  */
    arguments(const std::string_view& stringName, const gd::variant& variantValue, tag_no_initializer_list );
@@ -941,6 +957,36 @@ public: //0TAG0construct.arguments
       zero(); append( arguments_, list_ );
    }
 
+   /// Construct from container with trivially copyable items (vector<uint8_t>, array<int,N>, ...).
+   /// The bytes are copied as is, so they must already be in arguments buffer layout.
+   template <typename CONTAINER>
+      requires (requires(const CONTAINER& containerData) {
+         { containerData.data() } -> std::convertible_to<const typename CONTAINER::value_type*>;
+         { containerData.size() } -> std::convertible_to<std::size_t>;
+   }
+   && std::is_trivially_copyable_v<typename CONTAINER::value_type>
+      && !std::is_same_v<std::remove_cv_t<CONTAINER>, std::string>
+      && !std::is_same_v<std::remove_cv_t<CONTAINER>, std::wstring>
+      && !std::is_same_v<std::remove_cv_t<CONTAINER>, std::string_view>
+      && !std::is_same_v<std::remove_cv_t<CONTAINER>, std::wstring_view>)
+      explicit arguments(const CONTAINER& containerData)
+   {
+      const uint64_t uSize = static_cast<uint64_t>(containerData.size()) * sizeof(typename CONTAINER::value_type);
+      if(uSize == 0) { return; }                                             // empty stays on the static empty buffer
+      assert((uSize % 4) == 0 && "arguments data is 32 bit aligned");
+      reserve((uSize + 3) & ~uint64_t(3));                                   // one block: header + data, 64 byte aligned
+      memcpy(m_pbuffer->data(), containerData.data(), static_cast<size_t>(uSize));
+      buffer_set_size(uSize);
+   }
+
+   /// Borrow the storage of a writable container (vector<uint8_t>, array<uint8_t,N>, ...).
+     /// The first sizeof(buffer) bytes are overwritten by the header, so reserve room for it.
+   template <typename CONTAINER>
+      requires (!std::is_const_v<CONTAINER>&& std::is_trivially_copyable_v<typename CONTAINER::value_type>)
+   arguments(CONTAINER& containerData, tag_borrow)
+      : arguments(reinterpret_cast<pointer>(containerData.data()),
+         static_cast<unsigned int>(containerData.size() * sizeof(typename CONTAINER::value_type))) {
+   }
 
    // copy
    arguments(const arguments& o) { common_construct(o); }
@@ -1060,7 +1106,7 @@ public:
 /** \name OPERATION
 *///@{
 
-   // ## @API [tag: append] [description: append data to arguments]
+   // ## @API [tag: append] [description: append data to arguments] [jump: append__]
    //    note: remember that each value has its type and type in stream is just
    //    one byte. That means that the amount of information about the type is
    //    limited. This is the reason why each type only has it's type number.
@@ -1490,7 +1536,7 @@ public:
    bool verify_d(const_pointer pPosition) const { return pPosition >= m_pbuffer->data() && pPosition <= ( m_pbuffer->data() + m_pbuffer->size() ) ? true : false; }
 #endif
 
-   // ## @API [tag: buffer, remmove] [description: Internal buffer related and methods to remove values]
+   // ## @API [tag: buffer, remove] [description: Internal buffer related and methods to remove values]
 
    /// erase argument value at iterator
    iterator erase(iterator itPosition) { remove(static_cast<const_pointer>( itPosition )); return itPosition < end() ? itPosition : end(); }
@@ -1694,7 +1740,7 @@ public:
    //static arguments read_json_s(const argument& argumentValue);
 //@}
 
-
+// @API [tag: buffer] [description: buffer related methods, used to access buffer data] [jump: buffer__]
 // ## Buffer methods
 public:
    void buffer_delete() { assert( m_pbuffer != nullptr );  
@@ -1717,7 +1763,7 @@ public:
    const_pointer buffer_offset( size_t uPosition ) const { assert( uPosition <= (size_t)buffer_size() ); return (buffer_data() + uPosition); }
 
 
-
+// @API [tag: members] [description: member variables of the arguments class] [jump: members__]
 // ## attributes ----------------------------------------------------------------
 public:
 

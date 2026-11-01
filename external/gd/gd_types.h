@@ -295,6 +295,9 @@ struct tag_adjust {};
 /// methods used to ask compiler for information
 struct tag_ask_compiler {};
 
+/// tag dispatcher to borrow memory from external container
+struct tag_borrow {};
+
 /// tag dispatcher used to avoid default implicit construction
 struct tag_construct {};
 
