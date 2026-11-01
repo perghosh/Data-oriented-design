@@ -52,6 +52,7 @@ inline constexpr uint8_t uTailetextMarker_d = 0x01;
 #include <string_view>
 #include <vector>
 #include <memory>
+#include <concepts>
 
 #include "gd_compiler.h"
 #include "gd_types.h"
@@ -408,10 +409,15 @@ namespace literals {
 template<typename TABLE> 
 struct cell
 {
-   cell(): m_uRow(0), m_uColumn(0), m_ptable(nullptr) {}
+   using table_type = TABLE;   // identity marker required by is_table_cell
+
+   // ## construction --------------------------------------------------------
+   cell(): m_ptable(nullptr), m_uRow(0), m_uColumn(0)  {}
    cell( TABLE* ptable, uint64_t uRow, unsigned uColumn ): m_ptable(ptable), m_uRow(uRow), m_uColumn(uColumn) { assert( m_ptable != nullptr ); assert( m_uRow < m_ptable->get_row_count() ); assert( m_uColumn < m_ptable->get_column_count() ); }
 
-   cell(const cell&) = default;   // still needed: a user-declared copy assignment makes the implicit copy ctor deprecated
+   cell(const cell&) = default;
+
+   // ## assignment, all versions write the value to the table ---------------
 
    // value-copy assignment: write through to the table
    cell& operator=(const cell& o) {
@@ -426,9 +432,9 @@ struct cell
       return *this;
    }
 
-   template<typename OTHER_TABLE>
-      requires is_table_cell<cell<OTHER_TABLE>>
-   cell& operator=( const cell<OTHER_TABLE>& o ) { m_ptable->cell_set( m_uRow, m_uColumn, o.get(), tag_convert{}); }
+   template<typename CELL>
+      requires is_table_cell<CELL>
+   cell& operator=( const CELL& o ) { m_ptable->cell_set( m_uRow, m_uColumn, o.get(), tag_convert{}); return *this; }
 
    operator bool() const      { return m_ptable->cell_get_variant_view( m_uRow, m_uColumn ); }
    operator int8_t() const    { return m_ptable->cell_get_variant_view( m_uRow, m_uColumn ); }
@@ -457,6 +463,8 @@ struct cell
    gd::variant_view as_variant_view() const { return m_ptable->cell_get_variant_view(m_uRow, m_uColumn); }
    gd::variant as_variant( const std::string_view& stringType );
    gd::variant as_variant( unsigned uType );
+
+   std::string as_string() const { return m_ptable->cell_get_variant_view(m_uRow, m_uColumn).as_string(); }
 
    cell_reference as_reference() const { return cell_reference(m_uRow, m_uColumn); }
 

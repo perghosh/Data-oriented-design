@@ -211,27 +211,35 @@ public:
       std::size_t m_uSize = 0;
    };
 
+   /// How the eviction walk touches memory.
+   enum class enumFlushMode { read, write };
+
    struct flush_settings
    {
-      enumCacheLevel m_eLevel = enumCacheLevel::none; ///< Evict by walking a buffer up to this level
-      double m_dFraction = 1.0;                       ///< 0..1, how much of the level to walk (partial flush)
-      std::size_t m_uPasses = 2;                      ///< Passes over the buffer, 2 is more reliable than 1
+      enumCacheLevel m_eLevel = enumCacheLevel::none; ///< Evict by walking a buffer sized for all levels up to this one
+      enumFlushMode m_eMode = enumFlushMode::read;    ///< read: evicted lines stay clean (typical), write: lines are dirtied and written back
+      bool m_bScatter = true;                         ///< Visit lines in scattered order so prefetchers and replacement heuristics can't follow
+      double m_dFraction = 1.0;                       ///< 0..1, how much of the capacity to walk (partial flush)
+      double m_dOvershoot = 2.0;                      ///< Walk this many times the combined capacity
+      std::size_t m_uPasses = 2;                      ///< Passes over the buffer
       std::size_t m_uL1Size = 0;                      ///< 0 = detect
       std::size_t m_uL2Size = 0;                      ///< 0 = detect
       std::size_t m_uL3Size = 0;                      ///< 0 = detect
-      std::vector<flush_range> m_vectorRange;         ///< Specific regions to clflush
+      std::vector<flush_range> m_vectorRange;         ///< Specific regions to flush line by line
 
-      static flush_settings all_s() { return { .m_eLevel = enumCacheLevel::l3 }; } ///< Evict all cache levels, including L3 if present
-      static flush_settings l1_s() { return { .m_eLevel = enumCacheLevel::l1 }; } ///< Evict L1 cache only
-      static flush_settings l2_s() { return { .m_eLevel = enumCacheLevel::l2 }; } ///< Evict L2 cache only
-      static flush_settings l3_s() { return { .m_eLevel = enumCacheLevel::l3 }; } ///< Evict L3 cache only
-      /// @brief Create flush settings for a partial cache eviction.
+      static flush_settings all_s() { return { .m_eLevel = enumCacheLevel::l3 }; } ///< flush all levels, plus any ranges
+      static flush_settings l1_s() { return { .m_eLevel = enumCacheLevel::l1 }; }  ///< Flush L1 only, plus any ranges
+      static flush_settings l2_s() { return { .m_eLevel = enumCacheLevel::l2 }; }  ///< Flush L2 only, plus any ranges
+      static flush_settings l3_s() { return { .m_eLevel = enumCacheLevel::l3 }; }  ///< Flush L3 only, plus any ranges
+      /// @brief Flush a fraction of the specified level, plus any ranges. Fraction is 0..1, 1 = full level.
       static flush_settings partial_s(enumCacheLevel eLevel, double dFraction) { return { .m_eLevel = eLevel, .m_dFraction = dFraction }; }
-      /// @brief Create flush settings for a specific memory range to be flushed.
+      /// @brief Flush a specific memory range, plus any other ranges and the specified level.
       static flush_settings range_s(const void* pBegin, std::size_t uSize) { return { .m_vectorRange = { { pBegin, uSize } } }; }
    };
 
-   /// Performs the flush. Create it once and reuse it, the buffer is allocated on first use.
+   /** ------------------------------------------------------------------------
+    * @brief Attempts to flush CPU cache lines for a specified memory range.
+    */
    class flusher
    {
    public:
@@ -239,18 +247,23 @@ public:
       explicit flusher(const flush_settings& settingsFlush) : m_settingsFlush(settingsFlush) {}
 
       flush_settings& settings() { return m_settingsFlush; }
-      void flush();                                  ///< Evict by walk, then clflush ranges
-      static void flush_range_s(const void* pBegin, std::size_t uSize);
-      static std::size_t cache_size_s(int iLevel);   ///< Detected size in bytes for level 1, 2 or 3
+      void flush();                                                     ///< Evict by walk, then flush ranges
+      static bool flush_range_s(const void* pBegin, std::size_t uSize); ///< false if this platform can't flush a range
+      static std::size_t cache_size_s(int iLevel);                      ///< Detected size in bytes for level 1, 2 or 3
+      static std::size_t line_size_s();                                 ///< Detected cache line size, 64 if unknown
 
    private:
       void walk(std::size_t uBytes);
+      std::size_t walk_bytes(int iLevel, double dFraction);
 
-      flush_settings m_settingsFlush;
-      std::unique_ptr<std::uint8_t[]> m_pBuffer;
-      std::size_t m_uBufferSize = 0;
+      inline static volatile std::uint64_t s_uSink = 0;                       // keeps the read walk from being optimized away
+
+      flush_settings m_settingsFlush; ///< Settings for the flush operation, including cache level, mode, and ranges to flush.
+      std::unique_ptr<std::uint8_t[]> m_pBuffer; ///< Buffer used for cache eviction walk; allocated as needed based on the flush settings.
+      std::size_t m_uBufferSize = 0; ///< Size of the allocated buffer for cache eviction walk; updated when the buffer is resized.
+      std::size_t m_uLineSize = 0;   ///< Detected cache line size, 64 if unknown
+      std::array<std::size_t, 4> m_arrayCacheSize{}; ///< Detected sizes, index 1..3
    };
-
    // @API [tag: construction]
 public:
    benchmark() {}

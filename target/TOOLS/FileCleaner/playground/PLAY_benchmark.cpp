@@ -21,14 +21,15 @@
 #include "gd/gd_string_transport.h"
 #include "gd/gd_table_io.h"
 #include "gd/gd_sql_value.h"
+#include "gd/gd_table_io.h"
 
 #include "catch2/catch_amalgamated.hpp"
 
-TEST_CASE("[benchmark] hot and cold", "[.benchmark]")
+TEST_CASE("[benchmark] hot and cold", "[benchmark]")
 {
    constexpr unsigned uRunIterations = 100;
    constexpr unsigned uWarmupCount = 3;
-   constexpr unsigned uCreateRowCount = 1000;
+   constexpr unsigned uCreateRowCount = 10000;
 
    using namespace gd::table::dto;
 
@@ -104,7 +105,7 @@ TEST_CASE("[benchmark] hot and cold", "[.benchmark]")
 }
 
 
-TEST_CASE("[benchmark] edit", "[benchmark]")
+TEST_CASE("[benchmark] edit", "[.benchmark]")
 {
    using namespace gd::table::dto;
 
@@ -135,7 +136,10 @@ TEST_CASE("[benchmark] edit", "[benchmark]")
          {
             tableSet[uRow, "C1"] = tableGet[uRow, "C1"];
             tableSet[uRow, "C2"] = tableGet[uRow, "C2"];
-            tableSet[uRow, "C3"] = tableGet[uRow, "C3"];
+
+            auto cellSet3 = tableSet[uRow, "C3"];
+            auto cellGet3 = tableGet[uRow, "C3"];
+            cellSet3 = cellGet3;
          }
          return tableSet.size();
       }, 100000, 10);
@@ -201,6 +205,58 @@ TEST_CASE("[demo] flexibility", "[demo]")
 }
 
 
+/**
+ * Example table with 10 rows and 4 columns, printed two ways:
+ *  - tag_io_cli: grid made to look good in a terminal
+ *  - tag_io_sql: write_insert_g, one multi-row INSERT statement
+ */
+TEST_CASE("[table_io] example cli and sql", "[.table_io]")
+{
+   using namespace gd::table::dto;
+
+   // ## create table with 4 columns ........................................
+   table tableCustomer((table::eTableFlagNull32 | table::eTableFlagRowStatus),
+      { { "int64", 0, "id" },{ "string", 32, "name" },{ "string", 32, "city" },{ "bool", 0, "active" } },
+      gd::table::tag_prepare{});
+
+   // ## add 10 rows and fill them ..........................................
+   const char* apbszName[10] = { "Anna", "Bjorn", "Cecilia", "David", "Eva", "Filip", "Greta", "Henrik", "Ingrid", "O'Brien" };
+   const char* apbszCity[10] = { "Gothenburg", "Stockholm", "Malmo", "Uppsala", "Lund", "Boras", "Umea", "Kiruna", "Visby", "Dublin" };
+
+   tableCustomer.row_add(10);
+   for(uint64_t uRow = 0; uRow < tableCustomer.size(); ++uRow)
+   {
+      // initializer list sets "id" and the columns to the right of it
+      tableCustomer[uRow, "id"] = { int64_t(uRow + 1), apbszName[uRow], apbszCity[uRow], (uRow % 2) == 0 };
+   }
+
+   tableCustomer[3, "city"].set_null();   // one null value to see how it is printed
+
+   REQUIRE(tableCustomer.size() == 10);
+   REQUIRE(tableCustomer.get_column_count() == 4);
+
+   // ## cli: grid for terminal ..............................................
+   std::cout << "\n\nCLI, default grid\n";
+   std::cout << gd::table::to_string(tableCustomer, gd::table::tag_io_cli{}) << "\n";
+
+   std::cout << "\nCLI, max column width 6\n";
+   std::cout << gd::table::to_string(tableCustomer, uint32_t(6), gd::table::tag_io_cli{}) << "\n";
+
+   std::cout << "\nCLI, header only\n";
+   std::cout << gd::table::to_string(tableCustomer, gd::table::tag_io_header{}, gd::table::tag_io_cli{}) << "\n";
+
+   // ## sql: insert queries .................................................
+   std::string stringInsert;
+   gd::table::write_insert_g("TCustomer", tableCustomer, stringInsert, gd::table::tag_io_sql{});
+   std::cout << "\nSQL, all rows in one insert\n" << stringInsert << ";\n";
+
+   // only some columns (id and name) and only rows 2 to 4
+   std::string stringInsertPart;
+   gd::table::write_insert_g("TCustomer", tableCustomer, 2, 3, std::vector<unsigned>{ 0, 1 }, stringInsertPart, gd::table::tag_io_sql{});
+   std::cout << "\nSQL, rows 2-4, columns id and name\n" << stringInsertPart << ";\n";
+
+   REQUIRE(stringInsert.starts_with("INSERT INTO TCustomer"));
+}
 
 
 TEST_CASE("[benchmark] sort table", "[.benchmark]")
