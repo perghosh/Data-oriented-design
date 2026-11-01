@@ -25,7 +25,113 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
-TEST_CASE("[benchmark] arguments", "[benchmark]")
+TEST_CASE("[benchmark] arguments find", "[benchmark]")
+{
+   gd::argument::arguments argumentsCompact;          // compact, no alignment
+   gd::argument::shared::arguments argumentsShared;   // shared, each value aligned to 4 bytes
+
+   constexpr unsigned uRunIterations = 10000;
+   constexpr unsigned uWarmupCount = 3;
+   constexpr unsigned uValueCount = 50;               // try 5000 to see cache effects (lower uRunIterations)
+   constexpr unsigned uRepeatCount = 200;             // repeats per sample for the single name scenarios
+
+   // ## prepare names, build all strings first, then take views (SSO strings move when the vector grows)
+   std::vector<std::string> vectorString;
+   for(unsigned u = 0; u < uValueCount; ++u) { vectorString.push_back("key_" + std::to_string(u)); }
+   std::vector<std::string_view> vectorName(vectorString.begin(), vectorString.end());
+   const std::string_view stringMissing = "key_missing";
+
+   // ## fill both with the same mix of types
+   auto fill_ = [&](auto& arguments_)
+      {
+         const std::string_view stringValue = "some text value";
+         for(unsigned u = 0; u < uValueCount; ++u)
+         {
+            switch(u % 3)
+            {
+            case 0:  arguments_.append(vectorName[u], static_cast<int>(u)); break;
+            case 1:  arguments_.append(vectorName[u], u * 1.5); break;
+            default: arguments_.append(vectorName[u], stringValue); break;
+            }
+         }
+      };
+   fill_(argumentsCompact);
+   fill_(argumentsShared);
+
+   // ## verify once, a benchmark of wrong results is worthless
+   CHECK(argumentsCompact.size() == uValueCount);
+   CHECK(argumentsShared.size() == uValueCount);
+   for(unsigned u = 0; u < uValueCount; ++u)
+   {
+      CHECK(argumentsCompact.find(vectorName[u]) != nullptr);
+      CHECK(argumentsShared.find(vectorName[u]) != nullptr);
+      if(u % 3 == 0)
+      {
+         CHECK(argumentsCompact.get_argument(vectorName[u]).as_int() == static_cast<int>(u));
+         CHECK(argumentsShared.get_argument(vectorName[u]).as_int() == static_cast<int>(u));
+      }
+   }
+   CHECK(argumentsCompact.find(stringMissing) == nullptr);
+   CHECK(argumentsShared.find(stringMissing) == nullptr);
+
+   std::cout << "\nBuffer bytes, compact: " << argumentsCompact.buffer_buffer_size()
+             << ", shared: " << argumentsShared.buffer_buffer_size() << "\n";
+
+   // ## benchmark functions
+   volatile size_t uSink = 0;                                                  // keeps the compiler from removing the find calls
+
+   auto make_find_all_ = [&uSink, &vectorName](const auto& arguments_)
+      {
+         return [&uSink, &vectorName, &arguments_]()
+            {
+               size_t uSum = 0;
+               for(const auto& stringName : vectorName) { uSum += reinterpret_cast<uintptr_t>(arguments_.find(stringName)); }
+               uSink = uSum;
+            };
+      };
+
+   auto make_find_repeat_ = [&uSink](const auto& arguments_, std::string_view stringName)
+      {
+         return [&uSink, &arguments_, stringName]()
+            {
+               size_t uSum = 0;
+               for(unsigned u = 0; u < uRepeatCount; ++u) { uSum += reinterpret_cast<uintptr_t>(arguments_.find(stringName)); }
+               uSink = uSum;
+            };
+      };
+
+   auto print_result = [](const char* pbszName, const auto& result, unsigned uFindCount)
+      {
+         std::cout << pbszName << ": mean " << (result.mean() / 1'000.0) << " us per run, "
+            << (result.mean() / uFindCount) << " ns per find\n";
+      };
+
+   // ## run A B B A to cancel order effects
+   auto run_pair_ = [&](const char* pbszScenario, auto functionCompact, auto functionShared, unsigned uFindCount)
+      {
+         const auto resultCompact1 = gd::benchmark::run_s(functionCompact, uRunIterations, uWarmupCount);
+         const auto resultShared1 = gd::benchmark::run_s(functionShared, uRunIterations, uWarmupCount);
+         const auto resultShared2 = gd::benchmark::run_s(functionShared, uRunIterations, uWarmupCount);
+         const auto resultCompact2 = gd::benchmark::run_s(functionCompact, uRunIterations, uWarmupCount);
+
+         std::cout << "\n#######\nScenario: " << pbszScenario << "\n";
+         print_result("compact (round 1)", resultCompact1, uFindCount);
+         print_result("shared  (round 1)", resultShared1, uFindCount);
+         print_result("shared  (round 2)", resultShared2, uFindCount);
+         print_result("compact (round 2)", resultCompact2, uFindCount);
+      };
+
+   run_pair_("find all names",
+      make_find_all_(argumentsCompact), make_find_all_(argumentsShared), uValueCount);
+   run_pair_("find first name",
+      make_find_repeat_(argumentsCompact, vectorName.front()), make_find_repeat_(argumentsShared, vectorName.front()), uRepeatCount);
+   run_pair_("find last name",
+      make_find_repeat_(argumentsCompact, vectorName.back()), make_find_repeat_(argumentsShared, vectorName.back()), uRepeatCount);
+   run_pair_("find missing name (full scan)",
+      make_find_repeat_(argumentsCompact, stringMissing), make_find_repeat_(argumentsShared, stringMissing), uRepeatCount);
+}
+
+TEST_CASE("[benchmark] arguments", "[.benchmark]")
 {
    using namespace gd::argument::shared;
 
