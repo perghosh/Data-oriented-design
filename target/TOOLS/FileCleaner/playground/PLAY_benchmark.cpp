@@ -29,12 +29,62 @@ TEST_CASE("[benchmark] arguments", "[benchmark]")
 {
    using namespace gd::argument::shared;
 
-   std::array<std::byte, 64> array_;
-   arguments arguments_(array_);
+   constexpr unsigned uRunIterations = 10000;
+   constexpr unsigned uWarmupCount = 3;
 
-   arguments_.append("0123456789", 42);
-   arguments_.append("012345678901234567890", 42);
+   alignas(64) std::array<std::byte, 1024> array_;
 
+   {
+      arguments argumentsCheck(array_);
+      for (int i = 0; i < 20; ++i) { argumentsCheck.append(std::to_string(i), i); }
+      const auto* pbyteData = static_cast<const std::byte*>(argumentsCheck.data());
+      CHECK(pbyteData >= array_.data());
+      CHECK(pbyteData < array_.data() + array_.size());
+      CHECK(argumentsCheck.size() == 20);
+   }
+   
+
+   gd::benchmark::flusher flusherCold(gd::benchmark::flush_settings::all_s());
+
+   auto appendStack = [&]()
+      {
+         arguments argumentsStack(array_);
+         for (int i = 0; i < 20; ++i)
+         {
+            std::string stringkey = std::to_string(i);
+            argumentsStack.append(stringkey, i);
+         }
+         bool bFound = argumentsStack.find("19") != nullptr;
+         return bFound;
+      };
+
+   auto appendHeap = [&]()
+      {
+         arguments argumentsHeap;
+         for(int i = 0; i < 20; ++i)
+         {
+            std::string stringkey = std::to_string(i);
+            argumentsHeap.append(stringkey, i);
+         }
+         bool bFound = argumentsHeap.find("19") != nullptr;
+         return bFound;
+      };
+
+   const auto result01 = gd::benchmark::run_s( appendStack, uRunIterations, uWarmupCount);
+   const auto result02 = gd::benchmark::run_s( appendHeap, uRunIterations, uWarmupCount);
+
+   auto print_result = [](const char* pbszName, const auto& result)
+      {
+         std::cout << "\n\n#######\nBenchmark: " << pbszName << "\n";
+         std::cout << "Mean: " << (result.mean() / 1'000.0) << " us\n";
+         std::cout << "Minimum: " << (result.min_time() / 1'000.0) << " us\n";
+         std::cout << "Maximum: " << (result.max_time() / 1'000.0) << " us\n";
+         std::cout << "Total in milliseconds: " << (result.total_duration() / 1'000'000.0) << " ms\n";
+      };
+
+
+   print_result("sort table 01 (buffer)", result01);
+   print_result("sort table 02 (heap)", result02);
 
 }
 
@@ -161,7 +211,7 @@ TEST_CASE("[benchmark] edit", "[.benchmark]")
    std::cout << gd::benchmark::to_string_s(resultSet, "ns");
 }
 
-TEST_CASE("[demo] flexibility", "[demo]")
+TEST_CASE("[demo] flexibility", "[.demo]")
 {
    using namespace gd::table::dto;
 
