@@ -74,8 +74,8 @@ TEST_CASE("[benchmark] arguments find", "[benchmark]")
    CHECK(argumentsCompact.find(stringMissing) == nullptr);
    CHECK(argumentsShared.find(stringMissing) == nullptr);
 
-   std::cout << "\nBuffer bytes, compact: " << argumentsCompact.buffer_buffer_size()
-             << ", shared: " << argumentsShared.buffer_buffer_size() << "\n";
+   std::cout << "\nBuffer bytes, compact: " << argumentsCompact.buffer_size()
+             << ", shared: " << argumentsShared.buffer_size() << "\n";
 
    // ## benchmark functions
    volatile size_t uSink = 0;                                                  // keeps the compiler from removing the find calls
