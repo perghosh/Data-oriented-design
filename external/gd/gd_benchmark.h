@@ -348,6 +348,7 @@ public:
    }
 
 public:
+   /// ------------------------------------------------------------------------
    /// Warm run: no setup, no flush.
    template <typename FUNCTION>
       requires std::invocable<FUNCTION>
@@ -355,6 +356,7 @@ public:
       return measure_s(no_setup{}, function_, nullptr, uIterations, uWarmups);
    }
 
+   /// ------------------------------------------------------------------------
    /// Cold run: same as run_s, plus a flush before every sample (not measured).
    template <typename FUNCTION>
       requires std::invocable<FUNCTION>
@@ -362,6 +364,7 @@ public:
       return measure_s(no_setup{}, function_, &flusher_, uIterations, uWarmups);
    }
 
+   /// ------------------------------------------------------------------------
    /// Setup before every sample (not measured). pflusher_ == nullptr gives the warm counterpart.
    template <typename SETUP, typename FUNCTION>
       requires std::invocable<SETUP> && std::invocable<FUNCTION>
