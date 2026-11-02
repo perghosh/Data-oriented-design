@@ -1333,11 +1333,11 @@ public:
 
    [[nodiscard]] pointer find(unsigned int uIndex);
    [[nodiscard]] const_pointer find(unsigned int uIndex) const;
-   [[nodiscard]] pointer find(const std::string_view& stringName);
-   [[nodiscard]] const_pointer find(const std::string_view& stringName) const;
+   [[nodiscard]] pointer find(std::string_view stringName);
+   [[nodiscard]] const_pointer find(std::string_view stringName) const;
    [[nodiscard]] const_pointer find(std::string_view stringName, const_pointer pPosition) const;
    [[nodiscard]] const_pointer find(const std::pair<std::string_view, gd::variant_view>& pairMatch) const;
-   [[nodiscard]] const_pointer find( const std::string_view& stringName, unsigned uIndex ) const;
+   [[nodiscard]] const_pointer find( std::string_view stringName, unsigned uIndex ) const;
 
    [[nodiscard]] std::pair<argument,argument> find_pair(const std::string_view& stringName) const;
 

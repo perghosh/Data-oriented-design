@@ -1928,7 +1928,7 @@ arguments::const_pointer arguments::find( unsigned int uIndex ) const
  * \param stringName
  * \return gd::argument::arguments::const_pointer position to name if found, otherwise null
  */
-arguments::pointer arguments::find(const std::string_view& stringName)
+arguments::pointer arguments::find(std::string_view stringName)
 {
    for( auto pPosition = next(); pPosition != nullptr; pPosition = next(pPosition) )
    {
@@ -1952,7 +1952,7 @@ arguments::pointer arguments::find(const std::string_view& stringName)
  * \param stringName
  * \return gd::argument::arguments::const_pointer position to name if found, otherwise null
  */
-arguments::const_pointer arguments::find(const std::string_view& stringName) const
+arguments::const_pointer arguments::find(std::string_view stringName) const
 {
    for( auto pPosition = next(); pPosition != nullptr; pPosition = next(pPosition) )
    {
@@ -2016,7 +2016,7 @@ arguments::const_pointer arguments::find(const std::pair<std::string_view, gd::v
  * @param uIndex nth value to return
  * @return gd::argument::arguments::const_pointer pointer to value
  */
-arguments::const_pointer arguments::find( const std::string_view& stringName, unsigned uIndex ) const 
+arguments::const_pointer arguments::find( std::string_view stringName, unsigned uIndex ) const 
 {                                                                                                  assert( uIndex < 0x00A0'0000 ); // realistic ?
    for( auto pPosition = next(); pPosition != nullptr; pPosition = next(pPosition) )
    {

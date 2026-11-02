@@ -1627,7 +1627,7 @@ public:
    static constexpr inline unsigned int sizeof_value_prefix(param_type uType) { return uType & eValueLength ? sizeof(uint32_t) + 1 : 1; }
 
    static inline unsigned int length_name_s(const_pointer pPosition) {
-      if( *pPosition == eType_ParameterName ) return  pPosition[1];              // the total name length found in byte with name length
+      if(is_name_s(pPosition) == true) return (gd::types::cast_g<uint32_t>(pPosition) & 0x00FFFFFF); // the total name length found in byte with name length
       return 0;
    }
 

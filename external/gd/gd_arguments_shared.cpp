@@ -2011,9 +2011,9 @@ arguments::const_pointer arguments::find(std::string_view stringName) const
 {
    for( auto pPosition = next(); pPosition != nullptr; pPosition = next(pPosition) )
    {
-      if( arguments::is_name_s(pPosition) == true )
+      if( is_name_s(pPosition) == true )
       {
-         auto key_ = arguments::get_name_s(pPosition);
+         const auto key_ = get_name_s(pPosition);
          if( key_ == stringName ) return pPosition;
       }
    }
@@ -3358,60 +3358,64 @@ unsigned int arguments::get_total_param_length_s(std::string_view stringName, co
    return uSize;
 }
 
+namespace
+{
+   /**
+    * @brief Advances an arguments-buffer pointer to the next value entry.
+    * @tparam POINTER The pointer type used to traverse the buffer (for example, const uint8_t* or uint8_t*).
+    * @param pPosition A pointer to the current position in the arguments buffer; it is expected to point at or before a value entry that can be normalized by move_to_value_s.
+    * @return A pointer advanced to the start of the next entry after the current value header and its aligned payload.
+    */
+   template <typename POINTER>
+   inline POINTER next_internal(POINTER pPosition)
+   {
+#ifndef NDEBUG
+      const auto pbegin_d = pPosition;
+#endif
 
-/*----------------------------------------------------------------------------- next */ /**
+      pPosition = arguments::move_to_value_s(pPosition);
+
+      uint32_t uHeader = 0;
+      std::memcpy(&uHeader, pPosition, sizeof(uHeader)); // safe for unaligned memory
+
+#ifndef NDEBUG
+      const uint32_t uType = uHeader >> 24;
+      auto typename_d = gd::types::type_name_g(uType & ~arguments::eTypeNumber_MASK);
+#endif
+
+      const uint32_t uLength = uHeader & 0x00FFFFFF;
+      assert((uLength % 4) == 0);
+
+      pPosition += (sizeof(uint32_t) + uLength);
+
+#ifndef NDEBUG
+      uint64_t uValueSize_d = static_cast<uint64_t>(pPosition - pbegin_d);
+#endif
+
+      return pPosition;
+   }
+}
+
+/*----------------------------------------------------------------------------- next_s */ /**
  * Move to next element in binary stream. Make sure that next value is compatible type
  * @see: Read `arguments` documents in header for explanation on how data is placed
  * \param riPosition current position in stream
  * \return arguments::pointer position to next value
  */
-arguments::pointer arguments::next_s(pointer pPosition) 
+arguments::pointer arguments::next_s(pointer pPosition)
 {
-#ifndef NDEBUG
-   const_pointer pbegin_d = pPosition;
-#endif
-   pPosition = arguments::move_to_value_s(pPosition);                          // go to value
-   uint32_t u_ = *(uint32_t*)pPosition;                                        // get type and length
-   uint32_t uType = u_ >> 24;                                                  // get value type
-#ifndef NDEBUG
-   auto typename_d = gd::types::type_name_g( uType & ~eTypeNumber_MASK );
-#endif
-   // Total value buffer storage length for value
-   uint32_t uLength = u_ & 0x00FFFFFF;                                                             assert( (uLength % 4) == 0 ); // has to be aligend 
-   pPosition += sizeof( uint32_t );                                            // move past type and length information
-   pPosition += uLength;                                                       // move past value length
-#ifndef NDEBUG
-   uint64_t uValueSize_d = pPosition - pbegin_d;
-#endif
-   return pPosition;
+   return next_internal(pPosition);
 }
 
-/*----------------------------------------------------------------------------- next */ /**
+/*----------------------------------------------------------------------------- next_s */ /**
  * Move to next element in binary stream. Make sure that next value is compatible type
  * @see: Read `arguments` documents in header for explanation on how data is placed
  * \param riPosition current position in stream
  * \return arguments::const_pointer position to next value
  */
-arguments::const_pointer arguments::next_s(const_pointer pPosition) 
+arguments::const_pointer arguments::next_s(const_pointer pPosition)
 {
-#ifndef NDEBUG
-   const_pointer pbegin_d = pPosition;
-#endif
-   pPosition = arguments::move_to_value_s(pPosition);
-   uint32_t u_ = *(uint32_t*)pPosition;
-   uint32_t uType = u_ >> 24;                                                  // get value type
-#ifndef NDEBUG
-   auto typename_d = gd::types::type_name_g( uType & ~eTypeNumber_MASK );
-#endif
-   // Total value buffer storage length for value
-   uint32_t uLength = u_ & 0x00FFFFFF;                                                             assert( (uLength % 4) == 0 ); // has to be aligend 
-   pPosition += sizeof( uint32_t );                                            // move past type and length information
-   pPosition += uLength;                                                       // move past value length
-#ifndef NDEBUG
-   uint64_t uValueSize_d = pPosition - pbegin_d;
-#endif
-
-   return pPosition;
+   return next_internal(pPosition);
 }
 
 /** ---------------------------------------------------------------------------
