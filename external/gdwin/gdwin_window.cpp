@@ -142,13 +142,13 @@ bool create_window_g(const gd::argument::arguments& argumentsWindow, std::string
 
 /** ----------------------------------------------------------------------------
  * @brief Converts a Win32 window event and its parameters into a structured argument map.
- * @param eEvent The window event type.
+ * @param eEvent The window event type, here translated to common ids.
  * @param uParam The WPARAM value associated with the event.
  * @param iParam The LPARAM value associated with the event.
  * @param argumentsOut The argument map to populate with event-specific data.
  * @API [tag: message] [summary: Cracks a window message into its constituent arguments.] [jump: message__]
  */
-void crack_message_s(gdwin::eWindowEvent eEvent, WPARAM uParam, LPARAM iParam, gd::argument::arguments& argumentsOut)
+void crack_message_g(gdwin::eWindowEvent eEvent, WPARAM uParam, LPARAM iParam, gd::argument::arguments& argumentsOut)
 {
    switch(eEvent)
    {

@@ -49,7 +49,7 @@ int run_s();
 std::expected<bool, std::string> register_window_g( const gd::argument::arguments& argumentsWindow, std::string_view stringClass);
 std::expected<bool, std::string> register_window_g(const gd::argument::arguments& argumentsWindow);
 bool create_window_g(const gd::argument::arguments& argumentsWindow, std::string_view stringClass, std::string_view stringTitle, int iX, int iY, int iWidth, int iHeight, uint64_t uStyle, HWND hwndParent = nullptr, void* puserdata_ = nullptr);
-void crack_message_s(gdwin::eWindowEvent eEvent, WPARAM uParam, LPARAM iParam, gd::argument::arguments& argumentsMessage);
+void crack_message_g(gdwin::eWindowEvent eEvent, WPARAM uParam, LPARAM iParam, gd::argument::arguments& argumentsMessage);
 _GDWIN_END
 
 
@@ -219,7 +219,7 @@ EVENT_RESULT window<EVENT_RESULT>::call(UINT uMessage, WPARAM uParam, LPARAM iPa
    std::array<std::byte, 128> buffer_;
    gd::argument::arguments argumentsMessage(buffer_);
    auto eEvent = gdwin::translate_s(uMessage);
-   crack_message_s(eEvent, uParam, iParam, argumentsMessage);
+   crack_message_g(eEvent, uParam, iParam, argumentsMessage);
    auto result_ = on_event(eEvent, &argumentsMessage, (uint64_t)uMessage);
    return result_;
 }
@@ -328,7 +328,7 @@ LRESULT CALLBACK window<EVENT_RESULT>::window_procedure_s(HWND hwnd, UINT uMessa
 template <typename EVENT_RESULT>
 void window<EVENT_RESULT>::crack_message_s(gdwin::eWindowEvent eEvent, WPARAM uParam, LPARAM iParam, gd::argument::arguments& argumentsMessage)
 {
-   gdwin::crack_message_s(eEvent, uParam, iParam, argumentsMessage);
+   gdwin::crack_message_g(eEvent, uParam, iParam, argumentsMessage);
 }
 
 
