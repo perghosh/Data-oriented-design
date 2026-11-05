@@ -292,7 +292,7 @@ static std::string_view GetDefaultConfigData_s()
 },
 // command settings for cleaner, customize commands and set default commands for the application
 "cleaner.command": {
-   "default": "list",
+   "default": "list"
 }
 
 
