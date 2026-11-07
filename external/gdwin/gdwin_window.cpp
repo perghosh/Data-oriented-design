@@ -342,13 +342,13 @@ void crack_message_g(gdwin::eWindowEvent eEvent, UINT uMessage, WPARAM uParam, L
    case gdwin::eTimer:
       argumentsOut.append("id", static_cast<uint32_t>(uParam));
       break;
-   case gdwin::eScroll:                                                        // WM_HSCROLL, WM_VSCROLL
+   case gdwin::eScroll:                                                       // WM_HSCROLL, WM_VSCROLL
       argumentsOut.append("orientation", static_cast<uint32_t>(uMessage == WM_VSCROLL ? 1 : 0));
-      argumentsOut.append("code", static_cast<uint32_t>(LOWORD(uParam)));      // SB_ request code
+      argumentsOut.append("code", static_cast<uint32_t>(LOWORD(uParam)));     // SB_ request code
       argumentsOut.append("position", static_cast<uint32_t>(HIWORD(uParam))); // only valid for SB_THUMBTRACK and SB_THUMBPOSITION, 16 bit, use GetScrollInfo for larger ranges
       argumentsOut.append("target", to_handle_g(static_cast<uintptr_t>(iParam)));
       break;
-   case gdwin::eCommand:                                                       // WM_COMMAND, WM_SYSCOMMAND
+   case gdwin::eCommand:                                                      // WM_COMMAND, WM_SYSCOMMAND
       if(uMessage == WM_SYSCOMMAND)
       {
          argumentsOut.append("id", static_cast<uint32_t>(uParam & 0xFFF0));   // four low bits are used by the system
@@ -375,6 +375,42 @@ void crack_message_g(gdwin::eWindowEvent eEvent, UINT uMessage, WPARAM uParam, L
       argumentsOut.append("code", static_cast<uint32_t>(pnmhdr != nullptr ? pnmhdr->code : 0u));
       argumentsOut.append("target", to_handle_g(pnmhdr != nullptr ? reinterpret_cast<uintptr_t>(pnmhdr->hwndFrom) : 0));
       argumentsOut.append("header", reinterpret_cast<void*>(iParam));          // cast to the specific notification structure
+   }
+   break;
+   case gdwin::eMenu:
+   if(uMessage == WM_MENUSELECT)
+   {
+      const uint32_t uFlags = HIWORD(uParam);
+      const bool bClosed = (uFlags == 0xFFFFu && iParam == 0);
+      argumentsOut.append("closed", bClosed);
+      argumentsOut.append("id", static_cast<uint32_t>(LOWORD(uParam)));       // command id when popup==false, position index when popup==true
+      argumentsOut.append("flags", uFlags);                                   // raw MF_* bits
+      argumentsOut.append("popup", (uFlags & MF_POPUP) != 0);
+      argumentsOut.append("separator", (uFlags & MF_SEPARATOR) != 0);
+      argumentsOut.append("checked", (uFlags & MF_CHECKED) != 0);
+      argumentsOut.append("grayed", (uFlags & MF_GRAYED) != 0);
+      argumentsOut.append("menu", to_handle_g(static_cast<uintptr_t>(iParam))); // HMENU containing the item
+   }
+   else if(uMessage == WM_MENUCHAR)
+   {
+      argumentsOut.append("char_code", static_cast<uint32_t>(LOWORD(uParam)));
+      argumentsOut.append("flags", static_cast<uint32_t>(HIWORD(uParam)));    // MF_* flags
+      argumentsOut.append("menu", to_handle_g(static_cast<uintptr_t>(iParam)));
+   }
+   else if(uMessage == WM_INITMENUPOPUP)
+   {
+      argumentsOut.append("menu", to_handle_g(static_cast<uintptr_t>(uParam))); // HMENU of the submenu about to open
+      argumentsOut.append("index", static_cast<uint32_t>(LOWORD(iParam)));    // position of the submenu in the main menu
+      argumentsOut.append("system", HIWORD(iParam) != 0);                     // TRUE if this is the window menu
+   }
+   else if(uMessage == WM_INITMENU)
+   {
+      argumentsOut.append("menu", to_handle_g(static_cast<uintptr_t>(uParam)));
+   }
+   else // WM_ENTERMENULOOP, WM_EXITMENULOOP
+   {
+      argumentsOut.append("enter", uMessage == WM_ENTERMENULOOP);
+      argumentsOut.append("popup", uParam != 0);
    }
    break;
    case gdwin::eContextMenu:

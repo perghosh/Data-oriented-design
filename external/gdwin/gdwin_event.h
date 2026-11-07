@@ -49,6 +49,7 @@ enum eWindowEvent : unsigned int
    eScroll,
    eCommand,
    eNotification,
+   eMenu,
    eContextMenu,
    eDrop,
    eHotkey,
@@ -159,6 +160,7 @@ inline constexpr std::array<eWindowEvent, uMaxMessageId> arrayNativeToEvent_g = 
       map_message_(eTimer, { WM_TIMER });
       map_message_(eCommand, { WM_COMMAND, WM_SYSCOMMAND });
       map_message_(eNotification, { WM_NOTIFY });
+      map_message_(eMenu, { WM_MENUSELECT, WM_MENUCHAR, WM_INITMENU, WM_INITMENUPOPUP, WM_ENTERMENULOOP, WM_EXITMENULOOP });
       map_message_(eContextMenu, { WM_CONTEXTMENU });
       map_message_(eDrop, { WM_DROPFILES });
       map_message_(eHotkey, { WM_HOTKEY });
