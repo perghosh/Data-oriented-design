@@ -49,7 +49,7 @@ int run_s();
 std::expected<bool, std::string> register_window_g( const gd::argument::arguments& argumentsWindow, std::string_view stringClass);
 std::expected<bool, std::string> register_window_g(const gd::argument::arguments& argumentsWindow);
 bool create_window_g(const gd::argument::arguments& argumentsWindow, std::string_view stringClass, std::string_view stringTitle, int iX, int iY, int iWidth, int iHeight, uint64_t uStyle, HWND hwndParent = nullptr, void* puserdata_ = nullptr);
-void crack_message_g(gdwin::eWindowEvent eEvent, WPARAM uParam, LPARAM iParam, gd::argument::arguments& argumentsMessage);
+void crack_message_g(gdwin::eWindowEvent eEvent, UINT uMessage, WPARAM uParam, LPARAM iParam, gd::argument::arguments& argumentsMessage);
 _GDWIN_END
 
 
@@ -102,7 +102,7 @@ private:
    /// The one and only window procedure, finds the window for the HWND and forwards
    static LRESULT CALLBACK window_procedure_s(HWND hwnd, UINT uMessage, WPARAM uParam, LPARAM iParam);
    /// Crack a native message into a portable event and arguments. This is for debugging and testing, as the framework will only call OnEvent for messages that have been bound.
-   static void crack_message_s( gdwin::eWindowEvent eEvent, WPARAM uParam, LPARAM iParam, gd::argument::arguments& argumentsMessage);
+   static void crack_message_s( gdwin::eWindowEvent eEvent, UINT uMessage, WPARAM uParam, LPARAM iParam, gd::argument::arguments& argumentsMessage);
 
 
 public:
@@ -216,10 +216,10 @@ bool window<EVENT_RESULT>::create(const std::string& stringTitle, gd::argument::
 template <typename EVENT_RESULT>
 EVENT_RESULT window<EVENT_RESULT>::call(UINT uMessage, WPARAM uParam, LPARAM iParam)
 {
-   std::array<std::byte, 128> buffer_;
+   std::array<std::byte, 256> buffer_;
    gd::argument::arguments argumentsMessage(buffer_);
    auto eEvent = gdwin::translate_s(uMessage);
-   crack_message_g(eEvent, uParam, iParam, argumentsMessage);
+   crack_message_g(eEvent, uMessage, uParam, iParam, argumentsMessage);
    auto result_ = on_event(eEvent, &argumentsMessage, (uint64_t)uMessage);
    return result_;
 }
@@ -322,13 +322,14 @@ LRESULT CALLBACK window<EVENT_RESULT>::window_procedure_s(HWND hwnd, UINT uMessa
  * @tparam EVENT_RESULT The event result type used by the enclosing window specialization.
  * @param eEvent The window event identifier to decode.
  * @param uParam The WPARAM value associated with the event message.
+ * @param uMessage The native message that was translated to eEvent.
  * @param iParam The LPARAM value associated with the event message.
  * @param argumentsMessage A reference to the arguments container that receives the decoded message data.
  */
 template <typename EVENT_RESULT>
-void window<EVENT_RESULT>::crack_message_s(gdwin::eWindowEvent eEvent, WPARAM uParam, LPARAM iParam, gd::argument::arguments& argumentsMessage)
+void window<EVENT_RESULT>::crack_message_s(gdwin::eWindowEvent eEvent, UINT uMessage, WPARAM uParam, LPARAM iParam, gd::argument::arguments& argumentsMessage)
 {
-   gdwin::crack_message_g(eEvent, uParam, iParam, argumentsMessage);
+   gdwin::crack_message_g(eEvent, uMessage, uParam, iParam, argumentsMessage);
 }
 
 

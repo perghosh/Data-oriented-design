@@ -65,6 +65,55 @@ enum eWindowEvent : unsigned int
    e_Count
 };
 
+// @API [tag: event, argument] [description: Portable values used in event arguments, same on all platforms.] [jump: argument__]
+
+/// Keyboard modifiers as bit flags, used in the "modifiers" argument of input events
+enum eModifier : unsigned int
+{
+   eModifierNone = 0x00,
+   eModifierShift = 0x01,
+   eModifierControl = 0x02,
+   eModifierAlt = 0x04,
+   eModifierMeta = 0x08,   ///< windows key, command key on macOS, super key on linux
+};
+
+/// Mouse buttons, value of the "button" argument. In the "buttons" argument the bit position is the button, for example (1u << eMouseButtonRight)
+enum eMouseButton : unsigned int
+{
+   eMouseButtonLeft = 0,
+   eMouseButtonMiddle = 1,
+   eMouseButtonRight = 2,
+   eMouseButtonBack = 3,
+   eMouseButtonForward = 4,
+};
+
+/// Value of the "state" argument for eResize
+enum eWindowState : unsigned int
+{
+   eWindowStateRestored = 0,
+   eWindowStateMinimized = 1,
+   eWindowStateMaximized = 2,
+};
+
+/// Value of the "source" argument for eCommand
+enum eCommandSource : unsigned int
+{
+   eCommandSourceMenu = 0,
+   eCommandSourceAccelerator = 1,
+   eCommandSourceControl = 2,
+   eCommandSourceSystem = 3,   ///< system menu, close, minimize, maximize and so on
+};
+
+/// Value of the "action" argument for eClipboard
+enum eClipboardAction : unsigned int
+{
+   eClipboardActionCut = 0,
+   eClipboardActionCopy = 1,
+   eClipboardActionPaste = 2,
+   eClipboardActionClear = 3,
+   eClipboardActionUndo = 4,
+};
+
 // @API [tag: event, translate] [description: Translate OS messages to portable event IDs. O(1).] [jump: translate__]
 
 // Translate selected standard Windows messages below WM_USER to shared meanings.
@@ -72,57 +121,57 @@ enum eWindowEvent : unsigned int
 inline constexpr unsigned int uMaxMessageId = 0x400;
 
 inline constexpr std::array<eWindowEvent, uMaxMessageId> arrayNativeToEvent_g = []
-{
-   std::array<eWindowEvent, uMaxMessageId> arrayEvents = {}; // Initialize all entries to eEventNone
-   // ## Map native messages to portable events ...............................
-   const auto map_message_ = [&arrayEvents](eWindowEvent ePortableEvent, std::initializer_list<unsigned int> initializerListMessages)
    {
-      for(const unsigned int uNativeMessage : initializerListMessages) { arrayEvents[uNativeMessage] = ePortableEvent; }
-   };
+      std::array<eWindowEvent, uMaxMessageId> arrayEvents = {}; // Initialize all entries to eEventNone
+      // ## Map native messages to portable events ...............................
+      const auto map_message_ = [&arrayEvents](eWindowEvent ePortableEvent, std::initializer_list<unsigned int> initializerListMessages)
+         {
+            for(const unsigned int uNativeMessage : initializerListMessages) { arrayEvents[uNativeMessage] = ePortableEvent; }
+         };
 
-   map_message_(ePaint, { WM_PAINT });
+      map_message_(ePaint, { WM_PAINT });
 
-   map_message_(eCreate, { WM_NCCREATE, WM_CREATE });
-   map_message_(eDestroy, { WM_DESTROY, WM_NCDESTROY });
-   map_message_(eClose, { WM_CLOSE });
-   map_message_(eMove, { WM_MOVE, WM_MOVING });
-   map_message_(eResize, { WM_SIZE, WM_SIZING });
-   map_message_(eWindowActivate, { WM_ACTIVATE, WM_ACTIVATEAPP });
-   map_message_(eWindowVisibility, { WM_SHOWWINDOW });
-   map_message_(eWindowEnabled, { WM_ENABLE });
+      map_message_(eCreate, { WM_NCCREATE, WM_CREATE });
+      map_message_(eDestroy, { WM_DESTROY, WM_NCDESTROY });
+      map_message_(eClose, { WM_CLOSE });
+      map_message_(eMove, { WM_MOVE, WM_MOVING });
+      map_message_(eResize, { WM_SIZE, WM_SIZING });
+      map_message_(eWindowActivate, { WM_ACTIVATE, WM_ACTIVATEAPP });
+      map_message_(eWindowVisibility, { WM_SHOWWINDOW });
+      map_message_(eWindowEnabled, { WM_ENABLE });
 
-   map_message_(eFocusIn, { WM_SETFOCUS });
-   map_message_(eFocusOut, { WM_KILLFOCUS });
+      map_message_(eFocusIn, { WM_SETFOCUS });
+      map_message_(eFocusOut, { WM_KILLFOCUS });
 
-   map_message_(eKeyDown, { WM_KEYDOWN, WM_SYSKEYDOWN });
-   map_message_(eKeyUp, { WM_KEYUP, WM_SYSKEYUP });
-   map_message_(eChar, { WM_CHAR, WM_SYSCHAR, WM_UNICHAR, WM_DEADCHAR, WM_SYSDEADCHAR });
+      map_message_(eKeyDown, { WM_KEYDOWN, WM_SYSKEYDOWN });
+      map_message_(eKeyUp, { WM_KEYUP, WM_SYSKEYUP });
+      map_message_(eChar, { WM_CHAR, WM_SYSCHAR, WM_UNICHAR, WM_DEADCHAR, WM_SYSDEADCHAR });
 
-   map_message_(eMouseMove, { WM_MOUSEMOVE });
-   map_message_(eMouseDown, { WM_LBUTTONDOWN, WM_RBUTTONDOWN, WM_MBUTTONDOWN, WM_XBUTTONDOWN });
-   map_message_(eMouseUp, { WM_LBUTTONUP, WM_RBUTTONUP, WM_MBUTTONUP, WM_XBUTTONUP });
-   map_message_(eMouseDoubleClick, { WM_LBUTTONDBLCLK, WM_RBUTTONDBLCLK, WM_MBUTTONDBLCLK, WM_XBUTTONDBLCLK });
-   map_message_(eMouseWheel, { WM_MOUSEWHEEL, WM_MOUSEHWHEEL });
-   map_message_(eMouseHover, { WM_MOUSEHOVER });
-   map_message_(eMouseLeave, { WM_MOUSELEAVE });
+      map_message_(eMouseMove, { WM_MOUSEMOVE });
+      map_message_(eMouseDown, { WM_LBUTTONDOWN, WM_RBUTTONDOWN, WM_MBUTTONDOWN, WM_XBUTTONDOWN });
+      map_message_(eMouseUp, { WM_LBUTTONUP, WM_RBUTTONUP, WM_MBUTTONUP, WM_XBUTTONUP });
+      map_message_(eMouseDoubleClick, { WM_LBUTTONDBLCLK, WM_RBUTTONDBLCLK, WM_MBUTTONDBLCLK, WM_XBUTTONDBLCLK });
+      map_message_(eMouseWheel, { WM_MOUSEWHEEL, WM_MOUSEHWHEEL });
+      map_message_(eMouseHover, { WM_MOUSEHOVER });
+      map_message_(eMouseLeave, { WM_MOUSELEAVE });
 
-   map_message_(eScroll, { WM_HSCROLL, WM_VSCROLL });
-   map_message_(eTimer, { WM_TIMER });
-   map_message_(eCommand, { WM_COMMAND, WM_SYSCOMMAND });
-   map_message_(eNotification, { WM_NOTIFY });
-   map_message_(eContextMenu, { WM_CONTEXTMENU });
-   map_message_(eDrop, { WM_DROPFILES });
-   map_message_(eHotkey, { WM_HOTKEY });
-   map_message_(eClipboard, { WM_CUT, WM_COPY, WM_PASTE, WM_CLEAR, WM_UNDO });
+      map_message_(eScroll, { WM_HSCROLL, WM_VSCROLL });
+      map_message_(eTimer, { WM_TIMER });
+      map_message_(eCommand, { WM_COMMAND, WM_SYSCOMMAND });
+      map_message_(eNotification, { WM_NOTIFY });
+      map_message_(eContextMenu, { WM_CONTEXTMENU });
+      map_message_(eDrop, { WM_DROPFILES });
+      map_message_(eHotkey, { WM_HOTKEY });
+      map_message_(eClipboard, { WM_CUT, WM_COPY, WM_PASTE, WM_CLEAR, WM_UNDO });
 
-   map_message_(eTouch, { WM_TOUCH });
-   map_message_(eGesture, { WM_GESTURE });
-   map_message_(ePointerMove, { WM_POINTERUPDATE });
-   map_message_(ePointerDown, { WM_POINTERDOWN });
-   map_message_(ePointerUp, { WM_POINTERUP });
+      map_message_(eTouch, { WM_TOUCH });
+      map_message_(eGesture, { WM_GESTURE });
+      map_message_(ePointerMove, { WM_POINTERUPDATE });
+      map_message_(ePointerDown, { WM_POINTERDOWN });
+      map_message_(ePointerUp, { WM_POINTERUP });
 
-   return arrayEvents;
-}();
+      return arrayEvents;
+   }();
 
 // Translate native message id into portable event id. O(1).
 inline eWindowEvent translate_s(UINT uNative)
@@ -136,11 +185,11 @@ inline eWindowEvent translate_s(UINT uNative)
 
 /** ---------------------------------------------------------------------------
  * @brief Register maps for windows to set what type of messages that they can respond to
- * 
+ *
 ~~~{.cpp}
 ~~~
  */
-class event_registry 
+class event_registry
 {
 public:
    /**
@@ -215,40 +264,40 @@ private:
 constexpr eWindowEvent to_event_g(std::string_view stringId)
 {
    // Compare stringId with known event names
-   if( stringId == "paint" )        return ePaint;
-   if( stringId == "resize" )       return eResize;
-   if( stringId == "move" )         return eMove;
-   if( stringId == "close" )        return eClose;
-   if( stringId == "destroy" )      return eDestroy;
-   if( stringId == "create" )       return eCreate;
-   if( stringId == "keydown" )      return eKeyDown;
-   if( stringId == "keyup" )        return eKeyUp;
-   if( stringId == "char" )         return eChar;
-   if( stringId == "mousemove" )    return eMouseMove;
-   if( stringId == "mousedown" )    return eMouseDown;
-   if( stringId == "mouseup" )      return eMouseUp;
-   if( stringId == "mousewheel" )   return eMouseWheel;
-   if( stringId == "mouseenter" )   return eMouseEnter;
-   if( stringId == "mouseleave" )   return eMouseLeave;
-   if( stringId == "focusin" )      return eFocusIn;
-   if( stringId == "focusout" )     return eFocusOut;
-   if( stringId == "timer" )        return eTimer;
-   if( stringId == "mousedoubleclick" ) return eMouseDoubleClick;
-   if( stringId == "mousehover" )   return eMouseHover;
-   if( stringId == "scroll" )       return eScroll;
-   if( stringId == "command" )      return eCommand;
-   if( stringId == "notification" ) return eNotification;
-   if( stringId == "contextmenu" )  return eContextMenu;
-   if( stringId == "drop" )         return eDrop;
-   if( stringId == "hotkey" )       return eHotkey;
-   if( stringId == "windowactivate" ) return eWindowActivate;
-   if( stringId == "windowvisibility" ) return eWindowVisibility;
-   if( stringId == "clipboard" )    return eClipboard;
-   if( stringId == "touch" )        return eTouch;
-   if( stringId == "gesture" )      return eGesture;
-   if( stringId == "pointermove" )  return ePointerMove;
-   if( stringId == "pointerdown" )  return ePointerDown;
-   if( stringId == "pointerup" )    return ePointerUp;
+   if(stringId == "paint")        return ePaint;
+   if(stringId == "resize")       return eResize;
+   if(stringId == "move")         return eMove;
+   if(stringId == "close")        return eClose;
+   if(stringId == "destroy")      return eDestroy;
+   if(stringId == "create")       return eCreate;
+   if(stringId == "keydown")      return eKeyDown;
+   if(stringId == "keyup")        return eKeyUp;
+   if(stringId == "char")         return eChar;
+   if(stringId == "mousemove")    return eMouseMove;
+   if(stringId == "mousedown")    return eMouseDown;
+   if(stringId == "mouseup")      return eMouseUp;
+   if(stringId == "mousewheel")   return eMouseWheel;
+   if(stringId == "mouseenter")   return eMouseEnter;
+   if(stringId == "mouseleave")   return eMouseLeave;
+   if(stringId == "focusin")      return eFocusIn;
+   if(stringId == "focusout")     return eFocusOut;
+   if(stringId == "timer")        return eTimer;
+   if(stringId == "mousedoubleclick") return eMouseDoubleClick;
+   if(stringId == "mousehover")   return eMouseHover;
+   if(stringId == "scroll")       return eScroll;
+   if(stringId == "command")      return eCommand;
+   if(stringId == "notification") return eNotification;
+   if(stringId == "contextmenu")  return eContextMenu;
+   if(stringId == "drop")         return eDrop;
+   if(stringId == "hotkey")       return eHotkey;
+   if(stringId == "windowactivate") return eWindowActivate;
+   if(stringId == "windowvisibility") return eWindowVisibility;
+   if(stringId == "clipboard")    return eClipboard;
+   if(stringId == "touch")        return eTouch;
+   if(stringId == "gesture")      return eGesture;
+   if(stringId == "pointermove")  return ePointerMove;
+   if(stringId == "pointerdown")  return ePointerDown;
+   if(stringId == "pointerup")    return ePointerUp;
 
    return eNone;
 }
