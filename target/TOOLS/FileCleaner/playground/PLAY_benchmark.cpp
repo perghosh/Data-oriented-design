@@ -27,7 +27,6 @@
 #include "gd/gd_table_io.h"
 
 #include "catch2/catch_amalgamated.hpp"
-
 #if defined( __clang__ )
    #define TEST_NOINLINE          __attribute__((noinline))
    #define TEST_MEMORY_BARRIER()  asm volatile( "" : : : "memory" )
@@ -43,6 +42,7 @@
    #define TEST_NO_VECTOR         __pragma( loop( no_vector ) )
 #endif
 
+/*
 
 namespace
 {
@@ -375,6 +375,163 @@ TEST_CASE( "[benchmark] int32 simd aligned vs misaligned", "[benchmark]" )
    run_scenario_("auto simd, memory", 16'777'216, 20, simd_test::sum_block_auto_g);
    run_scenario_("intrinsic, memory", 16'777'216, 20, simd_test::sum_block_intrinsic_g);
 }
+*/
+
+TEST_CASE("[benchmark] int32 aligned vs misaligned", "[benchmark]")
+{
+   constexpr size_t uValueCount = 16'777'216;                                 // 64 MB per buffer
+   constexpr size_t uOffsetMisaligned = 1;
+   constexpr unsigned uWarmupCount = 3;
+   constexpr unsigned uRunIterations = 20;
+
+   struct buffer_test
+   {
+      buffer_test(size_t uByteCount, size_t uOffset) : m_pbufferRaw(new uint8_t[uByteCount + 128])
+      {
+         uintptr_t uAddress = reinterpret_cast<uintptr_t>(m_pbufferRaw);
+         uAddress = (uAddress + 63) & ~uintptr_t(63);
+         m_pbufferData = reinterpret_cast<uint8_t*>(uAddress) + uOffset;
+      }
+      ~buffer_test() { delete[] m_pbufferRaw; }
+      buffer_test(const buffer_test&) = delete;
+      buffer_test& operator=(const buffer_test&) = delete;
+
+      uint8_t* m_pbufferRaw;
+      uint8_t* m_pbufferData;
+   };
+
+   buffer_test bufferAligned(uValueCount * sizeof(int32_t), 0);
+   buffer_test bufferMisaligned(uValueCount * sizeof(int32_t), uOffsetMisaligned);
+
+   std::mt19937 generatorRandom(12345);
+   std::uniform_int_distribution<int32_t> distributionValue(-1'000'000, 1'000'000);
+   for(size_t u = 0; u < uValueCount; ++u)
+   {
+      const int32_t iValue = distributionValue(generatorRandom);
+      memcpy(bufferAligned.m_pbufferData + u * sizeof(int32_t), &iValue, sizeof(iValue));
+   }
+   memcpy(bufferMisaligned.m_pbufferData, bufferAligned.m_pbufferData, uValueCount * sizeof(int32_t));
+
+   CHECK(reinterpret_cast<uintptr_t>(bufferAligned.m_pbufferData) % 4 == 0);
+   CHECK(reinterpret_cast<uintptr_t>(bufferMisaligned.m_pbufferData) % 4 == uOffsetMisaligned);
+
+   auto sum_ = [](const uint8_t* pbuffer, size_t uCount)
+      {
+         int64_t iSum = 0;
+         TEST_NO_VECTOR
+            for(size_t u = 0; u < uCount; ++u)
+            {
+               int32_t iValue;
+               memcpy(&iValue, pbuffer + u * sizeof(int32_t), sizeof(iValue));
+               iSum += iValue;
+            }
+         return iSum;
+      };
+
+   const int64_t iSumAligned = sum_(bufferAligned.m_pbufferData, uValueCount);
+   const int64_t iSumMisaligned = sum_(bufferMisaligned.m_pbufferData, uValueCount);
+   CHECK(iSumAligned == iSumMisaligned);
+
+   volatile int64_t iSink = 0;
+   auto functionAligned = [&]() { TEST_MEMORY_BARRIER(); iSink = sum_(bufferAligned.m_pbufferData, uValueCount); };
+   auto functionMisaligned = [&]() { TEST_MEMORY_BARRIER(); iSink = sum_(bufferMisaligned.m_pbufferData, uValueCount); };
+
+   const auto resultAligned1 = gd::benchmark::run_s(functionAligned, uRunIterations, uWarmupCount);
+   const auto resultMisaligned1 = gd::benchmark::run_s(functionMisaligned, uRunIterations, uWarmupCount);
+   const auto resultMisaligned2 = gd::benchmark::run_s(functionMisaligned, uRunIterations, uWarmupCount);
+   const auto resultAligned2 = gd::benchmark::run_s(functionAligned, uRunIterations, uWarmupCount);
+
+   auto print_result = [&](const char* pbszName, const auto& result)
+      {
+         const double dNanosecondPerValue = result.mean() / static_cast<double>(uValueCount);
+         std::cout << pbszName << ": mean " << (result.mean() / 1'000.0) << " us per run, " << dNanosecondPerValue << " ns per value, " << (4.0 / dNanosecondPerValue) << " GB/s\n";
+      };
+
+   std::cout << "\n#######\nScenario: int32 aligned vs misaligned, values: " << uValueCount << ", sum: " << iSumAligned << "\n";
+   print_result("aligned    (round 1)", resultAligned1);
+   print_result("misaligned (round 1)", resultMisaligned1);
+   print_result("misaligned (round 2)", resultMisaligned2);
+   print_result("aligned    (round 2)", resultAligned2);
+}
+
+TEST_CASE("[benchmark] int32 aligned vs misaligned (L2)", "[benchmark]")
+{
+   constexpr size_t uValueCount = 262'144;
+   constexpr size_t uOffsetMisaligned = 1;
+   constexpr unsigned uWarmupCount = 3;
+   constexpr unsigned uRunIterations = 20'000; 
+
+   struct buffer_test
+   {
+      buffer_test(size_t uByteCount, size_t uOffset) : m_pbufferRaw(new uint8_t[uByteCount + 128])
+      {
+         uintptr_t uAddress = reinterpret_cast<uintptr_t>(m_pbufferRaw);
+         uAddress = (uAddress + 63) & ~uintptr_t(63);
+         m_pbufferData = reinterpret_cast<uint8_t*>(uAddress) + uOffset;
+      }
+      ~buffer_test() { delete[] m_pbufferRaw; }
+      buffer_test(const buffer_test&) = delete;
+      buffer_test& operator=(const buffer_test&) = delete;
+
+      uint8_t* m_pbufferRaw;
+      uint8_t* m_pbufferData;
+   };
+
+   buffer_test bufferAligned(uValueCount * sizeof(int32_t), 0);
+   buffer_test bufferMisaligned(uValueCount * sizeof(int32_t), uOffsetMisaligned);
+
+   std::mt19937 generatorRandom(12345);
+   std::uniform_int_distribution<int32_t> distributionValue(-1'000'000, 1'000'000);
+   for(size_t u = 0; u < uValueCount; ++u)
+   {
+      const int32_t iValue = distributionValue(generatorRandom);
+      memcpy(bufferAligned.m_pbufferData + u * sizeof(int32_t), &iValue, sizeof(iValue));
+   }
+   memcpy(bufferMisaligned.m_pbufferData, bufferAligned.m_pbufferData, uValueCount * sizeof(int32_t));
+
+   CHECK(reinterpret_cast<uintptr_t>(bufferAligned.m_pbufferData) % 4 == 0);
+   CHECK(reinterpret_cast<uintptr_t>(bufferMisaligned.m_pbufferData) % 4 == uOffsetMisaligned);
+
+   auto sum_ = [](const uint8_t* pbuffer, size_t uCount)
+      {
+         int64_t iSum = 0;
+         TEST_NO_VECTOR
+            for(size_t u = 0; u < uCount; ++u)
+            {
+               int32_t iValue;
+               memcpy(&iValue, pbuffer + u * sizeof(int32_t), sizeof(iValue));
+               iSum += iValue;
+            }
+         return iSum;
+      };
+
+   const int64_t iSumAligned = sum_(bufferAligned.m_pbufferData, uValueCount);
+   const int64_t iSumMisaligned = sum_(bufferMisaligned.m_pbufferData, uValueCount);
+   CHECK(iSumAligned == iSumMisaligned);
+
+   volatile int64_t iSink = 0;
+   auto functionAligned = [&]() { TEST_MEMORY_BARRIER(); iSink = sum_(bufferAligned.m_pbufferData, uValueCount); };
+   auto functionMisaligned = [&]() { TEST_MEMORY_BARRIER(); iSink = sum_(bufferMisaligned.m_pbufferData, uValueCount); };
+
+   const auto resultAligned1 = gd::benchmark::run_s(functionAligned, uRunIterations, uWarmupCount);
+   const auto resultMisaligned1 = gd::benchmark::run_s(functionMisaligned, uRunIterations, uWarmupCount);
+   const auto resultMisaligned2 = gd::benchmark::run_s(functionMisaligned, uRunIterations, uWarmupCount);
+   const auto resultAligned2 = gd::benchmark::run_s(functionAligned, uRunIterations, uWarmupCount);
+
+   auto print_result = [&](const char* pbszName, const auto& result)
+      {
+         const double dNanosecondPerValue = result.mean() / static_cast<double>(uValueCount);
+         std::cout << pbszName << ": mean " << (result.mean() / 1'000.0) << " us per run, " << dNanosecondPerValue << " ns per value, " << (4.0 / dNanosecondPerValue) << " GB/s\n";
+      };
+
+   std::cout << "\n#######\nScenario: int32 aligned vs misaligned (L2), values: " << uValueCount << ", sum: " << iSumAligned << "\n";
+   print_result("aligned    (round 1)", resultAligned1);
+   print_result("misaligned (round 1)", resultMisaligned1);
+   print_result("misaligned (round 2)", resultMisaligned2);
+   print_result("aligned    (round 2)", resultAligned2);
+}
+
+
 
 TEST_CASE("[benchmark] arguments find", "[.benchmark]")
 {
