@@ -90,7 +90,7 @@
 
 _GD_EXPRESSION_BEGIN
 
-/**
+/** @CLASS [tag: expression] [name: statement] [pattern: value] [summary: manage parsed expression in code] [jump: statement__]
  * @brief One compiled unit of execution inside a `code` program.
  *
  * A statement is the atom of the flat bytecode.  The executor walks a
@@ -183,10 +183,32 @@ struct statement
    int32_t             m_iJump        = -1;         ///< branch target index, -1 = none
    std::vector<token>  m_vectorToken;               ///< pre-compiled postfix tokens
    std::string_view    m_stringSource;              ///< view into code source buffer (debug / error messages)
+
+   static constexpr std::string_view kind_to_string_s(unsigned eKind) { return kind_to_string_s(static_cast<enumKind>(eKind)); }
+   static constexpr std::string_view kind_to_string_s(enumKind eKind);
 };
 
+constexpr std::string_view statement::kind_to_string_s(enumKind eKind)
+{
+   switch(eKind)
+   {
+   case eKindExpression:   return "expression";
+   case eKindIf:           return "if";
+   case eKindElseJump:     return "else_jump";
+   case eKindWhile:        return "while";
+   case eKindLoopBack:     return "loop_back";
+   case eKindForInit:      return "for_init";
+   case eKindForCondition: return "for_condition";
+   case eKindForStep:      return "step";
+   case eKindBreak:        return "break";
+   case eKindContinue:     return "continue";
+   default:                return "unknown";
+   }
+}
 
-/**
+
+
+/** @CLASS [tag: expression] [name: code] [pattern: container] [summary: handle script code expressions] [jump: code__]
  * @brief Flat-bytecode program container with if / else / while / for support.
  *
  * A `code` object is the single addition needed to give the expression engine

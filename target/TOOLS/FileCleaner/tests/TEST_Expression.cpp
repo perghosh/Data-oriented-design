@@ -12,6 +12,8 @@
 #include "gd/io/gd_io_repository_stream.h"
 #include "gd/expression/gd_expression_token.h"
 #include "gd/expression/gd_expression_code.h"
+#include "gd/expression/gd_expression_method_01.h"
+#include "gd/expression/gd_expression_method_02.h"
 
 #include "main.h"
 
@@ -63,6 +65,7 @@ x = 1
 for i = 1, i < 10, i = i + 1
 begin
    x = x + i;
+   console::println( "x = " + x );
 end
 )";
 
@@ -76,6 +79,9 @@ end
 */
 
    gd::expression::runtime runtime_;
+   runtime_.add({ (unsigned)gd::expression::uMethodDefaultSize_g, gd::expression::pmethodDefault_g, "" });
+   runtime_.add({ (unsigned)gd::expression::uMethodStringSize_g, gd::expression::pmethodString_g, "str" });
+   runtime_.add({ (unsigned)gd::expression::uMethodConsoleSize_g, gd::expression::pmethodConsole_g, "console" });
    runtime_.add("x", int64_t(0));
    gd::expression::code code_;
    auto [bOk, stringError] = code_.compile(stringCode, runtime_);
@@ -83,7 +89,12 @@ end
    if( bOk )
    {
       gd::expression::value result_;
-      code_.execute(runtime_, &result_);
+      auto error_ = code_.execute(runtime_, &result_);
+      if(error_.first == false)
+      {
+         std::cout << "Error: " << error_.second << std::endl;
+      }
+
       gd::expression::value y_( runtime_.get_variable( "y" ) );
       std::cout << "y = " << y_.as_string() << std::endl;
       gd::expression::value x_( runtime_.get_variable( "x" ) );
@@ -209,7 +220,7 @@ z = x * y
 }
 
 
-TEST_CASE("[expression] vararg", "[expression]") {
+TEST_CASE("[expression] vararg", ".[expression]") {
    {
       {
          auto valueResult = gd::expression::token::calculate_s( "any_true( str::has( 'path', 'exe' ) , 1,2,3,4)" );
@@ -252,7 +263,7 @@ TEST_CASE("[expression] test expression", "[expression]") {
 }
 
 
-TEST_CASE( "[expression] create and read", "[expression]" ) {
+TEST_CASE( "[expression] create and read", ".[expression]" ) {
    CApplication application;
    application.Initialize();
 

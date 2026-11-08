@@ -1681,7 +1681,7 @@ std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vector
                   }
                }
 
-               if( pmethod_->flags() == 0 || pmethod_->flags() == method::eFlagVarArgs ) // default methods (no runtime), with or without varargs
+               if( pmethod_->is_runtime() == false )                          // default methods (no runtime), with or without varargs
                {
                   if( pmethod_->out_count() == 0 )
                   {

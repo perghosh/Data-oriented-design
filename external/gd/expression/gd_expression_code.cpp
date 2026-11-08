@@ -1409,6 +1409,11 @@ std::pair<bool, std::string> code::execute(runtime& runtime_, value* pResult) co
    {
       const statement& statement_ = m_vectorStatement[static_cast<size_t>(iPC)];
 
+#ifndef NDEBUG
+      unsigned uKind_d = static_cast<unsigned>(statement_.get_kind());
+      auto stringKind_d = statement::kind_to_string_s(uKind_d);
+#endif
+
       switch( statement_.get_kind() )
       {
       // ## plain expression ..................................................
