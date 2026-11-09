@@ -607,11 +607,11 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
          function_.m_vectorParameter = std::move(vectorParameter);
          m_vectorFunction.push_back(std::move(function_));
 
-         block frame_;
-         frame_.m_eKind = block::eKindFunction;
-         frame_.m_iFunctionIndex = static_cast<int32_t>(m_vectorFunction.size() - 1);
-         frame_.m_iFunctionSkipIndex = iFunctionSkipIndex;
-         vectorBlock.push_back(std::move(frame_));
+         block blockFrame;
+         blockFrame.m_eKind = block::eKindFunction;
+         blockFrame.m_iFunctionIndex = static_cast<int32_t>(m_vectorFunction.size() - 1);
+         blockFrame.m_iFunctionSkipIndex = iFunctionSkipIndex;
+         vectorBlock.push_back(std::move(blockFrame));
          continue;
       }
 
