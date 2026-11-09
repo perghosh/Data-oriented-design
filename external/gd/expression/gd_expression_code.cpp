@@ -626,10 +626,10 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
          if( vectorBlock.empty() )
          {
             // bare begin / end block — push a dummy frame so `end` pops it
-            block frame_;
-            frame_.m_eKind      = block::eKindIf; // reuse if-kind as "bare"
-            frame_.m_iCondIndex = -1;
-            vectorBlock.push_back(std::move(frame_));
+            block blockFrame;
+            blockFrame.m_eKind      = block::eKindIf; // reuse if-kind as "bare"
+            blockFrame.m_iCondIndex = -1;
+            vectorBlock.push_back(std::move(blockFrame));
          }
          // else: frame was already pushed by if / while / for handler
          continue;
@@ -640,48 +640,48 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
       {
          if( vectorBlock.empty() ) { return { false, "[code::compile_s] unexpected 'end' without matching 'begin' at line " + std::to_string(iLine) }; }
 
-         block frame_ = std::move(vectorBlock.back());
+         block blockFrame = std::move(vectorBlock.back());
          vectorBlock.pop_back();
 
          int32_t iHere = static_cast<int32_t>(m_vectorStatement.size());
 
-         switch( frame_.m_eKind )
+         switch( blockFrame.m_eKind )
          {
          case block::eKindIf:
          {
             // Default patch when there is no following else.
-            if( frame_.m_iCondIndex >= 0 ) { m_vectorStatement[frame_.m_iCondIndex].set_jump(iHere); }
+            if( blockFrame.m_iCondIndex >= 0 ) { m_vectorStatement[blockFrame.m_iCondIndex].set_jump(iHere); }
 
             // Patch any preceding ElseJump to also land HERE.
-            if( frame_.m_iElseJumpIndex >= 0 ) { m_vectorStatement[frame_.m_iElseJumpIndex].set_jump(iHere); }
+            if( blockFrame.m_iElseJumpIndex >= 0 ) { m_vectorStatement[blockFrame.m_iElseJumpIndex].set_jump(iHere); }
 
             // Allow immediate `else` after `end` to rebind the false branch.
-            iPendingIfConditionIndex = frame_.m_iCondIndex;
+            iPendingIfConditionIndex = blockFrame.m_iCondIndex;
             break;
          }
 
          case block::eKindElse:
          {
             // Patch the ElseJump (emitted at end of if-body) to land HERE
-            if( frame_.m_iElseJumpIndex >= 0 ) { m_vectorStatement[frame_.m_iElseJumpIndex].set_jump( iHere ); }
+            if( blockFrame.m_iElseJumpIndex >= 0 ) { m_vectorStatement[blockFrame.m_iElseJumpIndex].set_jump( iHere ); }
             break;
          }
 
          case block::eKindWhile:
          {
             // Emit the loop-back jump to the while condition
-            statement stmtLoopBack_(statement::eKindLoopBack, frame_.m_iCondIndex);
+            statement stmtLoopBack_(statement::eKindLoopBack, blockFrame.m_iCondIndex);
             m_vectorStatement.push_back(std::move(stmtLoopBack_));
             iHere = static_cast<int32_t>(m_vectorStatement.size()); // re-compute after push
 
             // Patch while condition to jump past loop-back
-            if( frame_.m_iCondIndex >= 0 ) { m_vectorStatement[frame_.m_iCondIndex].set_jump(iHere); }
+            if( blockFrame.m_iCondIndex >= 0 ) { m_vectorStatement[blockFrame.m_iCondIndex].set_jump(iHere); }
 
             // Patch break statements
-            for( int32_t iBreak : frame_.m_vectorBreak ) { m_vectorStatement[iBreak].set_jump(iHere); }
+            for( int32_t iBreak : blockFrame.m_vectorBreak ) { m_vectorStatement[iBreak].set_jump(iHere); }
 
             // Patch continue statements -> jump to while condition
-            for( int32_t iCont : frame_.m_vectorContinue ) { m_vectorStatement[iCont].set_jump(frame_.m_iCondIndex); }
+            for( int32_t iCont : blockFrame.m_vectorContinue ) { m_vectorStatement[iCont].set_jump(blockFrame.m_iCondIndex); }
 
             break;
          }
@@ -691,21 +691,21 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
             // Emit step statement looping back to condition
             // The step tokens are already compiled inside the for-step statement.
             // We just need a LoopBack pointing at eKindForCondition.
-            statement statementLoopBack(statement::eKindLoopBack, frame_.m_iForStepIndex);
+            statement statementLoopBack(statement::eKindLoopBack, blockFrame.m_iForStepIndex);
             m_vectorStatement.push_back(std::move(statementLoopBack));
             iHere = static_cast<int32_t>(m_vectorStatement.size());
 
             // Patch ForCond to exit past loop-back
-            if( frame_.m_iForCondIndex >= 0 )
-               m_vectorStatement[frame_.m_iForCondIndex].set_jump(iHere);
+            if( blockFrame.m_iForCondIndex >= 0 )
+               m_vectorStatement[blockFrame.m_iForCondIndex].set_jump(iHere);
 
             // Patch break -> past loop
-            for( int32_t iBreak : frame_.m_vectorBreak )
+            for( int32_t iBreak : blockFrame.m_vectorBreak )
                m_vectorStatement[iBreak].set_jump(iHere);
 
             // Patch continue -> step statement
-            for( int32_t iCont : frame_.m_vectorContinue )
-               m_vectorStatement[iCont].set_jump(frame_.m_iForStepIndex);
+            for( int32_t iCont : blockFrame.m_vectorContinue )
+               m_vectorStatement[iCont].set_jump(blockFrame.m_iForStepIndex);
 
             break;
          }
@@ -716,14 +716,14 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
             m_vectorStatement.emplace_back(statement::eKindReturn);
             iHere = static_cast<int32_t>(m_vectorStatement.size());
 
-            if( frame_.m_iFunctionSkipIndex >= 0 )
+            if( blockFrame.m_iFunctionSkipIndex >= 0 )
             {
-               m_vectorStatement[frame_.m_iFunctionSkipIndex].set_jump(iHere);
+               m_vectorStatement[blockFrame.m_iFunctionSkipIndex].set_jump(iHere);
             }
 
-            if( frame_.m_iFunctionIndex >= 0 )
+            if( blockFrame.m_iFunctionIndex >= 0 )
             {
-               m_vectorFunction[frame_.m_iFunctionIndex].m_iExitIndex = iHere;
+               m_vectorFunction[blockFrame.m_iFunctionIndex].m_iExitIndex = iHere;
             }
             break;
          }
