@@ -388,6 +388,10 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
    // ## Block stack: one entry per open `begin` we have not yet seen `end` for
    std::vector<block> vectorBlock;
 
+   // Tracks an if-condition that was just closed by `end` so an immediate
+   // following `else` can still bind to it (`if ... begin ... end else ...`).
+   int32_t iPendingIfConditionIndex = -1;
+
    const char* piszPosition = piszBegin;
 
    int32_t iLine = 0; ///< line counter for error messages
@@ -424,6 +428,12 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
 
       auto [stringKeyword, stringRest] = split_keyword_s(stringTrimmed);
 
+      // A closed if can only be extended by an immediate `else`.
+      if( stringKeyword != "else" && iPendingIfConditionIndex >= 0 )
+      {
+         iPendingIfConditionIndex = -1;
+      }
+
       // ---- begin -----------------------------------------------------------
       if( stringKeyword == "begin" )
       {
@@ -458,11 +468,14 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
          {
          case block::eKindIf:
          {
-            // Patch the if-condition jump to land HERE (first statement after block)
+            // Default patch when there is no following else.
             if( frame_.m_iCondIndex >= 0 ) { m_vectorStatement[frame_.m_iCondIndex].set_jump(iHere); }
 
-            // Patch any preceding ElseJump to also land HERE
+            // Patch any preceding ElseJump to also land HERE.
             if( frame_.m_iElseJumpIndex >= 0 ) { m_vectorStatement[frame_.m_iElseJumpIndex].set_jump(iHere); }
+
+            // Allow immediate `else` after `end` to rebind the false branch.
+            iPendingIfConditionIndex = frame_.m_iCondIndex;
             break;
          }
 
@@ -523,31 +536,48 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
       // ---- else ------------------------------------------------------------
       if( stringKeyword == "else" )
       {
-         if( vectorBlock.empty() || vectorBlock.back().m_eKind != block::eKindIf )
+         // `else` directly after an open if-body (`if ... else ...`).
+         if( vectorBlock.empty() == false && vectorBlock.back().m_eKind == block::eKindIf )
          {
-            return { false, "[code::compile_s] 'else' without matching 'if' at line " + std::to_string(iLine) };
+            // End the if-body: emit an unconditional jump that will be patched
+            // to skip the else-body once we see its `end`.
+            int32_t iElseJumpIndex = static_cast<int32_t>(m_vectorStatement.size());
+            m_vectorStatement.emplace_back(statement::eKindElseJump);
+
+            int32_t iElseBodyStart = static_cast<int32_t>(m_vectorStatement.size());
+
+            // Patch the if-condition jump to land at the else-body start
+            block& frame_ = vectorBlock.back();
+            if( frame_.m_iCondIndex >= 0 )
+               m_vectorStatement[frame_.m_iCondIndex].set_jump(iElseBodyStart);
+
+            // Convert the if-frame to an else-frame and record the jump index
+            frame_.m_eKind          = block::eKindElse;
+            frame_.m_iCondIndex     = -1;
+            frame_.m_iElseJumpIndex = iElseJumpIndex;
+
+            iPendingIfConditionIndex = -1;
+            continue;
          }
 
-         // End the if-body: emit an unconditional jump that will be patched
-         // to skip the else-body once we see its `end`.
-         int32_t iElseJumpIndex = static_cast<int32_t>(m_vectorStatement.size());
-         m_vectorStatement.emplace_back(statement::eKindElseJump);
+         // `else` after a closed if-body (`if ... begin ... end else ...`).
+         if( iPendingIfConditionIndex >= 0 )
+         {
+            int32_t iElseJumpIndex = static_cast<int32_t>(m_vectorStatement.size());
+            m_vectorStatement.emplace_back(statement::eKindElseJump);
 
-         int32_t iElseBodyStart = static_cast<int32_t>(m_vectorStatement.size());
+            int32_t iElseBodyStart = static_cast<int32_t>(m_vectorStatement.size());
+            m_vectorStatement[iPendingIfConditionIndex].set_jump(iElseBodyStart);
+            iPendingIfConditionIndex = -1;
 
-         // Patch the if-condition jump to land at the else-body start
-         block& frame_ = vectorBlock.back();
-         if( frame_.m_iCondIndex >= 0 )
-            m_vectorStatement[frame_.m_iCondIndex].set_jump(iElseBodyStart);
+            block frame_;
+            frame_.m_eKind          = block::eKindElse;
+            frame_.m_iElseJumpIndex = iElseJumpIndex;
+            vectorBlock.push_back(std::move(frame_));
+            continue;
+         }
 
-         // Convert the if-frame to an else-frame and record the jump index
-         frame_.m_eKind         = block::eKindElse;
-         frame_.m_iCondIndex    = -1;
-         frame_.m_iElseJumpIndex = iElseJumpIndex;
-
-         // `else` is always followed by `begin` on the next line; we leave
-         // the frame on the stack so the matching `end` will close it.
-         continue;
+         return { false, "[code::compile_s] 'else' without matching 'if' at line " + std::to_string(iLine) };
       }
 
       // ---- if --------------------------------------------------------------
@@ -1499,18 +1529,18 @@ std::pair<bool, std::string> code::execute(runtime& runtime_, value* pResult) co
  */
 std::string code::dump() const
 {
-   static const char* KIND_NAME[] =
+   static const char* ppiKeyDescription_s[] =
    {
-      "Expr     ",
-      "If       ",
-      "ElseJump ",
-      "While    ",
-      "LoopBack ",
-      "ForInit  ",
-      "ForCond  ",
-      "ForStep  ",
-      "Break    ",
-      "Continue ",
+      "Expression ",
+      "If         ",
+      "ElseJump   ",
+      "While      ",
+      "LoopBack   ",
+      "ForInit    ",
+      "ForCond    ",
+      "ForStep    ",
+      "Break      ",
+      "Continue   ",
    };
 
    std::string stringOut;
@@ -1530,8 +1560,8 @@ std::string code::dump() const
       stringOut += ' ';
 
       // kind
-      if( uKind < sizeof(KIND_NAME) / sizeof(KIND_NAME[0]) )
-         stringOut += KIND_NAME[uKind];
+      if( uKind < sizeof(ppiKeyDescription_s) / sizeof(ppiKeyDescription_s[0]) )
+         stringOut += ppiKeyDescription_s[uKind];
       else
          stringOut += "Unknown  ";
 

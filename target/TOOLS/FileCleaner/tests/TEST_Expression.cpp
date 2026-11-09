@@ -62,21 +62,24 @@ end
 
 std::string stringCode = R"(
 x = 1
+
+if x < 2
+begin
+    x += 1;
+   console::println( "first: x = " + x );
+end
+else
+begin
+    x += 2;
+   console::println( "first: x = " + x );
+end
+
 for i = 1, i < 10, i = i + 1
 begin
    x = x + i;
    console::println( "x = " + x );
 end
 )";
-
-/*
-x = 1
-for i = 1, i < 10, 1
-begin
-   x = x + i;
-end
-
-*/
 
    gd::expression::runtime runtime_;
    runtime_.add({ (unsigned)gd::expression::uMethodDefaultSize_g, gd::expression::pmethodDefault_g, "" });
@@ -100,6 +103,9 @@ end
       gd::expression::value x_( runtime_.get_variable( "x" ) );
       std::cout << "x = " << x_.as_string() << std::endl;
    }
+
+   std::string stringCodeDump = code_.dump();
+   std::cout << "Code dump:\n" << stringCodeDump << std::endl;
 
 }
 
