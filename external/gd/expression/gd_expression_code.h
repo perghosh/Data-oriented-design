@@ -125,6 +125,9 @@ struct statement
       eKindForStep      = 7,  ///< for: step expression; then jump to eKindForCondition
       eKindBreak        = 8,  ///< jump to first statement past enclosing loop
       eKindContinue     = 9,  ///< jump to loop step / condition
+      eKindFunctionCall = 10, ///< call user-defined function (jump to function entry)
+      eKindReturn       = 11, ///< return from user-defined function
+      eKindFunctionSkip = 12, ///< skip function body in main program flow
    };
 
    // ## construction ----------------------------------------------------------
@@ -155,6 +158,7 @@ struct statement
       m_eKind       = o.m_eKind;
       m_iJump       = o.m_iJump;
       m_vectorToken = o.m_vectorToken;
+      m_vectorArgumentToken = o.m_vectorArgumentToken;
       m_stringSource = o.m_stringSource;
    }
 
@@ -163,6 +167,7 @@ struct statement
       m_eKind        = o.m_eKind;
       m_iJump        = o.m_iJump;
       m_vectorToken  = std::move(o.m_vectorToken);
+      m_vectorArgumentToken = std::move(o.m_vectorArgumentToken);
       m_stringSource = std::move(o.m_stringSource);
    }
 
@@ -182,6 +187,7 @@ struct statement
    enumKind            m_eKind        = eKindExpression; ///< what this statement does
    int32_t             m_iJump        = -1;         ///< branch target index, -1 = none
    std::vector<token>  m_vectorToken;               ///< pre-compiled postfix tokens
+   std::vector<std::vector<token>> m_vectorArgumentToken; ///< function-call argument expressions in postfix form
    std::string_view    m_stringSource;              ///< view into code source buffer (debug / error messages)
 
    static constexpr std::string_view kind_to_string_s(unsigned eKind) { return kind_to_string_s(static_cast<enumKind>(eKind)); }
@@ -202,6 +208,9 @@ constexpr std::string_view statement::kind_to_string_s(enumKind eKind)
    case eKindForStep:      return "step";
    case eKindBreak:        return "break";
    case eKindContinue:     return "continue";
+   case eKindFunctionCall: return "function_call";
+   case eKindReturn:       return "return";
+   case eKindFunctionSkip: return "function_skip";
    default:                return "unknown";
    }
 }
@@ -239,6 +248,14 @@ constexpr std::string_view statement::kind_to_string_s(enumKind eKind)
  */
 struct code
 {
+   struct script_function
+   {
+      std::string_view             m_stringName;
+      int32_t                      m_iEntryIndex = -1;
+      int32_t                      m_iExitIndex = -1;
+      std::vector<std::string_view> m_vectorParameter;
+   };
+
    // ## construction ----------------------------------------------------------
 
    code() {}
@@ -258,12 +275,14 @@ struct code
       m_pSource         = o.m_pSource;                                        // shared immutable buffer, token views stay valid
       m_uSourceLength   = o.m_uSourceLength;
       m_vectorStatement = o.m_vectorStatement;
+      m_vectorFunction  = o.m_vectorFunction;
    }
    void common_construct(code&& o) noexcept
    {
       m_pSource         = std::move(o.m_pSource);
       m_uSourceLength   = o.m_uSourceLength;
       m_vectorStatement = std::move(o.m_vectorStatement);
+      m_vectorFunction  = std::move(o.m_vectorFunction);
       o.m_uSourceLength = 0;
    }
 
@@ -276,7 +295,7 @@ struct code
    bool empty() const { return m_vectorStatement.empty(); }
 
    /// @brief remove all compiled statements, ready for a new compile
-   void clear() { m_vectorStatement.clear(); m_pSource.reset(); m_uSourceLength = 0; }
+   void clear() { m_vectorStatement.clear(); m_vectorFunction.clear(); m_pSource.reset(); m_uSourceLength = 0; }
 
    /// @brief copy source into owned buffer that all token and statement views point into
    /// @return begin and end pointers into the owned buffer
@@ -312,6 +331,7 @@ struct code
    std::shared_ptr<const char[]> m_pSource;  ///< owned source text, address is stable on move and shared on copy
    size_t m_uSourceLength = 0;               ///< number of characters in m_pSource (excluding terminator)
    std::vector<statement> m_vectorStatement; ///< flat list of compiled statements
+   std::vector<script_function> m_vectorFunction; ///< compiled user-defined script functions
 
    // ## free (static) functions -----------------------------------------------
 

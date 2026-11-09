@@ -74,6 +74,14 @@ begin
    console::println( "first: x = " + x );
 end
 
+function add_to_x( delta )
+begin
+   x = x + delta;
+   console::println( "func: x = " + x );
+end
+
+add_to_x( 3 )
+
 for i = 1, i < 10, i = i + 1
 begin
    x = x + i;

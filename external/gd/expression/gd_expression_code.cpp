@@ -137,6 +137,113 @@ inline size_t split_for_header_s( std::string_view stringHeader, std::string_vie
    return uCount;
 }
 
+/// Split comma-separated argument list at top-level commas (ignores nested parens and string literals).
+inline void split_argument_list_s(std::string_view stringArgument, std::vector<std::string_view>& vectorPart)
+{
+   vectorPart.clear();
+   size_t uStart = 0;
+   int iDepth = 0;
+
+   for( size_t u = 0; u <= stringArgument.size(); ++u )
+   {
+      bool bEnd = (u == stringArgument.size());
+      if( bEnd == false )
+      {
+         char iCharacter = stringArgument[u];
+         if( is_string_delimiter_(iCharacter) )
+         {
+            ++u;
+            while( u < stringArgument.size() && stringArgument[u] != iCharacter ) { ++u; }
+            continue;
+         }
+
+         if( iCharacter == '(' ) { ++iDepth; continue; }
+         if( iCharacter == ')' ) { --iDepth; continue; }
+      }
+
+      if( bEnd == true || (stringArgument[u] == ',' && iDepth == 0) )
+      {
+         vectorPart.push_back(code::trim_s(stringArgument.substr(uStart, u - uStart)));
+         uStart = u + 1;
+      }
+   }
+}
+
+/// Parse "name(arg0, arg1, ...)" from function declaration rest or call expression.
+inline bool parse_function_signature_s(std::string_view stringSignature,
+                                       std::string_view& stringName,
+                                       std::vector<std::string_view>& vectorArgument,
+                                       std::string& stringError)
+{
+   stringName = {};
+   vectorArgument.clear();
+
+   stringSignature = code::trim_s(stringSignature);
+   if( stringSignature.empty() )
+   {
+      stringError = "empty function signature";
+      return false;
+   }
+
+   size_t uOpen = stringSignature.find('(');
+   size_t uClose = stringSignature.rfind(')');
+   if( uOpen == std::string_view::npos || uClose == std::string_view::npos || uClose < uOpen )
+   {
+      stringError = "function signature must use name(args)";
+      return false;
+   }
+
+   if( code::trim_s(stringSignature.substr(uClose + 1)).empty() == false )
+   {
+      stringError = "unexpected trailing characters after ')'";
+      return false;
+   }
+
+   stringName = code::trim_s(stringSignature.substr(0, uOpen));
+   if( stringName.empty() )
+   {
+      stringError = "missing function name";
+      return false;
+   }
+
+   if( (stringName.front() < 'A' || stringName.front() > 'Z') &&
+       (stringName.front() < 'a' || stringName.front() > 'z') &&
+       stringName.front() != '_' )
+   {
+      stringError = "invalid function name";
+      return false;
+   }
+
+   for( char iCharacter : stringName )
+   {
+      bool bValid = ((iCharacter >= 'A' && iCharacter <= 'Z') ||
+                     (iCharacter >= 'a' && iCharacter <= 'z') ||
+                     (iCharacter >= '0' && iCharacter <= '9') ||
+                     iCharacter == '_');
+      if( bValid == false )
+      {
+         stringError = "invalid function name";
+         return false;
+      }
+   }
+
+   std::string_view stringArgument = code::trim_s(stringSignature.substr(uOpen + 1, uClose - uOpen - 1));
+   if( stringArgument.empty() == false )
+   {
+      split_argument_list_s(stringArgument, vectorArgument);
+      for( std::string_view stringItem : vectorArgument )
+      {
+         if( stringItem.empty() )
+         {
+            stringError = "empty argument in function signature";
+            return false;
+         }
+      }
+   }
+
+   return true;
+}
+
 /// Expand a bare step value (`for i = 1, i < 10, 1`) into postfix `i = i + 1`.
 /// Loop variable is taken from the first token in init, operator names are static so no text is allocated.
 inline void expand_for_step_s( const std::vector<token>& vectorInitialize, std::vector<token>& vectorStep )
@@ -168,10 +275,11 @@ struct block
 {
    enum enumKind : uint8_t
    {
-      eKindIf    = 0, ///< if / else-if block
-      eKindElse  = 1, ///< else block
-      eKindWhile = 2, ///< while block
-      eKindFor   = 3, ///< for block
+      eKindIf       = 0, ///< if / else-if block
+      eKindElse     = 1, ///< else block
+      eKindWhile    = 2, ///< while block
+      eKindFor      = 3, ///< for block
+      eKindFunction = 4, ///< function block
    };
 
    enumKind               m_eKind;
@@ -190,14 +298,17 @@ struct block
    /// for-loop: index of the eKindForStep statement (loop-back target)
    int32_t                m_iForStepIndex  = -1;
 
+   /// function: index of function metadata inside code::m_vectorFunction
+   int32_t                m_iFunctionIndex = -1;
+
+   /// function: index of eKindFunctionSkip statement to patch on `end`
+   int32_t                m_iFunctionSkipIndex = -1;
+
    /// loop only: list of eKindBreak statement indices waiting to be patched
    std::vector<int32_t>   m_vectorBreak;
 
    /// loop only: list of eKindContinue statement indices waiting to be patched
    std::vector<int32_t>   m_vectorContinue;
-
-   /// for-loop variable name (used to build the step expression)
-   std::string            m_stringForVar;
 };
 
 } // anonymous namespace
@@ -383,7 +494,16 @@ std::pair<const char*, const char*> code::set_source(const char* piszBegin, cons
 std::pair<bool, std::string> code::compile(const char* piszBegin, const char* piszEnd, runtime& runtime_)
 {
    m_vectorStatement.clear();
+   m_vectorFunction.clear();
    std::tie(piszBegin, piszEnd) = set_source(piszBegin, piszEnd);
+
+   struct pending_function_call
+   {
+      int32_t          m_iStatementIndex = -1;
+      std::string_view m_stringFunction;
+   };
+
+   std::vector<pending_function_call> vectorPendingFunctionCall;
 
    // ## Block stack: one entry per open `begin` we have not yet seen `end` for
    std::vector<block> vectorBlock;
@@ -432,6 +552,67 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
       if( stringKeyword != "else" && iPendingIfConditionIndex >= 0 )
       {
          iPendingIfConditionIndex = -1;
+      }
+
+      // ---- function --------------------------------------------------------
+      if( stringKeyword == "function" )
+      {
+         std::string_view stringFunctionName;
+         std::vector<std::string_view> vectorParameter;
+         std::string stringError;
+         if( parse_function_signature_s(stringRest, stringFunctionName, vectorParameter, stringError) == false )
+         {
+            return { false, "[code::compile_s] function declaration error at line " + std::to_string(iLine) + ": " + stringError };
+         }
+
+         auto is_valid_name_ = [](std::string_view stringName) -> bool
+         {
+            if( stringName.empty() ) return false;
+            char iFirst = stringName.front();
+            bool bValidFirst = ((iFirst >= 'A' && iFirst <= 'Z') || (iFirst >= 'a' && iFirst <= 'z') || iFirst == '_');
+            if( bValidFirst == false ) return false;
+            for( char iCharacter : stringName )
+            {
+               bool bValid = ((iCharacter >= 'A' && iCharacter <= 'Z') ||
+                              (iCharacter >= 'a' && iCharacter <= 'z') ||
+                              (iCharacter >= '0' && iCharacter <= '9') ||
+                              iCharacter == '_');
+               if( bValid == false ) return false;
+            }
+            return true;
+         };
+
+         for( std::string_view stringParameter : vectorParameter )
+         {
+            if( is_valid_name_(stringParameter) == false )
+            {
+               return { false, "[code::compile_s] invalid function parameter at line " + std::to_string(iLine) };
+            }
+         }
+
+         for( const auto& function_ : m_vectorFunction )
+         {
+            if( function_.m_stringName == stringFunctionName )
+            {
+               return { false, "[code::compile_s] duplicate function name '" + std::string(stringFunctionName) + "' at line " + std::to_string(iLine) };
+            }
+         }
+
+         int32_t iFunctionSkipIndex = static_cast<int32_t>(m_vectorStatement.size());
+         m_vectorStatement.emplace_back(statement::eKindFunctionSkip);
+
+         code::script_function function_;
+         function_.m_stringName = stringFunctionName;
+         function_.m_iEntryIndex = static_cast<int32_t>(m_vectorStatement.size());
+         function_.m_vectorParameter = std::move(vectorParameter);
+         m_vectorFunction.push_back(std::move(function_));
+
+         block frame_;
+         frame_.m_eKind = block::eKindFunction;
+         frame_.m_iFunctionIndex = static_cast<int32_t>(m_vectorFunction.size() - 1);
+         frame_.m_iFunctionSkipIndex = iFunctionSkipIndex;
+         vectorBlock.push_back(std::move(frame_));
+         continue;
       }
 
       // ---- begin -----------------------------------------------------------
@@ -526,6 +707,24 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
             for( int32_t iCont : frame_.m_vectorContinue )
                m_vectorStatement[iCont].set_jump(frame_.m_iForStepIndex);
 
+            break;
+         }
+
+         case block::eKindFunction:
+         {
+            // Ensure function has an implicit return at block end.
+            m_vectorStatement.emplace_back(statement::eKindReturn);
+            iHere = static_cast<int32_t>(m_vectorStatement.size());
+
+            if( frame_.m_iFunctionSkipIndex >= 0 )
+            {
+               m_vectorStatement[frame_.m_iFunctionSkipIndex].set_jump(iHere);
+            }
+
+            if( frame_.m_iFunctionIndex >= 0 )
+            {
+               m_vectorFunction[frame_.m_iFunctionIndex].m_iExitIndex = iHere;
+            }
             break;
          }
          } // switch frame kind
@@ -771,6 +970,69 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
          continue;
       }
 
+      // ---- return ----------------------------------------------------------
+      if( stringKeyword == "return" )
+      {
+         if( stringRest.empty() == false )
+         {
+            return { false, "[code::compile_s] return value is not supported at line " + std::to_string(iLine) };
+         }
+
+         bool bInsideFunction = false;
+         for( int32_t i = static_cast<int32_t>(vectorBlock.size()) - 1; i >= 0; --i )
+         {
+            if( vectorBlock[i].m_eKind == block::eKindFunction )
+            {
+               bInsideFunction = true;
+               break;
+            }
+         }
+
+         if( bInsideFunction == false )
+         {
+            return { false, "[code::compile_s] 'return' outside function at line " + std::to_string(iLine) };
+         }
+
+         statement statementReturn(statement::eKindReturn);
+         statementReturn.m_stringSource = stringTrimmed;
+         m_vectorStatement.push_back(std::move(statementReturn));
+         continue;
+      }
+
+      // ---- function call ---------------------------------------------------
+      if( stringKeyword.empty() == false && stringRest.empty() == false && stringRest.front() == '(' )
+      {
+         std::string_view stringFunctionName;
+         std::vector<std::string_view> vectorArgumentExpression;
+         std::string stringError;
+         if( parse_function_signature_s(stringTrimmed, stringFunctionName, vectorArgumentExpression, stringError) )
+         {
+            statement statementCall(statement::eKindFunctionCall);
+            statementCall.m_stringSource = stringTrimmed;
+            statementCall.m_vectorArgumentToken.reserve(vectorArgumentExpression.size());
+
+            for( std::string_view stringExpression : vectorArgumentExpression )
+            {
+               std::vector<token> vectorArgument;
+               auto [bOk, stringCompileError] = compile_expression_s(stringExpression, vectorArgument);
+               if( bOk == false )
+               {
+                  return { false, "[code::compile_s] function call argument error at line " + std::to_string(iLine) + ": " + stringCompileError };
+               }
+               statementCall.m_vectorArgumentToken.push_back(std::move(vectorArgument));
+            }
+
+            int32_t iStatementIndex = static_cast<int32_t>(m_vectorStatement.size());
+            m_vectorStatement.push_back(std::move(statementCall));
+
+            pending_function_call pendingCall_;
+            pendingCall_.m_iStatementIndex = iStatementIndex;
+            pendingCall_.m_stringFunction = stringFunctionName;
+            vectorPendingFunctionCall.push_back(std::move(pendingCall_));
+            continue;
+         }
+      }
+
       // ---- plain expression -----------------------------------------------
       {
          std::vector<token> vectorPostfix;
@@ -792,6 +1054,28 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
    if( vectorBlock.empty() == false )
    {
       return { false, "[code::compile_s] " + std::to_string(vectorBlock.size()) + " unclosed 'begin' block(s)" };
+   }
+
+   // Resolve all function calls to direct jump targets once (fast at execute-time).
+   for( const auto& pendingCall_ : vectorPendingFunctionCall )
+   {
+      int32_t iFunctionIndex = -1;
+      for( size_t u = 0; u < m_vectorFunction.size(); ++u )
+      {
+         if( m_vectorFunction[u].m_stringName == pendingCall_.m_stringFunction )
+         {
+            iFunctionIndex = static_cast<int32_t>(u);
+            break;
+         }
+      }
+
+      if( iFunctionIndex < 0 )
+      {
+         return { false, "[code::compile_s] unknown function '" + std::string(pendingCall_.m_stringFunction) + "'" };
+      }
+
+      statement& statementCall = m_vectorStatement[pendingCall_.m_iStatementIndex];
+      statementCall.m_iJump = iFunctionIndex;
    }
 
    return { true, {} };
@@ -1025,6 +1309,11 @@ std::pair<bool, std::string> code::compile_lua(const char* piszBegin, const char
                m_vectorStatement[iContinue].set_jump(frame_.m_iForStepIndex);
 
             break;
+         }
+
+         case block::eKindFunction:
+         {
+            return { false, "[code::compile_lua] function blocks are only supported in compile() mode" };
          }
          } // switch frame kind
 
@@ -1431,9 +1720,38 @@ std::pair<bool, std::string> code::compile_lua(const char* piszBegin, const char
  */
 std::pair<bool, std::string> code::execute(runtime& runtime_, value* pResult) const
 {
+   struct saved_parameter
+   {
+      std::string m_stringName;
+      bool m_bExisted = false;
+      value::variant_t m_variantOld;
+   };
+
+   struct call_frame
+   {
+      int32_t m_iReturnPC = -1;
+      std::vector<saved_parameter> m_vectorSavedParameter;
+   };
+
    const int32_t iCount = static_cast<int32_t>(m_vectorStatement.size());
    int32_t iPC = 0;
    value valueLast;
+   std::vector<call_frame> vectorCallFrame;
+
+   auto restore_call_frame_ = [&runtime_](call_frame& frame_)
+   {
+      for( const saved_parameter& saved_ : frame_.m_vectorSavedParameter )
+      {
+         if( saved_.m_bExisted )
+         {
+            runtime_.set_variable(saved_.m_stringName, saved_.m_variantOld);
+         }
+         else
+         {
+            runtime_.set_variable(saved_.m_stringName, nullptr);
+         }
+      }
+   };
 
    while( iPC < iCount )
    {
@@ -1497,11 +1815,74 @@ std::pair<bool, std::string> code::execute(runtime& runtime_, value* pResult) co
          break;
       }
 
+      // ## call user-defined function ..........................................
+      case statement::eKindFunctionCall:
+      {
+         int32_t iFunctionIndex = statement_.jump();
+         if( iFunctionIndex < 0 || iFunctionIndex >= static_cast<int32_t>(m_vectorFunction.size()) )
+         {
+            return { false, "[code::execute] invalid function call target" };
+         }
+
+         const script_function& function_ = m_vectorFunction[static_cast<size_t>(iFunctionIndex)];
+         if( statement_.m_vectorArgumentToken.size() != function_.m_vectorParameter.size() )
+         {
+            return { false, "[code::execute] function argument count mismatch for " + std::string(function_.m_stringName) };
+         }
+
+         call_frame frame_;
+         frame_.m_iReturnPC = iPC + 1;
+         frame_.m_vectorSavedParameter.reserve(function_.m_vectorParameter.size());
+
+         for( size_t u = 0; u < function_.m_vectorParameter.size(); ++u )
+         {
+            value valueArgument;
+            auto [bOk, stringError] = token::calculate_s(statement_.m_vectorArgumentToken[u], &valueArgument, runtime_);
+            if( bOk == false )
+            {
+               return { false, "[code::execute] function argument evaluation error: " + stringError };
+            }
+
+            saved_parameter saved_;
+            saved_.m_stringName = std::string(function_.m_vectorParameter[u]);
+            int iIndex = runtime_.find_variable(function_.m_vectorParameter[u]);
+            if( iIndex >= 0 )
+            {
+               saved_.m_bExisted = true;
+               saved_.m_variantOld = runtime_.get_variable(static_cast<size_t>(iIndex));
+            }
+
+            runtime_.set_variable(function_.m_vectorParameter[u], static_cast<value::variant_t&>(valueArgument));
+            frame_.m_vectorSavedParameter.push_back(std::move(saved_));
+         }
+
+         vectorCallFrame.push_back(std::move(frame_));
+         iPC = function_.m_iEntryIndex;
+         break;
+      }
+
+      // ## return from user-defined function ...................................
+      case statement::eKindReturn:
+      {
+         if( vectorCallFrame.empty() )
+         {
+            return { false, "[code::execute] return without active function call" };
+         }
+
+         call_frame frame_ = std::move(vectorCallFrame.back());
+         vectorCallFrame.pop_back();
+         restore_call_frame_(frame_);
+
+         iPC = frame_.m_iReturnPC;
+         break;
+      }
+
       // ## unconditional jumps (else-skip, loop-back, break, continue) .......
       case statement::eKindElseJump:
       case statement::eKindLoopBack:
       case statement::eKindBreak:
       case statement::eKindContinue:
+      case statement::eKindFunctionSkip:
       {
          if( statement_.jump() < 0 ) { return { false, "[code::execute] unpatched unconditional jump" }; }
          iPC = statement_.jump();
@@ -1541,6 +1922,9 @@ std::string code::dump() const
       "ForStep    ",
       "Break      ",
       "Continue   ",
+      "FuncCall   ",
+      "Return     ",
+      "FuncSkip   ",
    };
 
    std::string stringOut;
