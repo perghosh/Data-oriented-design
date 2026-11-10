@@ -268,7 +268,7 @@ public:
 
    void set_first( unsigned uFirst ) { m_uFirstToken = uFirst; }
    void set_flag( unsigned uSet, unsigned uClear ) noexcept { m_uFlags |= uSet; m_uFlags &= ~uClear;  }
-   bool is_flag( enumFlag eFlag ) const noexcept { return (m_uFlags & (unsigned)eFlag) == eFlag; }                                                                                            
+   bool is_flag( enumFlag eFlag ) const noexcept { return (m_uFlags & (unsigned)eFlag) == (unsigned)eFlag; }
    /// if this options section is the one passed to application
    bool is_active() const { return is_flag( eFlagActive ); }
    /// If parent flag is set then rules set for parent is valid for sub options

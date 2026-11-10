@@ -28,6 +28,7 @@
  * integer write.  The inner loop is a plain `switch`.
  */
 
+#include <array>
 #include <cstring>
 #include <stack>
 #include <stdexcept>
@@ -44,272 +45,306 @@ _GD_EXPRESSION_BEGIN
 
 namespace {
 
-// Character classification bits
-constexpr uint8_t WHITESPACE_BIT       = 0x01;  // space, tab, \r, \f, \v, ;
-constexpr uint8_t STRING_DELIMITER_BIT = 0x02;  // ' and "
-constexpr uint8_t STRING_NEWLINE_BIT   = 0x04;  // \n and ;
+   // Character classification bits
+   constexpr uint8_t WHITESPACE_BIT                = 0x01;  // space, tab, \r, \f, \v, ;
+   constexpr uint8_t STRING_DELIMITER_BIT          = 0x02;  // ' and "
+   constexpr uint8_t STRING_NEWLINE_BIT            = 0x04;  // \n and ;
+   constexpr uint8_t STRING_IDENTIFIER_START_BIT   = 0x08;  // A-Z a-z _
+   constexpr uint8_t STRING_IDENTIFIER_BIT         = 0x10;  // A-Z a-z _ 0-9
 
-// 256-byte lookup table (fits comfortably in L1 cache)
-constexpr uint8_t piCharClass_s[256] =
-{
-    // 0x00 - 0x1F  (control characters)
-    0,0,0,0,0,0,0,0,
-    0, WHITESPACE_BIT, STRING_NEWLINE_BIT, WHITESPACE_BIT, WHITESPACE_BIT, WHITESPACE_BIT, 0, 0,   // 8:\b  9:\t  10:\n  11:\v  12:\f  13:\r
-
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,
-
-    // 0x20 - 0x7E  (printable ASCII)
-    WHITESPACE_BIT, 0, STRING_DELIMITER_BIT, 0,0,0,0, STRING_DELIMITER_BIT,   // 32:' '   34:'"'   39:'\''
-    0,0,0,0,0,0,0,0,     // 40-47: ( ) * + , - . /
-
-    0,0,0,0,0,0,0,0,     // 48-55: 0-7
-    0,0,0, STRING_NEWLINE_BIT, 0,0,0,0,     // 56-63: 8 9 : ; < = > ?     ← ; has STRING_NEWLINE_BIT
-
-    0,0,0,0,0,0,0,0,     // 64-71: @ A-G
-    0,0,0,0,0,0,0,0,     // 72-79: H-O
-    0,0,0,0,0,0,0,0,     // 80-87: P-W
-    0,0,0,0,0,0,0,0,     // 88-95: X-Z [ \ ] ^ _
-
-    0,0,0,0,0,0,0,0,     // 96-103: ` a-g
-    0,0,0,0,0,0,0,0,     // 104-111: h-o
-    0,0,0,0,0,0,0,0,     // 112-119: p-w
-    0,0,0,0,0,0,0,0,     // 120-127: x-z { | } ~ DEL
-
-    // 0x80 - 0xFF  (extended / non-ASCII) → treat as non-whitespace, non-delimiter
-    0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0
-};
-
-[[nodiscard]] inline bool is_whitespace_(char c) noexcept
-{
-    return (piCharClass_s[static_cast<unsigned char>(c)] & WHITESPACE_BIT) != 0;
-}
-
-[[nodiscard]] inline constexpr bool is_newline_(char c) noexcept
-{
-    return (piCharClass_s[static_cast<unsigned char>(c)] & STRING_NEWLINE_BIT) != 0;
-}
-
-[[nodiscard]] inline bool is_string_delimiter_(char c) noexcept
-{
-    return (piCharClass_s[static_cast<unsigned char>(c)] & STRING_DELIMITER_BIT) != 0;
-}
-
-static_assert( is_newline_(';') == true );
-
-/// Split a for header "init, condition, step" at top-level commas (not inside strings or parentheses).
-/// @return number of parts found (3 is valid), parts are trimmed
-inline size_t split_for_header_s( std::string_view stringHeader, std::string_view* pstringPart )
-{
-   size_t uCount = 0;
-   size_t uStart = 0;
-   int iDepth = 0;
-   for( size_t u = 0; u <= stringHeader.size(); ++u )
+   // 256-byte lookup table (fits comfortably in L1 cache)
+   constexpr std::array<uint8_t, 256> arrayRawCharClass_s =
    {
-      bool bEnd = ( u == stringHeader.size() );
-      if( bEnd == false )
+      // 0x00 - 0x1F  (control characters)
+      0,0,0,0,0,0,0,0,
+      0, WHITESPACE_BIT, STRING_NEWLINE_BIT, WHITESPACE_BIT, WHITESPACE_BIT, WHITESPACE_BIT, 0, 0,   // 8:\b  9:\t  10:\n  11:\v  12:\f  13:\r
+
+      0,0,0,0,0,0,0,0,
+      0,0,0,0,0,0,0,0,
+
+      // 0x20 - 0x7E  (printable ASCII)
+      WHITESPACE_BIT, 0, STRING_DELIMITER_BIT, 0,0,0,0, STRING_DELIMITER_BIT,  // 32:' '   34:'"'   39:'\''
+      0,0,0,0,0,0,0,0,                                                         // 40-47: ( ) * + , - . /
+
+      0,0,0,0,0,0,0,0,                                                         // 48-55: 0-7
+      0,0,0, STRING_NEWLINE_BIT, 0,0,0,0,                                      // 56-63: 8 9 : ; < = > ?     ← ; has STRING_NEWLINE_BIT
+
+      0,0,0,0,0,0,0,0,                                                         // 64-71: @ A-G
+      0,0,0,0,0,0,0,0,                                                         // 72-79: H-O
+      0,0,0,0,0,0,0,0,                                                         // 80-87: P-W
+      0,0,0,0,0,0,0,0,                                                         // 88-95: X-Z [ \ ] ^ _
+
+      0,0,0,0,0,0,0,0,                                                         // 96-103: ` a-g
+      0,0,0,0,0,0,0,0,                                                         // 104-111: h-o
+      0,0,0,0,0,0,0,0,                                                         // 112-119: p-w
+      0,0,0,0,0,0,0,0,                                                         // 120-127: x-z { | } ~ DEL
+
+      // 0x80 - 0xFF  (extended / non-ASCII) → treat as non-whitespace, non-delimiter
+      0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
+      0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
+      0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
+      0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
+      0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
+      0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
+      0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,
+      0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0
+   };
+
+   consteval void fill_(std::array<uint8_t, 256>& array_) noexcept
+   {
+      auto mark_ = [&](unsigned uLow, unsigned uHigh, uint8_t uFlags) noexcept {
+         for (unsigned u = uLow; u <= uHigh; ++u) array_[u] |= uFlags;
+      };
+
+      mark_('A', 'Z', (STRING_IDENTIFIER_START_BIT| STRING_IDENTIFIER_BIT));
+      mark_('a', 'z', (STRING_IDENTIFIER_START_BIT| STRING_IDENTIFIER_BIT));
+      mark_('_', '_', (STRING_IDENTIFIER_START_BIT| STRING_IDENTIFIER_BIT));
+      mark_('0', '9', STRING_IDENTIFIER_BIT);
+   }
+
+   consteval std::array<uint8_t, 256> build_() noexcept
+   {
+      auto array_ = arrayRawCharClass_s;
+      fill_(array_);
+      return array_;
+   }
+
+   /// Fill the lookup table with identifier bits
+   constexpr std::array<uint8_t, 256> arrayCharClass_s = build_();
+
+   [[nodiscard]] inline bool is_whitespace(char c) noexcept
+   {
+      return (arrayCharClass_s[static_cast<unsigned char>(c)] & WHITESPACE_BIT) != 0;
+   }
+
+   [[nodiscard]] inline constexpr bool is_newline(char c) noexcept
+   {
+      return (arrayCharClass_s[static_cast<unsigned char>(c)] & STRING_NEWLINE_BIT) != 0;
+   }
+
+   [[nodiscard]] inline bool is_string_delimiter(char c) noexcept
+   {
+      return (arrayCharClass_s[static_cast<unsigned char>(c)] & STRING_DELIMITER_BIT) != 0;
+   }
+
+   [[nodiscard]] inline constexpr bool is_identifier_start(char c) noexcept
+   {
+      return (arrayCharClass_s[static_cast<unsigned char>(c)] & STRING_IDENTIFIER_START_BIT) != 0;
+   }
+
+   [[nodiscard]] inline constexpr bool is_identifier(char c) noexcept
+   {
+      return (arrayCharClass_s[static_cast<unsigned char>(c)] & STRING_IDENTIFIER_BIT) != 0;
+   }
+
+   static_assert( is_newline(';') == true );
+
+   /// Split a for header "init, condition, step" at top-level commas (not inside strings or parentheses).
+   /// @return number of parts found (3 is valid), parts are trimmed
+   inline size_t split_for_header_s( std::string_view stringHeader, std::string_view* pstringPart )
+   {
+      size_t uCount = 0;
+      size_t uStart = 0;
+      int iDepth = 0;
+      for( size_t u = 0; u <= stringHeader.size(); ++u )
       {
-         char c = stringHeader[u];
-         if( is_string_delimiter_(c) )
+         bool bEnd = ( u == stringHeader.size() );
+         if( bEnd == false )
          {
-            ++u;
-            while( u < stringHeader.size() && stringHeader[u] != c ) { ++u; }
-            continue;
+            char c = stringHeader[u];
+            if( is_string_delimiter(c) )
+            {
+               ++u;
+               while( u < stringHeader.size() && stringHeader[u] != c ) { ++u; }
+               continue;
+            }
+            if( c == '(' ) { ++iDepth; continue; }
+            if( c == ')' ) { --iDepth; continue; }
          }
-         if( c == '(' ) { ++iDepth; continue; }
-         if( c == ')' ) { --iDepth; continue; }
-      }
 
-      if( bEnd == true || ( (stringHeader[u] == ',' || stringHeader[u] == ';') && iDepth == 0 ) )
-      {
-         if( uCount < 3 ) { pstringPart[uCount] = stringHeader.substr(uStart, u - uStart); }
-         ++uCount;
-         uStart = u + 1;
-      }
-   }
-   return uCount;
-}
-
-/// Split comma-separated argument list at top-level commas (ignores nested parens and string literals).
-inline void split_argument_list_s(std::string_view stringArgument, std::vector<std::string_view>& vectorPart)
-{
-   vectorPart.clear();
-   size_t uStart = 0;
-   int iDepth = 0;
-
-   for( size_t u = 0; u <= stringArgument.size(); ++u )
-   {
-      bool bEnd = (u == stringArgument.size());
-      if( bEnd == false )
-      {
-         char iCharacter = stringArgument[u];
-         if( is_string_delimiter_(iCharacter) )
+         if( bEnd == true || ( (stringHeader[u] == ',' || stringHeader[u] == ';') && iDepth == 0 ) )
          {
-            ++u;
-            while( u < stringArgument.size() && stringArgument[u] != iCharacter ) { ++u; }
-            continue;
+            if( uCount < 3 ) { pstringPart[uCount] = stringHeader.substr(uStart, u - uStart); }
+            ++uCount;
+            uStart = u + 1;
+         }
+      }
+      return uCount;
+   }
+
+   /// Split comma-separated argument list at top-level commas (ignores nested parens and string literals).
+   inline void split_argument_list_s(std::string_view stringArgument, std::vector<std::string_view>& vectorPart)
+   {
+      vectorPart.clear();
+      size_t uStart = 0;
+      int iDepth = 0;
+
+      for( size_t u = 0; u <= stringArgument.size(); ++u )
+      {
+         bool bEnd = (u == stringArgument.size());
+         if( bEnd == false )
+         {
+            char iCharacter = stringArgument[u];
+            if( is_string_delimiter(iCharacter) )
+            {
+               ++u;
+               while( u < stringArgument.size() && stringArgument[u] != iCharacter ) { ++u; }
+               continue;
+            }
+
+            if( iCharacter == '(' ) { ++iDepth; continue; }
+            if( iCharacter == ')' ) { --iDepth; continue; }
          }
 
-         if( iCharacter == '(' ) { ++iDepth; continue; }
-         if( iCharacter == ')' ) { --iDepth; continue; }
+         if( bEnd == true || (stringArgument[u] == ',' && iDepth == 0) )
+         {
+            vectorPart.push_back(code::trim_s(stringArgument.substr(uStart, u - uStart)));
+            uStart = u + 1;
+         }
       }
+   }
 
-      if( bEnd == true || (stringArgument[u] == ',' && iDepth == 0) )
+   /// Parse "name(arg0, arg1, ...)" from function declaration rest or call expression.
+   inline bool parse_function_signature_s(std::string_view stringSignature,
+                                          std::string_view& stringName,
+                                          std::vector<std::string_view>& vectorArgument,
+                                          std::string& stringError)
+   {
+      stringName = {};
+      vectorArgument.clear();
+
+      stringSignature = code::trim_s(stringSignature);
+      if( stringSignature.empty() )
       {
-         vectorPart.push_back(code::trim_s(stringArgument.substr(uStart, u - uStart)));
-         uStart = u + 1;
+         stringError = "empty function signature";
+         return false;
       }
-   }
-}
 
-/// Parse "name(arg0, arg1, ...)" from function declaration rest or call expression.
-inline bool parse_function_signature_s(std::string_view stringSignature,
-                                       std::string_view& stringName,
-                                       std::vector<std::string_view>& vectorArgument,
-                                       std::string& stringError)
-{
-   stringName = {};
-   vectorArgument.clear();
+      size_t uOpen = stringSignature.find('(');
+      size_t uClose = stringSignature.rfind(')');
+      if( uOpen == std::string_view::npos || uClose == std::string_view::npos || uClose < uOpen )
+      {
+         stringError = "function signature must use name(args)";
+         return false;
+      }
 
-   stringSignature = code::trim_s(stringSignature);
-   if( stringSignature.empty() )
-   {
-      stringError = "empty function signature";
-      return false;
-   }
+      if( code::trim_s(stringSignature.substr(uClose + 1)).empty() == false )
+      {
+         stringError = "unexpected trailing characters after ')'";
+         return false;
+      }
 
-   size_t uOpen = stringSignature.find('(');
-   size_t uClose = stringSignature.rfind(')');
-   if( uOpen == std::string_view::npos || uClose == std::string_view::npos || uClose < uOpen )
-   {
-      stringError = "function signature must use name(args)";
-      return false;
-   }
+      stringName = code::trim_s(stringSignature.substr(0, uOpen));
+      if( stringName.empty() )
+      {
+         stringError = "missing function name";
+         return false;
+      }
 
-   if( code::trim_s(stringSignature.substr(uClose + 1)).empty() == false )
-   {
-      stringError = "unexpected trailing characters after ')'";
-      return false;
-   }
-
-   stringName = code::trim_s(stringSignature.substr(0, uOpen));
-   if( stringName.empty() )
-   {
-      stringError = "missing function name";
-      return false;
-   }
-
-   if( (stringName.front() < 'A' || stringName.front() > 'Z') &&
-       (stringName.front() < 'a' || stringName.front() > 'z') &&
-       stringName.front() != '_' )
-   {
-      stringError = "invalid function name";
-      return false;
-   }
-
-   for( char iCharacter : stringName )
-   {
-      bool bValid = ((iCharacter >= 'A' && iCharacter <= 'Z') ||
-                     (iCharacter >= 'a' && iCharacter <= 'z') ||
-                     (iCharacter >= '0' && iCharacter <= '9') ||
-                     iCharacter == '_');
-      if( bValid == false )
+      if( (stringName.front() < 'A' || stringName.front() > 'Z') &&
+          (stringName.front() < 'a' || stringName.front() > 'z') &&
+          stringName.front() != '_' )
       {
          stringError = "invalid function name";
          return false;
       }
-   }
 
-   std::string_view stringArgument = code::trim_s(stringSignature.substr(uOpen + 1, uClose - uOpen - 1));
-   if( stringArgument.empty() == false )
-   {
-      split_argument_list_s(stringArgument, vectorArgument);
-      for( std::string_view stringItem : vectorArgument )
+      for( char iCharacter : stringName )
       {
-         if( stringItem.empty() )
+         bool bValid = ((iCharacter >= 'A' && iCharacter <= 'Z') ||
+                        (iCharacter >= 'a' && iCharacter <= 'z') ||
+                        (iCharacter >= '0' && iCharacter <= '9') ||
+                        iCharacter == '_');
+         if( bValid == false )
          {
-            stringError = "empty argument in function signature";
+            stringError = "invalid function name";
             return false;
          }
       }
+
+      std::string_view stringArgument = code::trim_s(stringSignature.substr(uOpen + 1, uClose - uOpen - 1));
+      if( stringArgument.empty() == false )
+      {
+         split_argument_list_s(stringArgument, vectorArgument);
+         for( std::string_view stringItem : vectorArgument )
+         {
+            if( stringItem.empty() )
+            {
+               stringError = "empty argument in function signature";
+               return false;
+            }
+         }
+      }
+
+      return true;
    }
 
-   return true;
-}
-
-/// Expand a bare step value (`for i = 1, i < 10, 1`) into postfix `i = i + 1`.
-/// Loop variable is taken from the first token in init, operator names are static so no text is allocated.
-inline void expand_for_step_s( const std::vector<token>& vectorInitialize, std::vector<token>& vectorStep )
-{
-   if( vectorStep.size() != 1 || vectorStep[0].get_token_type() != eTokenTypeValue ) { return; }
-   if( vectorInitialize.empty() == true || vectorInitialize[0].get_token_type() != eTokenTypeVariable ) { return; }
-
-   token tokenVariable( eTokenTypeVariable, vectorInitialize[0].get_name() );
-   token tokenAssign( tokenVariable );
-   tokenAssign.set_assign();
-   token tokenValue( vectorStep[0] );
-
-   vectorStep.clear();
-   vectorStep.push_back( tokenAssign );
-   vectorStep.push_back( tokenVariable );
-   vectorStep.push_back( tokenValue );
-   vectorStep.emplace_back( eTokenTypeOperator, token::operator_s( token::eOperatorAdd ) );
-   vectorStep.emplace_back( eTokenTypeOperator, token::operator_s( token::eOperatorAssign ) );
-}
-
-/**
- * @brief Internal block-stack entry used during compilation.
- *
- * One entry is pushed for every `begin` keyword encountered.  When the
- * matching `end` is found the entry is used to backpatch all pending jumps
- * that need to know where the block ends.
- */
-struct block
-{
-   enum enumKind : uint8_t
+   /// Expand a bare step value (`for i = 1, i < 10, 1`) into postfix `i = i + 1`.
+   /// Loop variable is taken from the first token in init, operator names are static so no text is allocated.
+   inline void expand_for_step_s( const std::vector<token>& vectorInitialize, std::vector<token>& vectorStep )
    {
-      eKindIf       = 0, ///< if / else-if block
-      eKindElse     = 1, ///< else block
-      eKindWhile    = 2, ///< while block
-      eKindFor      = 3, ///< for block
-      eKindFunction = 4, ///< function block
+      if( vectorStep.size() != 1 || vectorStep[0].get_token_type() != eTokenTypeValue ) { return; }
+      if( vectorInitialize.empty() == true || vectorInitialize[0].get_token_type() != eTokenTypeVariable ) { return; }
+
+      token tokenVariable( eTokenTypeVariable, vectorInitialize[0].get_name() );
+      token tokenAssign( tokenVariable );
+      tokenAssign.set_assign();
+      token tokenValue( vectorStep[0] );
+
+      vectorStep.clear();
+      vectorStep.push_back( tokenAssign );
+      vectorStep.push_back( tokenVariable );
+      vectorStep.push_back( tokenValue );
+      vectorStep.emplace_back( eTokenTypeOperator, token::operator_s( token::eOperatorAdd ) );
+      vectorStep.emplace_back( eTokenTypeOperator, token::operator_s( token::eOperatorAssign ) );
+   }
+
+   /**
+    * @brief Internal block-stack entry used during compilation.
+    *
+    * One entry is pushed for every `begin` keyword encountered.  When the
+    * matching `end` is found the entry is used to backpatch all pending jumps
+    * that need to know where the block ends.
+    */
+   struct block
+   {
+      enum enumKind : uint8_t
+      {
+         eKindIf       = 0, ///< if / else-if block
+         eKindElse     = 1, ///< else block
+         eKindWhile    = 2, ///< while block
+         eKindFor      = 3, ///< for block
+         eKindFunction = 4, ///< function block
+      };
+
+      enumKind               m_eKind;
+
+      /// index of the eKindIf / eKindWhile / eKindForCondition statement whose
+      /// m_iJump should point past the block
+      int32_t                m_iCondIndex = -1;
+
+      /// index of the eKindElseJump statement at the end of an if-body
+      /// (needs to be patched to jump past the else-body too)
+      int32_t                m_iElseJumpIndex = -1;
+
+      /// for-loop: index of the eKindForCondition statement (continue target)
+      int32_t                m_iForCondIndex  = -1;
+
+      /// for-loop: index of the eKindForStep statement (loop-back target)
+      int32_t                m_iForStepIndex  = -1;
+
+      /// function: index of function metadata inside code::m_vectorFunction
+      int32_t                m_iFunctionIndex = -1;
+
+      /// function: index of eKindFunctionSkip statement to patch on `end`
+      int32_t                m_iFunctionSkipIndex = -1;
+
+      /// loop only: list of eKindBreak statement indices waiting to be patched
+      std::vector<int32_t>   m_vectorBreak;
+
+      /// loop only: list of eKindContinue statement indices waiting to be patched
+      std::vector<int32_t>   m_vectorContinue;
    };
-
-   enumKind               m_eKind;
-
-   /// index of the eKindIf / eKindWhile / eKindForCondition statement whose
-   /// m_iJump should point past the block
-   int32_t                m_iCondIndex = -1;
-
-   /// index of the eKindElseJump statement at the end of an if-body
-   /// (needs to be patched to jump past the else-body too)
-   int32_t                m_iElseJumpIndex = -1;
-
-   /// for-loop: index of the eKindForCondition statement (continue target)
-   int32_t                m_iForCondIndex  = -1;
-
-   /// for-loop: index of the eKindForStep statement (loop-back target)
-   int32_t                m_iForStepIndex  = -1;
-
-   /// function: index of function metadata inside code::m_vectorFunction
-   int32_t                m_iFunctionIndex = -1;
-
-   /// function: index of eKindFunctionSkip statement to patch on `end`
-   int32_t                m_iFunctionSkipIndex = -1;
-
-   /// loop only: list of eKindBreak statement indices waiting to be patched
-   std::vector<int32_t>   m_vectorBreak;
-
-   /// loop only: list of eKindContinue statement indices waiting to be patched
-   std::vector<int32_t>   m_vectorContinue;
-};
 
 } // anonymous namespace
 
@@ -357,7 +392,7 @@ std::string_view code::scan_line_end_s(const char* piszBegin, const char* piszEn
       char c = *pisz_;
 
       if( c == '\n' || c == ';' )                   { break; }
-      if( is_string_delimiter_(c) )                  { pisz_ = scan_string_end_s(pisz_, piszEnd); continue; }
+      if( is_string_delimiter(c) )                  { pisz_ = scan_string_end_s(pisz_, piszEnd); continue; }
 
       ++pisz_;
    }
@@ -372,10 +407,10 @@ std::string_view code::scan_line_end_s(const char* piszBegin, const char* piszEn
  */
 std::string_view code::trim_s(std::string_view stringLine)
 {
-   while( stringLine.empty() == false && is_whitespace_(stringLine.front()) )
+   while( stringLine.empty() == false && is_whitespace(stringLine.front()) )
       stringLine.remove_prefix(1);
 
-   while( stringLine.empty() == false && is_whitespace_(stringLine.back()) )
+   while( stringLine.empty() == false && is_whitespace(stringLine.back()) )
       stringLine.remove_suffix(1);
 
    return stringLine;
@@ -396,7 +431,7 @@ bool code::starts_with_keyword_s(std::string_view stringLine, std::string_view s
    if( stringLine.size() == stringKeyword.size() ) { return true; } // exact match
 
    char cNext = stringLine[stringKeyword.size()];
-   return is_whitespace_(cNext) || cNext == '(' || cNext == ';';
+   return is_whitespace(cNext) || cNext == '(' || cNext == ';';
 }
 
 /**
@@ -520,7 +555,7 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
    {
       // ### Skip blank / whitespace-only lines and move past terminator ------
 
-      while( piszPosition < piszEnd && is_whitespace_(*piszPosition) ) { ++piszPosition; } // skip leading horizontal whitespace on a line
+      while( piszPosition < piszEnd && is_whitespace(*piszPosition) ) { ++piszPosition; } // skip leading horizontal whitespace on a line
 
       if( piszPosition >= piszEnd ) { break; }
 
@@ -1109,7 +1144,7 @@ std::string code::lua_translate_operators_s(std::string_view stringExpression)
       char iCharacter = *pisz_;
 
       // ## skip string literals verbatim so we never alter their content
-      if( is_string_delimiter_(iCharacter) )
+      if( is_string_delimiter(iCharacter) )
       {
          const char* piszAfter = scan_string_end_s(pisz_, piszEnd_);
          stringResult.append(pisz_, static_cast<size_t>(piszAfter - pisz_));
@@ -1207,12 +1242,12 @@ std::pair<bool, std::string> code::compile_lua(const char* piszBegin, const char
    {
       // ### Skip leading horizontal whitespace on a line --------------------
 
-      while( piszPosition < piszEnd && is_whitespace_(*piszPosition) ) { ++piszPosition; }
+      while( piszPosition < piszEnd && is_whitespace(*piszPosition) ) { ++piszPosition; }
 
       if( piszPosition >= piszEnd ) { break; }
 
       // blank line
-      if( is_newline_(*piszPosition) ) 
+      if( is_newline(*piszPosition) ) 
       { 
          if( *piszPosition == '\n' ) { ++iLine; }
          ++piszPosition; 
@@ -1470,8 +1505,8 @@ std::pair<bool, std::string> code::compile_lua(const char* piszBegin, const char
             if( uDoPos != std::string_view::npos )
             {
                // only strip if it is a standalone word
-               bool bWordBoundaryBefore = (uDoPos == 0 || is_whitespace_(stringCondition[uDoPos - 1]));
-               bool bWordBoundaryAfter  = ((uDoPos + 2) >= stringCondition.size() || is_whitespace_(stringCondition[uDoPos + 2]));
+               bool bWordBoundaryBefore = (uDoPos == 0 || is_whitespace(stringCondition[uDoPos - 1]));
+               bool bWordBoundaryAfter  = ((uDoPos + 2) >= stringCondition.size() || is_whitespace(stringCondition[uDoPos + 2]));
                if( bWordBoundaryBefore && bWordBoundaryAfter )
                   stringCondition = trim_s(stringCondition.substr(0, uDoPos));
             }
@@ -1574,8 +1609,8 @@ std::pair<bool, std::string> code::compile_lua(const char* piszBegin, const char
             size_t uDoPos = stringForHeader.rfind("do");
             if( uDoPos != std::string_view::npos )
             {
-               bool bWordBoundaryBefore = (uDoPos == 0 || is_whitespace_(stringForHeader[uDoPos - 1]));
-               bool bWordBoundaryAfter  = ((uDoPos + 2) >= stringForHeader.size() || is_whitespace_(stringForHeader[uDoPos + 2]));
+               bool bWordBoundaryBefore = (uDoPos == 0 || is_whitespace(stringForHeader[uDoPos - 1]));
+               bool bWordBoundaryAfter  = ((uDoPos + 2) >= stringForHeader.size() || is_whitespace(stringForHeader[uDoPos + 2]));
                if( bWordBoundaryBefore && bWordBoundaryAfter )
                   stringForHeader = trim_s(stringForHeader.substr(0, uDoPos));
             }
