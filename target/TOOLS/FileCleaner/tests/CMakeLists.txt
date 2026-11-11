@@ -72,7 +72,8 @@ endif()
 set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "TEST_ExpressionBenchmark")
-   add_executable(${TEST_NAME_} ${SOURCE_PLAYGROUND_} ${GD_SOURCES_ALL} ${external_pugixml} ${external_sqlite} ${external_catch2} 
+   add_executable(${TEST_NAME_} ${SOURCE_PLAYGROUND_} ${GD_SOURCES_ALL}
+      ${external_pugixml} ${external_sqlite} ${external_lua} ${external_catch2}
       "${TARGET_SOURCE_FILES_}"
       "${TARGET_TEST_}"
       "${TEST_NAME_}.cpp"
@@ -88,9 +89,6 @@ if( USE_TEST_ )
       target_compile_options(${TEST_NAME_} PRIVATE $<$<CONFIG:Release>:/O2> $<$<CONFIG:Release>:/GL> )
       target_link_options(${TEST_NAME_} PRIVATE $<$<CONFIG:Release>:/LTCG> )
    endif()
-
-
-
 endif()
 
 set( USE_TEST_ ON )
