@@ -391,11 +391,11 @@ struct cell_reference
 };
 
 namespace literals {
-   inline cell_reference operator "" _a1( const char* pbszCellReference, std::size_t uLength ) noexcept {
+   inline cell_reference operator ""_a1( const char* pbszCellReference, std::size_t uLength ) noexcept {
       return cell_reference::parse_a1_s( std::string_view{ pbszCellReference, uLength } );
    }
 
-   inline cell_reference operator "" _r1c1( const char* pbszCellReference, std::size_t uLength ) noexcept {
+   inline cell_reference operator ""_r1c1( const char* pbszCellReference, std::size_t uLength ) noexcept {
       return cell_reference::parse_r1c1_s( std::string_view{ pbszCellReference, uLength } );
    }
 }
