@@ -69,6 +69,29 @@ if( USE_TEST_ )
    target_compile_definitions(${TEST_NAME_} PRIVATE GD_DATABASE_SQLITE_USE)
 endif()
 
+set( USE_TEST_ ON )
+if( USE_TEST_ )
+   set(TEST_NAME_ "TEST_ExpressionBenchmark")
+   add_executable(${TEST_NAME_} ${SOURCE_PLAYGROUND_} ${GD_SOURCES_ALL} ${external_pugixml} ${external_sqlite} ${external_catch2} 
+      "${TARGET_SOURCE_FILES_}"
+      "${TARGET_TEST_}"
+      "${TEST_NAME_}.cpp"
+      "main.cpp"
+   )
+   target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
+   target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/source)
+   target_compile_definitions(${TEST_NAME_} PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN _CRT_SECURE_NO_WARNINGS)
+   target_compile_definitions(${TEST_NAME_} PRIVATE GD_DATABASE_SQLITE_USE)
+
+
+   if(MSVC)
+      target_compile_options(${TEST_NAME_} PRIVATE $<$<CONFIG:Release>:/O2> $<$<CONFIG:Release>:/GL> )
+      target_link_options(${TEST_NAME_} PRIVATE $<$<CONFIG:Release>:/LTCG> )
+   endif()
+
+
+
+endif()
 
 set( USE_TEST_ ON )
 if( USE_TEST_ )

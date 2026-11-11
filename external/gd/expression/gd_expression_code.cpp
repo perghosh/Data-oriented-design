@@ -112,29 +112,29 @@ namespace {
    /// Fill the lookup table with identifier bits
    constexpr std::array<uint8_t, 256> arrayCharClass_s = build_();
 
-   [[nodiscard]] inline bool is_whitespace(char c) noexcept
+   [[nodiscard]] inline bool is_whitespace(char iChar) noexcept
    {
-      return (arrayCharClass_s[static_cast<unsigned char>(c)] & WHITESPACE_BIT) != 0;
+      return (arrayCharClass_s[static_cast<unsigned char>(iChar)] & WHITESPACE_BIT) != 0;
    }
 
-   [[nodiscard]] inline constexpr bool is_newline(char c) noexcept
+   [[nodiscard]] inline constexpr bool is_newline(char iChar) noexcept
    {
-      return (arrayCharClass_s[static_cast<unsigned char>(c)] & STRING_NEWLINE_BIT) != 0;
+      return (arrayCharClass_s[static_cast<unsigned char>(iChar)] & STRING_NEWLINE_BIT) != 0;
    }
 
-   [[nodiscard]] inline bool is_string_delimiter(char c) noexcept
+   [[nodiscard]] inline bool is_string_delimiter(char iChar) noexcept
    {
-      return (arrayCharClass_s[static_cast<unsigned char>(c)] & STRING_DELIMITER_BIT) != 0;
+      return (arrayCharClass_s[static_cast<unsigned char>(iChar)] & STRING_DELIMITER_BIT) != 0;
    }
 
-   [[nodiscard]] inline constexpr bool is_identifier_start(char c) noexcept
+   [[nodiscard]] inline constexpr bool is_identifier_start(char iChar) noexcept
    {
-      return (arrayCharClass_s[static_cast<unsigned char>(c)] & STRING_IDENTIFIER_START_BIT) != 0;
+      return (arrayCharClass_s[static_cast<unsigned char>(iChar)] & STRING_IDENTIFIER_START_BIT) != 0;
    }
 
-   [[nodiscard]] inline constexpr bool is_identifier(char c) noexcept
+   [[nodiscard]] inline constexpr bool is_identifier(char iChar) noexcept
    {
-      return (arrayCharClass_s[static_cast<unsigned char>(c)] & STRING_IDENTIFIER_BIT) != 0;
+      return (arrayCharClass_s[static_cast<unsigned char>(iChar)] & STRING_IDENTIFIER_BIT) != 0;
    }
 
    static_assert( is_newline(';') == true );
@@ -371,7 +371,7 @@ const char* code::scan_string_end_s(const char* piszBegin, const char* piszEnd)
    return piszAfter != nullptr ? piszAfter : piszEnd;
 }
 
-/**
+/** ------------------------------------------------------------------------- scan_line_end_s
  * @brief Find the end of one logical line in the source text.
  *
  * A line ends at `\n`, `;`, or `piszEnd`.  String literals are stepped over
@@ -382,17 +382,16 @@ const char* code::scan_string_end_s(const char* piszBegin, const char* piszEnd)
  * @param ppiszLineEnd  (out) pointer to the terminator char (`\n`, `;`, or piszEnd)
  * @return string_view covering the line content, NOT including the terminator
  */
-std::string_view code::scan_line_end_s(const char* piszBegin, const char* piszEnd,
-                                       const char** ppiszLineEnd)
+std::string_view code::scan_line_end_s(const char* piszBegin, const char* piszEnd, const char** ppiszLineEnd)
 {
    const char* pisz_ = piszBegin;
 
    while( pisz_ < piszEnd )
    {
-      char c = *pisz_;
+      char iChar = *pisz_;
 
-      if( c == '\n' || c == ';' )                   { break; }
-      if( is_string_delimiter(c) )                  { pisz_ = scan_string_end_s(pisz_, piszEnd); continue; }
+      if(is_newline(iChar) == true )           { break; }
+      if( is_string_delimiter(iChar) == true ) { pisz_ = scan_string_end_s(pisz_, piszEnd); continue; }
 
       ++pisz_;
    }
@@ -446,16 +445,13 @@ bool code::starts_with_keyword_s(std::string_view stringLine, std::string_view s
  */
 std::pair<std::string_view, std::string_view> code::split_keyword_s(std::string_view stringLine)
 {
-   if( stringLine.empty() || (stringLine[0] < 'a' || stringLine[0] > 'z') )
-   {
-      return { std::string_view{}, stringLine };
-   }
+   if( stringLine.empty() || is_identifier_start(stringLine[0]) == false ) { return { std::string_view{}, stringLine }; }
 
    size_t uEnd = 0;
    while( uEnd < stringLine.size() )
    {
-      char c = stringLine[uEnd];
-      if( !( (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' ) ) break;
+      char iChar = stringLine[uEnd];
+      if( is_identifier(iChar) == false ) break;
       uEnd++;
    }
 
@@ -844,10 +840,7 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
       // ---- while -----------------------------------------------------------
       if( stringKeyword == "while" )
       {
-         if( stringRest.empty() )
-         {
-            return { false, "[code::compile_s] 'while' without condition at line " + std::to_string(iLine) };
-         }
+         if( stringRest.empty() ) { return { false, "[code::compile_s] 'while' without condition at line " + std::to_string(iLine) }; }
 
          // Compile condition
          std::vector<token> vectorCond;
