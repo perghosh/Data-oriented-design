@@ -417,11 +417,9 @@ std::string_view code::scan_line_end_s(const char* piszBegin, const char* piszEn
  */
 std::string_view code::trim_s(std::string_view stringLine)
 {
-   while(stringLine.empty() == false && is_whitespace(stringLine.front()))
-      stringLine.remove_prefix(1);
+   while(stringLine.empty() == false && is_whitespace(stringLine.front())) stringLine.remove_prefix(1);
 
-   while(stringLine.empty() == false && is_whitespace(stringLine.back()))
-      stringLine.remove_suffix(1);
+   while(stringLine.empty() == false && is_whitespace(stringLine.back())) stringLine.remove_suffix(1);
 
    return stringLine;
 }
@@ -482,11 +480,13 @@ std::pair<std::string_view, std::string_view> code::split_keyword_s(std::string_
 std::pair<bool, std::string> code::compile_expression_s(std::string_view stringExpression, std::vector<token>& vectorOut)
 {
    std::vector<token> vectorInfix;
+   vectorInfix.reserve(stringExpression.size() / 2 + 4);
 
    auto [bParse, stringParseError] = token::parse_s(stringExpression, vectorInfix, tag_formula{});
    if(bParse == false) { return { false, stringParseError }; }
    if(vectorInfix.empty() == true) { return { true,{} }; }
 
+   vectorOut.reserve(vectorInfix.size());
    auto [bCompile, stringCompileError] = token::compile_s(vectorInfix, vectorOut, tag_postfix{});
    if(bCompile == false) { return { false, stringCompileError }; }
 
@@ -525,6 +525,7 @@ namespace {
    constexpr enumCodeKeyword keyword_lookup_s(std::string_view s) noexcept
    {
       if(s.empty()) return enumCodeKeyword::eKeywordNone;
+      if(is_keyword_start(s.front()) == false) return enumCodeKeyword::eKeywordNone;
       switch(s.size())
       {
       case 2: return s == "if" ? enumCodeKeyword::eKeywordIf : enumCodeKeyword::eKeywordNone;
@@ -567,6 +568,7 @@ namespace {
 std::pair<bool, std::string> code::compile(const char* piszBegin, const char* piszEnd, runtime& runtime_)
 {
    m_vectorStatement.clear();
+   m_vectorStatement.reserve(64);
    m_vectorFunction.clear();
    std::tie(piszBegin, piszEnd) = set_source(piszBegin, piszEnd);
 
@@ -580,6 +582,7 @@ std::pair<bool, std::string> code::compile(const char* piszBegin, const char* pi
 
    // ## Block stack: one entry per open `begin` we have not yet seen `end` for
    std::vector<block> vectorBlock;
+   vectorBlock.reserve(4);
 
    // Tracks an if-condition that was just closed by `end` so an immediate
    // following `else` can still bind to it (`if ... begin ... end else ...`).
@@ -1273,7 +1276,8 @@ std::pair<bool, std::string> code::compile_lua(const char* piszBegin, const char
    m_vectorStatement.clear();
    std::tie(piszBegin, piszEnd) = set_source(piszBegin, piszEnd);
 
-   std::vector<block> vectorBlock;
+   std::vector<block> vectorBlock; ///< stack of open blocks (if/elseif/else, while, repeat, for)
+   vectorBlock.reserve(4);
 
    const char* piszPosition = piszBegin;
    int32_t iLine = 0;                                                         ///< line counter for error messages
@@ -1483,6 +1487,7 @@ std::pair<bool, std::string> code::compile_lua(const char* piszBegin, const char
 
          //std::string stringTranslated = lua_translate_operators_s( stringCondition ); // @TODO: For later, now use C++ operator
          std::vector<token> vectorCondition;
+         vectorCondition.reserve(16);
          auto [bOk, stringError] = compile_expression_s(stringCondition, vectorCondition);
          if(bOk == false) { return { false, stringError }; }
 
@@ -1721,8 +1726,7 @@ std::pair<bool, std::string> code::compile_lua(const char* piszBegin, const char
          bool bFoundLoop = false;
          for(int32_t i = static_cast<int32_t>(vectorBlock.size()) - 1; i >= 0; --i)
          {
-            if(vectorBlock[i].m_eKind == block::eKindWhile ||
-               vectorBlock[i].m_eKind == block::eKindFor)
+            if(vectorBlock[i].m_eKind == block::eKindWhile || vectorBlock[i].m_eKind == block::eKindFor)
             {
                int32_t iBreakIndex = static_cast<int32_t>(m_vectorStatement.size());
                m_vectorStatement.emplace_back(statement::eKindBreak);

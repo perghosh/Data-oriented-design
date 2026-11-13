@@ -360,11 +360,10 @@ public:
 /// Construct vector with borrowed buffer, the buffer must be writable, aligned for T and the capacity must be less than 65536 elements (16-bit field)
 template<typename T>
 vector_transport<T>::vector_transport(T* pBuffer, size_type uBufferCapacity) : m_uStateAndSize(0), m_pValue(pBuffer)
-{
-   assert(pBuffer != nullptr);
-   assert(uBufferCapacity > 0);
-   assert(uBufferCapacity <= 0xFFFFu); // borrow-capacity field is 16-bit
-   assert(reinterpret_cast<std::uintptr_t>(pBuffer) % alignof(T) == 0);
+{                                                                                                  assert(pBuffer != nullptr);
+                                                                                                   assert(uBufferCapacity > 0);
+                                                                                                   assert(uBufferCapacity <= 0xFFFFu); // borrow-capacity field is 16-bit
+                                                                                                   assert(reinterpret_cast<std::uintptr_t>(pBuffer) % alignof(T) == 0);
    // ## Set the borrowed flag and store the buffer capacity in bits 16..31 of m_uStateAndSize, the size is zero
    const auto uCapacity = (std::min)(uBufferCapacity, static_cast<size_type>(0xFFFFu));
    m_uStateAndSize = static_cast<uint64_t>(enumConstant::eFlagBorrowed);
@@ -732,6 +731,47 @@ void vector_transport<T>::append_with(size_type uCount, Construct&& lambdaConstr
    }
    commit_storage(pValueNew, uSize + uCount, uCapacityNew);
 }
+
+/// Raw storage for vector_local, a separate base so it exists before vector_transport is constructed.
+template<typename T, std::size_t uCapacity>
+struct vector_storage
+{
+   alignas(T) std::byte m_byteBuffer[sizeof(T) * uCapacity];
+};
+ 
+/** @CLASS [tag: vector, transport] [summary: vector_transport with its own inline buffer]
+ * @brief vector_transport that carries its buffer inside the object.
+ *
+ * Use it as a local variable: the buffer lives on the stack frame, nothing is allocated until more
+ * than uCapacity elements are stored. The buffer is raw bytes so T does not need a default
+ * constructor and no element is constructed until it is added. Growth past uCapacity moves the
+ * elements to heap storage, as for any borrowed vector_transport.
+ *
+ * The object borrows its own address, so it can not be copied or moved. Pass it by reference
+ * or as vector_transport<T>&.
+ *
+ * @warning Do not std::move a vector_local into another vector_transport that outlives it, the
+ * moved object would keep pointing at the buffer of the local. Copy it instead (copies are owned).
+ * The same goes for swap() with a vector_transport that lives longer than the local.
+ *
+ * @par Example
+ * @code{.cpp}
+ * gd::vector_local<value, 8> vectorArgument;   // 8 values on the stack frame, no heap
+ * vectorArgument.push_back(valueFirst);
+ * call_method(vectorArgument);                 // takes const vector_transport<value>&
+ * @endcode
+ */
+template<typename T, std::size_t uCapacity>
+class vector_local : private vector_storage<T, uCapacity>, public vector_transport<T>
+{
+   static_assert(uCapacity > 0 && uCapacity <= 0xFFFFu, "borrowed capacity must be 1..65535");
+public:
+   vector_local() : vector_transport<T>(reinterpret_cast<T*>(this->m_byteBuffer), uCapacity) {}
+   vector_local(const vector_local&) = delete;
+   vector_local& operator=(const vector_local&) = delete;
+   ~vector_local() = default;
+};
+
 
 static_assert(sizeof(vector_transport<char>) == 16, "vector_transport must be 16 bytes");
 static_assert(sizeof(vector_transport<int>) == 16, "vector_transport must be 16 bytes");

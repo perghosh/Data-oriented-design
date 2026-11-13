@@ -28,6 +28,7 @@
 #include "gd_expression.h"
 #include "gd_expression_value.h"
 #include "gd_expression_runtime.h"
+#include "../gd_vector_transport.h"
 
 #ifndef _GD_EXPRESSION_BEGIN
 #define _GD_EXPRESSION_BEGIN namespace gd { namespace expression {
@@ -248,7 +249,7 @@ struct token
 
    static std::pair<bool, std::string> calculate_s( const std::vector<token>& vectorToken, value* pvalueResult );
    static std::pair<bool, std::string> calculate_s(const std::vector<token>& vectorToken, value* pvalueResult, runtime& runtime_);
-   static std::pair<bool, std::string> calculate_s(const std::vector<token>& vectorToken, std::vector<value>* pvectorReturn, runtime& runtime_);
+   static std::pair<bool, std::string> calculate_s(const std::vector<token>& vectorToken, vector_local<value, 8>* pvectorReturn, runtime& runtime_);
 
 
    /// @brief calculate_s that is simplified for one liner expression that returns single value, make sure that the formula is correct, only compile time checks and twrows

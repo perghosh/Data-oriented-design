@@ -108,8 +108,7 @@ std::pair<bool, std::string> RunExpression_g(const std::string_view& stringExpre
       runtime_.set_variable("row", row_ );                                    // set line variable to the current line
       source_.set_goto_line(row_ + 1); // set the current line number in the source, we add 1 because the source code is 1-based index, while the table is 0-based index  
 
-      gd::expression::value valueResult;
-      std::vector<gd::expression::value> vectorReturn;
+      gd::vector_local<value, 8> vectorReturn;
       result_ = gd::expression::token::calculate_s(vectorPostfix, &vectorReturn, runtime_);
       if( result_.first == false ) { return result_; }
 
@@ -180,7 +179,7 @@ std::pair<bool, std::string> RunExpression_Where_g(const std::string_view& strin
       runtime_.set_variable( "args", std::pair<const char*, void*>("args", parguments_)); // set source variable to the expression source
 
       gd::expression::value valueResult;
-      std::vector<gd::expression::value> vectorReturn;
+      gd::vector_local<value, 8> vectorReturn;
       result_ = gd::expression::token::calculate_s(vectorPostfix, &vectorReturn, runtime_); // calculate the expression
 
       bool bWhere = false;
@@ -252,7 +251,7 @@ std::pair<bool, std::string> RunExpression_Where_g(const std::string_view& strin
       runtime_.set_variable("row", (int64_t)uRow);                            // set line variable to the current line
 
       gd::expression::value valueResult;
-      std::vector<gd::expression::value> vectorReturn;
+      gd::vector_local<gd::expression::value, 8> vectorReturn;
       result_ = gd::expression::token::calculate_s(vectorPostfix, &vectorReturn, runtime_); // calculate the expression
       if( result_.first == false ) { return result_; }
 
@@ -306,7 +305,7 @@ std::pair<bool, std::string> RunExpression_WhereExpression_g(const std::string_v
       runtime_.set_variable("row", (int64_t)uRow);                            // set line variable to the current line
 
       gd::expression::value valueResult;
-      std::vector<gd::expression::value> vectorReturn;
+      gd::vector_local<gd::expression::value, 8> vectorReturn;
       result_ = gd::expression::token::calculate_s(vectorPostfix, &vectorReturn, runtime_); // calculate the expression
       if( result_.first == false ) { return result_; }
 
@@ -362,7 +361,7 @@ std::pair<bool, std::string> RunExpression_WhereExpression_g(const std::string_v
       runtime_.set_variable( "args", std::pair<const char*, void*>("args", parguments_)); // set source variable to the expression source
 
       gd::expression::value valueResult;
-      std::vector<gd::expression::value> vectorReturn;
+      gd::vector_local<gd::expression::value, 8> vectorReturn;
       result_ = gd::expression::token::calculate_s(vectorPostfix, &vectorReturn, runtime_); // calculate the expression
 
       bool bWhere = false;

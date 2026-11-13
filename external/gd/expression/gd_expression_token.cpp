@@ -7,6 +7,8 @@
 #include <memory_resource>
 #include <stack>
 
+#include "../gd_stack_transport.h"
+
 #include "gd_expression_operator.h"
 #include "gd_expression_runtime.h"
 #include "gd_expression_token.h"
@@ -960,19 +962,8 @@ std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* p
 */
 std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn, std::vector<token>& vectorOut, tag_postfix)
 {
-   constexpr std::size_t uBufferSize = 256;
-
-   alignas(std::max_align_t) std::array<std::byte, uBufferSize> buffer_{};
-
-   std::pmr::monotonic_buffer_resource pool_{ buffer_.data(), buffer_.size() };
-
-   // Vector-based stacks - better performance!
-   std::stack<token, std::pmr::vector<token>> stackOperator(&pool_);
-   std::stack<unsigned, std::pmr::vector<unsigned>> stackArgCount(&pool_); ///< actual arg count per nested function call frame, used for varargs dispatch
-/*
-   std::stack<token> stackOperator(&pool_);
-   std::stack<unsigned> stackArgCount(&pool_);  ///< actual arg count per nested function call frame, used for varargs dispatch
-   */
+   stack_local<token, 32> stackOperator;
+   stack_local<unsigned, 32> stackArgumentCount;  ///< actual arg count per nested function call frame, used for varargs dispatch
 
    for( auto itToken = vectorIn.begin(); itToken != vectorIn.end(); ++itToken )
    {
@@ -1038,7 +1029,7 @@ std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn
 
       case token_type_s("FUNCTION"):
          stackOperator.push(token_);
-         stackArgCount.push(1);                                               // start at 1; will be set to 0 at ')' if call is empty
+         stackArgumentCount.push(1);                                               // start at 1; will be set to 0 at ')' if call is empty
          break;
 
       case token_type_s("SEPARATOR"):
@@ -1058,7 +1049,7 @@ std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn
                stackOperator.pop();
             }
             // Each comma separates one more argument in the nearest enclosing function call
-            if( stackArgCount.empty() == false ) { stackArgCount.top()++; }
+            if( stackArgumentCount.empty() == false ) { stackArgumentCount.top()++; }
          }
          else if( iCharacter == ';' )
          {
@@ -1111,8 +1102,8 @@ std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn
                token tokenFunction = stackOperator.top();
                stackOperator.pop();
 
-               unsigned uArgCount = stackArgCount.empty() ? 1 : stackArgCount.top();
-               if( stackArgCount.empty() == false ) { stackArgCount.pop(); }
+               unsigned uArgCount = stackArgumentCount.empty() ? 1 : stackArgumentCount.top();
+               if( stackArgumentCount.empty() == false ) { stackArgumentCount.pop(); }
                tokenFunction.set_arg_count(uArgCount);                        // stamp actual arg count for varargs dispatch in calculate_s
 
                vectorOut.push_back(std::move(tokenFunction));
@@ -1161,8 +1152,8 @@ std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn
  */
 std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn, std::vector<token>& vectorOut, tag_postfix_no_precedence)
 {
-   std::stack<token> stackOperator;
-   std::stack<unsigned> stackArgCount;  ///< actual arg count per nested function call frame, used for varargs dispatch
+   stack_local<token, 32> stackOperator;
+   stack_local<unsigned, 32> stackArgumentCount;  ///< actual arg count per nested function call frame, used for varargs dispatch
 
    for( auto itToken = vectorIn.begin(); itToken != vectorIn.end(); ++itToken )
    {
@@ -1197,7 +1188,7 @@ std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn
       break;
       case token_type_s("FUNCTION"):
          stackOperator.push(token_);
-         stackArgCount.push(1);          // start at 1; will be set to 0 at ')' if call is empty
+         stackArgumentCount.push(1);          // start at 1; will be set to 0 at ')' if call is empty
       break;
       case token::token_type_s("SEPARATOR"):
          {
@@ -1215,7 +1206,7 @@ std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn
                   }
                }
                // Each comma separates one more argument in the nearest enclosing function call
-               if( stackArgCount.empty() == false ) { stackArgCount.top()++; }
+               if( stackArgumentCount.empty() == false ) { stackArgumentCount.top()++; }
             }
             else if( iCharacter == ';' )
             {
@@ -1263,8 +1254,8 @@ std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn
                   token tokenFunction = stackOperator.top();
                   stackOperator.pop();
 
-                  unsigned uArgCount = stackArgCount.empty() ? 1 : stackArgCount.top();
-                  if( stackArgCount.empty() == false ) { stackArgCount.pop(); }
+                  unsigned uArgCount = stackArgumentCount.empty() ? 1 : stackArgumentCount.top();
+                  if( stackArgumentCount.empty() == false ) { stackArgumentCount.pop(); }
                   tokenFunction.set_arg_count(uArgCount);                      // stamp actual arg count for varargs dispatch in calculate_s
 
                   vectorOut.push_back(std::move(tokenFunction));
@@ -1304,8 +1295,8 @@ std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn
  */
 std::pair<bool, std::string> token::compile_with_precedence_s( const std::vector<token>& vectorIn, std::vector<token>& vectorOut, const std::map<std::string, int>& mapPrecedence)
 {
-   std::stack<token> stackOperator;
-   std::stack<unsigned> stackArgCount;  ///< actual arg count per nested function call frame, used for varargs dispatch
+   stack_local<token, 32> stackOperator;
+   stack_local<unsigned, 32> stackArgumentCount;  ///< actual arg count per nested function call frame, used for varargs dispatch
 
    for( auto itToken = vectorIn.begin(); itToken != vectorIn.end(); ++itToken )
    {
@@ -1370,7 +1361,7 @@ std::pair<bool, std::string> token::compile_with_precedence_s( const std::vector
          
       case token_type_s("FUNCTION"):
          stackOperator.push(token_);
-         stackArgCount.push(1);          // start at 1; will be set to 0 at ')' if call is empty
+         stackArgumentCount.push(1);          // start at 1; will be set to 0 at ')' if call is empty
          break;
          
       case token_type_s("SEPARATOR"):
@@ -1386,7 +1377,7 @@ std::pair<bool, std::string> token::compile_with_precedence_s( const std::vector
                   stackOperator.pop();
                }
                // Each comma separates one more argument in the nearest enclosing function call
-               if( stackArgCount.empty() == false ) { stackArgCount.top()++; }
+               if( stackArgumentCount.empty() == false ) { stackArgumentCount.top()++; }
             }
             else if( iCharacter == ';' )
             {
@@ -1433,8 +1424,8 @@ std::pair<bool, std::string> token::compile_with_precedence_s( const std::vector
                   token tokenFunction = stackOperator.top();
                   stackOperator.pop();
 
-                  unsigned uArgCount = stackArgCount.empty() ? 1 : stackArgCount.top();
-                  if( stackArgCount.empty() == false ) { stackArgCount.pop(); }
+                  unsigned uArgCount = stackArgumentCount.empty() ? 1 : stackArgumentCount.top();
+                  if( stackArgumentCount.empty() == false ) { stackArgumentCount.pop(); }
                   tokenFunction.set_arg_count(uArgCount);                      // stamp actual arg count for varargs dispatch in calculate_s
 
                   vectorOut.push_back(std::move(tokenFunction));
@@ -1552,11 +1543,11 @@ value evaluate_operator_g(const std::string_view& stringOperator, value& valueLe
  * @param runtime_ Runtime context for variable resolution
  * @return Pair of success flag and error message (if any)
  */
-std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vectorToken, std::vector<value>* pvectorReturn, runtime& runtime_ )
+std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vectorToken, vector_local<value, 8>* pvectorReturn, runtime& runtime_ )
 {
    std::pair<bool, std::string> result_ = { true, "" }; // default result
    std::vector<value> vectorArguments;
-   std::stack<value> stackValue;
+   stack_local<value, 16> stackValue;
    std::string stringAssignVariable; // special case when we need to assign variable
 
    for( auto itToken = vectorToken.begin(); itToken != vectorToken.end(); ++itToken )
@@ -1741,11 +1732,7 @@ std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vector
             {
                // ## do nothing
             }
-            else if( iCharacter == ';' )
-            {
-               std::stack<value>().swap( stackValue );                         // clear stack value
-            }
-
+            else if(iCharacter == ';') { stackValue.clear(); }                 // clear stack value
          }
          break;
       }
@@ -1777,7 +1764,7 @@ std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vector
  */
 std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vectorToken, value* pvalueResult, runtime& runtime_ )
 {
-   std::vector<value> vectorReturn;
+   vector_local<value, 8> vectorReturn;
    auto result_ = calculate_s(vectorToken, &vectorReturn, runtime_);
    if( result_.first == false ) { return result_; }
    if( vectorReturn.empty() == false )
