@@ -49,7 +49,7 @@ _GD_CLI_BEGIN
 #endif
 
 
- /** --------------------------------------------------------------------------
+/** -------------------------------------------------------------------------- 
  * \class options
  * \brief A class for handling and parsing command-line arguments passed to an executable.
  *
@@ -103,7 +103,7 @@ _GD_CLI_BEGIN
  * }
  * \endcode
  */
-class options
+class options // @CLASS [tag: options] [summary: Managage command line arguments] [pattern: facade, builder]
 {
 public:
    using tag_optional = gd::types::tag_optional;               ///< tag dispatcher for optional arguments
@@ -410,6 +410,8 @@ public:
    bool exists( const std::string_view stringName, gd::types::tag_state_active ) const noexcept;
    /// Check if valid command exists in active options
    bool exists( std::string_view stringCommandName, gd::types::tag_command ) const noexcept;
+   /// Check if value for parameter exists
+   bool exists(std::string_view stringName, gd::variant_view value_) { return m_argumentsValue.find_value( stringName, value_ ); }
 
    void remove(const std::string_view& stringName) { m_argumentsValue.remove(stringName); }
 

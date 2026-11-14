@@ -138,7 +138,7 @@ concept concept_arguments_shared_is_pair_view = requires {
 // ================================================================================================
 
 
-/** /** @CLASS [tag: arguments] [summary: arguments that packs data with alignment] [pattern: container]
+/** --------------------------------------------------------------------------- @CLASS [tag: arguments] [summary: arguments that packs data with alignment] [pattern: container]
  * \brief arguments in shared namespace focus on performance and arguments holds a reference counter
  *
  * If you need to store a lot of arguments objects or need store large amount of data then
