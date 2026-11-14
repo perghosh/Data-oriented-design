@@ -162,7 +162,7 @@ struct iterator_named;
 // ====================================================================================== arguments
 // ================================================================================================
 
-/**
+/** @CLASS [tag: arguments] [summary: arguments that packs data without alignment] [pattern: container]
  * \brief  arguments focus on memory size, to tricks to align and speed up memory access
  *
  * ## memory layout
@@ -1353,6 +1353,10 @@ public:
       if( pPosition ) return get_argument_s(pPosition);
       return argument();
    }
+
+   [[nodiscard]] const_pointer find_value(gd::variant_view value_) const;
+   [[nodiscard]] const_pointer find_value(std::string_view stringName, gd::variant_view value_) const;
+
 
    /// return argument object that can be used to edit value if found
    [[nodiscard]] argument_edit find_edit_argument(std::string_view stringName);

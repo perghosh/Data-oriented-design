@@ -29,7 +29,7 @@ constexpr bool dictionary_allow_all_keys::contains(std::string_view)
    return true;
 }
 
-/** @CLASS [name: dictionary] [description: Helper object that presents arguments as a key-value map] [type: header]
+/** @CLASS [name: dictionary] [description: Helper object that presents arguments as a key-value map] [type: header] [pattern: facade, adaptor]
  *
  * \brief Wraps an arguments container with a simple key-value interface.
  *

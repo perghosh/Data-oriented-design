@@ -236,7 +236,7 @@ namespace variant_type
 /// data but do now own the data. It is ok to cast from variant to variant_view.
 class variant_view;
 
-/**
+/** @CLASS [tag: variant] [summary: variant holds type and value] [pattern: value]
  * \brief variant holds type and value
  *
  *

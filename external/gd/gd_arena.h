@@ -256,7 +256,7 @@ private:
 // ## Arena allocator class
 // ============================================================================
 
-/** ==========================================================================
+/** @CLASS [tag: arena] [summary: Arena allocator with block chaining and 32-bit alignment] [pattern: allocator]
  * \brief Arena allocator with block chaining and 32-bit alignment
  * 
  * The arena allocates memory in blocks. When a block is full, a new block

@@ -69,7 +69,7 @@
 
 _GD_BEGIN
 
-/**
+/** @CLASS [tag: variant] [summary: variant_view holds type and value] [pattern: view]
  * \brief variant_view holds type and value
  *
  *

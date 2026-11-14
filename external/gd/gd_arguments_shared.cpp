@@ -2147,6 +2147,42 @@ std::pair<arguments::argument, arguments::argument> arguments::find_pair(const s
    return pair_;
 }
 
+/** --------------------------------------------------------------------------- find_value
+ * @brief Finds the first value argument that equals the given value, skipping argument names.
+ * @param value_ The value to search for, compared against each non-name argument.
+ * @return A pointer to the first matching argument, or nullptr if no argument matches.
+ */
+arguments::const_pointer arguments::find_value(gd::variant_view value_) const
+{
+   for( auto pPosition = next(); pPosition != nullptr; pPosition = next(pPosition) )
+   {
+      if( arguments::is_name_s(pPosition) == false )
+      {
+         if( arguments::get_argument_s(pPosition).as_variant_view() == value_ ) return pPosition;
+      }
+   }
+   return nullptr;
+}
+
+/** --------------------------------------------------------------------------- find_value
+ * @brief Finds the first named argument whose name and value both match the given ones.
+ * @param stringName The name of the argument to search for.
+ * @param value_ The value the argument must have to match.
+ * @return A pointer to the first matching argument, or nullptr if no argument matches.
+ */
+arguments::const_pointer arguments::find_value(std::string_view stringName, gd::variant_view value_) const
+{
+   for( auto pPosition = next(); pPosition != nullptr; pPosition = next(pPosition) )
+   {
+      if( arguments::is_name_s(pPosition) == true )
+      {
+         if( arguments::get_name_s(pPosition) == stringName && arguments::get_argument_s(pPosition).as_variant_view() == value_) return pPosition;
+      }
+   }
+   return nullptr;
+}
+
+
 /*----------------------------------------------------------------------------- find_all */ /**
  * Find parameters for name, place them in vector and return
  * If there are multiple values with same name and you want to get all values for name

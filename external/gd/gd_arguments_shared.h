@@ -138,7 +138,7 @@ concept concept_arguments_shared_is_pair_view = requires {
 // ================================================================================================
 
 
-/**
+/** /** @CLASS [tag: arguments] [summary: arguments that packs data with alignment] [pattern: container]
  * \brief arguments in shared namespace focus on performance and arguments holds a reference counter
  *
  * If you need to store a lot of arguments objects or need store large amount of data then
@@ -1377,6 +1377,9 @@ public:
 
    /// find param value for name and start from position to search
    [[nodiscard]] argument find_argument(const std::string_view& stringName, const_pointer pPosition) const;
+
+   [[nodiscard]] const_pointer find_value(gd::variant_view value_) const;
+   [[nodiscard]] const_pointer find_value(std::string_view stringName, gd::variant_view value_) const;
 
    [[nodiscard]] bool exists( const std::string_view& stringName ) const;
    [[nodiscard]] bool exists( const std::initializer_list<std::string_view>& listName ) const;

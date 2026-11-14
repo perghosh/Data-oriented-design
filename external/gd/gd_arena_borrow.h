@@ -27,7 +27,8 @@ _GD_BEGIN
 namespace arena {
 namespace borrow {
 
-/** ==========================================================================
+/** @CLASS [tag: arena] [summary: A simple arena allocator with fixed capacity] [pattern: allocator]
+ * 
  * @brief A simple arena allocator with fixed capacity
  * 
  * The arena manages a single memory block with a fixed capacity that can be:
