@@ -748,7 +748,8 @@ std::pair<bool, std::string> CLEAN_File_g(const std::string& stringPath, const g
    {
       auto stringSegment = argumentsOption["segment"].as_string();
       if( stringSegment == "comment" ) { uSegment |= eStateComment; } 
-      else if( stringSegment == "string" ) { uSegment |= eStateString; } // store state for string segment
+      else if( stringSegment == "string" ) { uSegment |= eStateString; }       // store state for string segment
+      else if (stringSegment == "code") { uSegment |= eStateCode; }            // store state for code segment
       else if( stringSegment == "all" ) { uSegment = eStateCode | eStateComment | eStateString; } // store states for all segments
    }
 
@@ -768,7 +769,7 @@ std::pair<bool, std::string> CLEAN_File_g(const std::string& stringPath, const g
    // ## Scan file and read lines found in table
    while( windowLine_.eof() == false )
    {
-      auto [first_, last_] = windowLine_.range(gd::types::tag_pair{});     // get range of valid data in buffer
+      auto [first_, last_] = windowLine_.range(gd::types::tag_pair{});         // get range of valid data in buffer
 
       if( uSegment == 0 )
       { 
