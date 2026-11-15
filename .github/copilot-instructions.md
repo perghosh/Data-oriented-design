@@ -4,7 +4,10 @@
 or guessing, to keep output small. Call it by full path: `& 'C:\Tools\cleaner.exe' <command> ...`
 
 ### Rules
-- Always pass `-llm`	flag to adapt output for LLMs. It removes color codes and extra formatting.
+- For `list`, always pass `-llm` (single dash) together with `--context N`. It removes color codes, the `-- ` context prefix and the `Found N lines` summary. Without `--context`, `-llm` has no effect.
+- With `-llm`, each match prints as `path:line - [text]`, followed by indented context where `>` marks the matching line.
+- Since the summary is removed, bound output with `--max <count>` and count the results yourself.
+- Matched line text is cut to about 120 characters and ends in `...`. Open the file at that line for the full text.
 - Always pass `--current-directory "<folder>"`. It is the folder to search.
 - The filter is the first positional argument, e.g. `"*.h;*.cpp"`. Separate several with `;`. "**" is used for all files and recursive
 - Use `--recursive` <depth> to search subfolders. Without it only the top folder is searched, the depth number number of levels to search.
