@@ -99,7 +99,7 @@ namespace gd {
 _GD_BEGIN
 #endif
 
-/** @CLASS [tag: variant, arg_view] [description: Argument object with owning key-value pairs] [name: arg_view]
+/** ---------------------------------------------------------------------------
  * @brief Argument object with string_view key and variant_view value
  *
  * This lightweight object is used when the key and value are both views
@@ -109,6 +109,8 @@ _GD_BEGIN
  * - Function parameters where data is read-only
  * - Temporary objects for lookups
  * - Avoiding unnecessary copies
+ *
+ * @CLASS [tag: variant, arg_view] [pattern; view] [description: Argument object with owning key-value pairs] [name: arg_view]
  */
 struct arg_view
 {
@@ -286,7 +288,7 @@ inline arg make_arg(std::string&& stringKey, gd::variant&& variantValue)
 }
 
 
-/** @CLASS [tag: variant, args_view] [description: Container for non-owning arg_view objects] [name: args_view]
+/**
  * @brief Container for arg_view objects
  *
  * This container holds multiple arg_view objects without owning the data.
@@ -297,6 +299,8 @@ inline arg make_arg(std::string&& stringKey, gd::variant&& variantValue)
  * - Passing multiple arguments to functions efficiently
  * - Temporary collections of arguments
  * - Avoiding unnecessary copies of argument data
+ *
+ * @CLASS [tag: variant, args_view] [pattern: view] [description: Container for non-owning arg_view objects] [name: args_view]
  */
 struct args_view
 {
@@ -411,7 +415,7 @@ struct args_view
    /// @brief Check if all elements satisfy the predicate ------------------- all_of()
    template<typename PREDICATE>
    bool all_of(PREDICATE predicate_) const { return std::all_of(begin(), end(), predicate_); }
-   
+
    /// @brief Check if no elements satisfy the predicate -------------------- none_of()
    template<typename PREDICATE>
    bool none_of(PREDICATE predicate_) const { return std::none_of(begin(), end(), predicate_); }
@@ -467,7 +471,7 @@ inline size_t args_view::count(std::string_view stringKey) const
 
 
 
-/** @CLASS [tag: variant, args] [description: Container for owning arg objects] [name: args]
+/** ---------------------------------------------------------------------------
  * @brief Container for arg objects
  *
  * This container holds multiple arg objects and owns the data.
@@ -478,6 +482,8 @@ inline size_t args_view::count(std::string_view stringKey) const
  * - Storing argument collections for long-term use
  * - Modifying argument values
  * - Passing ownership of argument data to functions
+ *
+ * @CLASS [tag: variant, args] [pattern: container] [description: Container for owning arg objects] [name: args]
  */
 struct args
 {
@@ -543,7 +549,7 @@ struct args
    args& push_back_view(std::string_view key_, gd::variant_view value_) { m_vectorArgs.push_back(arg_view(key_, value_)); return *this; }
    template <typename ARGUMENT>
    args& push_back(const std::pair<std::string_view, ARGUMENT>& pairArgument) {
-      if constexpr (std::is_same_v<ARGUMENT, gd::variant_view>) { m_vectorArgs.push_back(arg_view(pairArgument.first, pairArgument.second)); } 
+      if constexpr (std::is_same_v<ARGUMENT, gd::variant_view>) { m_vectorArgs.push_back(arg_view(pairArgument.first, pairArgument.second)); }
       else { m_vectorArgs.push_back(arg(pairArgument.first, pairArgument.second)); }
       return *this;
    }

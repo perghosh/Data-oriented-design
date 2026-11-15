@@ -4,7 +4,7 @@
  * @file gd_arguments_shared.h
  *
  * @brief Pack primitive and common derived values into a byte buffer for efficient storage and access with focus on performance. Like key-value pairs in one single buffer.
- * 
+ *
  * Sections — double-click a marker, then Ctrl+F3 / F3 to jump.
  *
  *   append__                    append, append_argument, append_if, append_object
@@ -12,7 +12,7 @@
  *   construct_arguments__       construction methods for creating arguments instances
  *   members__                   member variables of the arguments class
  *
- * 
+ *
  *
  | Area                | Methods (Examples)                                                                 | Description                                                                                   |
  |---------------------|------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
@@ -138,7 +138,7 @@ concept concept_arguments_shared_is_pair_view = requires {
 // ================================================================================================
 
 
-/** --------------------------------------------------------------------------- @CLASS [tag: arguments] [summary: arguments that packs data with alignment] [pattern: container]
+/** ---------------------------------------------------------------------------
  * \brief arguments in shared namespace focus on performance and arguments holds a reference counter
  *
  * If you need to store a lot of arguments objects or need store large amount of data then
@@ -183,6 +183,7 @@ void print( const gd::argument::shared::arguments& arguments_ )
 
  \code
  \endcode
+ @CLASS [tag: arguments] [pattern: container] [summary: arguments that packs data with alignment] [name: arguments]
  */
 class arguments
 {
@@ -606,7 +607,7 @@ public:
       const DERIVED& derived() const { return static_cast<const DERIVED&>(*this); }
 
       // ## Forward all methods found in argument class
-   
+
       operator bool() const { return derived().get_argument().operator bool(); }
       operator int8_t() const { return derived().get_argument().operator int8_t(); }
       operator uint8_t() const { return derived().get_argument().operator uint8_t(); }
@@ -623,10 +624,10 @@ public:
       operator std::string() const { return derived().get_argument().operator std::string(); }
       operator std::wstring() const { return derived().get_argument().operator std::wstring(); }
       operator void*() const { return derived().get_argument().operator void*(); }
-   
+
       operator variant() const { return derived().get_argument().operator variant(); }
       operator variant_view() const { return derived().get_argument().operator variant_view(); }
-   
+
       // Stream operators
       const argument_forwarder& operator>>(bool& v) const { derived().get_argument() >> v; return *this; }
       const argument_forwarder& operator>>(int32_t& v) const { derived().get_argument() >> v; return *this; }
@@ -634,10 +635,10 @@ public:
       const argument_forwarder& operator>>(uint32_t& v) const { derived().get_argument() >> v; return *this; }
       const argument_forwarder& operator>>(uint64_t& v) const { derived().get_argument() >> v; return *this; }
       const argument_forwarder& operator>>(std::string& v) const { derived().get_argument() >> v; return *this; }
-   
+
       // Negation operator
-      bool operator!() const { return derived().get_argument().operator!(); }   
-   
+      bool operator!() const { return derived().get_argument().operator!(); }
+
       // Forward all const methods that don't modify state
       bool is_null() const { return derived().get_argument().is_null(); }
       bool is_bool() const { return derived().get_argument().is_bool(); }
@@ -657,7 +658,7 @@ public:
       bool is_decimal() const { return derived().get_argument().is_decimal(); }
       bool is_integer() const { return derived().get_argument().is_integer(); }
       bool empty() const { return derived().get_argument().empty(); }
-   
+
       bool as_bool() const { return derived().get_argument().as_bool(); }
       unsigned int as_uint() const { return derived().get_argument().as_uint(); }
       int as_int() const { return derived().get_argument().as_int(); }
@@ -685,18 +686,18 @@ public:
 
       template<typename TYPE>
       TYPE* get_pointer() const { return derived().get_argument().template get_pointer<TYPE>(); }
-   
+
       std::string to_string() const { return derived().get_argument().to_string(); }
       std::string to_utf8() const { return derived().get_argument().to_ut8(); }
-   
+
       unsigned int length() const { return derived().get_argument().length(); }
       arguments::enumType type() const { return derived().get_argument().type(); }
       arguments::enumCType type_number() const { return derived().get_argument().type_number(); }
       unsigned int ctype() const { return derived().get_argument().ctype(); }
-   
+
       template<typename TYPE>
       TYPE get() const { return derived().get_argument().template get<TYPE>(); }
-   
+
       // Comparison operators
       bool operator==(const argument& o) const { return derived().get_argument() == o; }
       bool operator==(const gd::variant_view& v) const { return derived().get_argument() == v; }
@@ -712,8 +713,8 @@ public:
 
    /** =======================================================================
     * @brief proxy for argument access, simplifying read and write access
-    * 
-    * A proxy object for accessing and modifying an argument within an arguments 
+    *
+    * A proxy object for accessing and modifying an argument within an arguments
     * collection, supporting implicit conversion, assignment, and type-safe retrieval.
     */
    struct argument_proxy : public argument_forwarder<argument_proxy>
@@ -721,13 +722,13 @@ public:
       // Constructor is inline and cheap
       argument_proxy(arguments* parguments, arguments::pointer position_, std::string_view stringName = "")
          : m_parguments(parguments), m_pPosition(position_), m_stringName(stringName) {}
-   
+
       // Implicit conversion to argument for reading (zero allocation)
       operator argument() const {
          if(m_pPosition) { return arguments::get_argument_s(m_pPosition); }
          return argument();  // null argument
       }
-   
+
       // Assignment operator - only pays cost when actually assigning
       template<typename T>
       argument_proxy& operator=(T&& value_) {
@@ -741,17 +742,17 @@ public:
          if(m_pPosition) { return arguments::get_argument_s(m_pPosition); }
          return argument();
       }
-   
+
       // Forward common operations
       bool is_null() const { return !m_pPosition || argument(*this).is_null(); }
-   
+
       template<typename TYPE>
       TYPE get() const { return argument(*this).template get<TYPE>(); }
 
       bool empty() const { return m_pPosition == nullptr || argument( *this ).empty(); }
-   
+
       arguments* m_parguments; ///< pointer to owning arguments object
-      arguments::pointer m_pPosition; ///< Position for value 
+      arguments::pointer m_pPosition; ///< Position for value
       std::string_view m_stringName;  ///< Only used if pPosition is null
    };
 
@@ -1012,13 +1013,13 @@ protected:
 
    template<typename RANGE>
    void common_construct_range( RANGE&& range_ ) {                            // std::pair<std::string_view, gd::variant>
-      zero(); 
+      zero();
       for(const auto& it : range_) { append_argument(it); }
    }
 
    template<typename RANGE>
    void common_construct_range( RANGE&& range_, tag_view view_ ) {            // std::pair<std::string_view, gd::variant_view>
-      zero(); 
+      zero();
       for(const auto& it : range_) { append_argument(it, view_); }
    }
 
@@ -1031,7 +1032,7 @@ public:
 
 // ## @API [tag: operator] [description: arguments operators]
 public:
-   // Non-const versions return proxy for read/write access 
+   // Non-const versions return proxy for read/write access
    argument_proxy operator[](unsigned uIndex) { pointer pPosition = find(uIndex); return argument_proxy(this, pPosition); }
    argument_proxy operator[](std::string_view stringName) {  pointer pPosition = find(stringName); return argument_proxy(this, pPosition, stringName); }
 
@@ -1731,7 +1732,7 @@ public:
 // @API [tag: buffer] [description: buffer related methods, used to access buffer data] [jump: buffer__]
 // ## Buffer methods
 public:
-   void buffer_delete() { assert( m_pbuffer != nullptr );  
+   void buffer_delete() { assert( m_pbuffer != nullptr );
       if( m_pbuffer != &m_buffer_s ) { m_pbuffer->release(); m_pbuffer = &m_buffer_s; }  }
    pointer buffer_data() { return m_pbuffer->data(); }
    const_pointer buffer_data() const { return m_pbuffer->data(); }
@@ -1775,12 +1776,12 @@ inline arguments& arguments::operator+=( std::initializer_list<std::pair<std::st
 }
 
 /// >> operator to extract value into arg_view object
-inline arguments& arguments::operator>>( gd::arg_view& arg_ ) 
-{ 
-   if( exists(arg_.get_key()) == true ) { 
-      arg_.set_value( this->get_argument(arg_.get_key()).as_variant_view() ); 
+inline arguments& arguments::operator>>( gd::arg_view& arg_ )
+{
+   if( exists(arg_.get_key()) == true ) {
+      arg_.set_value( this->get_argument(arg_.get_key()).as_variant_view() );
    }
-   return *this; 
+   return *this;
 }
 
 

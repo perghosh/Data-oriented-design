@@ -90,7 +90,7 @@
 
 _GD_EXPRESSION_BEGIN
 
-/** @CLASS [tag: expression] [name: statement] [pattern: value] [summary: manage parsed expression in code] [jump: statement__]
+/** ---------------------------------------------------------------------------
  * @brief One compiled unit of execution inside a `code` program.
  *
  * A statement is the atom of the flat bytecode.  The executor walks a
@@ -110,6 +110,8 @@ _GD_EXPRESSION_BEGIN
  * | eKindForStep    | step expression      | m_iJump = index of eKindForCondition     |
  * | eKindBreak      | empty                | index past enclosing loop end            |
  * | eKindContinue   | empty                | index of loop step / condition           |
+ *
+ * @CLASS [tag: expression] [pattern: value] [name: statement] [pattern: value] [summary: manage parsed expression in code] [jump: statement__]
  */
 struct statement
 {
@@ -217,7 +219,7 @@ constexpr std::string_view statement::kind_to_string_s(enumKind eKind)
 
 
 
-/** @CLASS [tag: expression] [name: code] [pattern: container] [summary: handle script code expressions] [jump: code__]
+/** ---------------------------------------------------------------------------
  * @brief Flat-bytecode program container with if / else / while / for support.
  *
  * A `code` object is the single addition needed to give the expression engine
@@ -245,6 +247,8 @@ constexpr std::string_view statement::kind_to_string_s(enumKind eKind)
  *     code_.execute(runtime_, &result_);
  * }
  * ```
+ *
+ * @CLASS [tag: expression] [pattern: facade, composite] [name: code] [pattern: container] [summary: handle script code expressions] [jump: code__]
  */
 struct code
 {

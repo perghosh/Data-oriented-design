@@ -209,6 +209,8 @@ enum class enumEndian { eEndianBig, eEndianLittle, eEndianNative };
  * and handling errors.
  * 
  * @tparam E The endianness to use for reading data (enumEndian).
+ * 
+ * @CLASS [tag: store, binary] [pattern: view] [summary: Manage column buffer for reading binary data] [name: reader]
  */
 template <enumEndian E>
 struct reader {
@@ -300,6 +302,7 @@ struct reader {
 /// Template class for writing binary data with specified endianness
 /// This class uses the global binary_write_* functions internally to ensure
 /// consistent behavior and avoid code duplication.
+/// @CLASS [tag: store, binary] [pattern: view] [summary: Manage column buffer for writing binary data] [name: writer]
 template <enumEndian E>
 struct writer {
    /// Create a writer with begin and end pointers

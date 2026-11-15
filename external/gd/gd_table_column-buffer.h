@@ -88,7 +88,7 @@ _GD_TABLE_BEGIN
 class table;
 namespace detail { class columns; class column; }
 
-/**
+/** --------------------------------------------------------------------------
  * \brief  Manage table data store as a big block
  *
  *
@@ -216,8 +216,7 @@ for( int i = 0; i < uRowCount; ++i ) // calculate using simd friendly code
 }
 @endcode
 
-
-
+ * @CLASS [tag: table] [pattern: container] [summary: Manage column buffer for table] [name: table_column_buffer]
  */
 class table_column_buffer
 {

@@ -1,4 +1,4 @@
-// @FILE [tag: stack, transport] [description: template stack with optional borrowed storage, grows to the heap only when the borrowed buffer is full] [name: gd_stack_transport.h] [type: header] 
+// @FILE [tag: stack, transport] [description: template stack with optional borrowed storage, grows to the heap only when the borrowed buffer is full] [name: gd_stack_transport.h] [type: header]
 
 #pragma once
 
@@ -26,7 +26,7 @@
 
 _GD_BEGIN
 
-/** @CLASS [tag: stack, transport] [summary: stack used for transport and minimal memory allocation]
+/** ---------------------------------------------------------------------------
  * @brief LIFO stack that can use caller-provided storage.
  *
  * Replacement for std::stack where the normal case is a few elements. std::stack uses
@@ -54,6 +54,8 @@ _GD_BEGIN
  * auto& tokenTop = stackOperator.top();
  * stackOperator.pop();
  * @endcode
+ *
+ * @CLASS [tag: stack, transport] [] [summary: stack used for transport and minimal memory allocation]
  */
 template<typename TYPE>
 class stack_transport
@@ -121,7 +123,7 @@ struct stack_storage
    alignas(TYPE) std::byte m_byteBuffer[sizeof(TYPE) * uCapacity];
 };
 
-/** @CLASS [tag: stack, transport] [summary: stack_transport with its own inline buffer]
+/** ---------------------------------------------------------------------------
  * @brief stack_transport that carries its buffer inside the object.
  *
  * Use it as a local variable: the buffer lives on the stack frame, nothing is allocated until more
@@ -130,6 +132,8 @@ struct stack_storage
  *
  * The object borrows its own address, so it can not be copied or moved. Pass it by reference
  * or as stack_transport<TYPE>&.
+ *
+ * @CLASS [tag: stack, transport] [pattern: decorator] [summary: stack_transport with its own inline buffer]
  */
 template<typename TYPE, std::size_t uCapacity>
 class stack_local : private stack_storage<TYPE, uCapacity>, public stack_transport<TYPE>

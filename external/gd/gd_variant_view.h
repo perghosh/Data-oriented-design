@@ -69,13 +69,15 @@
 
 _GD_BEGIN
 
-/** @CLASS [tag: variant] [summary: variant_view holds type and value] [pattern: view]
+/** --------------------------------------------------------------------------
  * \brief variant_view holds type and value
  *
  *
  *
  \code
  \endcode
+ *
+ * @CLASS [tag: variant] [pattern: view, value] [summary: variant_view is a non owning view for some extended types and value for primitive types]
  */
 class variant_view
 {
@@ -494,7 +496,7 @@ public:
 
 private:
    /// set size of data in variant, make sure that you know that value is within the bounds for uint32
-   template<typename SIZE> static constexpr uint32_t size_cast( SIZE size_ ) { assert( size_ <= std::numeric_limits<uint32_t>::max() ); return static_cast<uint32_t>( size_ ); }  
+   template<typename SIZE> static constexpr uint32_t size_cast( SIZE size_ ) { assert( size_ <= std::numeric_limits<uint32_t>::max() ); return static_cast<uint32_t>( size_ ); }
 
 public:
 

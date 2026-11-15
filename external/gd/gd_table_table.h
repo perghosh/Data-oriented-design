@@ -67,7 +67,7 @@ namespace dto {
 }
 
 
-/**
+/** ---------------------------------------------------------------------------
  * @class table
  * @brief table optimized for use as member of other objects. Like composite object.
  *
@@ -127,6 +127,8 @@ Information about each column is stored in `gd::table::dto::table::column` struc
  auto uRow = ptableConfig->row_add_one();
 
  @endcode
+
+ * @CLASS [tag: table] [pattern: container] [summary: Manage column buffer for table] [name: table]
  */
 class table
 {

@@ -83,6 +83,13 @@ _GD_TABLE_SIMD_BEGIN
     #define GD_RESTRICT
 #endif
 
+
+/** ---------------------------------------------------------------------------
+ * @brief Provides the shared table storage, column metadata, and row/cell operations used by the SIMD table.
+ *
+ * This base handles common table behavior; `table` supplies the fixed value size and pack count that define
+ * its SIMD-friendly row layout.
+ */
 class table_base
 {
 public:
@@ -746,9 +753,17 @@ inline void table_base::cell_set_not_null(uint64_t uRow, unsigned uColumn) {    
 // ================================================================= SIMD TABLE
 // ============================================================================
 
-/** ===========================================================================
- * \brief simd table, optimized for simd operations using  AoSoA (Array of Structure of Arrays) layout.
+/** ---------------------------------------------------------------------------
+ * @brief Stores fixed-size row values in packs using an AoSoA (Array of Structures of Arrays) layout.
+ *
+ * Use this table when rows need pack-based access for SIMD-oriented processing, data transfer, or temporary
+ * storage. It inherits the common column and row operations from `table_base`; pack access and typed value
+ * operations use the layout configured by the template parameters.
+ *
+ * @tparam VALUESIZE Size in bytes of each value.
+ * @tparam PACKCOUNT Number of rows grouped in each pack.
  * 
+ * @CLASS [tag: table, simd] [pattern: container] [summary: Manage column buffer for simd table] [name: table]
  */
 template<std::size_t VALUESIZE = 8, std::size_t PACKCOUNT = 8>
 class table : public table_base

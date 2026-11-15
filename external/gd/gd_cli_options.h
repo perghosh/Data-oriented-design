@@ -2,8 +2,8 @@
 /**
  * \file gd_cli_options.h
  * @brief Header file for command-line interface (CLI) options management.
- * 
- * 
+ *
+ *
  | Area                | Methods (Examples)                                                                                                 | Description                                                                                                   |
  |---------------------|-----------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
  | Construction        | options(...), common_construct(...), set_parent(...), parent(...), clone_arguments()                            | Constructors and copy/assignment for creating, copying, and initializing CLI options and subcommands.         |
@@ -15,13 +15,13 @@
  | Comparison          | is_flag(...), is_active(), is_parent(), is_sub(), is_single_dash(), sub_is_active(...), sub_exists(...)         | Methods for checking flags, activation, parent/subcommand status, and single-dash option allowance.           |
  | Printing/Debug      | print_documentation(...), print_suboption_options(...), to_string(), to_string_s(...), error_s(...)             | Methods for formatting, printing, and converting options and argument values for documentation and debugging. |
  | Utility/Meta        | empty(), size(), at(...), get_parent(), name(), description(), flag_s(...), type(...), flags(...), sub_get(...) | Utility methods for clearing, checking, querying metadata, and accessing option/subcommand properties.        |
- * 
+ *
  *
  * ### 0TAG0 File navigation, mark and jump to common parts *
  * - `0TAG0option.options` - option object, manage each option value
  * - `0TAG0construct.options` - construct options
  * - `0TAG0sub.options` - methods to access sub options
- * 
+ *
  */
 
 #pragma once
@@ -49,61 +49,63 @@ _GD_CLI_BEGIN
 #endif
 
 
-/** -------------------------------------------------------------------------- 
+/** --------------------------------------------------------------------------
  * \class options
  * \brief A class for handling and parsing command-line arguments passed to an executable.
  *
- * The `options` class manages arguments passed to an executable, supporting subcommands and adhering to standard command-line conventions. 
- * It provides functionality to define, parse, and retrieve option values, including support for ordinal positions of arguments. 
- * Options can be configured with flags, types, and descriptions, and the class supports hierarchical structures through subcommands, 
+ * The `options` class manages arguments passed to an executable, supporting subcommands and adhering to standard command-line conventions.
+ * It provides functionality to define, parse, and retrieve option values, including support for ordinal positions of arguments.
+ * Options can be configured with flags, types, and descriptions, and the class supports hierarchical structures through subcommands,
  * enabling complex argument parsing scenarios.
- * 
+ *
  * Example usage:
  * \code
  * #include "gd_cli_options.h"
- * 
+ *
  * int main(int argc, const char* argv[]) {
  *     gd::cli::options cli_options;
- *     
+ *
  *     // Define options
  *     cli_options.add({ "help", 'h', "Display help information" });
  *     cli_options.add({ "version", 'v', "Display version information" });
  *     cli_options.add({ "input", 'i', "Specify input file" });
  *     cli_options.add({ "output", 'o', "Specify output file" });
- *     
+ *
  *     // Parse command-line arguments
  *     auto [success, error_message] = cli_options.parse(argc, argv);
  *     if(!success) {
  *         std::cerr << "Error: " << error_message << std::endl;
  *         return 1;
  *     }
- *     
+ *
  *     // Check for options
  *     if(cli_options.exists("help")) {
  *         std::cout << "Help information..." << std::endl;
  *         return 0;
  *     }
- *     
+ *
  *     if(cli_options.exists("version")) {
  *         std::cout << "Version 1.0.0" << std::endl;
  *         return 0;
  *     }
- *     
+ *
  *     if(cli_options.exists("input")) {
  *         std::string input_file = cli_options.get_variant("input").as_string();
  *         std::cout << "Input file: " << input_file << std::endl;
  *     }
- *     
+ *
  *     if(cli_options.exists("output")) {
  *         std::string output_file = cli_options.get_variant("output").as_string();
  *         std::cout << "Output file: " << output_file << std::endl;
  *     }
- *     
+ *
  *     return 0;
  * }
  * \endcode
+ *
+ * @CLASS [tag: options] [pattern: facade, builder] [summary: Managage command line arguments] [name: options]
  */
-class options // @CLASS [tag: options] [summary: Managage command line arguments] [pattern: facade, builder]
+class options
 {
 public:
    using tag_optional = gd::types::tag_optional;               ///< tag dispatcher for optional arguments
@@ -120,13 +122,13 @@ public:
    {
       eFlagActive          = 0b0000'0000'0000'0001,
       eFlagParent          = 0b0000'0000'0000'0010,   ///< if options should find valid option values in parent
-      eFlagUnchecked       = 0b0000'0000'0000'0100,   ///< when parsing argument values 
+      eFlagUnchecked       = 0b0000'0000'0000'0100,   ///< when parsing argument values
       eFlagSingleDash      = 0b0000'0000'0000'1000,   ///< option value marked with single dash is allowed (normal for options is double dashed)
    };
 
    enum enumOptionFlag
    {
-      eOptionFlagGlobal    = 0b0000'0000'0000'0001,   ///< option is global, valid for all commands 
+      eOptionFlagGlobal    = 0b0000'0000'0000'0001,   ///< option is global, valid for all commands
       eOptionFlagSingle    = 0b0000'0000'0000'0010,   ///< option is only allowed if alone
       eOptionFlagFlag      = 0b0000'0000'0000'0100,   ///< option can be used as flag
 		eOptionFlagOption    = 0b0000'0000'0000'1000,   ///< option is used with value
@@ -141,9 +143,9 @@ public:
 
    /**
     * \brief Manage data for valid options
-    * 
+    *
     * `option` store information about each valid option. `options` store these
-    * `option` values in list and these are matched when application arguments 
+    * `option` values in list and these are matched when application arguments
     * is parsed.
     */
    struct option
@@ -304,7 +306,7 @@ public:
 *///@{
    /// Add option rule
    options& add( const option& option ) { m_vectorOption.push_back( option ); return *this; }
-   options& add( const std::initializer_list<std::string_view>& listName, const std::string_view& stringDescription ); 
+   options& add( const std::initializer_list<std::string_view>& listName, const std::string_view& stringDescription );
    /// Add list of option rules
    options& add( const std::initializer_list<option>& listOption );
    /// Add option flag (option marked as boolean value, don't need a value)
@@ -320,7 +322,7 @@ public:
    /// Parse application arguments (like they are sent to `main`)
    std::pair<bool, std::string> parse( int iArgumentCount, const char* const* ppbszArgumentValue, const options* poptionsRoot );
    std::pair<bool, std::string> parse( int iArgumentCount, const char* const* ppbszArgumentValue ) { return parse( iArgumentCount, ppbszArgumentValue, nullptr ); }
-   
+
    /// parse single string, splits string into parts and parse as normal
    std::pair<bool, std::string> parse( const std::string_view& stringArgument );
    /// parse vector of strings as normal
@@ -329,7 +331,7 @@ public:
    std::pair<bool, std::string> parse_terminal( const std::string_view& stringArgument );
 
    std::string to_string() const;
-   
+
 
 
    template <typename VALUE>
@@ -491,7 +493,7 @@ public:
    std::string m_stringDescription;    ///< Describe (sub) command
    std::vector<option> m_vectorOption; ///< Valid option values
    gd::argument::arguments m_argumentsValue;///< Argument values
-   std::vector< options > m_vectorSubOption;///< Attached subcommands 
+   std::vector< options > m_vectorSubOption;///< Attached subcommands
    std::vector< std::pair<std::string, gd::argument::arguments> > m_vectorAlias;///< alias for commands, alias may have hardcoded arguments
    std::string m_stringDefaultOption; ///< Default option name, if set then this option is used if no other options is found
 
@@ -619,9 +621,9 @@ inline bool options::alias_find(const std::string_view& stringAlias, gd::argumen
 inline bool options::alias_find(const std::string_view& stringAlias, gd::argument::arguments* parguments) const
 {
    for(const auto& [alias, arguments_] : m_vectorAlias) {
-      if(alias == stringAlias) { 
-         if( parguments != nullptr ) *parguments = arguments_;  
-         return true; 
+      if(alias == stringAlias) {
+         if( parguments != nullptr ) *parguments = arguments_;
+         return true;
       }
    }
    return false;
