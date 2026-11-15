@@ -1,4 +1,4 @@
-// @FILE [tag: vector, transport] [description: template vector with optional borrowed storage and a 16 byte footprint] [name: gd_vector_transport.h] [type: header] 
+// @FILE [tag: vector, transport] [description: template vector with optional borrowed storage and a 16 byte footprint] [name: gd_vector_transport.h] [type: header]
 
 #pragma once
 
@@ -15,7 +15,7 @@
 #include <span>
 #include <stdexcept>
 #include <type_traits>
-#include <utility> 
+#include <utility>
 
 /*
  * # vector_transport
@@ -37,7 +37,7 @@
 
 _GD_BEGIN
 
-/** @CLASS [tag: vector, transport] [summary: vector used for transport and minimal memory allocation]
+/** ===========================================================================
  * @brief Mutable sequence of elements that can use caller-provided storage.
  *
  * Template counterpart of string_transport. Stores elements in either a
@@ -107,8 +107,10 @@ _GD_BEGIN
  * vectorName.emplace_back("gamma");
  * vectorName.erase(vectorName.begin());
  * @endcode
+ *
+ * @CLASS [tag: vector, transport] [pattern: container] [summary: vector with sizeof = 16, will allocate for all operations when not borrowing a buffer] [name: vector_transport]
  */
-   template<typename T>
+template<typename T>
 class vector_transport
 {
 public:
@@ -738,8 +740,8 @@ struct vector_storage
 {
    alignas(T) std::byte m_byteBuffer[sizeof(T) * uCapacity];
 };
- 
-/** @CLASS [tag: vector, transport] [summary: vector_transport with its own inline buffer]
+
+/** ===========================================================================
  * @brief vector_transport that carries its buffer inside the object.
  *
  * Use it as a local variable: the buffer lives on the stack frame, nothing is allocated until more
@@ -760,6 +762,8 @@ struct vector_storage
  * vectorArgument.push_back(valueFirst);
  * call_method(vectorArgument);                 // takes const vector_transport<value>&
  * @endcode
+ *
+ * @CLASS [tag: vector, transport] [pattern: decorator] [summary: vector_transport with its own inline buffer] [name: vector_local]
  */
 template<typename T, std::size_t uCapacity>
 class vector_local : private vector_storage<T, uCapacity>, public vector_transport<T>
