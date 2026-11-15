@@ -17,8 +17,9 @@ or guessing, to keep output small. Call it by full path: `& 'C:\Tools\cleaner.ex
 - For regex searching/counting with `list`, `find`, or `count`, repeat `--rpattern` for each expression.
   Searching for multiple regex expressions is done by adding multiple `--rpattern` arguments, for example:
   `& 'C:\Tools\cleaner.exe' count "*variant_view*.h;*variant_view*.cpp" -R --rpattern "set" --rpattern "compare" --current-directory "C:\dev\home\DOD\external\gd"`
-- `--segment` is optional. Leave it out to search code. Use `--segment comment` only to search comments
-  and `--segment string` only to search strings.
+- By default `list` and `find` search code only. Comments and string literals are skipped, so text that only
+  appears in a comment or string is not found. Use `--segment all` when the text may be in a comment or string,
+  for example log messages or tags such as `[tag: ...]`. Use `--segment comment` or `--segment string` to search only that part.
 - `--context N` shows N lines after each match. A second number (`--context 2,6`) sets lines before and after.
 - Limit output with `--max <count>` or a narrow filter such as `gd_table*.h`. Do not dump large results.
 - The exit code is often -1 even when the output is correct. Ignore it, and judge success from the output.
