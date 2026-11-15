@@ -413,7 +413,7 @@ public:
    /// Check if valid command exists in active options
    bool exists( std::string_view stringCommandName, gd::types::tag_command ) const noexcept;
    /// Check if value for parameter exists
-   bool exists(std::string_view stringName, gd::variant_view value_) { return m_argumentsValue.find_value( stringName, value_ ); }
+   bool exists(std::string_view stringName, gd::variant_view value_) const { return m_argumentsValue.find_value( stringName, value_ ); }
 
    void remove(const std::string_view& stringName) { m_argumentsValue.remove(stringName); }
 
