@@ -1,12 +1,16 @@
-/**                                                                            @FILE [tag: source, application] [summary: Definitions for  application class]
+// @FILE [tag: source, application] [summary: Definitions for  application class]
+
+/**
  * @file Application.cpp
  *
- * ### 0TAG0 File navigation, mark and jump to common parts
- * - `0TAG0Initialize.Application` - Initialize the application from command line
- * - `0TAG0RUN.Application` - run commands, there are a number of commands that can be run
- * - `0TAG0Options.Application` - prepare command line options
- * - `0TAG0Settings.Application` - settings operations
+ * @brief Table used to transfer/move data, Use `gd::table::dto::table` class that is optimized for data transfer.
  *
+ * Sections — double-click a marker, then Ctrl+F3 / F3 to jump.
+ *
+ * help__            Generate help and documentation for command-line options.
+ * initialize__      Initialize the application
+ * message__         Print a message to the console or other output based on the UI type.
+ * options__         Prepare application options
  */
 
 
@@ -672,9 +676,7 @@ std::pair<bool, std::string> CApplication::Exit()
    // return {false, "Exit failed: <error details>"};
 }
 
-// 0TAG0Initialize.Application
-
-/** --------------------------------------------------------------------------- @API [tag: application, option, initialize] [description: Initialize application from command line, go here if you want to check whats going to be executed, some general logic is also placed here]
+/** --------------------------------------------------------------------------- 
  * @brief Initializes the application based on the provided command-line options.
  *
  * This method processes the command-line options and performs initialization tasks
@@ -695,6 +697,8 @@ std::pair<bool, std::string> CApplication::Exit()
  *
  * @param optionsApplication The parsed command-line options.
  * @return std::pair<bool, std::string> A pair indicating success or failure and an error message if applicable.
+ * 
+ * @API [tag: application, option, initialize] [jump: initialize__] [description: Initialize application from command line, go here if you want to check whats going to be executed, some general logic is also placed here]
  */
 std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& optionsApplication )
 {
@@ -1228,6 +1232,8 @@ std::pair<bool, std::string> CApplication::CreateDirectory()
  * @param stringMessage The message to print.
  * @param argumentsFormat Optional formatting arguments for the message.
  * @return std::pair<bool, std::string> A pair indicating success or failure and an error message if applicable.
+ * 
+ * @API [tag: application, message] [jump: message__] [description: Prints a message to the console or other output based on the UI type.]
  */
 std::pair<bool, std::string> CApplication::PrintMessage(const std::string_view& stringMessage, const gd::argument::arguments& argumentsFormat)
 {
@@ -2154,7 +2160,7 @@ void CApplication::CONFIG_HandleArray( std::string_view stringGroup, std::string
    }
 }
 
-/** --------------------------------------------------------------------------- @API [tag: help, application] [description: "Help and documentation functions for the application."]
+/** --------------------------------------------------------------------------- 
  * @brief Print documentation for command-line options
  *
  * This function generates documentation for the provided command-line options
@@ -2163,6 +2169,8 @@ void CApplication::CONFIG_HandleArray( std::string_view stringGroup, std::string
  * @param poptions Pointer to the command-line options object
  * @param stringDocumentation Reference to the string where documentation will be appended
  * @return std::pair<bool, std::string> True if successful, false and error message if failed
+ * 
+ * @API [tag: help, application] [jump: help__] [description: "Help and documentation functions for the application."]
  */
 void CApplication::HELP_PrintDocumentation( const gd::cli::options* poptions, std::string& stringDocumentation)
 {                                                                                                  assert( poptions != nullptr );
@@ -2426,6 +2434,14 @@ CApplication::enumUIType CApplication::GetUITypeFromString_s(const std::string_v
    return eUITypeUnknown; // Default to none if no match found
 }
 
+/** --------------------------------------------------------------------------- IsDetailLevel_s
+ * Checks whether a numeric detail level is within the level named or numbered 
+ * by a detail level string (BASIC/1, STANDARD/2, EXTENDED/3, FULL/4). Any other
+ * string is parsed as a number and must equal the detail level exactly.
+ * @param uDetailLevel The detail level to check, as a number.
+ * @param stringDetailLevel The detail level to compare against. It must not be empty. It is a name identified by its first character ('B', 'S', 'E' or 'F'), a number from "1" to "4", or any other numeric string.
+ * @return true if uDetailLevel is less than or equal to the named or numbered level, or equal to the parsed value for other numeric strings. Otherwise false, including when the string cannot be parsed as a number.
+ */
 bool CApplication::IsDetailLevel_s(uint32_t uDetailLevel, const std::string_view& stringDetailLevel)
 {                                                                                                  assert(stringDetailLevel.empty() == false);
    if(stringDetailLevel[0] == 'B' || stringDetailLevel == "1") 		         // "BASIC"
@@ -2459,7 +2475,7 @@ bool CApplication::IsDetailLevel_s(uint32_t uDetailLevel, const std::string_view
 // 0TAG0Options.Application
 
 
-/** ---------------------------------------------------------------------------  @API [tag: cli, application, options ] [summary: prepare application options]
+/** ---------------------------------------------------------------------------  
  * @brief Prepares the application options for command-line usage.
  *
  * This method sets up the available command-line options for the application,
@@ -2477,11 +2493,13 @@ bool CApplication::IsDetailLevel_s(uint32_t uDetailLevel, const std::string_view
  * - `recursive`     : Specifies recursive operations with a depth value.
  * - `output`        : Saves output to a specified file.
  * - `statements`    : Specifies a file containing SQL statements.
+ * 
+ * @API [tag: cli, application, options ] [jump: options__] [summary: prepare application options]
  */
 void CApplication::Prepare_s(gd::cli::options& optionsApplication)
 {
-   optionsApplication.add_flag({"logging", "Turn on logging"});
-   optionsApplication.add_flag({"logging-csv", "Add csv logger, prints log information using the csv format"});
+   optionsApplication.add_flag({ "logging", "Turn on logging"});
+   optionsApplication.add_flag({ "logging-csv", "Add csv logger, prints log information using the csv format"});
    optionsApplication.add_flag({ "help", "Prints help information about command" });
    optionsApplication.add_flag({ "history", "Add active command to history" });
    optionsApplication.add_flag({ "print", "Results from command should be printed" });
@@ -2521,6 +2539,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "where", "Specify SQL like conditions for filtering result." });
       optionsCommand.add({ "where-expression", "Use internal expression format for filtering result." });
       optionsCommand.add_flag( {"R", "Set recursive to 16, simple to scan all subfolders"} );
+      optionsCommand.add_flag({ "llm", "Adapt result for llm" });
 #ifdef _WIN32
       optionsCommand.add_flag( {"vs", "Adapt to visual studio output window format, make files clickable"} );
       optionsCommand.add_flag( {"win", "Windows specific functionality, logic might be using some special for adapting to features used for windows"} );
@@ -2589,7 +2608,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsApplication.sub_add(std::move(optionsCommand));
    }
 
-   { // ## 'find' command, list files
+   { // ## 'find' command, multiline search in files
       gd::cli::options optionsCommand( 0, "find", "Search patterns in files and all filecontent is searched in, this enables multiline patterns" );
       optionsCommand.add({ "filter", "Specify a **wildcard filter** (e.g., `*.txt`, `*.cpp`) to apply when searching for files. Multiple filters are separated with ;. If no filter is provided, all found text files will be searched for patterns." });
       optionsCommand.add({ "pattern", 'p', "Provide one or more **patterns to search for** within file content. Separate multiple patterns with semicolons (`;`)."});
@@ -2614,6 +2633,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add_flag({ "R", "Enable **recursive search** in subfolders. Sets the recursion depth to 16, ensuring a thorough scan of all subdirectories." });
       optionsCommand.add_flag( {"match-all", "Require **all specified patterns to match** within the same line or row for a result to be considered valid."} );
       optionsCommand.add_flag({ "clip", "Investigate clipboard for related information (file path or search value)" });
+      optionsCommand.add_flag({ "llm", "Adapt result for llm" });
 #ifdef _WIN32
       optionsCommand.add_flag( {"vs", "Format the output to be compatible with the **Visual Studio Output window**, making it easier to navigate results within the IDE."} );
       optionsCommand.add_flag( {"win", "Activate **Windows-specific functionality**, adapting the tool's behavior and features to the Windows operating system."} );
@@ -2660,6 +2680,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add_flag( {"R", "Enable **recursive scanning** of all subfolders. Sets the recursion depth to 16, ensuring a thorough search of subdirectories."} );
       optionsCommand.add_flag( {"match-all", "Require **all specified patterns** to match within the same row for it to be included in the results."} );
       optionsCommand.add_flag({ "clip", "Investigate clipboard for related information (file path or search value)" });
+      optionsCommand.add_flag({ "llm", "Adapt result for llm" });
 #ifdef _WIN32
       optionsCommand.add_flag( {"vs", "Format the output to be compatible with the **Visual Studio Output window**, making file references clickable for easy navigation in the IDE."} );
       optionsCommand.add_flag( {"win", "Enable **Windows-specific functionality**, adapting the tool's behavior to leverage Windows operating system features."} );

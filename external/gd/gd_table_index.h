@@ -228,6 +228,7 @@ public:
       });
    }
 
+   /// find row value based on sorted composite key values
    std::pair<bool, uint64_t> find(const TYPE1& find1, const TYPE2& find2) const noexcept {
       auto itEnd = std::end(m_vectorIndex);
       auto itFind = std::lower_bound(std::begin(m_vectorIndex), itEnd, std::make_pair(find1, find2), [](const auto& v1, const auto& pairFind) {
@@ -241,6 +242,7 @@ public:
       return { false, (uint64_t)-1 };
    }
 
+   /// compact the index by removing duplicate composite values (only first value with lowest row is kept)
    void compact() {
       if(m_vectorIndex.empty()) return;
       auto it = m_vectorIndex.begin();

@@ -4,11 +4,12 @@
 or guessing, to keep output small. Call it by full path: `& 'C:\Tools\cleaner.exe' <command> ...`
 
 ### Rules
+- Always pass `-llm`	flag to adapt output for LLMs. It removes color codes and extra formatting.
 - Always pass `--current-directory "<folder>"`. It is the folder to search.
-- The filter is the first positional argument, e.g. `"*.h;*.cpp"`. Separate several with `;`.
-- Use `-R` to search subfolders. Without it only the top folder is searched.
+- The filter is the first positional argument, e.g. `"*.h;*.cpp"`. Separate several with `;`. "**" is used for all files and recursive
+- Use `--recursive` <depth> to search subfolders. Without it only the top folder is searched, the depth number number of levels to search.
 - Check option spelling. Unknown options print the help text and `ERROR: Unknown option`.
-  The pattern option is `--pattern` and regular expression patterns use `--rpattern`.
+- The pattern option is `--pattern` and regular expression patterns use `--rpattern`.
 - Separate several patterns with `,` or `;`.
 - For regex searching/counting with `list`, `find`, or `count`, repeat `--rpattern` for each expression.
   Searching for multiple regex expressions is done by adding multiple `--rpattern` arguments, for example:

@@ -189,7 +189,7 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
       if( options_.exists("keys") == true || options_.exists("kv") == true )
       {
          gd::argument::shared::arguments argumentsPrint;
-         argumentsPrint.append( options_.get_arguments(), {"context", "keys", "header", "footer", "brief", "width", "quiet"});
+         argumentsPrint.append( options_.get_arguments(), {"context", "keys", "header", "footer", "brief", "width", "quiet", "llm"});
          if( options_.exists("llm-output") == true ) argumentsPrint.append("llm", true);
          if( options_.exists("kv-where") == true ) argumentsPrint.append("where", options_["kv-where"].as_string_view()); // if kv-where is set, add it to the print arguments
          result_ = FindPrintKeyValue_g(pdocument, &argumentsPrint);                             // Print the key-value pairs found in the files
@@ -224,13 +224,11 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
       else if( bPrint == false || (options_.exists("print") == true || options_.exists("vs") == true ))
       {
          gd::argument::shared::arguments argumentsPrint({ { "pattern-count", uint64_t(2u) } }); // hardcode pattern count to 2 for printing results and allways print patterns
-         argumentsPrint.append( options_.get_arguments(), { "hyperlink", "hyperlink-ps" } );
+         argumentsPrint.append( options_.get_arguments(), { "hyperlink", "hyperlink-ps", "llm", "llm-output" });
          if( options_.exists("context") == true ) argumentsPrint.append("context", options_["context"].as_string_view()); // if context is set, add it to the print arguments
 
          // check if vs flag is set, if so then print to Visual Studio output
          if( options_.exists("vs") == true ) { argumentsPrint.append("vs", true); }
-
-         if( options_.exists("llm-output") == true ) argumentsPrint.append("llm", true);
 
          result_ = FindPrint_g(pdocument, argumentsPrint);                     // Print the results of the find operation
          if( result_.first == false ) return result_;                          // if print failed, return the error
@@ -687,28 +685,27 @@ std::pair<bool, std::string> ReadSnippet_g( const std::vector<std::string>& vect
  *         - `bool`: `true` if the operation was successful, `false` otherwise.
  *         - `std::string`: An empty string on success, or an error message on failure.
  */
-std::pair<bool, std::string> FindPrint_g( CDocument* pdocument, const gd::argument::shared::arguments& argumentsPrint )
-{                                                                                                  assert(pdocument != nullptr);
+std::pair<bool, std::string> FindPrint_g(CDocument* pdocument, const gd::argument::shared::arguments& argumentsPrint)
+{
+   assert(pdocument != nullptr);
    std::array<std::byte, 64> array_; // array to hold the color codes for the output
    std::string stringCliTable; // string to hold the CLI table output
    size_t uSearchPatternCount = argumentsPrint.get_argument<uint64_t>("pattern-count", 1u); // count of patterns to search for
-
-   pdocument->MESSAGE_Display("\n");
-
    int64_t iContextOffset = 0, iContextCount = 0; // variables used to bring context to found code
+   bool bLLM = false; // variable to check if llm is specified, if so then print the line and context without color formatting
 
-   if( argumentsPrint.exists("context") == true )
+   if(argumentsPrint.exists("context") == true)
    {
       std::string stringContext = argumentsPrint["context"].as_string();       // context is in the format offset,count like -2,6 to get lines from 2 before and 6 lines
 
       // parse context to numbers
-      auto vectorOffsetCount = CApplication::SplitNumber_s( stringContext );   // get offset value and count
+      auto vectorOffsetCount = CApplication::SplitNumber_s(stringContext);   // get offset value and count
       size_t position_; // not used
-      if( vectorOffsetCount.size() == 1 )
+      if(vectorOffsetCount.size() == 1)
       {
          iContextCount = std::stoll(vectorOffsetCount[0].data(), &position_);
       }
-      else if( vectorOffsetCount.size() > 1 )
+      else if(vectorOffsetCount.size() > 1)
       {
          iContextOffset = std::stoll(vectorOffsetCount[0].data(), &position_);
          iContextCount = std::stoll(vectorOffsetCount[1].data(), &position_);
@@ -718,62 +715,91 @@ std::pair<bool, std::string> FindPrint_g( CDocument* pdocument, const gd::argume
       iContextCount = iContextCount % 1000;                                   // limit the count to 1000 lines, so we do not get too much context
    }
 
-   gd::argument::arguments argumentsOption( { { "pattern-count", (unsigned)uSearchPatternCount } } );
-   if( iContextOffset != 0 || iContextCount != 0 ) { argumentsOption.append( "offset", iContextOffset ); argumentsOption.append( "count", iContextCount ); }
-   
-   auto tableResultLineList = pdocument->RESULT_PatternLineList( argumentsOption );// generate the result table for pattern line list
-   if( argumentsPrint.exists_any( { "hyperlink", "hyperlink-ps" }) == true )
+   gd::argument::arguments argumentsOption({ { "pattern-count", (unsigned)uSearchPatternCount } });
+   if(iContextOffset != 0 || iContextCount != 0) { argumentsOption.append("offset", iContextOffset); argumentsOption.append("count", iContextCount); }
+
+   auto tableResultLineList = pdocument->RESULT_PatternLineList(argumentsOption);// generate the result table for pattern line list
+   if(argumentsPrint.exists_any({ "hyperlink", "hyperlink-ps" }) == true)
    {
       gd::argument::arguments argumentsHyperlink;
-      argumentsHyperlink.append( argumentsPrint, { "hyperlink", "hyperlink-ps" } );
+      argumentsHyperlink.append(argumentsPrint, { "hyperlink", "hyperlink-ps" });
       CDocument::TABLE_MakeHyperlink_s(tableResultLineList, argumentsHyperlink);     // format file names as hyperlinks in the result table
    }
-   if( argumentsPrint.exists("llm") ) { SHARED_TransformTableForLLMPretrain_g( &tableResultLineList, pdocument ); }
+   if(argumentsPrint.exists("llm-output")) { SHARED_TransformTableForLLMPretrain_g(&tableResultLineList, pdocument); }
 
    auto uRowCount = tableResultLineList.get_row_count(); // get the number of rows in the result table
 
-   if( iContextCount == 0 )
+   if(iContextCount == 0)
    {
       // ## Just print the "line" column 
-      gd::table::dto::table table_(0, { {"rstring", 0, "line"} }, gd::table::tag_prepare{});
-      table_.plant(tableResultLineList, "line", 0, tableResultLineList.get_row_count() ); // plant the table into the result table
+      gd::table::dto::table table_(0, { { "rstring", 0, "line" } }, gd::table::tag_prepare{});
+      table_.plant(tableResultLineList, "line", 0, tableResultLineList.get_row_count()); // plant the table into the result table
       stringCliTable = gd::table::to_string(table_, gd::table::tag_io_raw{});
-      pdocument->MESSAGE_Display(stringCliTable, { array_, {{"color", "default"}}, gd::types::tag_view{} });
+      pdocument->MESSAGE_Display(stringCliTable, { array_,{ { "color", "default" } }, gd::types::tag_view{} });
       stringCliTable.clear();
    }
    else
    {
       // ## Print the "line" with context
-      gd::table::dto::table table_(0, { {"rstring", 0, "line"} }, gd::table::tag_prepare{});
-      for( auto itRow : tableResultLineList )
+      bLLM = argumentsPrint.exists("llm") == true && argumentsPrint["llm"].is_true() == true; // check if llm is specified
+      if(bLLM == true)                                                     // if llm is specified, then print the line and context without color formatting
       {
-         std::string stringLine = itRow.cell_get_variant_view("line").as_string(); // get the line text
-         pdocument->MESSAGE_Display(stringLine, { array_, {{"color", "line"}}, gd::types::tag_view{} });
-
-         std::string stringContext = itRow.cell_get_variant_view("context").as_string(); // get the context code
-         gd::utf8::indent(stringContext, "-- ");                              // indent the context code by 3 spaces
-         auto uRow = table_.row_add_one();
-
-         // ## mark the line with that has the matched pattern
-
-         auto uLeadingRow = itRow.cell_get_variant_view( "row-leading" ).as_uint();
-         auto piPosition = gd::ascii::strchr(stringContext, '\n', uLeadingRow);// find the leading row in the context code
-         if( piPosition != nullptr && piPosition[1] != 0 && piPosition[2] != 0 ) // if the leading row is found
+         for(auto itRow : tableResultLineList)
          {
-            auto uIndex = piPosition - stringContext.data();                  // get the index of the leading row
-            if( uLeadingRow > 0 ) uIndex++;                                   // if the leading row is greater than 0, then we have a leading row, so increment the index past new line character is needed
-            stringContext[uIndex] = '>';                                      // mark the leading row with a '>' character
-            uIndex++;
-            stringContext[uIndex] = '>';                                      // mark the leading row with a '>' character
-         }
+            std::string stringLine = itRow.cell_get_variant_view("line").as_string(); // get the line text
+            pdocument->MESSAGE_Display(stringLine);
 
-         pdocument->MESSAGE_Display(stringContext, { array_, {{"color", "body"}}, gd::types::tag_view{} });
+            std::string stringContext = itRow.cell_get_variant_view("context").as_string(); // get the context code
+            gd::utf8::indent(stringContext, " ");                            // indent the context code by 3 spaces
+
+            // ## mark the line with that has the matched pattern
+
+            auto uLeadingRow = itRow.cell_get_variant_view("row-leading").as_uint();
+            auto piPosition = gd::ascii::strchr(stringContext, '\n', uLeadingRow);// find the leading row in the context code
+            if(piPosition != nullptr && piPosition[1] != 0 && piPosition[2] != 0) // if the leading row is found
+            {
+               auto uIndex = piPosition - stringContext.data();               // get the index of the leading row
+               if(uLeadingRow > 0) uIndex++;                                  // if the leading row is greater than 0, then we have a leading row, so increment the index past new line character is needed
+               stringContext[uIndex] = '>';                                   // mark the leading row with a '>' character
+            }
+
+            pdocument->MESSAGE_Display(stringContext);
+         }
+      }
+      else
+      {
+         for(auto itRow : tableResultLineList)
+         {
+            std::string stringLine = itRow.cell_get_variant_view("line").as_string(); // get the line text
+            pdocument->MESSAGE_Display(stringLine, { array_,{ { "color", "line" } }, gd::types::tag_view{} });
+
+            std::string stringContext = itRow.cell_get_variant_view("context").as_string(); // get the context code
+            gd::utf8::indent(stringContext, "-- ");                            // indent the context code by 3 spaces
+
+            // ## mark the line with that has the matched pattern
+
+            auto uLeadingRow = itRow.cell_get_variant_view("row-leading").as_uint();
+            auto piPosition = gd::ascii::strchr(stringContext, '\n', uLeadingRow);// find the leading row in the context code
+            if(piPosition != nullptr && piPosition[1] != 0 && piPosition[2] != 0) // if the leading row is found
+            {
+               auto uIndex = piPosition - stringContext.data();               // get the index of the leading row
+               if(uLeadingRow > 0) uIndex++;                                  // if the leading row is greater than 0, then we have a leading row, so increment the index past new line character is needed
+               stringContext[uIndex] = '>';                                   // mark the leading row with a '>' character
+               uIndex++;
+               stringContext[uIndex] = '>';                                   // mark the leading row with a '>' character
+            }
+
+            pdocument->MESSAGE_Display(stringContext, { array_,{ { "color", "body" } }, gd::types::tag_view{} });
+         }
       }
    }
 
    // Print number of lines found
-   std::string stringMessage = std::format("\nFound {} lines", uRowCount);
-   pdocument->MESSAGE_Display(stringMessage);                                 // display the number of lines found
+   if(bLLM == false)
+   {
+      std::string stringMessage = std::format("\nFound {} lines", uRowCount);
+      pdocument->MESSAGE_Display(stringMessage);                               // display the number of lines found
+   }
 
 #ifdef _WIN32
    if( argumentsPrint.exists("vs") == true ) // if vs flag is set, then we want to print to Visual Studio output
