@@ -795,11 +795,8 @@ std::pair<bool, std::string> FindPrint_g(CDocument* pdocument, const gd::argumen
    }
 
    // Print number of lines found
-   if(bLLM == false)
-   {
-      std::string stringMessage = std::format("\nFound {} lines", uRowCount);
-      pdocument->MESSAGE_Display(stringMessage);                               // display the number of lines found
-   }
+   std::string stringMessage = std::format("\nFound {} lines", uRowCount);
+   pdocument->MESSAGE_Display(stringMessage);                                 // display the number of lines found
 
 #ifdef _WIN32
    if( argumentsPrint.exists("vs") == true ) // if vs flag is set, then we want to print to Visual Studio output

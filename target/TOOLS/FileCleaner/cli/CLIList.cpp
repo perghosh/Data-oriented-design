@@ -519,11 +519,8 @@ std::pair<bool, std::string> ListPrintLine_g( CDocument* pdocument, gd::argument
       }
 
       // Print number of lines found
-      if(bLLM == false)
-      {
-         std::string stringMessage = std::format("Found {} lines", tableResultLineList.get_row_count() );
-         pdocument->MESSAGE_Display(stringMessage);
-      }
+      std::string stringMessage = std::format("Found {} lines", tableResultLineList.get_row_count() );
+      pdocument->MESSAGE_Display(stringMessage);
    }
    else
    {
