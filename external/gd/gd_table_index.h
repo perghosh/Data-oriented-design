@@ -19,10 +19,16 @@ class index_base
 /** ===========================================================================
  * \brief index to manage int64 values (works with integer values that is able to convert to int64)
  *
+ * The index stores pairs of int64 value and row. Values are collected with `add()`, then `sort()` orders them
+ * so `find()` can use binary search. `compact()` removes duplicate values and keeps the lowest row for each value.
+ * `create_index_g<index_int64>()` builds a sorted index directly from a table column.
  *
+ * \code
+ * auto indexId = gd::table::create_index_g<gd::table::index_int64>( tableCustomer, "id" );
+ * auto [bFound, uRow] = indexId.find( 42 );
+ * \endcode
  *
- \code
- \endcode
+ * @CLASS [tag: table, index] [pattern: container] [summary: Manage index for fast lookup of integer values] [name: index_int64]
  */
 class index_int64 : public index_base
 {
@@ -107,6 +113,8 @@ public:
  *    }
  * };
  * \endcode
+ * 
+ * @CLASS [tag: table, index] [pattern: container] [summary: Manage index for fast lookup of integer values] [name: index_string]
  */
 class index_string : public index_base
 {
@@ -164,6 +172,25 @@ public:
 };
 
 
+/** ===========================================================================
+ * \brief index to manage composite keys made of two values (each key is a string or an integer)
+ *
+ * Each entry stores two key values and a row. Entries are collected with `add()`, then `sort()` orders them by the
+ * first key and then by the second key, so `find()` can use binary search on both keys. `compact()` removes entries
+ * with the same pair of keys and keeps the lowest row.
+ *
+ * `find()` returns `{ true, row }` when both keys match, otherwise `{ false, (uint64_t)-1 }`.
+ * Search keys can also be set with `operator()` and the row read by converting the index to `uint64_t`.
+ *
+ * @tparam TYPE1 type of the first key, `std::string_view` for strings or an integer type.
+ * @tparam TYPE2 type of the second key, `std::string_view` for strings or an integer type.
+ *
+ * \code
+ * auto indexCustomer = gd::table::create_index_g<gd::table::index_string_string>( tableCustomer, uColumnRegion, uColumnName );
+ * auto [bFound, uRow] = indexCustomer.find( "north", "alice" );
+ * \endcode                                            
+ * @CLASS [tag: table, index] [pattern: container] [summary: Manage index for fast lookup of composite keys] [name: index_composite]
+ */
 template<typename TYPE1, typename TYPE2>
 class index_composite : public index_base
 {
