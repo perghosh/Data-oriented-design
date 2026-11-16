@@ -3,46 +3,33 @@
 `C:\Tools\cleaner.exe` is a fast CLI search tool. Use it from PowerShell instead of reading whole files
 or guessing, to keep output small. Call it by full path: `& 'C:\Tools\cleaner.exe' <command> ...`
 
-### Rules
-- For `list`, always pass `-llm` (single dash) together with `--context N`. It removes color codes and the `-- ` context prefix. Without `--context`, `-llm` has no effect.
-- With `-llm`, each match prints as `path:line - [text]`, followed by indented context where `>` marks the matching line. The output ends with `Found N lines`.
-- Bound output with `--max <count>`. The `Found N lines` count shows the number of matches returned.
-- Matched line text is cut to about 120 characters and ends in `...`. Open the file at that line for the full text.
-- Always pass `--current-directory "<folder>"`. It is the folder to search.
-- The filter is the first positional argument, e.g. `"*.h;*.cpp"`. Separate several with `;`. "**" is used for all files and recursive
-- Use `--recursive` <depth> to search subfolders. Without it only the top folder is searched, the depth number number of levels to search.
-- Check option spelling. Unknown options print the help text and `ERROR: Unknown option`.
-- The pattern option is `--pattern` and regular expression patterns use `--rpattern`.
-- Separate several patterns with `,` or `;`.
-- For regex searching/counting with `list`, `find`, or `count`, repeat `--rpattern` for each expression.
-  Searching for multiple regex expressions is done by adding multiple `--rpattern` arguments, for example:
-  `& 'C:\Tools\cleaner.exe' count "*variant_view*.h;*variant_view*.cpp" -R --rpattern "set" --rpattern "compare" --current-directory "C:\dev\home\DOD\external\gd"`
-- By default `list` and `find` search code only. Comments and string literals are skipped, so text that only
-  appears in a comment or string is not found. Use `--segment all` when the text may be in a comment or string,
-  for example log messages or tags such as `[tag: ...]`. Use `--segment comment` or `--segment string` to search only that part.
-- `--context N` shows N lines after each match. A second number (`--context 2,6`) sets lines before and after.
-- Limit output with `--max <count>` or a narrow filter such as `gd_table*.h`. Do not dump large results.
-- The exit code is often -1 even when the output is correct. Ignore it, and judge success from the output.
-- Output lines look like `path:line - [text]`. Progress lines ("Find in files: ...") are noise.
-
-### Commands
-- `list` searches one line at a time. This is the default for finding names, signatures and usages.
-- `find` is almost the same as `list` but is not line-bound, so patterns can span multiple lines.
-  It searches code only and strips comments and strings first. Use `--rpattern <regex>` for regular
-  expressions. Use `list` instead when the match is in a comment or string.
-- `count` counts lines per file or counts found words in file, words are placed in --pattern argument. Example for code size per file:
-  `cleaner count "*.h;*.cpp" -R --sort count --current-directory "<folder>"`
+### Commands in cleaner
+- Use `list` for single line matches and `find` for multi-line matches. Use `count` to count lines or words.
+- Use `find` for multi-line matches. Use `count` to count lines or words.
 - Use `count` for quick scoping only (frequency by file), then use `list` or `find` to get exact lines before editing.
 - `dir` lists files with filters.
 
+### `cleaner` argument rules
+- Important arguments!! `--pattern` or `--rpattern` is required to specify the text to search for. Use `--pattern` for literal text and `--rpattern` for regex.
+- The `--recursive` option is required to search subfolders. Without it only the top folder is searched. Shortcuts: `-R` for recursive taking all subfolders.
+- The `--current-directory "<folder>"` option is required to specify the folder to search.
+- The "--context N" option shows N lines after each match. A second number ("--context 2,6") sets start and number of lines, one number shows lines after the match, negative starting lines before the match. Use it to get context for the match.
+- The '--segment' option controls which parts of the code are searched. By default, only code is searched, skipping comments and string literals. Use `--segment all` to search everything, or `--segment comment` or `--segment string` to search only that part.
+- The flag `-llm` (single dash) together with `--context N`. Adapts the output for LLMs, showing the matching line and context with `>` markers. Use it when you want to feed results to an LLM.
+- The '--max <count>' option limits the number of matches returned. Use it to avoid dumping large results.
+- Bound output with `--max <count>`. The `Found N lines` count shows the number of matches returned.
+- Set root folder `--current-directory "<folder>"`. 
+- The `--filter` is the first positional argument, e.g. `"*.h;*.cpp"`. Separate several with `;`. "**" is used for all files and recursive
+- Check option spelling. Unknown options print the help text and `ERROR: Unknown option`.
+- Separate several patterns with `;`.
+- For regex searching/counting with `list`, `find`, or `count`, repeat `--rpattern` for each expression.
+  Searching for multiple regex expressions is done by adding multiple `--rpattern` arguments, for example:
+  `& 'C:\Tools\cleaner.exe' count "*variant_view*.h;*variant_view*.cpp" -R --rpattern "set" --rpattern "compare" --current-directory "C:\dev\home\DOD\external\gd"`
+- `--context N` shows N lines after each match. A second number (`--context 2,6`) sets lines before and after.
+- The exit code is often -1 even when the output is correct. Ignore it, and judge success from the output.
+- Output lines look like `path:line - [text]`. Progress lines ("Find in files: ...") are noise.
 
-
-# Instructions for AI coding assistants
-
-These instructions describe the conventions used in this repository. Apply them
-when writing, completing, editing, or reviewing code.
-
-## 1. Priority and scope
+## Priority and scope
 
 When instructions appear to conflict, use this order:
 
@@ -60,7 +47,7 @@ existing file, its surrounding code is the strongest style example. If an
 existing local pattern conflicts with this guide, preserve it in a small
 completion unless the requested change requires resolving the inconsistency.
 
-## 2. Completion and edit behavior
+## Completion and edit behavior
 
 - For Fill-in-the-Middle (FIM), use both the code before and after the insertion
   point. Produce code that fits between them and leaves the surrounding syntax
@@ -84,11 +71,13 @@ completion unless the requested change requires resolving the inconsistency.
 - After editing, run the most relevant available build, test, or static check.
   Report checks that could not be run; never imply that unrun checks passed.
 
-## 3. Variable naming: Hungarian notation
+## Variable naming: Hungarian notation
 
 Use Hungarian notation for variables: local variables, parameters, structured
 bindings, and data members. The prefix communicates the variable's type or
-category; the remaining name describes its full meaning.
+category; the remaining name describes its full meaning. Reason why this is 
+that patterns are central to the codebase, and type and pattern describe the
+variable's role without needing to read implementation details.
 
 ### Type and category prefixes
 
@@ -161,7 +150,7 @@ explicit type just to expose a type prefix.
   exception, for example `list_`. Keep this exception rare and local.
 - Do not use these exceptions for domain concepts, parameters, or members.
 
-## 4. Method and type naming
+## Method and type naming
 
 Do not apply Hungarian notation to method names. Use the naming style for the
 repository layer:
@@ -181,7 +170,7 @@ to match this list.
 Keep class, enum, and public API naming consistent with the surrounding
 directory and target. Do not infer a naming convention from a different layer.
 
-## 5. C++ formatting and implementation
+## C++ formatting and implementation
 
 - Match the file's existing indentation and whitespace. In the core library,
   the common indentation is three spaces.
@@ -198,19 +187,8 @@ directory and target. Do not infer a naming convention from a different layer.
 - Use `assert` consistently with nearby code. Do not add alignment spaces merely
   to push an assertion to a fixed column.
 
-## 6. Types, pointers, and ownership
 
-- Prefer the ownership model already used by the surrounding code.
-- Use smart pointers for newly introduced ownership where compatible with the
-  surrounding API. Keep the `p` prefix for smart and raw pointer variables.
-- Use raw pointers for non-owning observers only when appropriate for the
-  API; make their non-owning lifetime clear in a nearby comment when it is not
-  obvious.
-- Avoid introducing raw owning pointers. If existing APIs require one, follow
-  the established cleanup and lifetime pattern explicitly.
-- Do not change ownership or lifetime semantics as part of an unrelated edit.
-
-## 7. Comments and documentation
+## Comments and documentation
 
 Comments should explain why code exists or clarify non-obvious behavior. Do not
 add comments that merely restate the code.
@@ -225,7 +203,7 @@ add comments that merely restate the code.
 - Preserve existing search tags when editing tagged code. Use the project's tag
   format: `tagname [tag: context_words] [summary: short summary]`.
 
-## 8. Repository-specific context
+## Repository-specific context
 
 `external/gd/` contains the shared GD library and is a core part of this
 repository. Prefer reusing its existing types and utilities when working in
@@ -254,7 +232,3 @@ Treat this list as navigation help, not a replacement for reading the relevant
 declarations and implementations. Verify exact signatures and semantics in the
 code before using an API.
 
-## 9. UI Control Classes
-
-Plan general, platform-neutral classes for UI controls across Windows, Linux,
-and macOS, backed by platform-specific native implementations.
