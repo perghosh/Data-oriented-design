@@ -5,7 +5,7 @@
  *
  * @brief Table used to transfer/move data, Use `gd::table::dto::table` class that is optimized for data transfer.
  *
- * Sections — double-click a marker, then Ctrl+F3 / F3 to jump.
+ * Sections — double-click a marker, then Ctrl+Shift+F3 / F3 to jump.
  *
  * help__            Generate help and documentation for command-line options.
  * initialize__      Initialize the application
@@ -77,6 +77,7 @@ bool os_fnmatch(const char* piPattern, const char* piPath) {
 #include "cli/CLILog.h"
 #include "cli/CLIPaste.h"
 #include "cli/CLIRun.h"
+#include "cli/CLIHelp.h"
 
 
 #include "Command.h"
@@ -976,15 +977,23 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       using namespace gd::cli; // use namespace for options
       std::string stringDocumentation, stringFlags;
 
-      stringDocumentation += "\n\n";
-      stringDocumentation += gd::console::rgb::print(CONFIG_Get("color", { "disabled", "default" }).as_string(), gd::types::tag_color{});
-      std::string stringTemp =  "Requested help for commands";
-      stringDocumentation += gd::math::string::format_header_line(stringTemp, 80); // format header line for command name
-      stringDocumentation += "\n\n";
+      if (poptionsActive->exists("command"))
+      {
+         auto* pdocument = DOCUMENT_Get("help", true);
+         return CLI::Help_g(pdocument, poptionsActive, &optionsApplication);
+      }
+      else
+      {
+         stringDocumentation += "\n\n";
+         stringDocumentation += gd::console::rgb::print(CONFIG_Get("color", { "disabled", "default" }).as_string(), gd::types::tag_color{});
+         std::string stringTemp = "Requested help for commands";
+         stringDocumentation += gd::math::string::format_header_line(stringTemp, 80); // format header line for command name
+         stringDocumentation += "\n\n";
 
-      HELP_PrintDocumentation( &optionsApplication, stringDocumentation );
+         HELP_PrintDocumentation(&optionsApplication, stringDocumentation);
 
-      std::cout << stringDocumentation << "\n";
+         std::cout << stringDocumentation << "\n";
+      }
    }
    else if( stringCommandName == "version" )
    {
@@ -1778,197 +1787,6 @@ bool CApplication::IGNORE_MatchFilename(const std::string_view& stringFileName) 
 }
 
 
-
-// 0TAG0Database.Application
-
-#if 0
-/** ---------------------------------------------------------------------------
- * @brief Open a database connection
- *
- * @param argumentsOpen The arguments used to open the database.
- * @param argumentsOpen.file The file name of the database.
- * @param argumentsOpen.create Whether to create the database if it doesn't exist (default: true).
- * @return std::pair<bool, std::string> True if successful, false and error message if failed
- */
-std::pair<bool, std::string> CApplication::DATABASE_Open(const gd::argument::shared::arguments& argumentsOpen)
-{                                                                                                  assert( argumentsOpen.empty() == false ); // Ensure the arguments are not empty
-   DATABASE_CloseActive();
-
-   bool bConnected = false;
-   bool bCreate = true;
-   if( argumentsOpen.exists("create") == true ) { bCreate = argumentsOpen["create"].as_bool(); }
-
-   std::string stringPath = argumentsOpen["file"].as_string();
-   if( stringPath.empty() == false )
-   {
-      gd::argument::arguments argumentsCreate({ {"file", stringPath}, { "create", bCreate} } );
-
-      gd::database::sqlite::database_i* pdatabase = new gd::database::sqlite::database_i();     // create database interface
-      pdatabase->add_reference();
-      auto result_ = pdatabase->open(argumentsCreate);
-      if( result_.first == false )
-      {
-         pdatabase->release();
-         return { false, result_.second };
-      }
-      m_pdatabase = pdatabase;
-      bConnected = true;
-
-   }
-   return { bConnected, "" };
-}
-
-/** ---------------------------------------------------------------------------
- * @brief Check if database needs to be updated and needed then update the database to the latest version
- *
- * @return std::pair<bool, std::string> True if successful, false and error message if failed
- */
-std::pair<bool, std::string> CApplication::DATABASE_Update()
-{                                                                                                  assert(m_pdatabase != nullptr); // Ensure the active database connection is valid
-   // Check if the table "TVersion" exists
-   uint64_t uVersion;
-   gd::variant value_;
-   auto result_ = m_pdatabase->ask("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='TVersion';", &value_ );
-   if( result_.first == false ) { return { false, result_.second }; }
-   uVersion = value_.as_uint64();
-
-   if( uVersion < 1u )
-   {
-      result_ = DATABASE_Upgrade( uVersion );
-      if( result_.first == false ) { return { false, result_.second }; }
-   }
-
-   return { true, "" };
-}
-
-/** ---------------------------------------------------------------------------
- * @brief Upgrade the database to the latest version
- *
- * @param uVersion The current version of the database
- * @return std::pair<bool, std::string> True if successful, false and error message if failed
- */
-std::pair<bool, std::string> CApplication::DATABASE_Upgrade(uint64_t uVersion)
-{
-   std::string_view stringSql;
-
-   if( uVersion == 0 )
-   {
-      stringSql = R"sql(
-CREATE TABLE TVersion( VersionK INTEGER PRIMARY KEY, FVersion INTEGER, FMajor INTEGER, FMinor INTEGER, FBuild INTEGER, FRevision INTEGER );
-
-CREATE TABLE TProject( ProjectK INTEGER PRIMARY KEY, TypeC INTEGER, StateC INTEGER, FName TEXT, FFolder VARCHAR(260), FDescription TEXT, FVersion INTEGER );
-
-CREATE TABLE TFile( FileK INTEGER PRIMARY KEY, ProjectK INTEGER, TypeC INTEGER, FName TEXT, FSize INTEGER, FDescription TEXT );
-CREATE TABLE TFileProperty(
-   FilePropertyK INTEGER PRIMARY KEY, FileK INTEGER, ValueType INTEGER, FName TEXT, FValue TEXT, FDate REAL,
-   FOREIGN KEY( FileK ) REFERENCES TFile( FileK ) ON DELETE CASCADE
-);
-
-CREATE TABLE TCodeGroup( CodeGroupK INTEGER PRIMARY KEY, FName TEXT, FDescription TEXT );
-CREATE TABLE TCode(
-   CodeK INTEGER PRIMARY KEY, CodeGroupK INTEGER, FName VARCHAR(100), FDescription TEXT,
-   FOREIGN KEY( CodeGroupK ) REFERENCES TCodeGroup( CodeGroupK )
-);
-
-INSERT INTO TVersion( FVersion, FMajor, FMinor, FBuild, FRevision ) VALUES ( 1, 0, 0, 0, 0 );
-INSERT INTO TProject( ProjectK, FName, FDescription, FVersion ) VALUES ( 1, 'demo', 'demo project', 1 );
-)sql";
-      auto result_ = m_pdatabase->execute(stringSql);
-      if( result_.first == false ) { return { false, result_.second }; }
-   }
-
-   return { true, "" };
-}
-
-/** ---------------------------------------------------------------------------
- * @brief Connect to database
- * Connect to database based on string that holds information on how to connect
- *
- * @param stringConnect connection string
- * @return true if ok, false and error information if failed
- */
-std::pair<bool, std::string> CApplication::DATABASE_Connect( const std::string_view& stringConnect )
-{
-   std::string stringConnectionName;
-   std::string stringConnectionName2;
-
-   DATABASE_CloseActive();
-
-   if( stringConnect.empty() == true )
-   {
-      stringConnectionName = PROPERTY_Get("database").as_string();             assert( stringConnectionName.empty() == false );
-   }
-   else
-   {
-      stringConnectionName = stringConnect;
-   }
-
-   // ## connect main database
-   bool bOk = false;
-   std::string stringError;
-   gd::database::database_i* pdatabaseMain = nullptr;
-
-
-   if(true)
-   {
-#ifdef GD_DATABASE_ODBC_USE
-      gd::database::odbc::database_i* pdatabase = new gd::database::odbc::database_i();  // create database interface
-      pdatabase->add_reference();
-      std::tie(bOk, stringError) = pdatabase->open( stringConnectionName );
-      pdatabaseMain = pdatabase;
-#else
-      bOk = false;
-      stringError = "Only file connection is enabled, make sure to connect to file database (sqlite)";
-#endif
-   }
-   else
-   {
-      gd::database::sqlite::database_i* pdatabase = new gd::database::sqlite::database_i();  // create database interface
-      pdatabase->add_reference();
-      std::tie(bOk, stringError) = pdatabase->open( stringConnectionName );
-      pdatabaseMain = pdatabase;
-   }
-
-   if( bOk == true )
-   {
-      m_pdatabase = pdatabaseMain;
-   }
-   else
-   {
-      if( pdatabaseMain != nullptr ) pdatabaseMain->release();
-      if( stringError.empty() == true ) stringError = "Failed to collect information about database connection";
-      return { false, stringError };
-   }
-
-   return { true, "" };
-}
-
-void CApplication::DATABASE_Append( gd::database::database_i* pdatabase, bool bActivate )
-{                                                                                                  assert( pdatabase != nullptr );
-   pdatabase->add_reference();
-   m_vectorDatabase.push_back( pdatabase );
-   if( bActivate == true )
-   {
-      if( m_pdatabase != nullptr ) m_pdatabase->release();
-      m_pdatabase = pdatabase;
-      if( m_pdatabase != nullptr ) m_pdatabase->add_reference();
-   }
-}
-
-
-/** ---------------------------------------------------------------------------
- * @brief Close active database
-*/
-void CApplication::DATABASE_CloseActive()
-{
-   if( m_pdatabase != nullptr )
-   {
-      m_pdatabase->release();
-      m_pdatabase = nullptr;
-   }
-}
-#endif // 0
-
 /** --------------------------------------------------------------------------- @API [tag: configuration, load] [description: Load configuration from a JSON file into the config table]
  * @brief Load configuration from a JSON file into the config table
  *
@@ -2711,7 +2529,9 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
 
    {  // ## `help` print help about @TAG #options.help
       gd::cli::options optionsCommand( "help", "Print command line help" );
+      optionsCommand.add({ "command", "Print information about a specific command" });
       optionsCommand.add_flag({ "commands", "List all available commands without detailed descriptions" });
+      optionsCommand.add_flag({ "llm", "Adapt result for llm" });
       optionsCommand.set_flag((gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0);
       optionsCommand.parent(&optionsApplication);
       optionsApplication.sub_add( std::move( optionsCommand ) );
