@@ -983,7 +983,7 @@ struct names
    /// Reserve memory to store names 
    void reserve( unsigned uSize );
    /// Resize internal buffer, existing names are kept
-   void resize(unsigned uSize) {  if( uSize > m_uMaxSize ) { reserve( uSize ); }  m_uSize = uSize; }
+   void resize(unsigned uSize) { assert( uSize < 0xf000 ); if(uSize > m_uMaxSize) { reserve(uSize); }  m_uSize = (uint16_t)uSize; }
    /// Free allocated memory and reset members
    void clear() {
       delete [] m_pbBufferNames; 
@@ -1329,7 +1329,7 @@ namespace argument
 
       ~column() {}
       // common copy
-      void common_construct(const column& o) {}
+      void common_construct(const column& o) { m_uType = o.m_uType; m_uSize = o.m_uSize; m_stringName = o.m_stringName; m_stringAlias = o.m_stringAlias; }
 
    // ## methods -----------------------------------------------------------------
       unsigned type() const { return m_uType; }

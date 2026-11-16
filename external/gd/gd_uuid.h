@@ -182,10 +182,10 @@ inline std::string to_string_g( uuid const& uuid )
    for( auto it = uuid.m_pbData, itEnd = uuid.m_pbData + 16; it != itEnd; it++, uIndex++ )
    {
       unsigned uByte = ((*it) >> 4) & 0x0F;
-      *pbsz++ = uByte <= 9 ? '0' + uByte : 'a' + (uByte - 10);
+      *pbsz++ = uByte <= 9 ? char('0' + uByte) : char('a' + (uByte - 10));
 
       uByte = (*it) & 0x0F;
-      *pbsz++ = uByte <= 9 ? '0' + uByte : 'a' + (uByte - 10);
+      *pbsz++ = uByte <= 9 ? char('0' + uByte) : char('a' + (uByte - 10));
 
       if( uIndex == *puIndex )
       {
@@ -211,10 +211,10 @@ inline std::string to_hex_g( uuid const& uuid )
    for( auto it = uuid.m_pbData, itEnd = uuid.m_pbData + 16; it != itEnd; it++, uIndex++ )
    {
       unsigned uByte = ((*it) >> 4) & 0x0F;
-      *pbsz++ = uByte <= 9 ? '0' + uByte : 'a' + (uByte - 10);
+      *pbsz++ = uByte <= 9 ? char('0' + uByte) : char('a' + (uByte - 10));
 
       uByte = (*it) & 0x0F;
-      *pbsz++ = uByte <= 9 ? '0' + uByte : 'a' + (uByte - 10);
+      *pbsz++ = uByte <= 9 ? char('0' + uByte) : char('a' + (uByte - 10));
    }
 
    return stringResult;

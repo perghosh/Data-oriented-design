@@ -147,13 +147,12 @@ public:
 
 
 
-/** \name CACHE
- * ## @API [tag: table-cache]
+
+/* @API [tag: table-cache]
         [description: Documents can cache information in tables that are named.]
         [detail: "Each cache is stored in a named table, which is kept in the document's `m_vectorTableCache` member
-         Tables may also be marked as temporary, meaning they should be removed as soon as they are no longer needed."]
-*
- *///@{
+        Tables may also be marked as temporary, meaning they should be removed as soon as they are no longer needed."]
+*/
    /// Prepare cache information structure
    void CACHE_Prepare( const std::string_view& stringId );
    void CACHE_Prepare( const std::string_view& stringId, std::unique_ptr<gd::table::dto::table>* ptable );
@@ -199,7 +198,6 @@ public:
 #ifndef NDEBUG
    bool CACHE_Exists_d( const std::string_view& stringId );
 #endif // !NDEBUG
-//@}
 
 /** \name RESULT
  * Methods used to generate results data based on what the document is storing
@@ -269,7 +267,7 @@ public:
    gd::argument::shared::arguments m_arguments; ///< document information (members)
 
    // ## cache information is stored in dto tables (dto = data transfer object)
-   std::shared_mutex m_sharedmutexTableCache;   ///< mutex used as lock for table methods in document
+   //std::shared_mutex m_sharedmutexTableCache;   ///< mutex used as lock for table methods in document
    std::string m_stringCacheConfiguration;      ///< file name for file with cache configuration information
 
    /// Mutex lock used when methods within document work on table data
@@ -311,13 +309,12 @@ public:
 };
 
 /// \brief Prepare cache information structure
-inline void CDocument::CACHE_Prepare( const std::string_view& stringId )
-{
+inline void CDocument::CACHE_Prepare( const std::string_view& stringId ) {
    CACHE_Prepare(stringId, nullptr);
 }
 
-inline void CDocument::CACHE_Clear()
-{
+/// \brief Clear all cache data
+inline void CDocument::CACHE_Clear() {
    std::unique_lock lock( m_mutexCache );
    m_vectorTableCache.clear();
 }

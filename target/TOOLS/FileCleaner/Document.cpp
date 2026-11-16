@@ -2718,7 +2718,7 @@ std::pair<bool, std::string> CDocument::CACHE_Load( const std::string_view& stri
 bool CDocument::CACHE_Add( gd::table::dto::table&& table, const std::string_view& stringId )
 {
    std::string_view stringTableId( stringId );
-   std::unique_lock<std::shared_mutex> lock_( m_sharedmutexTableCache );       // locks `m_vectorTableCache`
+   std::unique_lock lock(m_mutexCache);
 
    if( stringTableId.empty() == true ) { stringTableId = ( const char* )table.property_get( "id" ); }
 
@@ -2749,7 +2749,7 @@ bool CDocument::CACHE_Add( gd::table::dto::table&& table, const std::string_view
 
 void CDocument::CACHE_Add( std::unique_ptr< gd::table::arguments::table > ptable_ )
 {
-   std::unique_lock<std::shared_mutex> lock_( m_sharedmutexTableCache );       // locks `m_vectorTableCache`
+   std::unique_lock lock(m_mutexCache);                                         // locks `m_vectorTableCache`
 
    m_vectorTableCache.push_back( std::move( ptable_ ) );                        // insert table to vector
 }
@@ -2758,7 +2758,7 @@ void CDocument::CACHE_Add( std::unique_ptr< gd::table::arguments::table > ptable
 std::string CDocument::CACHE_Add( gd::table::dto::table&& table, const std::string_view& stringId, gd::types::tag_temporary )
 {
    std::string stringTableId( stringId );
-   std::unique_lock<std::shared_mutex> lock_( m_sharedmutexTableCache );       // locks `m_vectorTableCache`
+   std::unique_lock lock(m_mutexCache);                                         // locks `m_vectorTableCache`
 
    table.property_set({ "temporary", true }); // mark table as temporary
 
@@ -2798,7 +2798,7 @@ std::string CDocument::CACHE_Add( gd::table::dto::table&& table, const std::stri
 
 void CDocument::CACHE_Add( std::unique_ptr< gd::table::dto::table > ptableAdd )
 {
-   std::unique_lock<std::shared_mutex> lock_( m_sharedmutexTableCache );       // locks `m_vectorTableCache`
+   std::unique_lock lock(m_mutexCache);                                        // locks `m_vectorTableCache`
    m_vectorTableCache.push_back( std::move( ptableAdd ) );                     // insert table to vector
 }
 
@@ -2809,7 +2809,7 @@ void CDocument::CACHE_Add( std::unique_ptr< gd::table::dto::table > ptableAdd )
  */ 
 bool CDocument::CACHE_Get(const std::string_view& stringId, pointer_table_t& ptable_ )
 {
-   std::shared_lock<std::shared_mutex> lock_( m_sharedmutexTableCache );
+   std::unique_lock lock(m_mutexCache);
 
    for( auto it = std::begin( m_vectorTableCache ), itEnd = std::end( m_vectorTableCache ); it != itEnd; it++ )
    {
@@ -2837,7 +2837,7 @@ bool CDocument::CACHE_Get(const std::string_view& stringId, pointer_table_t& pta
 gd::table::dto::table* CDocument::CACHE_Get( const std::string_view& stringId, bool bPrepare )
 {
    {
-      std::shared_lock<std::shared_mutex> lock_( m_sharedmutexTableCache );
+      std::unique_lock lock(m_mutexCache);
 
       for( auto it = std::begin( m_vectorTableCache ), itEnd = std::end( m_vectorTableCache ); it != itEnd; it++ )
       {
@@ -2875,7 +2875,7 @@ gd::table::dto::table* CDocument::CACHE_Get( const std::string_view& stringId, b
 gd::table::arguments::table* CDocument::CACHE_GetTableArguments( const std::string_view& stringId, bool bPrepare )
 {
    {
-      std::shared_lock<std::shared_mutex> lock_( m_sharedmutexTableCache );
+      std::unique_lock lock(m_mutexCache);
 
       for( auto it = std::begin( m_vectorTableCache ), itEnd = std::end( m_vectorTableCache ); it != itEnd; it++ )
       {
@@ -2901,7 +2901,6 @@ gd::table::arguments::table* CDocument::CACHE_GetTableArguments( const std::stri
    }
 
    return nullptr;
-
 }
 
 // @TASK #user.per [name: sort] [brief: Find sort column by first match exact, then check for index and last try to find part of column name] [state: open] [date: 2025-08-13]
@@ -3305,7 +3304,7 @@ gd::argument::arguments CDocument::CACHE_GetInformation( const std::string_view&
  */
 void CDocument::CACHE_Erase(gd::types::tag_temporary)
 {
-   std::unique_lock<std::shared_mutex> lock_(m_sharedmutexTableCache);
+   std::unique_lock lock(m_mutexCache);
 
    // ## Remove all tables with property "temporary" == true
 
@@ -3330,28 +3329,27 @@ void CDocument::CACHE_Erase(gd::types::tag_temporary)
 }
 
 
-/** ---------------------------------------------------------------------------
+/** --------------------------------------------------------------------------- CACHE_Erase
  * @brief Erase table cache
  * @param stringId id for cache to delete
  */
 void CDocument::CACHE_Erase( const std::string_view& stringId ) 
 {
-   std::shared_lock<std::shared_mutex> lock_( m_sharedmutexTableCache );
+   std::unique_lock lock(m_mutexCache);
 
-   if(CACHE_Exists(stringId) == true)
+   if (CACHE_Exists(stringId) == false) return;
+
+   for( auto it = std::begin( m_vectorTableCache ), itEnd = std::end( m_vectorTableCache ); it != itEnd; it++ )
    {
-      for( auto it = std::begin( m_vectorTableCache ), itEnd = std::end( m_vectorTableCache ); it != itEnd; it++ )
-      {
-         // Use std::visit to get argument id from table
-         auto argumentId = std::visit([](const auto& ptable_) {
-            return ptable_->property_get("id");
-         }, *it);
+      // Use std::visit to get argument id from table
+      auto argumentId = std::visit([](const auto& ptable_) {
+         return ptable_->property_get("id");
+      }, *it);
 
-         if( argumentId.is_string() && stringId == ( const char* )argumentId )
-         {
-            it = m_vectorTableCache.erase( it );
-            break;
-         }
+      if( argumentId.is_string() && stringId == ( const char* )argumentId )
+      {
+         it = m_vectorTableCache.erase( it );
+         break;
       }
    }
 }
