@@ -1,33 +1,27 @@
 ## Searching the code with cleaner
 
-`C:\Tools\cleaner.exe` is a fast CLI search tool. Use it from PowerShell instead of reading whole files
-or guessing, to keep output small. Call it by full path: `& 'C:\Tools\cleaner.exe' <command> ...`
+Use `C:\Tools\cleaner.exe` for ALL code searching, instead of reading whole files or guessing.
+Call it from PowerShell by full path: `& 'C:\Tools\cleaner.exe' <command> ...`
 
-### Commands in cleaner
-- Use `list` for single line matches and `find` for multi-line matches. Use `count` to count lines or words.
-- Use `find` for multi-line matches. Use `count` to count lines or words.
-- Use `count` for quick scoping only (frequency by file), then use `list` or `find` to get exact lines before editing.
-- `dir` lists files with filters.
+### Commands
+- `list`: single-line matches (names, calls, declarations)
+- `find`: multi-line matches (patterns spanning lines)
+- `count`: matches per file. Use for scoping only, then use `list` or `find` for exact lines before editing
+- `dir`: list files with filters
 
-### `cleaner` argument rules
-- Important arguments!! `--pattern` or `--rpattern` is required to specify the text to search for. Use `--pattern` for literal text and `--rpattern` for regex.
-- The `--recursive` option is required to search subfolders. Without it only the top folder is searched. Shortcuts: `-R` for recursive taking all subfolders.
-- The `--current-directory "<folder>"` option is required to specify the folder to search.
-- The "--context N" option shows N lines after each match. A second number ("--context 2,6") sets start and number of lines, one number shows lines after the match, negative starting lines before the match. Use it to get context for the match.
-- The '--segment' option controls which parts of the code are searched. By default, only code is searched, skipping comments and string literals. Use `--segment all` to search everything, or `--segment comment` or `--segment string` to search only that part.
-- The flag `-llm` (single dash) together with `--context N`. Adapts the output for LLMs, showing the matching line and context with `>` markers. Use it when you want to feed results to an LLM.
-- The '--max <count>' option limits the number of matches returned. Use it to avoid dumping large results.
-- Bound output with `--max <count>`. The `Found N lines` count shows the number of matches returned.
-- Set root folder `--current-directory "<folder>"`. 
-- The `--filter` is the first positional argument, e.g. `"*.h;*.cpp"`. Separate several with `;`. "**" is used for all files and recursive
-- Check option spelling. Unknown options print the help text and `ERROR: Unknown option`.
-- Separate several patterns with `;`.
-- For regex searching/counting with `list`, `find`, or `count`, repeat `--rpattern` for each expression.
-  Searching for multiple regex expressions is done by adding multiple `--rpattern` arguments, for example:
-  `& 'C:\Tools\cleaner.exe' count "*variant_view*.h;*variant_view*.cpp" -R --rpattern "set" --rpattern "compare" --current-directory "C:\dev\home\DOD\external\gd"`
-- `--context N` shows N lines after each match. A second number (`--context 2,6`) sets lines before and after.
-- The exit code is often -1 even when the output is correct. Ignore it, and judge success from the output.
-- Output lines look like `path:line - [text]`. Progress lines ("Find in files: ...") are noise.
+### Get the options before the first use
+Run `& 'C:\Tools\cleaner.exe' help <list|find|count> -llm` once per session and follow its output.
+Do not guess option names: unknown options print help and `ERROR: Unknown option`.
+
+### Always
+- Filter is the first positional argument, e.g. `"*.h;*.cpp"`. --filter if not first.
+- Set `--current-directory "<folder>"` and `-R` (subfolders), and bound output with `--max N`.
+- Use `-llm` (single dash) together with `--context N` when you need to read the surrounding code.
+- Separate several literal patterns with `;`. Repeat `--rpattern` for several regex expressions.
+
+### Output
+Lines look like `path:line - [text]`. Ignore progress lines ("Find in files: ...").
+The exit code is often -1 even when the output is correct, so judge success from the output.
 
 ## Priority and scope
 
@@ -224,9 +218,6 @@ Useful GD headers:
 | `gd_table.h` | `gd::table`: table primitives |
 | `gd_table_table.h` | `gd::table`: fixed-column table |
 | `gd_table_arguments.h` | `gd::table::arguments`: table with dynamic row columns |
-| `gd_table_column.h` | `gd::table::detail`: column metadata |
-| `gd_table_index.h` | `gd::table`: integer index |
-| `gd_table_io.h` | `gd::table`: table serialization and output |
 
 Treat this list as navigation help, not a replacement for reading the relevant
 declarations and implementations. Verify exact signatures and semantics in the
