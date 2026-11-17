@@ -3336,6 +3336,32 @@ int64_t table::find(uint64_t uStartRow, uint64_t uCount, const gd::argument::arg
    return -1;
 }
 
+/** --------------------------------------------------------------------------- find_any_of_all
+ * @brief Finds rows whose value in the specified column matches any of the given strings.
+ * @param uColumn The column to search.
+ * @param uStartRow The first row to search.
+ * @param uCount The number of rows to search.
+ * @param vectorMatch The strings to match against.
+ * @return The indices of rows whose value in the specified column matches any string in vectorMatch.
+ */
+std::vector<uint64_t> table::find_any_of_all(unsigned uColumn, uint64_t uStartRow, uint64_t uCount, const std::span<std::string_view>& spanMatch) const
+{                                                                                                  assert(uColumn < get_column_count() ); assert((uStartRow + uCount) <= get_row_count());
+   std::vector<uint64_t> vectorResult;
+   for( uint64_t uRow = uStartRow, uEnd = uStartRow + uCount; uRow < uEnd; uRow++ )
+   {
+      auto variantviewValue = cell_get_variant_view(uRow, uColumn);
+      if( variantviewValue.is_string() == true )
+      {
+         auto stringValue = variantviewValue.as_string();
+         for( const auto& stringMatch : spanMatch )
+         {
+            if( stringValue == stringMatch ) { vectorResult.push_back(uRow); break; }
+         }
+      }
+   }
+   return vectorResult;
+}
+
 
 
 /** ---------------------------------------------------------------------------

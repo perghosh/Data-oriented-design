@@ -1,11 +1,34 @@
 // @FILE [tag: table, print, output] [description: Generate output from tables in different formats] [type: source] [name: gd_table_io.cpp]
 
 #include <numeric>
+#include <stdexcept>
 
 #include "gd_parse.h"
 #include "gd_sql_value.h"
 
 #include "gd_table_io.h"
+
+/**
+ * @file gd_table_io.cpp
+ * @brief Read table data from CSV and generate CSV, JSON, CLI and SQL output.
+ *
+ * ### File navigation
+ * Search for a [jump: name] marker below to navigate to a section.
+ *
+ * - csv__  - CSV output with optional column headers, comma-separated values and
+ *            quoted strings; CSV input into tables or a vector of header names.
+ * - json__ - JSON row arrays or named objects, optional headers, selected rows,
+ *            custom text formatting and scientific notation.
+ * - cli__  - Fixed-width console grids with headers, dividers, alignment, optional
+ *            row numbers, width limits, multi-line cells and row/column selection.
+ *            Row selection is supported by the standard grid formatter; multi-line
+ *            and column-selection formatting use separate overloads.
+ * - raw__  - Plain console output with column headers and two-space-separated
+ *            values, without grid borders or fixed-width padding.
+ * - sql__  - SQL INSERT output for row ranges or selected rows, with optional
+ *            column names supplied through the "names" option.
+ */
+
 
 _GD_TABLE_BEGIN
 
@@ -87,6 +110,8 @@ std::pair<bool, std::string> to_table( const std::string_view& stringTableData, 
    return std::pair<bool, std::string>();
 }
 */
+
+// @API [tag: table, csv, output] [description: Convert table to csv format] [jump: csv__]
 
 /// convert table (both header and body) to json array
 void to_string(const dto::table& table, uint64_t uBegin, uint64_t uCount, const gd::argument::arguments& argumentsOption, const std::function<bool(const std::string_view&, std::string& stringNew)>& format_text_, std::string& stringOut, tag_io_header, tag_io_csv)
@@ -506,7 +531,7 @@ std::pair<bool, const char*> read_g(std::vector<std::string>& vectorHeader, cons
    return std::pair<bool, const char*>();
 }
 
-// std::pair< bool, std::string >
+// @API [tag: table, json, output] [description: Convert table to json format] [jump: json__]
 
 /**  -------------------------------------------------------------------------- to_string
  * @brief Convert table rows to JSON array format
@@ -919,11 +944,13 @@ void to_string_s(const TABLE& table, const gd::argument::arguments& argumentOpti
    stringOut.append( std::string_view{" |\n"});
 }
 
+// @API [tag: table, cli, output] [description: format table to make it look good printing to cli] [jump: cli__]
+
 /** ---------------------------------------------------------------------------
  * @brief print table with nicer format, sutable for console printing
  * @param table table to print
- * @param uBegin from what row in table to print
- * @param uCount last row to print
+ * @param uBegin first row to print, or first position in pvectorRow when supplied
+ * @param uCount number of rows to print, limited to the remaining selection when pvectorRow is supplied
  * @param vectorWidth max number of characters for each column in table, this needs to be prepared befor sending table to string
  * @param argumentOption options on how to pring
  * @param argumentOption.count max row count converted to string
@@ -931,11 +958,20 @@ void to_string_s(const TABLE& table, const gd::argument::arguments& argumentOpti
  * @param argumentOption.max_column_width if set value then prite elipsis if size is above
  * @param argumentOption.verbose if true then try to fit as much as possible
  * @param stringOut string getting generated string with database data
+ * @param pvectorRow optional zero-based table row indices, printed in supplied order including duplicates; empty means no data rows
+ * @throws std::out_of_range if uBegin exceeds the selection size or a printed row index is outside the table
 */
 template <typename TABLE>
-void to_string_s( const TABLE& table, uint64_t uBegin, uint64_t uCount, std::vector<unsigned> vectorWidth, const gd::argument::arguments& argumentOption, std::string& stringOut )
+void to_string_s( const TABLE& table, uint64_t uBegin, uint64_t uCount, std::vector<unsigned> vectorWidth, const gd::argument::arguments& argumentOption, std::string& stringOut, const std::vector<uint64_t>* pvectorRow = nullptr )
 {
    if( argumentOption.exists("count") == true ) { uCount = argumentOption["count"].as_uint64(); }  // set max count if argument for count is found
+
+   if( pvectorRow != nullptr )
+   {
+      // verify that the selection is valid, and limit uCount to the remaining selection
+      if (uBegin > pvectorRow->size()) { assert(false); throw std::out_of_range("Row selection start is outside the selection"); }
+      uCount = std::min( uCount, static_cast<uint64_t>( pvectorRow->size() ) - uBegin );
+   }
 
    unsigned uMax = (unsigned)-1;                // max column width
    auto uEnd = uBegin + uCount;                 // last row to print to string
@@ -1049,8 +1085,14 @@ void to_string_s( const TABLE& table, uint64_t uBegin, uint64_t uCount, std::vec
    stringResult += stringHeader;
    stringResult += stringLineDivide;                                           // add divide line
 
-   for( auto uRow = uBegin; uRow < uEnd; uRow++ )
+   for( auto uIndex = uBegin; uIndex < uEnd; uIndex++ )
    {
+      auto uRow = pvectorRow != nullptr ? (*pvectorRow)[uIndex] : uIndex;
+      if( pvectorRow != nullptr && uRow >= table.get_row_count() )
+      {
+         throw std::out_of_range( "Selected row is outside the table" );
+      }
+
       stringResult += "| ";
 
       vectorValue.clear();
@@ -1632,6 +1674,7 @@ void to_string( const dto::table& table, std::string& stringOut, const std::vect
    stringOut += stringColumns;
 }
 
+// @API [tag: table, cli, raw, output] [description: Convert table to plain console output without grid formatting] [jump: raw__]
 
 /// raw table to string conversion, used for CLI output
 template <typename TABLE>
@@ -1730,15 +1773,21 @@ void to_string(const dto::table& table, const gd::argument::arguments& argumentO
    to_string_s( table, argumentOption, stringOut, tag_io_header{});
 }
 
-void to_string(const dto::table& table, uint64_t uBegin, uint64_t uCount, std::vector<unsigned> vectorWidth, const gd::argument::arguments& argumentOption, std::string& stringOut, tag_io_cli)
+void to_string(const dto::table& table, uint64_t uBegin, uint64_t uCount, std::vector<unsigned> vectorWidth, const gd::argument::arguments& argumentOption, std::string& stringOut, tag_io_cli, const std::vector<uint64_t>* pvectorRow)
 {
-   to_string_s( table, uBegin, uCount, vectorWidth, argumentOption, stringOut );
+   to_string_s( table, uBegin, uCount, vectorWidth, argumentOption, stringOut, pvectorRow );
 }
 
-void to_string(const table& table, uint64_t uBegin, uint64_t uCount, std::vector<unsigned> vectorWidth, const gd::argument::arguments& argumentOption, std::string& stringOut, tag_io_cli)
+void to_string(const table& table, uint64_t uBegin, uint64_t uCount, std::vector<unsigned> vectorWidth, const gd::argument::arguments& argumentOption, std::string& stringOut, tag_io_cli, const std::vector<uint64_t>* pvectorRow)
 {
-   to_string_s( table, uBegin, uCount, vectorWidth, argumentOption, stringOut );
+   to_string_s( table, uBegin, uCount, vectorWidth, argumentOption, stringOut, pvectorRow );
 }
+
+void to_string(const arguments::table& table, uint64_t uBegin, uint64_t uCount, std::vector<unsigned> vectorWidth, const gd::argument::arguments& argumentOption, std::string& stringOut, tag_io_cli, const std::vector<uint64_t>* pvectorRow)
+{
+   to_string_s(table, uBegin, uCount, vectorWidth, argumentOption, stringOut, pvectorRow);
+}
+
 
 void to_string(const dto::table& table, uint64_t uBegin, uint64_t uCount, std::vector<unsigned> vectorWidth, const std::vector<unsigned>& vectorcolumn, const gd::argument::arguments& argumentOption, std::string& stringOut, tag_io_cli)
 {
@@ -1789,6 +1838,8 @@ namespace {
    }
 
 }
+
+// @API [tag: table, sql, output] [description: convert table to sql expressions] [jump: sql__]
 
 /** ---------------------------------------------------------------------------
  * @brief Generate SQL INSERT statements for table data

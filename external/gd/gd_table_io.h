@@ -24,6 +24,7 @@
 #include "gd_variant_view.h"
 #include "gd_table.h"
 #include "gd_table_column-buffer.h"
+#include "gd_table_arguments.h"
 #include "gd_table_table.h"
 #include "gd_table_aggregate.h"
 
@@ -260,8 +261,12 @@ inline std::string to_string(const dto::table& table, tag_io_header, tag_io_cli)
 }
 
 
-void to_string( const dto::table& table, uint64_t uBegin, uint64_t uCount, std::vector<unsigned> vectorWidth, const gd::argument::arguments& argumentOption, std::string& stringOut, tag_io_cli );
-void to_string( const table& table, uint64_t uBegin, uint64_t uCount, std::vector<unsigned> vectorWidth, const gd::argument::arguments& argumentOption, std::string& stringOut, tag_io_cli );
+/// Optional pvectorRow supplies ordered zero-based row indices (duplicates preserved); nullptr uses table rows.
+/// uBegin indexes the selection; uCount (overridden by option "count") is capped to its remaining size.
+/// An empty selection prints only headers/dividers. Row numbers remain table indices. Invalid indices throw std::out_of_range.
+void to_string( const dto::table& table, uint64_t uBegin, uint64_t uCount, std::vector<unsigned> vectorWidth, const gd::argument::arguments& argumentOption, std::string& stringOut, tag_io_cli, const std::vector<uint64_t>* pvectorRow = nullptr );
+void to_string( const table& table, uint64_t uBegin, uint64_t uCount, std::vector<unsigned> vectorWidth, const gd::argument::arguments& argumentOption, std::string& stringOut, tag_io_cli, const std::vector<uint64_t>* pvectorRow = nullptr );
+void to_string(const arguments::table& table, uint64_t uBegin, uint64_t uCount, std::vector<unsigned> vectorWidth, const gd::argument::arguments& argumentOption, std::string& stringOut, tag_io_cli, const std::vector<uint64_t>* pvectorRow = nullptr);
 
 void to_string( const dto::table& table, uint64_t uBegin, uint64_t uCountconst, std::vector<unsigned> vectorWidth, const std::vector<unsigned>& vectorcolumn, const gd::argument::arguments& argumentOption, std::string& stringOut, tag_io_cli );
 void to_string( const table& table, uint64_t uBegin, uint64_t uCount, std::vector<unsigned> vectorWidth, const std::vector<unsigned>& vectorcolumn, const gd::argument::arguments& argumentOption, std::string& stringOut, tag_io_cli );
@@ -311,6 +316,30 @@ inline std::string to_string( const dto::table& table, tag_io_cli ) {
    to_string( table, 0, table.get_row_count(), vectorWidth, {}, stringResult, tag_io_cli{} );
    return stringResult;
 }
+
+/// convert table to string in grid format formated with proper column withds
+inline std::string to_string(const arguments::table& table, tag_io_cli) {
+   std::vector<unsigned> vectorWidth;
+   gd::table::aggregate aggregate_(&table);
+   aggregate_.max(vectorWidth, tag_length{});
+   aggregate_.fix(vectorWidth, tag_text{});
+   std::string stringResult;
+   to_string(table, 0, table.get_row_count(), vectorWidth, {}, stringResult, tag_io_cli{});
+   return stringResult;
+}
+
+/// convert table to string in grid format formated with proper column withds
+inline std::string to_string(const arguments::table& table, std::vector<uint64_t> vectorRow, tag_io_cli) {
+   std::vector<unsigned> vectorWidth;
+   gd::table::aggregate aggregate_(&table);
+   aggregate_.max(vectorWidth, vectorRow, tag_length{});
+   aggregate_.fix(vectorWidth, tag_text{});
+   std::string stringResult;
+   to_string(table, 0, table.get_row_count(), vectorWidth, {}, stringResult, tag_io_cli{}, &vectorRow);
+   return stringResult;
+}
+
+
 
 /// convert table to string in grid format formated with proper column withds
 inline std::string to_string( const dto::table& table, tag_io_cli, tag_text ) {

@@ -829,7 +829,7 @@ public:
    void cell_set_argument( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue );
    void cell_add_argument( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue );
 
-   // ## @API [tag: find] [description: find methods for locating data within the table, most methods return the row index or -1 if not found]
+   // ## @API [tag: find] [description: find methods for locating data within the table, most methods return the row index or -1 if not found] [jump: find__]
 
    int64_t find( unsigned uColumn, const gd::variant_view& variantviewFind ) const noexcept { return find( uColumn, 0, get_row_count(), variantviewFind ); }
    int64_t find( const std::string_view& stringName, const gd::variant_view& variantviewFind ) const noexcept { return find_variant_view( stringName, 0, get_row_count(), variantviewFind ); }
@@ -860,6 +860,11 @@ public:
    
    int64_t find(uint64_t uStartRow, uint64_t uCount, const gd::argument::arguments& argumentsFind) const;
    int64_t find(const gd::argument::arguments& argumentsFind) const { return find(0, get_row_count(), argumentsFind); }
+
+   std::vector<uint64_t> find_any_of_all(unsigned uColumn, uint64_t uStartRow, uint64_t uCount, const std::span<std::string_view>& spanrMatch) const;
+   std::vector<uint64_t> find_any_of_all(unsigned uColumn, const std::span<std::string_view>& spanMatch) const { return find_any_of_all(uColumn, 0, get_row_count(), spanMatch); }
+   std::vector<uint64_t> find_any_of_all(std::string_view stringName, uint64_t uStartRow, uint64_t uCount, const std::span<std::string_view>& spanMatch) const { return find_any_of_all(column_get_index(stringName), uStartRow, uCount, spanMatch); }
+   std::vector<uint64_t> find_any_of_all(std::string_view stringName, const std::span<std::string_view>& spanMatch) const { return find_any_of_all(column_get_index(stringName), 0, get_row_count(), spanMatch); }
 
 
    /// Find first row marked as free (flag `eRowStateUse` is not used)
@@ -1034,7 +1039,7 @@ public:
    unsigned m_uFlags;                  ///< state information for table
    unsigned m_uRowSize;                ///< row size in bytes
    unsigned m_uRowMetaSize;            ///< meta data size in bytes for each row
-   unsigned m_uRowGrowBy = eSpaceRowGrowBy;///< if table needs more space, this holds number of rows to grow by
+   unsigned m_uRowGrowBy = 0;          ///< if table needs more space, this holds number of rows to grow by
    uint64_t m_uRowCount;               ///< row count (row count * row size = total amount of bytes allocated)
    uint64_t m_uReservedRowCount;       ///< reserved row count, max number of rows that can be placed in allocated memory
    gd::argument::arguments m_argumentsProperty; ///< table properties

@@ -104,6 +104,7 @@ public:
    void max( std::vector<unsigned>& vectorLength, uint64_t uBeginRow, uint64_t uCount, tag_length );
    void max( std::vector<unsigned>& vectorLength, tag_length ) { max( vectorLength, 0, m_ptable->get_row_count(), tag_length{} ); }
    void max( std::vector<unsigned>& vectorLength, uint64_t uBeginRow, uint64_t uCount, const std::vector<unsigned>& vectorColumn, tag_length );
+   void max(std::vector<unsigned>& vectorLength, const std::span<const uint64_t>& spanRow, tag_length);
 
    void max( std::vector<unsigned>& vectorLength, tag_length, tag_text) { max(vectorLength, 0, m_ptable->get_row_count(), tag_length{}, tag_text{}); }
    void max( std::vector<unsigned>& vectorLength, uint64_t uBeginRow, uint64_t uCount, tag_length, tag_text );
@@ -350,6 +351,39 @@ void aggregate<TABLE>::max( std::vector<unsigned>& vectorLength, uint64_t uBegin
          unsigned uValueLength = m_ptable->cell_get_length( uRow, uColumn );
          unsigned uLength = vectorLength[uColumn];
          if( uLength < uValueLength ) vectorLength[uColumn] = uValueLength;
+      }
+   }
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Calculates the maximum text width for each column in a row range.
+ *
+ * For text columns, measures the longest line in each value; for other
+ * columns, uses the cell length. Null cells are ignored. The supplied lengths
+ * are only increased, so existing entries act as minimum widths.
+ *
+ * @param vectorLength Receives the maximum width for each column. If empty,
+ *                     it is resized to the table's column count.
+ * @param uBeginRow First row to inspect.
+ * @param uCount Maximum number of rows to inspect; the range is clipped to
+ *               the table's row count.
+ * @param tag_length Tag selecting length calculation.
+ * @param tag_text Tag selecting text-aware length calculation.
+ */
+template <typename TABLE>
+void aggregate<TABLE>::max(std::vector<unsigned>& vectorLength, const std::span<const uint64_t>& spanRow, tag_length) { assert( m_ptable != nullptr );
+   if (vectorLength.empty() == true) vectorLength.resize(m_ptable->get_column_count(), 0); // ensure vectorLength has enough space for all columns
+
+   bool bHasNull = m_ptable->is_null(); // get if table has null values
+   for( auto uRow : spanRow )
+   {                                                                                               assert( uRow < m_ptable->get_row_count() );
+      for(unsigned uColumn = 0; uColumn < m_ptable->get_column_count(); uColumn++)
+      {
+         if (bHasNull == true && m_ptable->cell_is_null(uRow, uColumn) == true) continue; // skip null values
+
+         unsigned uValueLength = m_ptable->cell_get_length(uRow, uColumn);
+         unsigned uLength = vectorLength[uColumn];
+         if( uLength < uValueLength) vectorLength[uColumn] = uValueLength;
       }
    }
 }
