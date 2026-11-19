@@ -74,12 +74,8 @@ inline constexpr uint8_t uTailetextMarker_d = 0x01;
    #pragma warning( disable : 6387 26495 26812 )
 #endif
 
-#if defined(__GNUC__) or defined(__clang__)
-#  define GD_TABLE_64BIT __SIZE_WITDH__ == 64
-#elif defined(_WIN64)
+#if defined(_WIN64) || (defined(__SIZEOF_POINTER__) && __SIZEOF_POINTER__ == 8)
 #  define GD_TABLE_64BIT
-#else
-   static_assert(false, "unspported implmentation");
 #endif
 
 

@@ -1,4 +1,3 @@
-
 // @FILE [tag: lua, bindings] [summary: Lua bindings for web server] [description: Exposes C++ functions and classes to Lua scripts executed in the web server context. This includes utilities for handling HTTP requests, responses, and application-specific logic. The bindings are implemented using the sol2 library to create seamless interoperability between C++ and Lua. The file defines functions that can be called from Lua scripts to interact with the web server's functionality, such as sending responses, accessing request data, and managing sessions.]
 
 #include "LUAObjects.h"
