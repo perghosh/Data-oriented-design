@@ -9,6 +9,8 @@ Call it from PowerShell by full path: `& 'C:\Tools\cleaner.exe' <command> ...`
 - `count`: matches per file. Use for scoping only, then use `list` or `find` for exact lines before editing
 - `dir`: list files with filters
 
+*Note that list and find have identical options, no need to get help for both*
+
 ### Get the options before the first use
 Run `& 'C:\Tools\cleaner.exe' help <list|find|count> -llm` once per session and follow its output.
 Do not guess option names: unknown options print help and `ERROR: Unknown option`.
