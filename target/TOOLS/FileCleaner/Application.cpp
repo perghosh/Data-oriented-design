@@ -15,10 +15,13 @@
  */
 
 
+#include <algorithm>
+#include <cassert>
 #include <filesystem>
 #include <format>
-#include <set>
+#include <iterator>
 #include <string>
+#include <string_view>
 #include <thread>
 
 #include "pugixml/pugixml.hpp"
@@ -3899,18 +3902,32 @@ std::pair<bool, std::string> CApplication::ParseKeyValueRule_s(const std::string
 @API [tag: file, application ] [description: Helper method to check if source code text file, this to avoid checking the internal data in file] */
 bool CApplication::IsTextFile_s(const std::string_view& stringExtension)
 {
-   // Check if the file extension is one of the known text file types
-   static const std::set<std::string_view> setTextFileExtension =
+   static constexpr std::string_view arrayTextFileExtension[] =
    {
-      ".txt", ".md", ".csv", ".json", ".xml", ".html", ".htm", ".css", ".js", ".ts",
-      ".jsx", ".tsx", ".py", ".java", ".c", ".cpp", ".cxx", ".h", ".hpp", ".ipp", ".go",
-      ".cs", ".fs", ".kt", ".swift", ".rs", ".lua", ".php", ".rb",
-      ".pl", ".pm", ".sh", ".bash", ".yaml", ".yml", ".toml",
-      ".dart", ".clj", ".vim", ".bat", ".cmd", ".ps1",
-      ".mak", ".ninja", ".makefile", ".ini", ".zig"
+      ".R", ".adoc", ".bash", ".bat", ".c", ".clj", ".cmd", ".conf",
+      ".cpp", ".cs", ".css", ".csv", ".cxx", ".dart", ".env", ".ex",
+      ".exs", ".fs", ".go", ".graphql", ".groovy", ".h", ".hcl",
+      ".hpp", ".hs", ".htm", ".html", ".ini", ".ipp", ".java",
+      ".js", ".json", ".jsx", ".kt", ".less", ".lock", ".log",
+      ".lua", ".m", ".mak", ".makefile", ".md", ".mm", ".ninja",
+      ".org", ".php", ".pl", ".plist", ".pm", ".properties", ".proto",
+      ".ps1", ".py", ".r", ".rb", ".rs", ".sass", ".scala", ".scss",
+      ".sh", ".svelte", ".svg", ".swift", ".tex", ".tf", ".toml",
+      ".ts", ".tsx", ".txt", ".vim", ".vue", ".xhtml", ".xml", ".xsl",
+      ".yaml", ".yml", ".zig"
    };
 
-   return setTextFileExtension.find(stringExtension) != setTextFileExtension.end();
+#ifndef NDEBUG
+   static const bool bTextFileExtensionsAreSorted = []
+   {
+      const bool bSorted = std::is_sorted(std::begin(arrayTextFileExtension), std::end(arrayTextFileExtension));
+      assert(bSorted);
+      return bSorted;
+   }();
+   (void)bTextFileExtensionsAreSorted;
+#endif
+
+   return std::binary_search(std::begin(arrayTextFileExtension), std::end(arrayTextFileExtension), stringExtension);
 }
 
 
