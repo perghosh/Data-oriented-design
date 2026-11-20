@@ -162,6 +162,7 @@ public:
       eApplicationStateCheckIgnoreFile   = 0x20, ///< Application is checking ignore patterns for files, used to avoid processing files that are ignored
 
 		eApplicationStatePrint             = 0x40, ///< Application is printing output, when set a lot more is printed
+      eApplicationStateLLM               = 0x80, ///< Application is in LLM state, adapts information to be more suitable for LLM, e.g. less verbose and more structured
    };
 
 
@@ -227,8 +228,7 @@ public:
 
 // ## methods ------------------------------------------------------------------
 public:
-/** \name GET/SET
-*///@{
+// @API [tag: getter, setter] [description: Getters and setters for application mode, detail level, and UI type]
    enumMode GetMode() const { return m_eMode; }
    void SetMode(enumMode eMode) { m_eMode = eMode; }
    void SetMode(const std::string_view& stringMode);
@@ -243,18 +243,17 @@ public:
    void SetUIType(enumUIType eUIType) { m_eUIType = eUIType; }
    std::string GetUITypeAsString() const;
 
-   // ## application state checks
-
-   bool IsInitialized() const { return ( m_uApplicationState & eApplicationStateInitialized ) != 0; }
-   bool IsWork() const { return ( m_uApplicationState & eApplicationStateWork  ) != 0; }
-   bool IsIdle() const { return ( m_uApplicationState & eApplicationStateIdle  ) != 0; }
-   bool IsExit() const { return ( m_uApplicationState & eApplicationStateExit  ) != 0; }
-   bool IsPrint() const { return (m_uApplicationState & eApplicationStatePrint ) != 0; }
+// @API [tag: state] [description: Check and set application state flags]
+   bool IsStateInitialized() const { return ( m_uApplicationState & eApplicationStateInitialized ) != 0; }
+   bool IsStateWork() const { return ( m_uApplicationState & eApplicationStateWork  ) != 0; }
+   bool IsStateIdle() const { return ( m_uApplicationState & eApplicationStateIdle  ) != 0; }
+   bool IsStateExit() const { return ( m_uApplicationState & eApplicationStateExit  ) != 0; }
+   bool IsStateLLM() const { return (m_uApplicationState & eApplicationStateLLM) != 0; }
+   bool IsStatePrint() const { return (m_uApplicationState & eApplicationStatePrint ) != 0; }
 
    bool IsState(unsigned uState) const { return ( m_uApplicationState & uState ) != 0; }
 
    void SetState(unsigned uSet, unsigned uClear) { m_uApplicationState = ( m_uApplicationState & ~uClear ) | uSet; }
-//@}
 
 /** \name INTERFACE
 *///@{

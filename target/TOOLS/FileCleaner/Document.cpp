@@ -3681,7 +3681,7 @@ void CDocument::MESSAGE_Display(const std::string_view& stringMessage, const gd:
 
 void CDocument::MESSAGE_Display(const gd::table::dto::table* ptable_, tag_state)
 {
-   if( ptable_ == nullptr || m_papplication->IsPrint() == false ) return;
+   if( ptable_ == nullptr || m_papplication->IsStatePrint() == false ) return;
    std::string stringTable = gd::table::to_string(*ptable_, gd::table::tag_io_cli{});
    m_papplication->PrintMessage(stringTable, gd::argument::arguments() );     // display message in application window
 }

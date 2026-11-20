@@ -9,6 +9,7 @@
  *
  * help__            Generate help and documentation for command-line options.
  * initialize__      Initialize the application
+ * main__            Application Main method, core startup logic is placed or called from this method, think that is needed to get cleaner to work
  * message__         Print a message to the console or other output based on the UI type.
  * options__         Prepare application options
  */
@@ -304,7 +305,7 @@ void CApplication::SetDetail(const std::string_view& stringDetail)
 */
 
 
-/** --------------------------------------------------------------------------- // @API [tag: main, application, log] [description: Application Main method, core startup logic is placed or called from this method, think that is needed to get cleaner to work ]
+/** --------------------------------------------------------------------------- 
  * @brief Prepares the application by setting up command-line options.
  *
  * Main in application is similar to main in application, but it is used to prepare
@@ -313,7 +314,7 @@ void CApplication::SetDetail(const std::string_view& stringDetail)
  * @param iArgumentCount The number of command-line arguments.
  * @param ppbszArgument The command-line arguments.
  * @param process_ A function to process the command-line arguments.
- */
+@API [tag: main, application, log] [description: Application Main method, core startup logic] [jump: main__] */
 std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszArgument[], std::function<bool(const std::string_view&, const gd::variant_view&)> process_)
 {
    // ## Set OS-specific settings
@@ -708,6 +709,9 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
 
    // Set argument count to found active options command if set to main options object, that might affect behaviour based on implementation
    if(optionsApplication.get_argument_count() != -1) { poptionsActive->set_argument_count(optionsApplication.get_argument_count()); }
+
+   // If llm then set global application state to llm, this is used to enable llm mode in application
+   if( poptionsActive->exists("llm") == true ) { SetState(eApplicationStateLLM, 0);                 LOG_INFORMATION_RAW("== LLM mode enabled"); }
 
    if( poptionsActive->exists("help") == true )
    {
@@ -1324,8 +1328,9 @@ std::pair<bool, std::string> CApplication::PrintMessage(const std::string_view& 
  */
 std::pair<bool, std::string> CApplication::PrintProgress(const std::string_view& stringMessage, const gd::argument::arguments& argumentsFormat) // @TAG #progress.Application
 {
-   std::unique_lock<std::shared_mutex> lock_( m_sharedmutex );
+   if( IsStateLLM() == true ) { return { true, "" }; }                          // If in LLM mode, skip printing progress
 
+   std::unique_lock<std::shared_mutex> lock_( m_sharedmutex );
 
    constexpr size_t uMaxLength = 100; // Maximum length for the message
    constexpr size_t uMIN_LENGTH_PROGRESS = 60; // Minimum length for the progress bar
@@ -3883,7 +3888,7 @@ std::pair<bool, std::string> CApplication::ParseKeyValueRule_s(const std::string
    return { false, std::string("invalid rule: ") + stringRule.data()};
 }
 
-/** --------------------------------------------------------------------------- @API [tag: file, application ] [description: Helper method to check if source code text file, this to avoid checking the internal data in file]
+/** --------------------------------------------------------------------------- 
  * @brief Checks if the provided file extension is a known text file type.
  *
  * This function checks if the given file extension matches any of the predefined text file extensions.
@@ -3891,7 +3896,7 @@ std::pair<bool, std::string> CApplication::ParseKeyValueRule_s(const std::string
  *
  * @param stringExtension The file extension to check, provided as a string_view.
  * @return bool True if the extension is a known text file type, false otherwise.
- */
+@API [tag: file, application ] [description: Helper method to check if source code text file, this to avoid checking the internal data in file] */
 bool CApplication::IsTextFile_s(const std::string_view& stringExtension)
 {
    // Check if the file extension is one of the known text file types
