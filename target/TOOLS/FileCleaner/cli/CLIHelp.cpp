@@ -21,7 +21,8 @@ Required:
   "<filter>"             First positional argument. File wildcards separated by ';', e.g. "*.h;*.cpp"
   --current-directory    Folder to search in
   --pattern "<text>"     Literal text. Several values separated by ';'
-  --rpattern "<regex>"   Regular expression. Repeat the option for several. Use --pattern OR --rpattern
+  --rpattern "<regex>"   Boost.Regex (Perl syntax; supports lookarounds/backreferences, keep specific to avoid backtracking). Repeat the option for several.
+
 
 Options:
   -R                     Search subfolders. Without it only the top folder is searched
@@ -56,7 +57,7 @@ Required:
   "<filter>"             First positional argument. File wildcards separated by ';', e.g. "*.h;*.cpp"
   --current-directory    Folder to search in
   --pattern "<text>"     Literal text. Several values separated by ';'
-  --rpattern "<regex>"   Regular expression, matched against whole file content. Use --pattern OR --rpattern
+  --rpattern "<regex>"   Boost.Regex (Perl syntax; supports lookarounds/backreferences, keep specific to avoid backtracking). Repeat the option for several.
 
 Options:
   -R                     Search subfolders. Without it only the top folder is searched
@@ -86,7 +87,7 @@ Required:
   "<filter>"             First positional argument. File wildcards separated by ';', e.g. "*.h;*.cpp"
   --current-directory    Folder to search in
   --pattern "<text>"     Literal text. Several values separated by ';'
-  --rpattern "<regex>"   Regular expression. Repeat the option for several. Use --pattern OR --rpattern
+  --rpattern "<regex>"   Boost.Regex (Perl syntax; supports lookarounds/backreferences, keep specific to avoid backtracking). Repeat the option for several.
 
 Options:
   -R                     Search subfolders. Without it only the top folder is searched
@@ -237,7 +238,7 @@ Required:
 Options:
   "<filter>"             First positional argument. File wildcards separated by ';', e.g. "*.h;*.cpp". All files if omitted
   --pattern "<text>"     Only list files containing this text, separated by ';'
-  --rpattern "<regex>"   Only list files whose content matches this regular expression
+  --rpattern "<regex>"   Boost.Regex (Perl syntax; supports lookarounds/backreferences, keep specific to avoid backtracking). Repeat the option for several.
   -R                     Include subfolders. The subfolder is part of the entry, e.g. sub\file.cpp
   --ignore "a;b"         Skip folders with these names
   --sort <column>        name | size | date
