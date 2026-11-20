@@ -25,48 +25,31 @@ Do not guess option names: unknown options print help and `ERROR: Unknown option
 `list` and `find`: lines look like `path:line - [text]`. `dir`: a `Current Directory:` line, then paths relative to it.
 Ignore progress lines ("Find in files: ..."). The exit code is often -1 even when the output is correct, so judge success from the output.
 
-
 ## Priority and scope
 
-When instructions appear to conflict, use this order:
-
-1. Produce correct, safe, maintainable code that meets the user's request.
-2. Follow instructions that apply to the specific file, target, or language.
-3. Match the conventions in the code immediately surrounding the change.
-4. Apply the general conventions in this file.
-
-Do not sacrifice correctness to satisfy a naming or formatting preference. Do not
-make unrelated changes. Preserve existing public behavior unless the request
-requires changing it.
-
-Use the most specific instructions available. For a completion inside an
-existing file, its surrounding code is the strongest style example. If an
-existing local pattern conflicts with this guide, preserve it in a small
-completion unless the requested change requires resolving the inconsistency.
+1. **Correctness first:** Never sacrifice correctness or break existing public behavior to satisfy a style rule.
+2. **Local context over general rules:** Match the conventions in the immediately surrounding code first; fall back to this guide when no local pattern exists.
+3. **Minimal scope:** Make only the requested changes. Do not refactor or rename unrelated code.
 
 ## Completion and edit behavior
 
-- For Fill-in-the-Middle (FIM), use both the code before and after the insertion
-  point. Produce code that fits between them and leaves the surrounding syntax
-  valid.
-- Continue the nearest consistent local pattern: names, formatting, types,
-  error handling, ownership, and API usage.
-- Infer types from declarations, expressions, function signatures, and relevant
-  API definitions. Do not infer a type solely from a variable-name prefix.
-- With C++ `auto`, determine the deduced type from its initializer
-  and the APIs involved before choosing a type-based name prefix. If the type
-  cannot be established from available context, use the established local
-  naming pattern without inventing type information.
-- Preserve existing identifiers. Do not rename unrelated variables or rewrite
-  surrounding code just to make the completion conform to this guide.
-- Prefer the smallest complete change that satisfies the request. Do not add
-  speculative abstractions, dependencies, comments, or error handling.
-- Do not invent APIs, class members, files, or project conventions. Inspect
-  declarations and nearby call sites when the required behavior is unclear.
-- If essential requirements cannot be determined from the available context,
-  ask a focused question rather than silently choosing behavior.
-- After editing, run the most relevant available build, test, or static check.
-  Report checks that could not be run; never imply that unrun checks passed.
+- **Context & style:** Match the surrounding code's formatting, error handling,
+  ownership, and API usage. For Fill-in-the-Middle (FIM), ensure the code fits
+  cleanly between the code before and after the cursor.
+- **Types & `auto`:** Determine exact types from visible declarations and API
+  signatures, and name `auto` variables after their deduced type. When a
+  declaration is out of sight, trust the codebase's Hungarian prefixes as
+  reliable type indicators.
+- **No guessing:** Never invent APIs, class members, or files—inspect headers
+  or call sites if unsure, and ask a focused question if requirements are
+  ambiguous.
+- **Minimal edits:** Do not rename existing identifiers, refactor surrounding
+  code, or add speculative abstractions or error handling.
+- **Single-target build:** Never build the entire solution or run tests unless
+  requested. After editing, build ONLY the specific target/project owning the
+  modified file(s) (e.g., MSBuild `/t:TargetName` or CMake `--target <name>`)
+  and fix any compiler errors before finishing.
+
 
 ## Variable naming: Hungarian notation
 
@@ -104,18 +87,16 @@ For standard-library containers and project types, use the complete object name
 For a templated type, use its principal type name, not its full template
 spelling, as the prefix.
 
-Global variables
+### Scope and role suffixes
 
-Global variables should follow the same Hungarian notation rules as class data members, with the `g_` prefix to indicate global scope:
-`bIsInitialized_g`, `uMaxConnections_g`, `pMainWindow_g`,
-`vectorPendingTransactions_g`.
+Apply these suffixes after the full name (never use `g_` or `s_` prefixes):
 
-Interface variables
-Interface variables should follow the same Hungarian notation rules as other variables, with the `*_i` suffix added to indicate an interface type:
-For example, `pShape_i` for a pointer to an `IShape` interface, or `itJson_i` for an iterator over `IJsonSerializable` objects.
-
-Debug variables should follow the same Hungarian notation rules as other variables, with the `*_d` suffix added to indicate debug scope:
-`bIsActive_d`, `uItemCount_d`, `dbg_pWindow_d`.
+| Suffix | Scope / role | Applies to | Examples |
+|---|---|---|---|
+| `_s` | static | variables, methods | `uInstanceCount_s`, `create_instance_s()` |
+| `_g` | global | variables, methods | `bIsInitialized_g`, `get_context_g()` |
+| `_d` | debug | variables, methods | `bIsActive_d`, `dump_state_d()` |
+| `_i` | interface | variables | `pshapeService_i`, `jsonParse_i` |
 
 ### `auto`, `var`, and inferred types
 
@@ -133,10 +114,6 @@ These names are appropriate only if the shown expressions actually return the
 corresponding types. Do not choose `u` because a value is a count if its type is
 signed, or `p` unless the result is a pointer.
 
-In C#, apply the same type-based naming when `var` is used. Follow the local
-project's C# casing and syntax conventions; do not replace `var` with an
-explicit type just to expose a type prefix.
-
 ### Narrow exceptions
 
 - A trivial loop counter may be `i` or `u` when its meaning is obvious and its
@@ -149,15 +126,15 @@ explicit type just to expose a type prefix.
 
 ## Method and type naming
 
-Do not apply Hungarian notation to method names. Use the naming style for the
-repository layer:
+Do not apply Hungarian notation to method or type names. Follow the layer rules below:
 
-| Layer | Method naming |
-|---|---|
-| Core/shared library, including `external/gd/` | `lowercase_with_underscores`, like the STL |
-| Corporate library | `PascalCase`, without underscores |
-| Target-specific application code | `PascalCase`, without underscores |
-| Tests and playcode | Follow the surrounding file |
+| Layer | Method naming | Class naming & namespace |
+|---|---|---|
+| Core/general library (`external/gd/`) | `lowercase_with_underscores` (STL style) | `lowercase_with_underscores`, inside namespace |
+| Source / corporate library | `PascalCase` | `CPascalCase` (starts with `C`), inside namespace |
+| Target-specific application code | `PascalCase` | `CPascalCase` (starts with `C`), no namespace |
+| Tests and playcode | Follow surrounding file (relaxed rules) | Follow surrounding file (relaxed rules) |
+
 
 Use concise, established names where their meaning is clear. Collection APIs
 should generally follow STL names such as `size`, `empty`, `find`, `insert`,
@@ -181,24 +158,15 @@ directory and target. Do not infer a naming convention from a different layer.
   but keep template definitions in a location visible to their users (normally
   the header). Do not move a required template definition into an inaccessible
   source file.
-- Use `assert` consistently with nearby code. Do not add alignment spaces merely
-  to push an assertion to a fixed column.
-
+- Use `assert` consistently with nearby code.
 
 ## Comments and documentation
 
-Comments should explain why code exists or clarify non-obvious behavior. Do not
-add comments that merely restate the code.
-
-- Match the comment style in the file.
-- Document public or non-obvious methods when useful. Use Doxygen tags such as
-  `@brief`, `@param`, `@return`, and `@tparam` where they apply; do not add empty
-  or irrelevant tags.
-- Document each template parameter with `@tparam` when documenting a template.
-- Use `///<` for a data-member comment when a short same-line explanation is
-  appropriate.
-- Preserve existing search tags when editing tagged code. Use the project's tag
-  format: `tagname [tag: context_words] [summary: short summary]`.
+- Always add Doxygen documentation comments (`@brief`, `@param`, `@return`, `@tparam`) to all new or significantly modified methods and functions, except trivial one-line getters/setters.
+- For key public APIs, complex logic, or non-obvious usage, include a concise `@code` / `@endcode` usage example inside the Doxygen comment.
+- Do not add inline comments that merely restate obvious code; reserve inline comments for explaining *why* non-obvious logic exists.
+- Match the comment style in the file. Use `///<` for short same-line data-member explanations.
+- Preserve existing search tags when editing tagged code: `tagname [tag: context_words] [summary: short summary]`.
 
 ## Repository-specific context
 
@@ -214,12 +182,7 @@ Useful GD headers:
 | `gd_types.h` | `gd::types`: core type identifiers |
 | `gd_variant.h` | `gd`: owning `variant` value |
 | `gd_variant_view.h` | `gd`: non-owning `variant_view` |
-| `gd_variant_arg.h` | `gd`: `arg`, `args_view`, and `args` |
 | `gd_arguments.h` | `gd::argument`: compact arguments buffer |
-| `gd_arguments_shared.h` | `gd::argument::shared`: shared/COW arguments |
-| `gd_arguments_io.h` | `gd::argument`: arguments serialization |
-| `gd_table.h` | `gd::table`: table primitives |
-| `gd_table_table.h` | `gd::table`: fixed-column table |
 | `gd_table_arguments.h` | `gd::table::arguments`: table with dynamic row columns |
 
 Treat this list as navigation help, not a replacement for reading the relevant

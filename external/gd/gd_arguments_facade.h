@@ -66,8 +66,7 @@ constexpr bool dictionary_allow_all_keys::contains(std::string_view)
  * @tparam ARGUMENTS Arguments container used for storage.
  * @tparam KEY_POLICY Policy that allows or rejects each key; defaults to allowing all keys.
  *
- * @CLASS [name: arguments, map] [pattern: facade, adaptor] [name: dictionary] [description: Helper object that presents arguments as a key-value map]
- */
+ @CLASS [name: arguments, map] [pattern: facade, adaptor] [name: dictionary] [description: Helper object that presents arguments as a key-value map]W */
 template <typename ARGUMENTS, typename KEY_POLICY = dictionary_allow_all_keys>
 class dictionary
 {

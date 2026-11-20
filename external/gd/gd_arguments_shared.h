@@ -183,8 +183,7 @@ void print( const gd::argument::shared::arguments& arguments_ )
 
  \code
  \endcode
- @CLASS [tag: arguments] [pattern: container] [summary: arguments that packs data with alignment] [name: arguments]
- */
+@CLASS [tag: arguments] [pattern: container] [summary: packs key values in single buffer, key are not required] [name: arguments] */
 class arguments
 {
 public:

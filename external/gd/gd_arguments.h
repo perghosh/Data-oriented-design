@@ -162,7 +162,7 @@ struct iterator_named;
 // ====================================================================================== arguments
 // ================================================================================================
 
-/** @CLASS [tag: arguments] [summary: arguments that packs data without alignment] [pattern: container]
+/** --------------------------------------------------------------------------
  * \brief  arguments focus on memory size, to tricks to align and speed up memory access
  *
  * ## memory layout
@@ -189,7 +189,7 @@ void print( const gd::argument::arguments& arguments_ )
 
  \code
  \endcode
- */
+ @CLASS [tag: arguments, dictionary] [pattern: container] [summary: packs key values in single buffer, key are not required] */
 class arguments
 {
 // ## typedefs -----------------------------------------------------------------
