@@ -205,10 +205,10 @@ std::pair<bool, std::string> options::parse( int iArgumentCount, const char* con
 
          if( poptionActive != nullptr || stringNameNotFound.empty() == false )
          {
-            // ## check for flag if single dash is allowed
+            // ## check for bare flags
             if( poptionActive != nullptr )
             {
-               if( bMayBeFlag == true && poptionActive->is_flag() == true )
+               if( (bMayBeFlag == true || poptionActive->is_option() == false) && poptionActive->is_flag() == true )
                {
                   add_value( poptionActive, true );
                   iOptionState = state_unknown;

@@ -139,7 +139,8 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
    }
    else
    {
-      DirPrint_g(pdocument);                                                  // print the table to the console
+      if (options_.exists("llm") == true) { DirPrintLLM_g(pdocument); }         // print the table in a format suitable for LLM
+      else { DirPrint_g(pdocument); }                                           // print the table to the console
    }
 
 #ifdef _WIN32
@@ -354,6 +355,44 @@ std::pair<bool, std::string> DirPrint_g(CDocument* pdocument)
 
    return { true, "" };
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Displays the cached file paths, relative to the current directory, through the document. 
+ * @param pdocument The document that provides the directory data and displays the output.
+ * @return A pair containing a success flag set to true and an empty message.
+ */
+std::pair<bool, std::string> DirPrintLLM_g(CDocument* pdocument)
+{
+   auto* ptable_ = pdocument->CACHE_Get("file-dir");                                                assert(ptable_ != nullptr);
+
+   std::string stringOutput; // Generated output with files to be used by LLM
+
+   // ## Get current directory and print that first
+   std::string stringCurrentDirectory = pdocument->GetApplication()->PROPERTY_Get("folder-current").as_string();
+   if (stringCurrentDirectory.empty() == false)
+   {
+      stringOutput += std::format("Current Directory: {}\n", stringCurrentDirectory);
+   }
+
+   // ## Iterate dir table and extract the file paths, strip it from the current directory and add it to the output
+   for( const auto& itRow : *ptable_ )
+   {
+      std::string stringPath = itRow.cell_get_variant_view("path").as_string();
+      if (stringPath.find(stringCurrentDirectory) == 0)
+      {
+         stringPath = stringPath.substr(stringCurrentDirectory.length());
+
+         // Remove leading slashes or backslashes
+         while( stringPath.empty() == false && (stringPath.front() == '/' || stringPath.front() == '\\') ) { stringPath.erase(0, 1); }
+      }
+      stringOutput += std::format("{}\n", stringPath);
+   }
+
+   pdocument->MESSAGE_Display(stringOutput);
+
+   return { true, "" };
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief Prints the directory table in a compact format similar to the 'ls' command.

@@ -2413,10 +2413,12 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "sort", "Sort the listed files based on a **specified column name** (e.g., name, size, date). This organizes the output for easier analysis." });
       optionsCommand.add({ "where", "Specify conditions for filtering file names in result." });
       optionsCommand.add({ "where-expression", "Use internal expression format for filtering result." });
+      optionsCommand.add({ "max", "Set the **maximum number of results** to return. Use this to limit output and improve performance for large searches." });
       optionsCommand.add_flag_or_option( {"parents", "Adds parent folders to file name when listing."} );
       optionsCommand.add_flag_or_option( {"R", "Enable **recursive listing** of files in subfolders. Sets the recursion depth to 16, ensuring all subdirectories are scanned."} );
       optionsCommand.add_flag({ "directory", 'd', "Display directory information only"});
       optionsCommand.add_flag({ "compact", "View results in compact format, similar to ls on linux" });
+      optionsCommand.add_flag({ "llm", "Adapt result for llm" });
 #ifdef _WIN32
       optionsCommand.add_flag( {"vs", "Format the output to be compatible with the **Visual Studio Output window**, enabling seamless integration with the IDE."} );
       optionsCommand.add_flag( {"win", "Enable **Windows-specific functionality**, adapting the listing behavior to leverage Windows operating system features."} );

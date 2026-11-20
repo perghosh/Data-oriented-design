@@ -37,6 +37,7 @@ std::pair<bool, std::string> DirPattern_g( const std::vector< std::pair<boost::r
 std::pair<bool, std::string> DirFilter_g( const gd::argument::shared::arguments& arguments_, CDocument* pdocument );
 
 std::pair<bool, std::string> DirPrint_g( CDocument* pdocument );
+std::pair<bool, std::string> DirPrintLLM_g(CDocument* pdocument);
 std::pair<bool, std::string> DirPrintCompact_g( CDocument* pdocument, const gd::argument::shared::arguments& arguments_ );
 
 std::pair<bool, std::string> DirPrintToVS_g( CDocument* pdocument, const gd::argument::arguments& arguments_ );

@@ -102,6 +102,8 @@ Examples:
   cleaner count "*.cpp" -R --pattern "set;compare" --page-size 20 --current-directory "C:\dev\project"
 )help";
 
+
+
    // ## User help
    // Fuller descriptions for a person at a terminal. Only the commonly used options are listed.
 
@@ -190,6 +192,77 @@ Flags:
 Global:
   --current-directory Folder to run in
 )help";
+
+   constexpr std::string_view stringHelpDirUser_g = R"help(dir - List selected files, with many options for filtering what to list.
+
+Usage: cleaner dir [filter] [options]
+
+Arguments:
+  filter              File name wildcards, separated by ';' (for example "*.txt;database.*"). All files if omitted
+  --pattern           Only list files containing this text, separated by ';'
+  --rpattern          Only list files matching this regular expression
+  --source            Directory(ies) to start in, separated by ';'
+  --ignore            Folder names to exclude, separated by ';'
+  --segment           Segment of code to search when using patterns: code, string or comment
+  --sort              Sort on column name (for example name, size, date)
+  --where             Condition for filtering file names in result
+  --where-expression  Internal expression format for filtering result
+  --script            External script file for custom processing of the listed files
+  --parents           Add parent folders to file names
+
+Flags:
+  -R                  List all subfolders (depth 16)
+  --directory         Display directory information only
+  --compact           Compact format, similar to ls on linux
+  --detail <level>    basic, standard, extended, full (or 0-3), more columns per file
+  -llm                Output adapted for LLM
+  --vs                Visual Studio output window format (clickable files)
+
+Global:
+  --current-directory Folder to run in
+)help";
+
+
+
+   constexpr std::string_view stringHelpDirLLM_g = R"help(dir: list FILES (folders are not listed). Use it to find out which files exist.
+With --pattern or --rpattern only files whose content matches are listed (file names only, no lines).
+To see the matching LINES use `list`, `find` or `count`.
+
+Usage:
+  cleaner dir "<filter>" -R --current-directory "<folder>" --max 200 -llm
+
+Required:
+  --current-directory    Folder to list
+
+Options:
+  "<filter>"             First positional argument. File wildcards separated by ';', e.g. "*.h;*.cpp". All files if omitted
+  --pattern "<text>"     Only list files containing this text, separated by ';'
+  --rpattern "<regex>"   Only list files whose content matches this regular expression
+  -R                     Include subfolders. The subfolder is part of the entry, e.g. sub\file.cpp
+  --ignore "a;b"         Skip folders with these names
+  --sort <column>        name | size | date
+  --max N                Max entries returned
+  -llm                   Compact output, see Output
+
+Output (-llm):
+  Current Directory: <absolute folder>
+  <entry>                One per line, a path relative to the Current Directory, e.g. sub\file.cpp
+  Full path = Current Directory + \ + entry, e.g. C:\project + sub\file.cpp = C:\project\sub\file.cpp
+
+Notes:
+  Without -R only the top folder is listed. To see how the project is organized, use -R with a filter.
+  Avoid -R without a filter in large trees. Prefer this over PowerShell dir or Get-ChildItem.
+  Progress lines are noise. Exit code -1 is normal, judge by the output.
+
+Examples:
+  cleaner dir -llm --current-directory "C:\dev\project"
+  cleaner dir "*.h;*.cpp" -R --ignore "bin;obj;.vs" --max 100 -llm --current-directory "C:\dev\project"
+  cleaner dir "CLI*.cpp" -R --sort date -llm --current-directory "C:\dev\project"
+  cleaner dir "*.cpp;*.h" -R --pattern optionsApplication -llm --current-directory "C:\dev\project"
+)help";
+
+
+
 }
 
 std::pair<bool, std::string> Help_g(CDocument* pdocument, const gd::cli::options* poptionsHelp, gd::cli::options* poptionsApplication)
@@ -220,6 +293,10 @@ std::pair<bool, std::string> HelpCommand_g( std::string_view stringCommand, bool
    else if(stringCommand == "count")
    {
       stringDocumentation = bLLM ? std::string(stringHelpCountLLM_g) : std::string(stringHelpCountUser_g);
+   }
+   else if (stringCommand == "dir")
+   {
+      stringDocumentation = bLLM ? std::string(stringHelpDirLLM_g) : std::string(stringHelpDirUser_g);
    }
    else
    {
