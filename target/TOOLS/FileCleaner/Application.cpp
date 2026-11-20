@@ -3916,16 +3916,7 @@ bool CApplication::IsTextFile_s(const std::string_view& stringExtension)
       ".ts", ".tsx", ".txt", ".vim", ".vue", ".xhtml", ".xml", ".xsl",
       ".yaml", ".yml", ".zig"
    };
-
-#ifndef NDEBUG
-   static const bool bTextFileExtensionsAreSorted = []
-   {
-      const bool bSorted = std::is_sorted(std::begin(arrayTextFileExtension), std::end(arrayTextFileExtension));
-      assert(bSorted);
-      return bSorted;
-   }();
-   (void)bTextFileExtensionsAreSorted;
-#endif
+   static_assert(std::is_sorted(std::begin(arrayTextFileExtension), std::end(arrayTextFileExtension)));
 
    return std::binary_search(std::begin(arrayTextFileExtension), std::end(arrayTextFileExtension), stringExtension);
 }
