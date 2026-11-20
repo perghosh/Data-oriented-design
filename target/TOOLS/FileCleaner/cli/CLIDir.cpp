@@ -139,8 +139,13 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
    }
    else
    {
-      if (options_.exists("llm") == true) { DirPrintLLM_g(pdocument); }         // print the table in a format suitable for LLM
-      else { DirPrint_g(pdocument); }                                           // print the table to the console
+      // check if max is set, if so then get the value and pass it to DirPrint_g
+      int iMax = -1;
+      value_ = options_.get_variant_view("max", gd::cli::options::tag_optional{});
+      if( value_.has_value() == true ) { iMax = value_.value().as_int(); }
+
+      if( options_.exists("llm") == true ) { DirPrintLLM_g(pdocument, iMax); }        // print the table in a format suitable for LLM
+      else { DirPrint_g(pdocument, iMax); }                                           // print the table to the console
    }
 
 #ifdef _WIN32
@@ -346,7 +351,7 @@ std::pair<bool, std::string> DirFilter_g( const gd::argument::shared::arguments&
  * @param pdocument pointer to the document object where data is stored
  * @return a pair of bool and string, where the bool indicates success or failure, and the string contains the error message or result
  */
-std::pair<bool, std::string> DirPrint_g(CDocument* pdocument)
+std::pair<bool, std::string> DirPrint_g(CDocument* pdocument, int iMax)
 {
    const auto* ptable_ = pdocument->CACHE_Get("file-dir");                                         assert(ptable_ != nullptr);
 
@@ -361,7 +366,7 @@ std::pair<bool, std::string> DirPrint_g(CDocument* pdocument)
  * @param pdocument The document that provides the directory data and displays the output.
  * @return A pair containing a success flag set to true and an empty message.
  */
-std::pair<bool, std::string> DirPrintLLM_g(CDocument* pdocument)
+std::pair<bool, std::string> DirPrintLLM_g(CDocument* pdocument, int iMax)
 {
    auto* ptable_ = pdocument->CACHE_Get("file-dir");                                                assert(ptable_ != nullptr);
 
@@ -377,6 +382,8 @@ std::pair<bool, std::string> DirPrintLLM_g(CDocument* pdocument)
    // ## Iterate dir table and extract the file paths, strip it from the current directory and add it to the output
    for( const auto& itRow : *ptable_ )
    {
+      if( iMax == 0 ) break; // limit the number of files printed if iMax is set
+      iMax--;
       std::string stringPath = itRow.cell_get_variant_view("path").as_string();
       if (stringPath.find(stringCurrentDirectory) == 0)
       {

@@ -1,29 +1,30 @@
 ## Searching the code with cleaner
 
-Use `C:\Tools\cleaner.exe` for ALL code searching, instead of reading whole files or guessing.
+Use `C:\Tools\cleaner.exe` for ALL code searching and file listing, instead of reading whole files,
+guessing, or using PowerShell `dir` / `Get-ChildItem`.
 Call it from PowerShell by full path: `& 'C:\Tools\cleaner.exe' <command> ...`
 
 ### Commands
-- `list`: single-line matches (names, calls, declarations)
-- `find`: multi-line matches (patterns spanning lines)
+- `list`: single-line matches (names, calls, declarations). `find` takes the same options but matches across lines
 - `count`: matches per file. Use for scoping only, then use `list` or `find` for exact lines before editing
-- `dir`: list files with filters
-
-*Note that list and find have identical options, no need to get help for both*
+- `dir`: list files (not folders). With `--pattern` only files containing the text
 
 ### Get the options before the first use
-Run `& 'C:\Tools\cleaner.exe' help <list|find|count> -llm` once per session and follow its output.
+Before using a command for the first time in a chat, run
+`& 'C:\Tools\cleaner.exe' help <list|count|dir> -llm` (`list` also covers `find`) and follow its output.
 Do not guess option names: unknown options print help and `ERROR: Unknown option`.
 
 ### Always
-- Filter is the first positional argument, e.g. `"*.h;*.cpp"`. --filter if not first.
-- Set `--current-directory "<folder>"` and `-R` (subfolders), and bound output with `--max N`.
-- Use `-llm` (single dash) together with `--context N` when you need to read the surrounding code.
+- Filter is the first positional argument, e.g. `"*.h;*.cpp"`. Use `--filter` if it is not first.
+- Set `--current-directory "<folder>"`. Add `-R` to include subfolders.
+- Bound output: `--max N` for `list`, `find` and `dir`; `--page-size N` for `count`.
+- Use `-llm` (single dash) on every command. With `list` and `find`, also use `--context N` to read surrounding code.
 - Separate several literal patterns with `;`. Repeat `--rpattern` for several regex expressions.
 
 ### Output
-Lines look like `path:line - [text]`. Ignore progress lines ("Find in files: ...").
-The exit code is often -1 even when the output is correct, so judge success from the output.
+`list` and `find`: lines look like `path:line - [text]`. `dir`: a `Current Directory:` line, then paths relative to it.
+Ignore progress lines ("Find in files: ..."). The exit code is often -1 even when the output is correct, so judge success from the output.
+
 
 ## Priority and scope
 
