@@ -894,12 +894,11 @@ public:
    void row_clear() { m_uRowCount = 0; }
    ///@}
 
-    /// @name row_delete
-   /// deletes last row in table
-   ///@{
    /// Deletes last row in table (by decreasing the row count)
    void row_delete() { if(m_uRowCount > 0) m_uRowCount--; }
-   ///@}
+
+   /// Set max number of rows
+   void row_set_count( uint64_t uCount ) { if(m_uRowCount > uCount) m_uRowCount = uCount; }
 
    /// @name row_reserve_add
    /// reserve memory to store more rows in table
