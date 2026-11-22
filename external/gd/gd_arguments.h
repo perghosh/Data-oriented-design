@@ -99,6 +99,7 @@ for( auto it = args8.named_begin(); it != args8.named_end(); it++ )
 
 #pragma once
 #include <cassert>
+#include <cstddef>
 #include <cstring>
 #include <optional>
 #include <string>
@@ -1759,6 +1760,43 @@ public:
 
    static size_type npos;
 
+};
+
+/// Raw byte storage for arguments_local, declared before arguments_local's arguments base.
+template<std::size_t uCapacity>
+struct arguments_storage
+{
+   std::byte m_byteBuffer[uCapacity];
+};
+
+/** ===========================================================================
+ * @brief arguments container that carries its initial buffer inside the object.
+ *
+ * The buffer is measured in bytes and is used without a heap allocation until its capacity is
+ * exceeded. The container then grows to owned heap storage, like arguments constructed with a
+ * caller-provided buffer. Since the object initially points into itself, it cannot be copied or moved.
+ *
+ * @par Example
+ * @code{.cpp}
+ * gd::argument::arguments_local<256> argumentsLocal;
+ * argumentsLocal.append("name", 42);
+ * call_method(argumentsLocal); // takes gd::argument::arguments&
+ * @endcode
+ *
+ * @CLASS [tag: arguments, buffer] [pattern: decorator] [summary: arguments with its own inline buffer] [name: arguments_local]
+ */
+template<std::size_t uCapacity>
+class arguments_local : private arguments_storage<uCapacity>, public arguments
+{
+   static_assert(uCapacity > 0 && uCapacity <= 0xFFFFFFFFu, "arguments buffer capacity must fit in unsigned int");
+public:
+   arguments_local()
+      : arguments(reinterpret_cast<arguments::pointer>(this->m_byteBuffer), static_cast<unsigned int>(uCapacity)) {}
+   arguments_local(const arguments_local&) = delete;
+   arguments_local& operator=(const arguments_local&) = delete;
+   arguments_local(arguments_local&&) = delete;
+   arguments_local& operator=(arguments_local&&) = delete;
+   ~arguments_local() = default;
 };
 
 /// Return value as specified template type
