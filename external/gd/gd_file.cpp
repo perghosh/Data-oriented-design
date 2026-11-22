@@ -812,11 +812,14 @@ path& path::add(const std::string_view& stringName)
 {
    std::string stringPath( stringName );
    normalize_path_s(stringPath);
+   if(m_stringPath.empty() == false )
+   {
 #ifdef _WIN32
-   if( has_separator() == false || stringPath[0] != m_iPathDivider_s ) m_stringPath += m_iPathDivider_s;
+      if( has_separator() == false || stringPath[0] != m_iPathDivider_s ) m_stringPath += m_iPathDivider_s;
 #else
    if( has_separator() == false ) m_stringPath += '/';
 #endif
+   }
    m_stringPath += stringPath;
    return *this;
 }

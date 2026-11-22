@@ -3553,6 +3553,9 @@ gd::table::dto::table CDocument::RESULT_PatternLineList( const gd::argument::arg
    // @brief Enum constant for column positions in table
    enum enumColumn { eColumnLine = 0, eColumnFile, eColumnContext, eColumnRow, eColumnRowLeading };
 
+   bool bLLM = m_papplication->IsStateLLM(); // check if application is in LLM state
+   std::string stringCurrentDirectory = m_papplication->PROPERTY_Get("folder-current").as_string(); // get current working directory from application properties
+
    using namespace gd::table::dto;
    enumEditor eEditor = eVSCode;
    auto stringEditor = m_papplication->PROPERTY_Get("editor").as_string();
@@ -3583,8 +3586,7 @@ gd::table::dto::table CDocument::RESULT_PatternLineList( const gd::argument::arg
 
    unsigned uKeyColumnInFile = ptableFile->column_get_index("key"); // get index for key column  
 
-   std::string string_;
-
+   std::string string_; // temp string to avoid relocation.
    for( uint64_t uRow = 0, uRowCount = ptableLineList->size(); uRow < uRowCount; uRow++ )
    {
       auto uFileKey = ptableLineList->cell_get_variant_view(uRow, "file-key").as_uint64();
@@ -3593,8 +3595,14 @@ gd::table::dto::table CDocument::RESULT_PatternLineList( const gd::argument::arg
       if( iFileRow == -1 ) { assert(iFileRow != -1); continue; }
 
       auto stringFolder = ptableFile->cell_get_variant_view(iFileRow, "folder").as_string();
-      auto stringFilename = ptableFile->cell_get_variant_view(iFileRow, "filename").as_string();
       gd::file::path pathFile(stringFolder);
+
+      // ## In LLM mode and current directory is not empty, remove current directory to decrease tokens
+      if(bLLM == true && stringCurrentDirectory.empty() == false)
+      {
+         if(stringFolder.find(stringCurrentDirectory) == 0) { stringFolder = stringFolder.substr(stringCurrentDirectory.length()); }
+      }
+      auto stringFilename = ptableFile->cell_get_variant_view(iFileRow, "filename").as_string();
       pathFile += stringFilename;
       std::string stringFile = pathFile.string();
 
@@ -3646,7 +3654,7 @@ gd::table::dto::table CDocument::RESULT_PatternLineList( const gd::argument::arg
 
       std::string stringLine = ptableLineList->cell_get_variant_view(uRow, "line").as_string();
       stringLine = gd::math::string::trim_repeated_chars(stringLine);          // trim line from characters that are repeated more than 2 times
-      if( stringLine.length() > 120 ) stringLine = stringLine.substr(0, 120) + "..."; // limit line length to 120 characters  
+      if(bLLM == false && stringLine.length() > 120 ) stringLine = stringLine.substr(0, 120) + "..."; // limit line length to 120 characters  
       stringLine += "]";                                                       // close line with ]
 
       stringFile += stringLine;

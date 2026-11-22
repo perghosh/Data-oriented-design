@@ -296,6 +296,8 @@ std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* p
 {
    const char* piszPosition = piszBegin;                                       // Current position
 
+   vectorToken.reserve(16);                                                    // rough guess, avoids smaller reallocations, but can be adjusted based on expected input size
+
    /// ## Loop through the string and parse the tokens
    while( piszPosition < piszEnd )
    {
@@ -400,7 +402,7 @@ std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* p
          continue;
       }
 
-      if( uCharacterType & SPECIAL_CHAR_BIT )                                           // Special character
+      if( uCharacterType & SPECIAL_CHAR_BIT )                                  // Special character
       {
          uint32_t uTokenType = token::token_type_s( "SPECIAL_CHAR" );
          vectorToken.emplace_back( token( uTokenType, std::string_view( piszPosition, 1 ) ) );
@@ -409,7 +411,7 @@ std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* p
       }
 
 
-      if( uCharacterType & SEPARATOR_BIT )                                           // Special character
+      if( uCharacterType & SEPARATOR_BIT )                                     // Special character
       {
          uint32_t uTokenType = token::token_type_s( "SEPARATOR" );
          vectorToken.emplace_back( token( uTokenType, std::string_view( piszPosition, 1 ) ) );

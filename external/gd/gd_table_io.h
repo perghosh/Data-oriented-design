@@ -436,6 +436,31 @@ inline std::string to_string( const dto::table& table, tag_io_raw ) {
    return stringResult;
 }
 
+/**
+ * @brief Convert table rows to raw text using a custom value formatter.
+ * @param table Table to convert.
+ * @param uBegin First row to convert.
+ * @param uCount Number of rows to convert.
+ * @param argumentOption Options controlling conversion.
+ * @param format_value_ Callback receiving column index, column type and value. Return true to use stringNew.
+ * @param stringOut String receiving the converted table; appended unless empty.
+ * @param tag_io_raw Raw text format tag.
+ */
+void to_string( const dto::table& table, uint64_t uBegin, uint64_t uCount,
+   const gd::argument::arguments& argumentOption,
+   const std::function<bool(unsigned uColumn, unsigned uType, const gd::variant_view&, std::string& stringNew)>& format_value_,
+   std::string& stringOut, tag_io_raw );
+
+/// Convert a complete table to raw text using a custom value formatter.
+inline std::string to_string( const dto::table& table,
+   const std::function<bool(unsigned uColumn, unsigned uType, const gd::variant_view&, std::string& stringNew)>& format_value_,
+   tag_io_raw )
+{
+   std::string stringResult;
+   to_string( table, 0, table.get_row_count(), {}, format_value_, stringResult, tag_io_raw{} );
+   return stringResult;
+}
+
 
 // ## SQL IO ------------------------------------------------------------------
 

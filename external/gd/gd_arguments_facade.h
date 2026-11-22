@@ -3,6 +3,7 @@
 #pragma once
 
 #include <cstddef>
+#include <initializer_list>
 #include <stdexcept>
 #include <string_view>
 #include <type_traits>
@@ -39,10 +40,12 @@ constexpr bool dictionary_allow_all_keys::contains(std::string_view)
  * \par Unrestricted keys
  * \code
  * gd::argument::arguments arguments;
- * gd::argument::dictionary<gd::argument::arguments> values;
- * values["count"] = 42;
- * values["name"] = "Ada";
+ * gd::argument::dictionary<gd::argument::arguments> values({
+ *    {"count", 42},
+ *    {"name", "Ada"}
+ * });
  * int count = values.get<int>("count");
+ * bool erased = values.erase("count");
  * std::string_view name = values.get_variant_view("name").as_string_view();
  * gd::variant ownedCount = values.get_variant("count");
  * \endcode
@@ -66,8 +69,7 @@ constexpr bool dictionary_allow_all_keys::contains(std::string_view)
  * @tparam ARGUMENTS Arguments container used for storage.
  * @tparam KEY_POLICY Policy that allows or rejects each key; defaults to allowing all keys.
  *
- * @CLASS [name: arguments, map] [pattern: facade, adaptor] [name: dictionary] [description: Helper object that presents arguments as a key-value map]
- */
+ @CLASS [name: arguments, map] [pattern: facade, adaptor] [name: dictionary] [description: Helper object that presents arguments as a key-value map]W */
 template <typename ARGUMENTS, typename KEY_POLICY = dictionary_allow_all_keys>
 class dictionary
 {
@@ -78,6 +80,8 @@ public:
    dictionary();
    explicit dictionary(const ARGUMENTS& arguments);
    explicit dictionary(ARGUMENTS&& arguments);
+   /// Constructs a dictionary from string-key and variant-value pairs.
+   dictionary(std::initializer_list<std::pair<std::string_view, gd::variant>> listValues);
    dictionary(const dictionary& dictionaryOther);
    dictionary(dictionary&& dictionaryOther);
    dictionary& operator=(const dictionary& dictionaryOther);
@@ -96,9 +100,16 @@ public:
    VALUE get(std::string_view stringKey) const;
 
    bool contains(std::string_view stringKey) const;
+   /// Removes a key and returns whether it existed.
+   bool erase(std::string_view stringKey);
    bool empty() const;
    std::size_t size() const;
    void clear();
+
+   /// Replaces all entries with entries from another dictionary.
+   dictionary& set(const dictionary& dictionaryOther);
+   /// Adds or replaces entries from another dictionary.
+   dictionary& merge(const dictionary& dictionaryOther);
 
    const ARGUMENTS& get_arguments() const;
 
@@ -116,6 +127,12 @@ dictionary<ARGUMENTS, KEY_POLICY>::dictionary(const ARGUMENTS& arguments) : m_ar
 
 template <typename ARGUMENTS, typename KEY_POLICY>
 dictionary<ARGUMENTS, KEY_POLICY>::dictionary(ARGUMENTS&& arguments) : m_arguments(std::move(arguments)) {}
+
+template <typename ARGUMENTS, typename KEY_POLICY>
+dictionary<ARGUMENTS, KEY_POLICY>::dictionary(std::initializer_list<std::pair<std::string_view, gd::variant>> listValues)
+   : m_arguments(listValues)
+{
+}
 
 template <typename ARGUMENTS, typename KEY_POLICY>
 dictionary<ARGUMENTS, KEY_POLICY>::dictionary(const dictionary& dictionaryOther) = default;
@@ -179,6 +196,15 @@ bool dictionary<ARGUMENTS, KEY_POLICY>::contains(std::string_view stringKey) con
 }
 
 template <typename ARGUMENTS, typename KEY_POLICY>
+bool dictionary<ARGUMENTS, KEY_POLICY>::erase(std::string_view stringKey)
+{
+   if constexpr( !std::is_same_v<KEY_POLICY, dictionary_allow_all_keys> ) { validate_key(stringKey); }
+   if( !m_arguments.exists(stringKey) ) { return false; }
+   m_arguments.remove(stringKey);
+   return true;
+}
+
+template <typename ARGUMENTS, typename KEY_POLICY>
 bool dictionary<ARGUMENTS, KEY_POLICY>::empty() const
 {
    return m_arguments.empty();
@@ -194,6 +220,24 @@ template <typename ARGUMENTS, typename KEY_POLICY>
 void dictionary<ARGUMENTS, KEY_POLICY>::clear()
 {
    m_arguments.clear();
+}
+
+template <typename ARGUMENTS, typename KEY_POLICY>
+dictionary<ARGUMENTS, KEY_POLICY>& dictionary<ARGUMENTS, KEY_POLICY>::set(const dictionary& dictionaryOther)
+{
+   clear();
+   return merge(dictionaryOther);
+}
+
+template <typename ARGUMENTS, typename KEY_POLICY>
+dictionary<ARGUMENTS, KEY_POLICY>& dictionary<ARGUMENTS, KEY_POLICY>::merge(const dictionary& dictionaryOther)
+{
+   for( auto it = dictionaryOther.m_arguments.named_begin(); it != dictionaryOther.m_arguments.named_end(); ++it )
+   {
+      std::string_view stringKey = it.name();
+      if( !stringKey.empty() ) { set(stringKey, it.as_variant_view()); }
+   }
+   return *this;
 }
 
 template <typename ARGUMENTS, typename KEY_POLICY>

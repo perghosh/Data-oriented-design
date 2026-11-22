@@ -1678,7 +1678,10 @@ void to_string( const dto::table& table, std::string& stringOut, const std::vect
 
 /// raw table to string conversion, used for CLI output
 template <typename TABLE>
-void to_string_s( const TABLE& table, uint64_t uBegin, uint64_t uCount, const gd::argument::arguments& argumentOption, std::string& stringOut )
+void to_string_s( const TABLE& table, uint64_t uBegin, uint64_t uCount,
+   const gd::argument::arguments& argumentOption,
+   const std::function<bool(unsigned uColumn, unsigned uType, const gd::variant_view&, std::string& stringNew)>& format_value_,
+   std::string& stringOut )
 {
    if( argumentOption.exists("count") == true ) { uCount = argumentOption["count"].as_uint64(); }  // set max count if argument for count is found
 
@@ -1719,6 +1722,7 @@ void to_string_s( const TABLE& table, uint64_t uBegin, uint64_t uCount, const gd
 
    stringResult += stringHeader;
 
+   // ## Iterate rows ........................................................
    for( auto uRow = uBegin; uRow < uEnd; uRow++ )
    {
       vectorValue.clear();
@@ -1728,26 +1732,31 @@ void to_string_s( const TABLE& table, uint64_t uBegin, uint64_t uCount, const gd
 
       unsigned uColumn = 0;
 
+      // ### Iterate values and add to string, split columns with text "  " ?
       for( auto it = std::begin( vectorValue ), itEnd = std::end( vectorValue ); it < itEnd; it++ )
       {
          if( uColumn > 0 ) stringResult.append(stringColumnDivide);            // split columns with text "  " ?
          auto value_ = *it;
 
-         if( value_.is_null() == true )
+         bool bFormatted = false;
+         if( format_value_ )
          {
-            stringValue = "";
-         }
-         else if( value_.is_string() == true )
-         {
-            const std::string_view text_ = value_.as_string_view();
-            stringValue += text_;
-         }
-         else
-         {
-            stringValue = value_.as_string();
+            unsigned uType = value_.type();
+            bFormatted = format_value_( uColumn, uType, value_, stringValue );
          }
 
-         if(stringValue.length() > uMax)
+         if( bFormatted == false )
+         {
+            if( value_.is_null() == true ) { stringValue = ""; }
+            else if( value_.is_string() == true )
+            {
+               const std::string_view text_ = value_.as_string_view();
+               stringValue += text_;
+            }
+            else { stringValue = value_.as_string(); }
+         }
+
+         if(stringValue.length() > uMax)                                       // check for max column width and shrink if above
          {
             stringValue = stringValue.substr( 0, uMax - 3 );
             stringValue += std::string_view{"..."};
@@ -1801,7 +1810,15 @@ void to_string(const table& table, uint64_t uBegin, uint64_t uCount, std::vector
 
 void to_string(const dto::table& table, uint64_t uBegin, uint64_t uCount, const gd::argument::arguments& argumentOption, std::string& stringOut, tag_io_raw)
 {
-   to_string_s( table, uBegin, uCount, argumentOption, stringOut );
+   to_string_s( table, uBegin, uCount, argumentOption, nullptr, stringOut );
+}
+
+void to_string(const dto::table& table, uint64_t uBegin, uint64_t uCount,
+   const gd::argument::arguments& argumentOption,
+   const std::function<bool(unsigned uColumn, unsigned uType, const gd::variant_view&, std::string& stringNew)>& format_value_,
+   std::string& stringOut, tag_io_raw)
+{
+   to_string_s( table, uBegin, uCount, argumentOption, format_value_, stringOut );
 }
 
 void to_string(const dto::table& table, uint64_t uBegin, uint64_t uCount, std::vector<unsigned> vectorWidth, const gd::argument::arguments& argumentOption, std::string& stringOut, tag_io_cli, tag_text)
