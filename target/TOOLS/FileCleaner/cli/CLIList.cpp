@@ -5,6 +5,7 @@
  * Sections — double-click a marker, then Ctrl+F3 / F3 to jump.
  *
  * help__            Generate help and documentation for command-line options.
+ * list__            Main entry for list command
  *
  */
 
@@ -30,7 +31,7 @@ NAMESPACE_CLI_BEGIN
 
 // ## Dir operations
 
-/** --------------------------------------------------------------------------- @CODE [tag: cli, command, list] [name: list] [description: Processes the 'list' command, line based search in selected files]
+/** --------------------------------------------------------------------------- 
  * @brief Processes the 'list' command and performs file harvesting and pattern matching.
  * 
  * This function checks if the command name is 'list' and if the 'explain' option is set. If so, it would display an explanation (currently commented out).
@@ -39,7 +40,7 @@ NAMESPACE_CLI_BEGIN
  * @param poptionsList Pointer to a gd::cli::options object containing command-line options.
  * @param pdocument Pointer to a CDocument object used for file harvesting and pattern matching.
  * @return A std::pair where the first element is a boolean indicating success (true) or failure (false), and the second element is a string containing an error message if the operation failed, or an empty string on success.
- */
+@API [tag: cli, command, list] [name: list] [description: Processes the 'list' command, line based search in selected files] [jump: list__] */
 std::pair<bool, std::string> List_g(gd::cli::options* poptionsList, CDocument* pdocument )
 {
    const gd::cli::options& options_ = *poptionsList;
@@ -267,7 +268,7 @@ std::pair<bool, std::string> ListPattern_g( const gd::cli::options* poptionsList
    }
 
    gd::argument::arguments argumentsPrint({ {"pattern-count", (unsigned)uSearchPatternCount} });
-   argumentsPrint.append( options_.get_arguments(), {"vs", "output", "context", "script", "hyperlink", "hyperlink-ps", "llm"});
+   argumentsPrint.append( options_.get_arguments(), {"max", "vs", "output", "context", "script", "hyperlink", "hyperlink-ps", "llm"});
    result_ = ListPrintLine_g(pdocument, argumentsPrint ); // print the result table
 
 
@@ -404,9 +405,17 @@ std::pair<bool, std::string> ListPrintLine_g( CDocument* pdocument, gd::argument
       }
    }
 
-   // ## Build tables for print
+   // ## Build tables for print ..............................................
 
    auto tableResultLineList = pdocument->RESULT_PatternLineList( argumentsPrint );// generate the result table for pattern line list
+
+   // ### Check if we need to limit the number of rows to print based on the 'max' argument
+   if(argumentsPrint.exists("max") == true)
+   {
+      auto uMaxRowCount = argumentsPrint["max"].as_uint();
+      if(uMaxRowCount < tableResultLineList.size()) { tableResultLineList.row_set_count(uMaxRowCount); }
+   }
+
    if( argumentsPrint.exists_any( { "hyperlink", "hyperlink-ps" }) == true )
    {
       CDocument::TABLE_MakeHyperlink_s(tableResultLineList, argumentsPrint);     // format file names as hyperlinks in the result table

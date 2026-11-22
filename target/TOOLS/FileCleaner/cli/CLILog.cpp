@@ -118,10 +118,9 @@ std::pair<bool, std::string> LogPattern_g(gd::cli::options* poptionsLog, CDocume
       uSearchPatternCount = vectorPattern.size();                              // count the number of patterns to search for
 
       result_ = pdocument->FILE_UpdatePatternLog(vectorPattern, argumentsList); // Search for patterns in harvested files and place them into the result table
-
    }
 
-
+   return { true, "" };                                                       // return success
 }
 
 

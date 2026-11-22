@@ -255,16 +255,13 @@ public:
 
    void SetState(unsigned uSet, unsigned uClear) { m_uApplicationState = ( m_uApplicationState & ~uClear ) | uSet; }
 
-/** \name INTERFACE
-*///@{
+// @API [tag: interaface] [description: Inherited interface methods]
    std::pair<bool, std::string> Main( int iArgumentCount, char* ppbszArgument[], std::function<bool ( const std::string_view&, const gd::variant_view& )> process_ ) override;
    std::pair<bool, std::string> Initialize() override;
    std::pair<bool, std::string> Exit() override;
-//@}
 
 
-/** \name OPERATION
-*///@{
+// @API [tag: operation] [description: Core application methods]
    std::pair<bool, std::string> Initialize( gd::cli::options& optionsApplication );
 
    std::pair<bool, std::string> InitializeInternal( gd::cli::options& optionsApplication );
@@ -282,8 +279,6 @@ public:
    std::pair<bool, std::string> PrintError(const std::string_view& stringMessage, const gd::argument::arguments& argumentsFormat);
    ///
    void Print( std::string_view stringColor, gd::types::tag_background );
-
-//@}
 
    std::pair<bool, std::string> STATEMENTS_Load(const std::string_view& stringFileName);
    

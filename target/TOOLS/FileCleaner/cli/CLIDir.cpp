@@ -385,7 +385,7 @@ std::pair<bool, std::string> DirPrintLLM_g(CDocument* pdocument, int iMax)
       if( iMax == 0 ) break; // limit the number of files printed if iMax is set
       iMax--;
       std::string stringPath = itRow.cell_get_variant_view("path").as_string();
-      if (stringPath.find(stringCurrentDirectory) == 0)
+      if(stringPath.find(stringCurrentDirectory) == 0)
       {
          stringPath = stringPath.substr(stringCurrentDirectory.length());
 
