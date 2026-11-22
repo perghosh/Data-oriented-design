@@ -3595,12 +3595,14 @@ gd::table::dto::table CDocument::RESULT_PatternLineList( const gd::argument::arg
       if( iFileRow == -1 ) { assert(iFileRow != -1); continue; }
 
       auto stringFolder = ptableFile->cell_get_variant_view(iFileRow, "folder").as_string();
+      gd::file::path pathFile(stringFolder);
+
+      // ## In LLM mode and current directory is not empty, remove current directory to decrease tokens
       if(bLLM == true && stringCurrentDirectory.empty() == false)
       {
          if(stringFolder.find(stringCurrentDirectory) == 0) { stringFolder = stringFolder.substr(stringCurrentDirectory.length()); }
       }
       auto stringFilename = ptableFile->cell_get_variant_view(iFileRow, "filename").as_string();
-      gd::file::path pathFile(stringFolder);
       pathFile += stringFilename;
       std::string stringFile = pathFile.string();
 
@@ -3652,7 +3654,7 @@ gd::table::dto::table CDocument::RESULT_PatternLineList( const gd::argument::arg
 
       std::string stringLine = ptableLineList->cell_get_variant_view(uRow, "line").as_string();
       stringLine = gd::math::string::trim_repeated_chars(stringLine);          // trim line from characters that are repeated more than 2 times
-      if( stringLine.length() > 120 ) stringLine = stringLine.substr(0, 120) + "..."; // limit line length to 120 characters  
+      if(bLLM == false && stringLine.length() > 120 ) stringLine = stringLine.substr(0, 120) + "..."; // limit line length to 120 characters  
       stringLine += "]";                                                       // close line with ]
 
       stringFile += stringLine;

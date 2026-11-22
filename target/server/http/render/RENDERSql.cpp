@@ -1029,14 +1029,14 @@ std::pair<bool, std::string> CRENDERSql::Preprocess( std::string_view stringSqlT
          result_ = gd::expression::token::compile_s(vectorToken, vectorPostfix, tag_postfix{});
          if( result_.first == false && pbError != nullptr ) { *pbError = true; return result_.second; }
 
-         std::vector<gd::expression::value> vectorReturn;
+         gd::vector_local<gd::expression::value, 8> vectorReturn;
          result_ = gd::expression::token::calculate_s(vectorPostfix, &vectorReturn, runtime_);
          if( result_.first == false && pbError != nullptr ) { *pbError = true; return result_.second; }
 
          std::string stringResult;
          if( vectorReturn.size() > 0 ) { stringResult = vectorReturn[0].as_string(); }
 
-         return stringResult; // return empty variant if not found
+         return stringResult;                                                 // return the result of the expression evaluation to replace in the string
       };
 
 

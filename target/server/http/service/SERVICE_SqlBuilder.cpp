@@ -157,7 +157,7 @@ std::pair<bool, std::string> CSqlBuilder::Build( std::string& stringSqlReady )
          result_ = gd::expression::token::compile_s(vectorToken, vectorPostfix, tag_postfix{});
          if( result_.first == false && pbError != nullptr ) { *pbError = true; return result_.second; }
 
-         std::vector<gd::expression::value> vectorReturn;
+         gd::vector_local<gd::expression::value, 8> vectorReturn;
          result_ = gd::expression::token::calculate_s(vectorPostfix, &vectorReturn, runtime_);
          if( result_.first == false && pbError != nullptr ) { *pbError = true; return result_.second; }
 
