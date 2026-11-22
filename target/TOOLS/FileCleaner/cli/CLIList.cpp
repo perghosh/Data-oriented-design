@@ -405,13 +405,13 @@ std::pair<bool, std::string> ListPrintLine_g( CDocument* pdocument, gd::argument
       }
    }
 
-   // ## Build tables for print
+   // ## Build tables for print ..............................................
 
    auto tableResultLineList = pdocument->RESULT_PatternLineList( argumentsPrint );// generate the result table for pattern line list
 
+   // ### Check if we need to limit the number of rows to print based on the 'max' argument
    if(argumentsPrint.exists("max") == true)
    {
-
       auto uMaxRowCount = argumentsPrint["max"].as_uint();
       if(uMaxRowCount < tableResultLineList.size()) { tableResultLineList.row_set_count(uMaxRowCount); }
    }

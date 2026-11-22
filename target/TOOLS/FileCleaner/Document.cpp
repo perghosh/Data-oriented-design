@@ -3553,6 +3553,9 @@ gd::table::dto::table CDocument::RESULT_PatternLineList( const gd::argument::arg
    // @brief Enum constant for column positions in table
    enum enumColumn { eColumnLine = 0, eColumnFile, eColumnContext, eColumnRow, eColumnRowLeading };
 
+   bool bLLM = m_papplication->IsStateLLM(); // check if application is in LLM state
+   std::string stringCurrentDirectory = m_papplication->PROPERTY_Get("folder-current").as_string(); // get current working directory from application properties
+
    using namespace gd::table::dto;
    enumEditor eEditor = eVSCode;
    auto stringEditor = m_papplication->PROPERTY_Get("editor").as_string();
@@ -3583,8 +3586,7 @@ gd::table::dto::table CDocument::RESULT_PatternLineList( const gd::argument::arg
 
    unsigned uKeyColumnInFile = ptableFile->column_get_index("key"); // get index for key column  
 
-   std::string string_;
-
+   std::string string_; // temp string to avoid relocation.
    for( uint64_t uRow = 0, uRowCount = ptableLineList->size(); uRow < uRowCount; uRow++ )
    {
       auto uFileKey = ptableLineList->cell_get_variant_view(uRow, "file-key").as_uint64();
@@ -3593,6 +3595,10 @@ gd::table::dto::table CDocument::RESULT_PatternLineList( const gd::argument::arg
       if( iFileRow == -1 ) { assert(iFileRow != -1); continue; }
 
       auto stringFolder = ptableFile->cell_get_variant_view(iFileRow, "folder").as_string();
+      if(bLLM == true && stringCurrentDirectory.empty() == false)
+      {
+         if(stringFolder.find(stringCurrentDirectory) == 0) { stringFolder = stringFolder.substr(stringCurrentDirectory.length()); }
+      }
       auto stringFilename = ptableFile->cell_get_variant_view(iFileRow, "filename").as_string();
       gd::file::path pathFile(stringFolder);
       pathFile += stringFilename;
