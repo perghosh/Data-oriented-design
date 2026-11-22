@@ -25,6 +25,10 @@ Do not guess option names: unknown options print help and `ERROR: Unknown option
 `list` and `find`: lines look like `path:line - [text]`. `dir`: a `Current Directory:` line, then paths relative to it.
 Ignore progress lines ("Find in files: ..."). The exit code is often -1 even when the output is correct, so judge success from the output.
 
+### Comments above definitions
+Most important methods, especially in gd and in the cpp files, have a comment above them.
+With the --context option using negative start offset, cleaner are able to show the comment above the definition to learn.
+
 ## Priority and scope
 
 1. **Correctness first:** Never sacrifice correctness or break existing public behavior to satisfy a style rule.
