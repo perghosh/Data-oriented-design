@@ -30,6 +30,7 @@ Why the name `cleaner`? Managing code often means cleaning—removing clutter, r
   - [version](#version)
 - [Global options](#global-options)
 - [Rule commands](#rule-commands)
+- [Using cleaner with LLM agents](#using-cleaner-with-llm-agents)
 - [Examples](#examples)
 - [Scripting and Advanced Usage](#scripting-and-advanced-usage)
 - [Supported File Extensions](#supported-file-extensions-and-languages)
@@ -305,6 +306,75 @@ Avalable rules are:
 - `select-between:<start>,<end>`: Selects text between specified start and end markers.
 - `select-line:<marker>`: Selects line at the specified line marker. If no marker is specified, it selects line where match was found.
 - `select-all`: Selects all text in the segment.
+
+---
+
+## Using cleaner with LLM agents
+
+Cleaner can adapt its output and its help for LLM agents (Copilot, Claude, etc.). Pinpointing exactly the lines or
+blocks needed, and harvesting surrounding context, gives the model less noise than reading whole files and in practice
+better generated code.
+
+### The `-llm` flag
+Add `-llm` (single dash) to `list`, `find`, `count` and `dir`:
+- `list` and `find`: matches are printed as `path:line - [text]`; with `--context` the match lines are marked with `>` so they can be told apart from context lines.
+- `dir`: compact output. First a `Current Directory:` line, then one path per line relative to that directory (full path = current directory + `\` + entry).
+- `count`: table with counts per file.
+
+### LLM help
+Use `-llm` together with `help` to get a compact help text written for agents (no decoration, only the options an agent needs, stated output format and examples). Without `-llm` the normal user help is printed.
+```
+cleaner help list -llm
+cleaner help find -llm
+cleaner help count -llm
+cleaner help dir -llm
+```
+
+### Recommended workflow for agents
+1. `dir` to find which files exist (add `--pattern` to only list files containing text).
+2. `count` to scope where something is used and how often.
+3. `list` (single line) or `find` (multi-line) to get exact lines, with `--context` to read surrounding code.
+4. Edit based on the exact lines found, do not read whole files.
+
+### Rules of thumb
+- Filter is the first positional argument, e.g. `"*.h;*.cpp"` (use `--filter` otherwise).
+- Always set `--current-directory`, add `-R` for subfolders.
+- Always bound output: `--max N` for `list`, `find` and `dir`; `--page-size N` for `count`.
+- Separate several literal patterns with `;`, repeat `--rpattern` for several regular expressions (Boost.Regex, Perl syntax).
+- `--context N` shows N lines after a match, `--context S,N` shows N lines from offset S (negative starts before the match, e.g. `--context -2,5`).
+- `--segment code` (default) skips comments and strings; use `comment`, `string` or `all` to search them.
+- Progress lines (`Find in files: ...`) are noise and exit code -1 is normal; judge success from the output.
+
+### Sample instructions for an LLM
+Put something like this in the agent instruction file (e.g. `copilot-instructions.md`):
+```
+## Searching the code with cleaner
+
+Use `C:\Tools\cleaner.exe` for ALL code searching and file listing, instead of reading whole files,
+guessing, or using PowerShell `dir` / `Get-ChildItem`.
+Call it from PowerShell by full path: `& 'C:\Tools\cleaner.exe' <command> ...`
+
+### Commands
+- `list`: single-line matches (names, calls, declarations). `find` takes the same options but matches across lines
+- `count`: matches per file. Use for scoping only, then use `list` or `find` for exact lines before editing
+- `dir`: list files (not folders). With `--pattern` only files containing the text
+
+### Get the options before the first use
+Before using a command for the first time in a chat, run
+`& 'C:\Tools\cleaner.exe' help <list|count|dir> -llm` (`list` also covers `find`) and follow its output.
+Do not guess option names: unknown options print help and `ERROR: Unknown option`.
+
+### Always
+- Filter is the first positional argument, e.g. `"*.h;*.cpp"`. Use `--filter` if it is not first.
+- Set `--current-directory "<folder>"`. Add `-R` to include subfolders.
+- Bound output: `--max N` for `list`, `find` and `dir`; `--page-size N` for `count`.
+- Use `-llm` (single dash) on every command. With `list` and `find`, also use `--context N` to read surrounding code.
+- Separate several literal patterns with `;`. Repeat `--rpattern` for several regex expressions.
+
+### Output
+`list` and `find`: lines look like `path:line - [text]`. `dir`: a `Current Directory:` line, then paths relative to it.
+Ignore progress lines ("Find in files: ..."). The exit code is often -1 even when the output is correct, so judge success from the output.
+```
 
 ---
 
