@@ -19,6 +19,25 @@ std::string GetDataFolder()
    return FOLDER_GetRoot_g("target/TOOLS/FileCleaner/tests/data");
 }
 
+TEST_CASE( "[arguments] local buffer avoids allocation until capacity is exceeded", "[arguments]" )
+{
+   gd::argument::arguments_local<64> argumentsLocal;
+   auto* pBufferInitial = argumentsLocal.buffer_data();
+   REQUIRE(argumentsLocal.buffer_buffer_size() == 64);
+   REQUIRE(argumentsLocal.is_owner() == false);
+
+   argumentsLocal.append("number", 42);
+   REQUIRE(argumentsLocal.buffer_data() == pBufferInitial);
+   REQUIRE(argumentsLocal.is_owner() == false);
+
+   std::string stringLargeValue(128, 'x');
+   argumentsLocal.append("large", stringLargeValue);
+   REQUIRE(argumentsLocal.is_owner() == true);
+   REQUIRE(argumentsLocal.buffer_data() != pBufferInitial);
+   REQUIRE(argumentsLocal["number"].as_int() == 42);
+   REQUIRE(argumentsLocal["large"].as_string() == stringLargeValue);
+}
+
 TEST_CASE( "[arguments] test arg and args", "[arguments]" ) {
     // Test arg_view construction
     gd::arg_view av1; gd::variant_view vv1(42); gd::arg_view av2("key1", vv1);
