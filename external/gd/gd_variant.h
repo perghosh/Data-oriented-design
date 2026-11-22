@@ -303,8 +303,9 @@ public:
    variant( const gd::types::uuid& v ): m_uType(variant_type::eTypeGuid|variant_type::eFlagAllocate), m_uSize(16) { m_V.pb = (uint8_t*)allocate(m_uSize); memcpy( m_V.pb, v.data(), m_uSize); }
    variant( const gd::types::binary& v ): m_uType(variant_type::eTypeBinary|variant_type::eFlagAllocate), m_uSize(size_cast(v.length())) { m_V.pb = (uint8_t*)allocate(m_uSize); memcpy( m_V.pb, &v, m_uSize ); }
 
-   variant( const std::string& v ): m_uType(variant_type::eTypeString|variant_type::eFlagAllocate), m_uSize(size_cast(v.length())) { m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( get_heap_buffer(), v.c_str(), m_uSize + 1u); }
+   variant( const std::string& v ): m_uType(variant_type::eTypeString|variant_type::eFlagAllocate), m_uSize(size_cast(v.length())) { m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( get_heap_buffer(), v.c_str(), m_uSize + 1); }
    explicit variant( const std::string_view& v ): m_uType(variant_type::eTypeString|variant_type::eFlagAllocate), m_uSize(size_cast(v.length())) { m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( get_heap_buffer(), v.data(), m_uSize + 1u); m_V.pbsz[m_uSize] = '\0'; }
+
    variant( const std::string& v, unsigned int uType ): m_uType(uType|variant_type::eFlagAllocate), m_uSize(size_cast(v.length())) { m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( get_heap_buffer(), v.c_str(), m_uSize + 1u); }
    variant(const char* v, bool) : m_uType(variant_type::eTypeString), m_uSize(size_cast(strlen(v))) { m_V.pbsz_const = v; }
    variant(const std::string_view& v, bool) : m_uType(variant_type::eTypeString), m_uSize(size_cast(v.length())) { m_V.pbsz_const = v.data(); }

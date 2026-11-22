@@ -3748,12 +3748,18 @@ gd::variant arguments::get_variant_s(const arguments::argument& argumentValue)
    case arguments::eTypeNumberDouble:
       return gd::variant(value.d);
       break;
-   case arguments::eTypeNumberString:
-      return gd::variant(value.pbsz, (size_t)argumentValue.length() - sizeof(char) );
-      break;
+   case arguments::eTypeNumberString: 
+   {
+      const size_t uLength = (size_t)argumentValue.length();
+      return gd::variant(value.pbsz, uLength);
+   }
+   break;
    case arguments::eTypeNumberUtf8String:
-      return gd::variant( gd::variant::utf8( value.pbsz, (size_t)argumentValue.length() - sizeof(char) ) );
-      break;
+   {
+      const size_t uLength = (size_t)argumentValue.length();
+      return gd::variant( gd::variant::utf8( value.pbsz, uLength ) );
+   }
+   break;
    case arguments::eTypeNumberWString:
       return gd::variant(value.pwsz, (size_t)argumentValue.length() - sizeof(wchar_t) );
       break;
