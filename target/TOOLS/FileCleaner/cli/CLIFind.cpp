@@ -419,8 +419,6 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
 
       auto result_ = pdocument->FILE_UpdatePatternFind(vectorPatternString, &argumentsFind, 0); // Search for patterns in harvested files and place them into the result table
 
-
-
       if (result_.first == false)
       {
          if (pdocument->ERROR_Empty() == false)
