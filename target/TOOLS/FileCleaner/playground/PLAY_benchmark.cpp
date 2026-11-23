@@ -42,342 +42,159 @@
    #define TEST_NO_VECTOR         __pragma( loop( no_vector ) )
 #endif
 
-/*
 
-namespace
-{
-   /// raw memory with a data pointer that is 64 byte aligned plus a chosen byte offset
-   struct buffer_test
+
+// ---------------------------------------------------------------------------
+// What does an "if" cost? Five loops that do the same work. Only the data differs.
+//
+// The data is a long list of numbers that are either 0 or 1. The loop asks "is it 0?" and does
+// a small calculation on one of two paths. Scenario 1 has no if at all (the same calculation,
+// always on the same path), scenarios 2 to 5 use the very same loop with different data:
+//
+//   1  no if at all
+//   2  if, but every value is 1 (the if never says "zero")
+//   3  5% zeros, 95% ones
+//   4  25% zeros, 75% ones
+//   5  50% zeros, 50% ones (random)
+//
+// Both paths contain a volatile store. That stops the compiler from replacing the if with a
+// branch-free instruction (cmov), so we measure a real if.
+// ---------------------------------------------------------------------------
+namespace {
+
+   /// No if: the same work as the loop below, always on the same path.
+   TEST_NOINLINE uint64_t branch_none_s(const uint8_t* pbyteData, size_t uCount, volatile uint32_t* puSink)
    {
-      buffer_test(size_t uByteCount, size_t uOffset) : m_pbufferRaw(new uint8_t[uByteCount + 128])
+      uint64_t uAccumulator = 1;
+      for(size_t u = 0; u < uCount; ++u)
       {
-         uintptr_t uAddress = reinterpret_cast<uintptr_t>(m_pbufferRaw);
-         uAddress = (uAddress + 63) & ~uintptr_t(63);                      // move up to 64 byte border (cache line)
-         m_pbufferData = reinterpret_cast<uint8_t*>(uAddress) + uOffset;
+         const uint32_t uValue = pbyteData[u];
+         const uint32_t uIndex = static_cast<uint32_t>(u);
+         uAccumulator += (uIndex << 1) + uValue; puSink[0] = uIndex;
       }
-      ~buffer_test() { delete[] m_pbufferRaw; }
-      buffer_test(const buffer_test&) = delete;
-      buffer_test& operator=(const buffer_test&) = delete;
+      return uAccumulator;
+   }
 
-      uint8_t* m_pbufferRaw;
-      uint8_t* m_pbufferData;
+   /// With an if: is the value 0 or not? One of two small calculations is done.
+   TEST_NOINLINE uint64_t branch_if_s(const uint8_t* pbyteData, size_t uCount, volatile uint32_t* puSink)
+   {
+      uint64_t uAccumulator = 1;
+      for(size_t u = 0; u < uCount; ++u)
+      {
+         const uint32_t uValue = pbyteData[u];
+         const uint32_t uIndex = static_cast<uint32_t>(u);
+         if(uValue == 0) { uAccumulator += uIndex << 1; puSink[0] = uIndex; }
+         else { uAccumulator ^= uIndex << 2; puSink[1] = uIndex; }
+      }
+      return uAccumulator;
+   }
+
+} // namespace
+
+TEST_CASE("[benchmark] cost of an if, by how predictable it is", "[benchmark]")
+{
+   constexpr size_t uDataCount = 1'048'576;                                    // 1 MB of data per scenario, too long for the CPU to memorize
+   constexpr unsigned uWarmupCount = 3;
+   constexpr unsigned uRunIterations = 40;
+
+   struct scenario
+   {
+      const char* m_pbszName;
+      unsigned m_uZeroPercent;                                                 // how many percent of the values are 0
+      bool m_bUseIf;
+      std::vector<uint8_t> m_vectorData;
+      double m_dNanosecond = 0;                                                // result: time per step
    };
 
-   /// sum with the compiler free to vectorize
-   TEST_NOINLINE int64_t sum_vector_g(const uint8_t* pbuffer, size_t uCount)
+   std::vector<scenario> vectorScenario;
+   vectorScenario.push_back({ "1  no if at all",        0, false,{} });
+   vectorScenario.push_back({ "2  if, always 1",        0, true,{} });
+   vectorScenario.push_back({ "3  if,  5% zeros",       5, true,{} });
+   vectorScenario.push_back({ "4  if, 25% zeros",      25, true,{} });
+   vectorScenario.push_back({ "5  if, 50% zeros",      50, true,{} });
+
+   // ## Fill every scenario with 0 and 1 in the wanted proportion
+   std::mt19937 generatorRandom(12345);
+   for(auto& scenario_ : vectorScenario)
    {
-      int64_t iSum = 0;
-      for (size_t u = 0; u < uCount; ++u)
+      scenario_.m_vectorData.resize(uDataCount);
+      size_t uZero = 0;
+      for(auto& byte_ : scenario_.m_vectorData)
       {
-         int32_t iValue;
-         memcpy(&iValue, pbuffer + u * sizeof(int32_t), sizeof(iValue));  // memcpy avoids UB for unaligned access
-         iSum += iValue;
+         const bool bZero = (generatorRandom() % 100) < scenario_.m_uZeroPercent;
+         byte_ = bZero ? 0 : 1;
+         uZero += bZero ? 1 : 0;
       }
-      return iSum;
+      const double dZeroPercent = 100.0 * static_cast<double>(uZero) / static_cast<double>(uDataCount);
+      INFO(scenario_.m_pbszName);
+      CHECK(std::abs(dZeroPercent - scenario_.m_uZeroPercent) < 0.5);          // the data must have the proportion we say it has
    }
 
-   /// same sum but one scalar 4 byte load per value
-   TEST_NOINLINE int64_t sum_scalar_g(const uint8_t* pbuffer, size_t uCount)
-   {
-      int64_t iSum = 0;
-      TEST_NO_VECTOR
-         for (size_t u = 0; u < uCount; ++u)
-         {
-            int32_t iValue;
-            memcpy(&iValue, pbuffer + u * sizeof(int32_t), sizeof(iValue));
-            iSum += iValue;
-         }
-      return iSum;
-   }
-}
+   volatile uint32_t uSink[4] = {};
+   volatile uint64_t uSinkResult = 0;
 
-TEST_CASE("[benchmark] int32 aligned vs misaligned", "[benchmark]")
-{
-   constexpr size_t uSmallCount = 50;                                          // random values generated once
-   constexpr size_t uOffsetMisaligned = 1;                                     // every int32 starts on odd address
-   constexpr unsigned uWarmupCount = 3;
-   using sum_function = int64_t(*)(const uint8_t*, size_t);
-
-   // ## generate the 50 random values once and copy them to the misaligned small buffer
-   buffer_test bufferSmallAligned(uSmallCount * sizeof(int32_t), 0);
-   buffer_test bufferSmallMisaligned(uSmallCount * sizeof(int32_t), uOffsetMisaligned);
-   std::mt19937 generatorRandom(12345);                                      // fixed seed, same values every run
-   std::uniform_int_distribution<int32_t> distributionValue(-1'000'000, 1'000'000);
-   for (size_t u = 0; u < uSmallCount; ++u)
-   {
-      const int32_t iValue = distributionValue(generatorRandom);
-      memcpy(bufferSmallAligned.m_pbufferData + u * sizeof(int32_t), &iValue, sizeof(iValue));
-   }
-   memcpy(bufferSmallMisaligned.m_pbufferData, bufferSmallAligned.m_pbufferData, uSmallCount * sizeof(int32_t));
-
-   // ## fill large buffer by copying the small block over and over
-   auto fill_ = [&](buffer_test& bufferFill, const buffer_test& bufferSource, size_t uValueCount)
+   auto run_ = [&](const scenario& scenario_)
       {
-         const size_t uChunkBytes = uSmallCount * sizeof(int32_t);           // 200 bytes, keeps alignment from chunk to chunk
-         size_t uBytesLeft = uValueCount * sizeof(int32_t);
-         uint8_t* pdestination = bufferFill.m_pbufferData;
-         while (uBytesLeft > 0)
-         {
-            const size_t uCopy = std::min(uChunkBytes, uBytesLeft);
-            memcpy(pdestination, bufferSource.m_pbufferData, uCopy);
-            pdestination += uCopy;
-            uBytesLeft -= uCopy;
-         }
-      };
-
-   volatile int64_t iSink = 0;                                                 // keeps the compiler from removing the sums
-
-   auto make_sum_ = [&iSink](const uint8_t* pbuffer, size_t uCount, sum_function functionSum)
-      {
-         return [&iSink, pbuffer, uCount, functionSum]()
+         auto function_ = [&]()
             {
-               TEST_MEMORY_BARRIER();                                          // buffer may have changed, so the sum can't be reused between runs
-               iSink = functionSum(pbuffer, uCount);
+               TEST_MEMORY_BARRIER();
+               const uint8_t* pbyteData = scenario_.m_vectorData.data();
+               uSinkResult = scenario_.m_bUseIf ? branch_if_s(pbyteData, uDataCount, uSink) : branch_none_s(pbyteData, uDataCount, uSink);
             };
+         return gd::benchmark::run_s(function_, uRunIterations, uWarmupCount);
       };
 
-   auto print_result = [&](const char* pbszName, const auto& result, size_t uValueCount)
-      {
-         std::cout << pbszName << ": mean " << (result.mean() / 1'000.0) << " us per run, "
-            << (result.mean() / uValueCount) << " ns per value\n";
-      };
+   CHECK(branch_if_s(vectorScenario[4].m_vectorData.data(), uDataCount, uSink) != 0);
 
-   // ## run A B B A for one buffer size and one sum function
-   auto run_scenario_ = [&](const char* pbszName, size_t uValueCount, unsigned uRunIterations, sum_function functionSum)
-      {
-         buffer_test bufferAligned(uValueCount * sizeof(int32_t), 0);
-         buffer_test bufferMisaligned(uValueCount * sizeof(int32_t), uOffsetMisaligned);
-         fill_(bufferAligned, bufferSmallAligned, uValueCount);
-         fill_(bufferMisaligned, bufferSmallMisaligned, uValueCount);
+   // ## Run 1,2,3,4,5 and then 5,4,3,2,1 so that a slowly changing clock speed affects all scenarios equally
+   std::vector<double> vectorMedianSum(vectorScenario.size(), 0.0);
+   for(size_t u = 0; u < vectorScenario.size(); ++u) { vectorMedianSum[u] += static_cast<double>(run_(vectorScenario[u]).median()); }
+   for(size_t u = vectorScenario.size(); u-- > 0; ) { vectorMedianSum[u] += static_cast<double>(run_(vectorScenario[u]).median()); }
+   for(size_t u = 0; u < vectorScenario.size(); ++u) { vectorScenario[u].m_dNanosecond = vectorMedianSum[u] / 2.0 / static_cast<double>(uDataCount); }
 
-         CHECK(reinterpret_cast<uintptr_t>(bufferAligned.m_pbufferData) % 4 == 0);
-         CHECK(reinterpret_cast<uintptr_t>(bufferMisaligned.m_pbufferData) % 4 == uOffsetMisaligned);
+   // ## Print a table that is easy to read
+   const double dNone = vectorScenario[0].m_dNanosecond;
+   const double dNever = vectorScenario[1].m_dNanosecond;
+   double dMax = 0;
+   for(const auto& scenario_ : vectorScenario) { dMax = (std::max)(dMax, scenario_.m_dNanosecond); }
 
-         // ## verify once, same values must give same sum and mean
-         const int64_t iSumAligned = functionSum(bufferAligned.m_pbufferData, uValueCount);
-         const int64_t iSumMisaligned = functionSum(bufferMisaligned.m_pbufferData, uValueCount);
-         CHECK(iSumAligned == iSumMisaligned);
-         const double dMean = static_cast<double>(iSumAligned) / static_cast<double>(uValueCount);
+   std::cout << "\n==============================================================================\n"
+      << " What does an \"if\" cost? Same work every time, " << uDataCount << " steps per run.\n"
+      << " The only difference is how predictable the if is.\n"
+      << "==============================================================================\n"
+      << " scenario             zeros   wrong guesses   time per step   compared to\n"
+      << "                              per 100 steps                   no if\n"
+      << "------------------------------------------------------------------------------\n";
 
-         auto functionAligned = make_sum_(bufferAligned.m_pbufferData, uValueCount, functionSum);
-         auto functionMisaligned = make_sum_(bufferMisaligned.m_pbufferData, uValueCount, functionSum);
+   for(size_t u = 0; u < vectorScenario.size(); ++u)
+   {
+      const auto& scenario_ = vectorScenario[u];
+      const double dWrongPer100 = scenario_.m_bUseIf ? 100.0 * (std::min)(scenario_.m_uZeroPercent / 100.0, 1.0 - scenario_.m_uZeroPercent / 100.0) : 0.0;
+      const size_t uBar = static_cast<size_t>(30.0 * scenario_.m_dNanosecond / dMax + 0.5);
 
-         const auto resultAligned1 = gd::benchmark::run_s(functionAligned, uRunIterations, uWarmupCount);
-         const auto resultMisaligned1 = gd::benchmark::run_s(functionMisaligned, uRunIterations, uWarmupCount);
-         const auto resultMisaligned2 = gd::benchmark::run_s(functionMisaligned, uRunIterations, uWarmupCount);
-         const auto resultAligned2 = gd::benchmark::run_s(functionAligned, uRunIterations, uWarmupCount);
+      std::cout << " " << std::left << std::setw(21) << scenario_.m_pbszName << std::right
+         << std::setw(4) << (scenario_.m_bUseIf ? std::to_string(scenario_.m_uZeroPercent) + "%" : std::string("-"))
+         << std::setw(11) << std::fixed << std::setprecision(0) << dWrongPer100
+         << std::setw(15) << std::setprecision(2) << scenario_.m_dNanosecond << " ns"
+         << std::setw(10) << std::setprecision(1) << (scenario_.m_dNanosecond / dNone) << " x   "
+         << std::string(uBar, '#') << "\n";
+   }
 
-         std::cout << "\n#######\nScenario: " << pbszName << ", values: " << uValueCount
-            << ", sum: " << iSumAligned << ", mean: " << std::fixed << std::setprecision(3) << dMean << "\n";
-         print_result("aligned    (round 1)", resultAligned1, uValueCount);
-         print_result("misaligned (round 1)", resultMisaligned1, uValueCount);
-         print_result("misaligned (round 2)", resultMisaligned2, uValueCount);
-         print_result("aligned    (round 2)", resultAligned2, uValueCount);
-      };
-
-   // ## fits in L1, fits in L2, does not fit in cache (64 MB per buffer)
-   run_scenario_("scalar, L1", 4'096, 20'000, sum_scalar_g);
-   run_scenario_("scalar, L2", 262'144, 2'000, sum_scalar_g);
-   run_scenario_("scalar, memory", 16'777'216, 20, sum_scalar_g);
-   run_scenario_("vector, L1", 4'096, 20'000, sum_vector_g);
-   run_scenario_("vector, L2", 262'144, 2'000, sum_vector_g);
-   run_scenario_("vector, memory", 16'777'216, 20, sum_vector_g);
+   const double dWrongCost = (vectorScenario[4].m_dNanosecond - dNever) / 0.5;  // 50/50: half of the steps are guessed wrong
+   std::cout << "------------------------------------------------------------------------------\n"
+      << " How to read this:\n"
+      << "  * The CPU guesses which way every if will go, and starts working before it knows.\n"
+      << "  * A right guess costs nothing. A wrong guess throws the work away and starts over.\n"
+      << "  * Scenario 2 has an if but the CPU always guesses right: compare it with scenario 1.\n"
+      << "  * The more mixed the data, the more wrong guesses and the slower the loop.\n"
+      << "  * The loop body is tiny on purpose. Real code does more work per step, so the same cost matters less.\n"
+      << "  * One wrong guess costs roughly " << std::setprecision(1) << dWrongCost << " ns on this computer (from scenario 5).\n"
+      << "==============================================================================\n";
 }
 
-namespace simd_test
-{
-   constexpr size_t uBlockValueCount = 4096;                                   // 8192 * 1'000'000 < 2^32, so the 32 bit block sum can't overflow
 
-   /// plain loop, vectorization is allowed
-   TEST_NOINLINE uint64_t sum_block_auto_g(const uint8_t* pbuffer, size_t uCount)
-   {
-      uint64_t uTotal = 0;
-      for (size_t uPosition = 0; uPosition < uCount; uPosition += uBlockValueCount)
-      {
-         const size_t uBlockCount = std::min(uBlockValueCount, uCount - uPosition);
-         const uint8_t* pblock = pbuffer + uPosition * sizeof(uint32_t);
-         uint32_t uBlockSum = 0;
-         for (size_t u = 0; u < uBlockCount; ++u)
-         {
-            uint32_t uValue;
-            memcpy(&uValue, pblock + u * sizeof(uint32_t), sizeof(uValue));
-            uBlockSum += uValue;
-         }
-         uTotal += uBlockSum;
-      }
-      return uTotal;
-   }
 
-   /// same loop but with vectorization turned off
-   TEST_NOINLINE uint64_t sum_block_scalar_g(const uint8_t* pbuffer, size_t uCount)
-   {
-      uint64_t uTotal = 0;
-      for (size_t uPosition = 0; uPosition < uCount; uPosition += uBlockValueCount)
-      {
-         const size_t uBlockCount = std::min(uBlockValueCount, uCount - uPosition);
-         const uint8_t* pblock = pbuffer + uPosition * sizeof(uint32_t);
-         uint32_t uBlockSum = 0;
-         TEST_NO_VECTOR
-            for (size_t u = 0; u < uBlockCount; ++u)
-            {
-               uint32_t uValue;
-               memcpy(&uValue, pblock + u * sizeof(uint32_t), sizeof(uValue));
-               uBlockSum += uValue;
-            }
-         uTotal += uBlockSum;
-      }
-      return uTotal;
-   }
-
-   /// hand written simd with unaligned loads
-   TEST_NOINLINE uint64_t sum_block_intrinsic_g(const uint8_t* pbuffer, size_t uCount)
-   {
-      uint64_t uTotal = 0;
-      for (size_t uPosition = 0; uPosition < uCount; uPosition += uBlockValueCount)
-      {
-         const size_t uBlockCount = std::min(uBlockValueCount, uCount - uPosition);
-         const uint8_t* pblock = pbuffer + uPosition * sizeof(uint32_t);
-         uint32_t uBlockSum = 0;
-         size_t u = 0;
-#if defined( __AVX2__ )
-         __m256i m256iSum = _mm256_setzero_si256();
-         for (; u + 8 <= uBlockCount; u += 8)
-         {
-            m256iSum = _mm256_add_epi32(m256iSum, _mm256_loadu_si256(reinterpret_cast<const __m256i*>(pblock + u * sizeof(uint32_t))));
-         }
-         alignas(32) uint32_t puLane[8];
-         _mm256_store_si256(reinterpret_cast<__m256i*>(puLane), m256iSum);
-         for (unsigned uLane = 0; uLane < 8; ++uLane) { uBlockSum += puLane[uLane]; }
-#elif defined( __SSE2__ ) || defined( _M_X64 )
-         __m128i m128iSum = _mm_setzero_si128();
-         for (; u + 4 <= uBlockCount; u += 4)
-         {
-            m128iSum = _mm_add_epi32(m128iSum, _mm_loadu_si128(reinterpret_cast<const __m128i*>(pblock + u * sizeof(uint32_t))));
-         }
-         alignas(16) uint32_t puLane[4];
-         _mm_store_si128(reinterpret_cast<__m128i*>(puLane), m128iSum);
-         for (unsigned uLane = 0; uLane < 4; ++uLane) { uBlockSum += puLane[uLane]; }
-#elif defined( __aarch64__ ) || defined( _M_ARM64 )
-         uint32x4_t uint32x4Sum = vdupq_n_u32(0);
-         for (; u + 4 <= uBlockCount; u += 4)
-         {
-            uint32x4Sum = vaddq_u32(uint32x4Sum, vreinterpretq_u32_u8(vld1q_u8(pblock + u * sizeof(uint32_t))));
-         }
-         uBlockSum = vaddvq_u32(uint32x4Sum);
-#endif
-         for (; u < uBlockCount; ++u)
-         {
-            uint32_t uValue;
-            memcpy(&uValue, pblock + u * sizeof(uint32_t), sizeof(uValue));
-            uBlockSum += uValue;
-         }
-         uTotal += uBlockSum;
-      }
-      return uTotal;
-   }
-}
-
-TEST_CASE( "[benchmark] int32 simd aligned vs misaligned", "[benchmark]" )
-{
-   constexpr size_t uSmallCount = 50;                                          // random values generated once
-   constexpr size_t uOffsetMisaligned = 1;                                     // every int32 starts on odd address
-   constexpr unsigned uWarmupCount = 3;
-   using sum_function = uint64_t(*)( const uint8_t*, size_t );
-
-   // ## generate the 50 random values once and copy them to the misaligned small buffer
-   buffer_test bufferSmallAligned( uSmallCount * sizeof( int32_t ), 0 );
-   buffer_test bufferSmallMisaligned( uSmallCount * sizeof( int32_t ), uOffsetMisaligned );
-   std::mt19937 generatorRandom( 12345 );                                      // fixed seed, same values every run
-   std::uniform_int_distribution<int32_t> distributionValue( 0, 1'000'000 );   // not negative and small enough for the 32 bit block sum
-   for( size_t u = 0; u < uSmallCount; ++u )
-   {
-      const int32_t iValue = distributionValue( generatorRandom );
-      memcpy( bufferSmallAligned.m_pbufferData + u * sizeof( int32_t ), &iValue, sizeof( iValue ) );
-   }
-   memcpy( bufferSmallMisaligned.m_pbufferData, bufferSmallAligned.m_pbufferData, uSmallCount * sizeof( int32_t ) );
-
-   // ## fill large buffer by copying the small block over and over
-   auto fill_ = [&]( buffer_test& bufferFill, const buffer_test& bufferSource, size_t uValueCount )
-      {
-         const size_t uChunkBytes = uSmallCount * sizeof( int32_t );
-         size_t uBytesLeft = uValueCount * sizeof( int32_t );
-         uint8_t* pdestination = bufferFill.m_pbufferData;
-         while( uBytesLeft > 0 )
-         {
-            const size_t uCopy = std::min( uChunkBytes, uBytesLeft );
-            memcpy( pdestination, bufferSource.m_pbufferData, uCopy );
-            pdestination += uCopy;
-            uBytesLeft -= uCopy;
-         }
-      };
-
-   volatile uint64_t uSink = 0;                                                // keeps the compiler from removing the sums
-
-   auto make_sum_ = [&uSink]( const uint8_t* pbuffer, size_t uCount, sum_function functionSum )
-      {
-         return [&uSink, pbuffer, uCount, functionSum]()
-            {
-               TEST_MEMORY_BARRIER();                                          // buffer may have changed, so the sum can't be reused between runs
-               uSink = functionSum( pbuffer, uCount );
-            };
-      };
-
-   auto print_result = [&]( const char* pbszName, const auto& result, size_t uValueCount )
-      {
-         const double dNanosecondPerValue = result.mean() / static_cast<double>( uValueCount );
-         std::cout << pbszName << ": mean " << ( result.mean() / 1'000.0 ) << " us per run, "
-            << dNanosecondPerValue << " ns per value, " << ( 4.0 / dNanosecondPerValue ) << " GB/s\n";
-      };
-
-   // ## run A B B A for one buffer size and one sum function
-   auto run_scenario_ = [&]( const char* pbszName, size_t uValueCount, unsigned uRunIterations, sum_function functionSum )
-      {
-         buffer_test bufferAligned( uValueCount * sizeof( int32_t ), 0 );
-         buffer_test bufferMisaligned( uValueCount * sizeof( int32_t ), uOffsetMisaligned );
-         fill_( bufferAligned, bufferSmallAligned, uValueCount );
-         fill_( bufferMisaligned, bufferSmallMisaligned, uValueCount );
-
-         CHECK( reinterpret_cast<uintptr_t>( bufferAligned.m_pbufferData ) % 4 == 0 );
-         CHECK( reinterpret_cast<uintptr_t>( bufferMisaligned.m_pbufferData ) % 4 == uOffsetMisaligned );
-
-         // ## verify once, all kernels and both buffers must give the same sum
-         const uint64_t uSumAligned = functionSum( bufferAligned.m_pbufferData, uValueCount );
-         const uint64_t uSumMisaligned = functionSum( bufferMisaligned.m_pbufferData, uValueCount );
-         CHECK( uSumAligned == uSumMisaligned );
-         CHECK( uSumAligned == simd_test::sum_block_scalar_g( bufferAligned.m_pbufferData, uValueCount ) );
-         const double dMean = static_cast<double>( uSumAligned ) / static_cast<double>( uValueCount );
-
-         auto functionAligned = make_sum_( bufferAligned.m_pbufferData, uValueCount, functionSum );
-         auto functionMisaligned = make_sum_( bufferMisaligned.m_pbufferData, uValueCount, functionSum );
-
-         const auto resultAligned1 = gd::benchmark::run_s( functionAligned, uRunIterations, uWarmupCount );
-         const auto resultMisaligned1 = gd::benchmark::run_s( functionMisaligned, uRunIterations, uWarmupCount );
-         const auto resultMisaligned2 = gd::benchmark::run_s( functionMisaligned, uRunIterations, uWarmupCount );
-         const auto resultAligned2 = gd::benchmark::run_s( functionAligned, uRunIterations, uWarmupCount );
-
-         std::cout << "\n#######\nScenario: " << pbszName << ", values: " << uValueCount
-            << ", sum: " << uSumAligned << ", mean: " << std::fixed << std::setprecision( 3 ) << dMean << "\n";
-         print_result( "aligned    (round 1)", resultAligned1, uValueCount );
-         print_result( "misaligned (round 1)", resultMisaligned1, uValueCount );
-         print_result( "misaligned (round 2)", resultMisaligned2, uValueCount );
-         print_result( "aligned    (round 2)", resultAligned2, uValueCount );
-      };
-
-   // ## 16 KB (L1), 512 KB (L2), 64 MB (memory) per buffer
-// the scenario list at the end
-   run_scenario_("scalar,    L1", 4'096, 20'000, simd_test::sum_block_scalar_g);
-   run_scenario_("auto simd, L1", 4'096, 20'000, simd_test::sum_block_auto_g);
-   run_scenario_("intrinsic, L1", 4'096, 20'000, simd_test::sum_block_intrinsic_g);
-   run_scenario_("scalar,    L2", 131'072, 2'000, simd_test::sum_block_scalar_g);
-   run_scenario_("auto simd, L2", 131'072, 2'000, simd_test::sum_block_auto_g);
-   run_scenario_("intrinsic, L2", 131'072, 2'000, simd_test::sum_block_intrinsic_g);
-   run_scenario_("scalar,    memory", 16'777'216, 20, simd_test::sum_block_scalar_g);
-   run_scenario_("auto simd, memory", 16'777'216, 20, simd_test::sum_block_auto_g);
-   run_scenario_("intrinsic, memory", 16'777'216, 20, simd_test::sum_block_intrinsic_g);
-}
-*/
-
-TEST_CASE("[benchmark] int32 aligned vs misaligned", "[benchmark]")
+TEST_CASE("[benchmark] int32 aligned vs misaligned", "[.benchmark]")
 {
    constexpr size_t uValueCount = 16'777'216;                                 // 64 MB per buffer
    constexpr size_t uOffsetMisaligned = 1;
@@ -454,7 +271,8 @@ TEST_CASE("[benchmark] int32 aligned vs misaligned", "[benchmark]")
    print_result("aligned    (round 2)", resultAligned2);
 }
 
-TEST_CASE("[benchmark] int32 aligned vs misaligned (L2)", "[benchmark]")
+// ============================================================================
+TEST_CASE("[benchmark] int32 aligned vs misaligned (L2)", "[.benchmark]")
 {
    constexpr size_t uValueCount = 262'144;
    constexpr size_t uOffsetMisaligned = 1;
@@ -634,6 +452,7 @@ TEST_CASE("[benchmark] arguments find", "[.benchmark]")
    run_pair_("find missing name (full scan)", make_find_repeat_(argumentsCompact, stringMissing), make_find_repeat_(argumentsShared, stringMissing), uRepeatCount);
 }
 
+// ============================================================================
 TEST_CASE("[benchmark] arguments", "[.benchmark]")
 {
    using namespace gd::argument::shared;
@@ -697,6 +516,7 @@ TEST_CASE("[benchmark] arguments", "[.benchmark]")
 
 }
 
+// ============================================================================
 TEST_CASE("[benchmark] hot and cold", "[.benchmark]")
 {
    constexpr unsigned uRunIterations = 100;
@@ -776,7 +596,7 @@ TEST_CASE("[benchmark] hot and cold", "[.benchmark]")
    }
 }
 
-
+// ============================================================================
 TEST_CASE("[benchmark] edit", "[.benchmark]")
 {
    using namespace gd::table::dto;
@@ -820,117 +640,8 @@ TEST_CASE("[benchmark] edit", "[.benchmark]")
    std::cout << gd::benchmark::to_string_s(resultSet, "ns");
 }
 
-TEST_CASE("[demo] flexibility", "[.demo]")
-{
-   using namespace gd::table::dto;
 
-   // ## 1. The proxy way (what you already have) ------------------------------
-   //    operator[] returns a cell<> proxy; assignment goes through
-   //    cell_set( row, "C1", value ) — with implicit conversion via variant.
-   table t1((table::eTableFlagNull32 | table::eTableFlagRowStatus),
-            { { "uint64", 0, "C1" }, { "uint64", 0, "C3" }, { "uint64", 0, "C4" } },
-            gd::table::tag_prepare{});
-
-   t1.row_add(10);
-   for( uint64_t uRow = 0; uRow < 10; ++uRow )
-      t1[uRow, "C1"] = "1";                                // string -> uint64 conversion
-
-   // ## 2. The bulk-fill way --------------------------------------------------
-   //    Same column, no loop at all. column_fill writes every row in one call.
-   table t2((table::eTableFlagNull32 | table::eTableFlagRowStatus),
-            { { "uint64", 0, "C1" }, { "uint64", 0, "C3" }, { "uint64", 0, "C4" } },
-            gd::table::tag_prepare{});
-   t2.row_add(10);
-   t2.column_fill("C1", gd::variant_view(uint64_t{1}));    // all 10 rows = 1
-
-   // ## 3. The row-oriented way ----------------------------------------------
-   //    Add and populate a row in a single call, by name, with conversion.
-   table t3((table::eTableFlagNull32 | table::eTableFlagRowStatus),
-            { { "uint64", 0, "C1" }, { "uint64", 0, "C3" }, { "uint64", 0, "C4" } },
-            gd::table::tag_prepare{});
-   for( int i = 0; i < 10; ++i )
-      t3.row_add({ { "1" } }, gd::table::tag_convert{});
-
-   // ## 4. The "plant from a plain vector" way -------------------------------
-   //    Plant takes a std::vector<T> straight into a column.
-   table t4((table::eTableFlagNull32 | table::eTableFlagRowStatus),
-            { { "uint64", 0, "C1" }, { "uint64", 0, "C3" }, { "uint64", 0, "C4" } },
-            gd::table::tag_prepare{});
-   t4.row_add(10);
-   std::vector<uint64_t> vOnes(10, 1);
-   t4.plant("C1", vOnes);                                  // template plant<u64>
-
-   // ## 5. The scripted way --------------------------------------------------
-   //    Build the column definitions from a string, then fill by name.
-   table t5((table::eTableFlagNull32 | table::eTableFlagRowStatus),
-            "uint64,C1;uint64,C3;uint64,C4", gd::table::tag_parse{}, gd::table::tag_prepare{});
-   t5.row_add(10);
-   t5.column_fill(0, gd::variant_view(uint64_t{1}));
-
-   // ## All five produce identical data ------------------------------------
-   for( const table* p : { &t1, &t2, &t3, &t4, &t5 } )
-   {
-      REQUIRE( p->get_row_count() == 10 );
-      REQUIRE( p->cell_get_variant_view(0, "C1") == gd::variant_view(uint64_t{1}) );
-      REQUIRE( p->cell_get_variant_view(9, "C1") == gd::variant_view(uint64_t{1}) );
-   }
-}
-
-
-/**
- * Example table with 10 rows and 4 columns, printed two ways:
- *  - tag_io_cli: grid made to look good in a terminal
- *  - tag_io_sql: write_insert_g, one multi-row INSERT statement
- */
-TEST_CASE("[table_io] example cli and sql", "[.table_io]")
-{
-   using namespace gd::table::dto;
-
-   // ## create table with 4 columns ........................................
-   table tableCustomer((table::eTableFlagNull32 | table::eTableFlagRowStatus),
-      { { "int64", 0, "id" },{ "string", 32, "name" },{ "string", 32, "city" },{ "bool", 0, "active" } },
-      gd::table::tag_prepare{});
-
-   // ## add 10 rows and fill them ..........................................
-   const char* apbszName[10] = { "Anna", "Bjorn", "Cecilia", "David", "Eva", "Filip", "Greta", "Henrik", "Ingrid", "O'Brien" };
-   const char* apbszCity[10] = { "Gothenburg", "Stockholm", "Malmo", "Uppsala", "Lund", "Boras", "Umea", "Kiruna", "Visby", "Dublin" };
-
-   tableCustomer.row_add(10);
-   for(uint64_t uRow = 0; uRow < tableCustomer.size(); ++uRow)
-   {
-      // initializer list sets "id" and the columns to the right of it
-      tableCustomer[uRow, "id"] = { int64_t(uRow + 1), apbszName[uRow], apbszCity[uRow], (uRow % 2) == 0 };
-   }
-
-   tableCustomer[3, "city"].set_null();   // one null value to see how it is printed
-
-   REQUIRE(tableCustomer.size() == 10);
-   REQUIRE(tableCustomer.get_column_count() == 4);
-
-   // ## cli: grid for terminal ..............................................
-   std::cout << "\n\nCLI, default grid\n";
-   std::cout << gd::table::to_string(tableCustomer, gd::table::tag_io_cli{}) << "\n";
-
-   std::cout << "\nCLI, max column width 6\n";
-   std::cout << gd::table::to_string(tableCustomer, uint32_t(6), gd::table::tag_io_cli{}) << "\n";
-
-   std::cout << "\nCLI, header only\n";
-   std::cout << gd::table::to_string(tableCustomer, gd::table::tag_io_header{}, gd::table::tag_io_cli{}) << "\n";
-
-   // ## sql: insert queries .................................................
-   std::string stringInsert;
-   gd::table::write_insert_g("TCustomer", tableCustomer, stringInsert, gd::table::tag_io_sql{});
-   std::cout << "\nSQL, all rows in one insert\n" << stringInsert << ";\n";
-
-   // only some columns (id and name) and only rows 2 to 4
-   std::string stringInsertPart;
-   gd::table::write_insert_g("TCustomer", tableCustomer, 2, 3, std::vector<unsigned>{ 0, 1 }, stringInsertPart, gd::table::tag_io_sql{});
-   std::cout << "\nSQL, rows 2-4, columns id and name\n" << stringInsertPart << ";\n";
-
-   REQUIRE(stringInsert.starts_with("INSERT INTO TCustomer"));
-}
-
-
+// ============================================================================
 TEST_CASE("[benchmark] sort table", "[.benchmark]")
 {
    constexpr unsigned uRunIterations = 50;
