@@ -2328,7 +2328,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
  */
 std::pair<bool, std::string> CDocument::BUFFER_UpdateKeyValue(const gd::argument::shared::arguments& argumentsFile, std::string_view stringFileBuffer, gd::table::dto::table& tableRow, const std::vector<gd::argument::arguments>& vectorRule)
 {
-   std::lock_guard<std::mutex> lockCache( m_mutexCache ); // lock method and check that `keyvalue` is not used by other operations
+   std::lock_guard<std::recursive_mutex> lockCache( m_mutexCache ); // lock method and check that `keyvalue` is not used by other operations
 
    uint64_t uFileKey = argumentsFile["file-key"].as_uint64();                                      assert( uFileKey > 0 );
    std::string_view stringFile = argumentsFile["source"].as_string_view();                         assert( stringFile.empty() == false );
