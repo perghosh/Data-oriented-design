@@ -1224,31 +1224,7 @@ std::pair<bool, const char*> read_line_g( const char* pbsz, const char* pbszText
       vectorValue.push_back( v_ );
       uIndex++;
 
-      // move past delimiter if it is on position
-      if( *pbszPosition == csv.get_delimiter() && pbszPosition < pbszEnd ) pbszPosition++;
-
-      /*
-      auto pbszNext = csv.next_value( pbszPosition, pbszEnd );
-      if( pbszNext == nullptr )
-      {
-         // ## compare if line end is found
-         pbszPosition = skip_character_g( pbszPosition, pbszEnd, ' ');
-         if( *pbszPosition == csv.get_lineend() )                              // found end of line? <-- important !!
-         {
-            pbszPosition++;
-            bLineEndFound = true;                                              // mark that we have found lineend character
-            break;                                                             // breaks out of loop - found newline
-         }
-         else
-         {
-            pbszPosition = skip_space_g( pbszPosition, pbszEnd );
-         }
-      }
-      else
-      {
-         pbszPosition = pbszNext;
-      }
-      */
+      if(pbszPosition < pbszEnd  && *pbszPosition == csv.get_delimiter() ) pbszPosition++; // move past delimiter if it is on position
    }
 
 
